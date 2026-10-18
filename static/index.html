@@ -388,6 +388,9 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .bq-duree{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;border-radius:99px;padding:1px 7px}
 .st-slide::before{content:counter(sl);position:absolute;left:4px;top:4px;background:rgba(39,27,45,.75);color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:0 6px;z-index:1}
 .st-slide div{display:grid;gap:6px}
+.st-slide .st-mise{display:flex;flex-wrap:wrap;gap:6px}
+.st-mise select,.st-mise input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 8px;font-size:12.5px;color:var(--ink-2);min-width:0}
+.st-mise input{flex:1 1 120px}
 .st-photo-aide{font-size:12.5px;color:var(--ink-2);background:var(--sunk);border-radius:8px;padding:5px 9px}
 .st-fond.attend{display:grid;place-items:center;font-size:20px;opacity:.85}
 .st-besoin{background:var(--glow-soft);border-radius:12px;padding:12px 14px;margin:0 0 12px}
@@ -1412,7 +1415,10 @@ async function chargePropositions(p) {
   }
 }
 function slidesDuDom() {
-  return $$(".st-slide").map((x, i) => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value, photo: S.projet?.slides?.[i]?.photo || "", recherche: S.projet?.slides?.[i]?.recherche || "", image: S.projet?.slides?.[i]?.image || ""}));
+  return $$(".st-slide").map((x, i) => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value, photo: S.projet?.slides?.[i]?.photo || "",
+    recherche: S.projet?.slides?.[i]?.recherche || "", image: S.projet?.slides?.[i]?.image || "",
+    position: $("[data-k=position]", x)?.value || "", alignement: $("[data-k=alignement]", x)?.value || "",
+    accent: $("[data-k=accent]", x)?.value || "", style_accent: $("[data-k=accent]", x)?.value ? ($("[data-k=style_accent]", x)?.value || "italique") : ""}));
 }
 function sauveProjet(immediat) {
   clearTimeout(S.minuteurStudio);
@@ -1493,6 +1499,12 @@ function renduProjet() {
               <button type="button" class="st-vign" data-bq-slide="${i}" aria-label="Choisir l'image de la slide ${i + 1}">${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}">${x.photo ? "📷" : "+"}</span>`}<em>${att[i] ? "Changer" : "Image"}</em></button>
               <div><input class="st-input" data-k="titre" value="${esc(x.titre)}" aria-label="Titre de la slide ${i + 1}" placeholder="${i ? "Titre de la slide" : "Le hook"}">
               <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea>
+              <div class="st-mise">
+                <select data-k="position" aria-label="Position du texte"><option value="">Texte : auto</option>${[["haut", "en haut"], ["centre", "au centre"], ["bas", "en bas"]].map(([v, t]) => `<option value="${v}" ${x.position === v ? "selected" : ""}>Texte ${t}</option>`).join("")}</select>
+                <select data-k="alignement" aria-label="Alignement"><option value="gauche" ${x.alignement !== "centre" ? "selected" : ""}>Aligné à gauche</option><option value="centre" ${x.alignement === "centre" ? "selected" : ""}>Centré</option></select>
+                <input data-k="accent" value="${esc(x.accent || "")}" placeholder="Mot mis en valeur" aria-label="Mot mis en valeur">
+                <select data-k="style_accent" aria-label="Style du mot mis en valeur">${[["italique", "Italique"], ["manuscrit", "Manuscrit"], ["couleur", "Couleur"]].map(([v, t]) => `<option value="${v}" ${(x.style_accent || "italique") === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+              </div>
               ${x.photo ? `<span class="st-photo-aide">📷 ${esc(x.photo)}</span>` : ""}</div>
               <button class="st-moins" data-moins="${i}" aria-label="Supprimer la slide ${i + 1}">×</button></li>`).join(""); })()}</ol>
             <div class="st-outils"><button class="btn petit" id="st-ajout" ${p.slides.length >= 10 ? "disabled" : ""}>+ Ajouter une slide</button></div>`) : ""}
@@ -1533,7 +1545,8 @@ function renduProjet() {
     S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {style: b.dataset.style}});
   });
   $("#st-script")?.addEventListener("input", () => sauveProjet());
-  $$(".st-input, #st-legende, .st-slide textarea", el).forEach(i => i.addEventListener("input", () => sauveProjet()));
+  $$(".st-input, #st-legende, .st-slide textarea, .st-mise input", el).forEach(i => i.addEventListener("input", () => sauveProjet()));
+  $$(".st-mise select", el).forEach(i => i.addEventListener("change", () => sauveProjet()));
   $("#st-sous")?.addEventListener("change", () => sauveProjet());
   $("#st-ajout")?.addEventListener("click", async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: [...S.projet.slides, {titre: "", texte: ""}]}}); renduProjet(); $$(".st-slide [data-k=titre]").pop()?.focus(); });
   $$("[data-moins]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); const sl = S.projet.slides.filter((_, i) => i !== +b.dataset.moins); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: sl}}); renduProjet(); });

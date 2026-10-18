@@ -52,7 +52,13 @@ OUTIL_ADAPTATION = {
                     "visuel": {"type": "string", "description": "Ce qu'on voit : photo de quoi, fond, mise en page, place du texte."},
                     "adapte": {"type": "string", "description": "Le texte de cette slide pour la marque : même rôle et même longueur que l'original. Slide 1 : le hook viral repris tel quel."},
                     "photo": {"type": "string", "description": "La photo que la marque doit prendre elle-même pour reproduire cette slide, décrite concrètement. Vide si la slide est un fond uni avec du texte."},
-                    "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver une photo libre de droits équivalente dans une banque d'images (ex. « woman holding belly morning light »). Vide si pas de photo."}},
+                    "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver une photo libre de droits équivalente dans une banque d'images (ex. « woman holding belly morning light »). Vide si pas de photo."},
+                    "sous_titre": {"type": "string", "description": "Si la slide a une petite ligne secondaire (ex. « Here's exactly what I'd do »), sa version adaptée/traduite. Sinon vide. Le texte « adapte » ne contient alors que le titre."},
+                    "mise_en_page": {"type": "object", "description": "Où et comment le texte est posé sur la slide du modèle.", "properties": {
+                        "position": {"type": "string", "enum": ["haut", "centre", "bas"]},
+                        "alignement": {"type": "string", "enum": ["gauche", "centre"]},
+                        "accent": {"type": "string", "description": "Le mot ou l'expression du texte ADAPTÉ mis en valeur comme dans le modèle (autre police, italique, couleur), recopié exactement tel qu'il figure dans « adapte ». Vide si aucun."},
+                        "style_accent": {"type": "string", "enum": ["italique", "manuscrit", "couleur", "aucun"]}}}},
                     "required": ["original", "visuel", "adapte", "photo"]},
             },
             "style_visuel": {"type": "string", "description": "UNIQUEMENT pour un carrousel : le style du modèle en une phrase (couleurs, type de police, mise en page, photo ou fond uni)."},
@@ -280,6 +286,7 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
 
     def _adapte_carrousel(self, p: Post, nb: int) -> dict:
         n = len(p.images)
+        seule_couverture = n <= 1 and (not p.medias or p.medias == [p.cover_url])
         texte = f"""CARROUSEL viral à analyser puis adapter ({n or '?'} slides jointes, dans l'ordre).
 
 Plateforme : {p.plateforme} · @{p.compte}
@@ -288,8 +295,10 @@ Performance : {nombre(p.likes) or 'n/a'} j'aime · {nombre(p.commentaires)} comm
 LÉGENDE :
 \"\"\"{p.legende[:2500] or '(vide)'}\"\"\"
 
-Lis chaque slide (texte ET visuel). Le hook est le texte de la slide 1 : c'est lui qui va dans hook_original et hook_viral.
-Remplis slides_modele avec exactement {n} entrée(s), une par slide, dans l'ordre : le texte original, ce qu'on voit, le texte adapté à la marque (même rôle, même longueur) et la photo que la marque doit prendre elle-même pour reproduire la slide.
+Lis chaque slide (texte ET visuel).
+LE HOOK EST LE TEXTE ÉCRIT SUR LA SLIDE 1 (la couverture), en entier : titre ET sous-titre éventuel. Recopie-le mot pour mot dans hook_original. Dans hook_viral, mets sa traduction fidèle et complète en {self.cfg['niche'].get('langue', 'français')} (même sens, même longueur, mêmes mots forts, aucune reformulation, rien d'ajouté ni de retiré). Ne prends JAMAIS la légende comme hook.
+Pour chaque slide, relève aussi sa mise en page (champ mise_en_page) pour que la version adaptée soit posée exactement au même endroit et de la même façon.
+{"Seule la COUVERTURE (slide 1) est jointe : la suite n'a pas pu être récupérée. Remplis slides_modele avec la couverture puis 5 à 7 slides que tu déduis de la légende et de la promesse de la couverture, dans le même esprit." if seule_couverture else f"Remplis slides_modele avec exactement {n} entrée(s), une par slide, dans l'ordre :"} le texte original, ce qu'on voit, le texte adapté à la marque (même rôle, même longueur) et la photo que la marque doit prendre elle-même pour reproduire la slide.
 Décris le style du modèle (style_visuel) et choisis la police et le fond du studio les plus proches (typo_conseillee, theme_conseille).
 Les champs script_reel, texte_ecran et texte_ecran_adapte concernent une version Reel du même contenu : remplis-les quand même, brièvement.
 Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""

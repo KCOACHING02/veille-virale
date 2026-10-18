@@ -267,6 +267,9 @@ def miniatures(posts: list[Post], media: Path):
 
 def slides_carrousels(posts: list[Post], dossier: Path, media: Path | None = None):
     """Carrousels : télécharge l'image de chaque slide (réduite à 900 px) pour que Claude lise texte et visuels."""
+    for p in posts:  # carrousel sans slides lisibles : au minimum la couverture (elle porte le hook)
+        if p.format == "Carrousel" and not p.medias and p.cover_url:
+            p.medias = [p.cover_url]
     a_faire = [p for p in posts if p.medias]
     if not a_faire:
         return

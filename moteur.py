@@ -335,7 +335,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         elif a_faire:
             from video import slides_carrousels, traite_videos
             if cfg["video"].get("actif", True):
-                traite_videos([p for p in a_faire if not p.medias], cfg, token, travail / "media", esp.media)
+                traite_videos([p for p in a_faire if not p.medias and p.format != "Carrousel"], cfg, token, travail / "media", esp.media)
             slides_carrousels(a_faire, travail / "media", esp.media)
 
         # ---------------- 4. Apprentissage + voix ----------------
@@ -444,7 +444,7 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
             if not os.getenv("ANTHROPIC_API_KEY"):
                 raise RuntimeError("Clé ANTHROPIC_API_KEY manquante.")
             from video import slides_carrousels, traite_videos
-            if p.medias:
+            if p.medias or p.format == "Carrousel":
                 slides_carrousels([p], travail, esp.media)
             elif cfg["video"].get("actif", True):
                 traite_videos([p], cfg, token, travail, esp.media)

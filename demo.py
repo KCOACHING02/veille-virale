@@ -116,7 +116,9 @@ def adaptation(p: Post, i: int) -> dict:
     if p is not None and p.format == "Carrousel":
         car = {"slides_modele": [
             {"original": "[démo] 5 erreurs qui font gonfler ton ventre", "visuel": "Photo d'une femme main sur le ventre, texte blanc en haut",
-             "adapte": "[démo] Ton ventre gonflé à 11 h ? Ce n'est pas ce que tu crois.", "photo": "[démo] Toi de profil, main sur le ventre, lumière du matin"},
+             "adapte": "[démo] Ton ventre gonflé à 11 h ? Ce n'est pas ce que tu crois.", "photo": "[démo] Toi de profil, main sur le ventre, lumière du matin",
+             "sous_titre": "[démo] Voici exactement ce que je ferais",
+             "mise_en_page": {"position": "centre", "alignement": "gauche", "accent": "ce que tu crois", "style_accent": "italique"}},
             *({"original": f"[démo] Erreur n°{k}", "visuel": "Fond beige uni, grand chiffre rose", "adapte": f"[démo] Erreur n°{k} : une phrase courte dans ton ton",
                "photo": "[démo] Ton petit-déjeuner vu de dessus" if k == 2 else ""} for k in range(1, 5)),
             {"original": "[démo] Enregistre ce post", "visuel": "Fond uni, flèche", "adapte": "[démo] Commente START et je t'envoie le guide", "photo": ""}],

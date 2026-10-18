@@ -88,6 +88,28 @@ def _iso(v) -> str:
 # ------------------------------------------------------------
 #  Normalisation
 # ------------------------------------------------------------
+def url_image(c) -> str | None:
+    """URL de l'image d'une slide de carrousel, quel que soit le format renvoyé par le collecteur."""
+    if isinstance(c, str):
+        return c if c.startswith("http") else None
+    if not isinstance(c, dict):
+        return None
+    for k in ("displayUrl", "display_url", "imageUrl", "image_url", "thumbnailUrl", "thumbnail_url", "url", "src"):
+        v = c.get(k)
+        if isinstance(v, str) and v.startswith("http") and "instagram.com/p/" not in v:
+            return v
+    for k in ("images", "image_versions2", "candidates", "imageVersions"):
+        v = c.get(k)
+        if isinstance(v, dict):
+            v = v.get("candidates") or list(v.values())
+        if isinstance(v, list):
+            for x in v:
+                u = url_image(x)
+                if u:
+                    return u
+    return None
+
+
 def _premier(d: dict, *cles):
     for k in cles:
         if d.get(k) not in (None, ""):
@@ -138,12 +160,12 @@ def post_instagram(it: dict) -> Post | None:
     if fmt == "Reel":
         p.son = son_instagram(it)
     if fmt == "Carrousel":
-        for c in (it.get("childPosts") or [])[:MAX_SLIDES]:
-            u = c.get("displayUrl") or (c.get("images") or [None])[0] if isinstance(c, dict) else None
-            if u:
+        for c in (it.get("childPosts") or it.get("carouselMedia") or it.get("sidecarChildren") or [])[:MAX_SLIDES]:
+            u = url_image(c)
+            if u and u not in p.medias:
                 p.medias.append(u)
-        if not p.medias and isinstance(it.get("images"), list):
-            p.medias = [u for u in it["images"] if isinstance(u, str)][:MAX_SLIDES]
+        if not p.medias and p.cover_url:
+            p.medias = [p.cover_url]  # au minimum la couverture : c'est elle qui porte le hook
     # Les derniers commentaires sont souvent fournis gratuitement avec le post
     for c in it.get("latestComments") or []:
         if c.get("text"):

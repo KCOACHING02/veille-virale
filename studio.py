@@ -64,6 +64,9 @@ INTERLIGNES = {"signature": 1.55, "manuscrit": 1.1, "affiche": 1.05}  # polices 
 NOMS_TYPOS = {"moderne": "Moderne", "geometrique": "Géométrique", "minimal": "Minimal", "douce": "Douce", "impact": "Impact",
               "affiche": "Affiche", "brut": "Brut", "elegant": "Élégant", "classique": "Classique", "retro": "Rétro",
               "manuscrit": "Manuscrit", "signature": "Signature"}
+POSITIONS = ("haut", "centre", "bas")
+# Mot mis en valeur comme dans le modèle : police d'accent et couleur
+STYLES_ACCENT = {"italique": "PlayfairDisplay-Bold.ttf", "manuscrit": "Caveat-Bold.ttf", "couleur": None}
 DUREE_MAX_REEL = 180
 SLIDE_DIAPORAMA_S = 3.0
 
@@ -142,8 +145,13 @@ def slides_du_modele(ad: dict) -> list[dict]:
     res = []
     for x in ad.get("slides_modele") or []:
         if isinstance(x, dict) and (x.get("adapte") or x.get("original")):
-            res.append({"titre": (x.get("adapte") or x.get("original") or "").strip(), "texte": "", "photo": (x.get("photo") or "").strip(),
-                        "recherche": (x.get("recherche") or "").strip()})
+            mp = x.get("mise_en_page") if isinstance(x.get("mise_en_page"), dict) else {}
+            res.append({"titre": (x.get("adapte") or x.get("original") or "").strip(), "texte": (x.get("sous_titre") or "").strip(),
+                        "photo": (x.get("photo") or "").strip(), "recherche": (x.get("recherche") or "").strip(),
+                        "position": mp.get("position") if mp.get("position") in POSITIONS else "",
+                        "alignement": mp.get("alignement") if mp.get("alignement") in ("gauche", "centre") else "",
+                        "accent": (mp.get("accent") or "").strip() if mp.get("style_accent") != "aucun" else "",
+                        "style_accent": mp.get("style_accent") if mp.get("style_accent") in STYLES_ACCENT else ""})
     return res[:10]
 
 
@@ -232,7 +240,10 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
     anciennes = p.get("slides") or []
     p["slides"] = [{"titre": x.get("titre", "").strip(), "texte": (x.get("texte") or "").strip(), "photo": (x.get("photo") or "").strip(),
                     "recherche": (x.get("recherche") or "").strip(),
-                    "image": anciennes[k].get("image", "") if k < len(anciennes) else ""} for k, x in enumerate(slides)][:10]
+                    "image": anciennes[k].get("image", "") if k < len(anciennes) else "",
+                    # la mise en page du modèle (position, alignement) reste celle de la slide au même rang
+                    **({c: anciennes[k].get(c, "") for c in ("position", "alignement", "style_accent")} if k < len(anciennes) else {})}
+                   for k, x in enumerate(slides)][:10]
     p["nb_photos"] = sum(1 for x in p["slides"] if x["photo"])
     if res.get("legende"):
         p["legende"] = res["legende"]
@@ -399,7 +410,9 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         def garde(s, i, k, n):
             return str(s.get(k, anciennes[i].get(k, "") if i < len(anciennes) else ""))[:n]
         p["slides"] = [{"titre": str(s.get("titre", ""))[:200], "texte": str(s.get("texte", ""))[:400], "photo": garde(s, i, "photo", 300),
-                        "recherche": garde(s, i, "recherche", 120), "image": garde(s, i, "image", 80)}
+                        "recherche": garde(s, i, "recherche", 120), "image": garde(s, i, "image", 80),
+                        "position": garde(s, i, "position", 10), "alignement": garde(s, i, "alignement", 10),
+                        "accent": garde(s, i, "accent", 120), "style_accent": garde(s, i, "style_accent", 12)}
                        for i, s in enumerate(champs["slides"])][:10]
         for x in p["slides"]:
             if x["image"] not in p["images"]:
@@ -468,6 +481,45 @@ def _ajuste(dessin, texte, graisse, largeur, hauteur, maxi, mini, interligne=1.1
         taille -= 4
 
 
+def _jetons(titre: str, accent: str) -> list[tuple[str, bool]]:
+    """Mots du titre, ceux de l'expression d'accent étant marqués (comparaison sans tenir compte de la casse)."""
+    if accent:
+        k = titre.lower().find(accent.lower())
+        if k >= 0:
+            av, ac, ap = titre[:k], titre[k:k + len(accent)], titre[k + len(accent):]
+            jetons = [(m, False) for m in av.split()] + [(m, True) for m in ac.split()]
+            # ponctuation collée à l'expression (« crois. ») : elle reste accrochée au dernier mot, dans son style
+            colle = re.match(r"^[^\s]+", ap)
+            if colle and jetons:
+                jetons[-1] = (jetons[-1][0] + colle.group(0), jetons[-1][1])
+                ap = ap[colle.end():]
+            return jetons + [(m, False) for m in ap.split()]
+    return [(m, False) for m in titre.split()]
+
+
+def _compose(d, jetons, police_titre, police_accent, largeur, hauteur, maxi, mini, interligne):
+    """Plus grande taille pour laquelle le titre (avec ses mots d'accent) tient dans la boîte : lignes de (mot, police, accent)."""
+    taille = maxi
+    while True:
+        pol, pol_a = _police(police_titre, taille), _police(police_accent, int(taille * 1.08)) if police_accent else None
+        espace = d.textlength(" ", font=pol)
+        lignes, ligne, larg = [], [], 0
+        for mot, acc in jetons:
+            f = pol_a if (acc and pol_a) else pol
+            w = d.textlength(mot, font=f)
+            if ligne and larg + espace + w > largeur:
+                lignes.append(ligne)
+                ligne, larg = [], 0
+            ligne.append((mot, f, acc, w))
+            larg += (espace if len(ligne) > 1 else 0) + w
+        if ligne:
+            lignes.append(ligne)
+        h = int(len(lignes) * taille * interligne)
+        if h <= hauteur or taille <= mini:
+            return lignes, h, taille, espace
+        taille -= 4
+
+
 def _couvre(im, taille):
     """Recadre l'image pour remplir exactement le format (comme object-fit: cover)."""
     from PIL import ImageOps
@@ -511,25 +563,46 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
         sur_photo = False
     d = ImageDraw.Draw(fond)
     largeur = l - 2 * marge
-    # Zone de texte : bas de l'image sur photo, centrée sur fond uni
+    # Mise en page : celle du modèle si elle est connue, sinon texte en bas sur photo et centré sur fond uni
+    position = slide_.get("position") if slide_.get("position") in POSITIONS else ("bas" if sur_photo else "centre")
+    centre = slide_.get("alignement") == "centre"
+    style_acc = slide_.get("style_accent") if slide_.get("style_accent") in STYLES_ACCENT else ""
+    accent_txt = propre(slide_.get("accent", ""))
+    if majuscules:
+        accent_txt = accent_txt.upper()
+    police_accent = STYLES_ACCENT.get(style_acc) if accent_txt else None
+    couleur_acc = accent if style_acc == "couleur" else ((255, 233, 199) if sur_photo else accent) if accent_txt else couleur
     h_titre_max = int(h * (0.42 if premiere else 0.30))
     maxi = int((104 if premiere else (82 if sur_photo else 96)) * facteur)
     interligne = INTERLIGNES.get(typo, 1.12 if majuscules else 1.18)
-    pol_t, lignes_t, ht, taille_t = _ajuste(d, titre, police_titre, largeur, h_titre_max, maxi, int(46 * facteur), interligne)
+    lignes_t, ht, taille_t, espace = _compose(d, _jetons(titre, accent_txt), police_titre, police_accent, largeur, h_titre_max,
+                                              maxi, int(46 * facteur), interligne)
     pol_x, lignes_x, hx, taille_x = (None, [], 0, 0)
     if texte:
         pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, f_texte, largeur, int(h * 0.26), 46, 30, 1.32)
     ecart = int(taille_t * 0.55) if texte else 0
     bloc = ht + ecart + hx + int(h * 0.025)
-    y = (h - int(h * 0.12) - bloc) if sur_photo else (h - bloc) // 2
-    # Barre d'accent au-dessus du titre
-    d.rounded_rectangle([marge, y - 34, marge + 86, y - 22], radius=6, fill=accent)
+    y = {"haut": int(h * 0.17), "centre": (h - bloc) // 2, "bas": h - int(h * 0.12) - bloc}[position]
+    if sur_photo and position != "bas":  # texte en haut ou au centre d'une photo : voile sombre léger pour la lisibilité
+        voile = Image.new("RGBA", taille, (15, 10, 18, 70 if position == "centre" else 0))
+        if position == "haut":
+            voile = _degrade(taille, 0.0, 170).transpose(Image.FLIP_TOP_BOTTOM)
+        fond.alpha_composite(voile)
+        d = ImageDraw.Draw(fond)
+    # Barre d'accent au-dessus du titre (alignée comme le texte)
+    xb = (l - 86) // 2 if centre else marge
+    d.rounded_rectangle([xb, y - 34, xb + 86, y - 22], radius=6, fill=accent)
     for ligne in lignes_t:
-        d.text((marge, y), ligne, font=pol_t, fill=couleur)
+        larg = sum(w for _, _, _, w in ligne) + espace * (len(ligne) - 1)
+        x = (l - larg) // 2 if centre else marge
+        for mot, f, acc, w in ligne:
+            d.text((x, y + (int(-taille_t * 0.06) if acc and police_accent else 0)), mot, font=f, fill=couleur_acc if acc else couleur)
+            x += w + espace
         y += int(taille_t * interligne)
     y += ecart
     for ligne in lignes_x:
-        d.text((marge, y), ligne, font=pol_x, fill=couleur2)
+        x = (l - d.textlength(ligne, font=pol_x)) // 2 if centre else marge
+        d.text((x, y), ligne, font=pol_x, fill=couleur2)
         y += int(taille_x * 1.32)
     # Compteur, pseudo, invitation à faire glisser
     petit = _police("Medium", 30)
