@@ -1,7 +1,8 @@
 """
-Banque d'images et de vidéos libres de droits (Pexels : gratuit, usage commercial autorisé, sans attribution obligatoire).
-Clé gratuite : https://www.pexels.com/api/ → variable PEXELS_API_KEY.
-Sans clé, en mode démo, des images de démonstration sont générées localement.
+Banque d'images et de vidéos libres de droits, gratuites et utilisables commercialement :
+  - Pixabay (clé immédiate : https://pixabay.com/api/docs/ une fois connecté) → variable PIXABAY_API_KEY
+  - Pexels (si une clé existe déjà) → variable PEXELS_API_KEY
+Pixabay est utilisé en priorité. Sans clé, en mode démo, des images de démonstration sont générées localement.
 """
 
 from __future__ import annotations
@@ -20,8 +21,20 @@ API = "https://api.pexels.com"
 CACHE_JOURS = 7
 
 
+def fournisseur() -> str | None:
+    if os.getenv("PIXABAY_API_KEY"):
+        return "pixabay"
+    if os.getenv("PEXELS_API_KEY"):
+        return "pexels"
+    return None
+
+
+def nom_source() -> str:
+    return {"pixabay": "Pixabay", "pexels": "Pexels"}.get(fournisseur() or "", "démo")
+
+
 def active() -> bool:
-    return bool(os.getenv("PEXELS_API_KEY"))
+    return fournisseur() is not None
 
 
 def _cache(cle: str) -> Path:
@@ -44,9 +57,33 @@ def _get(chemin: str, params: dict) -> dict:
     return d
 
 
+def _pixabay(chemin: str, params: dict) -> dict:
+    """Pixabay impose un cache de 24 h et ses liens d'images expirent après 24 h : cache de 20 h."""
+    f = _cache("pixabay" + chemin + json.dumps(params, sort_keys=True))
+    if f.exists() and time.time() - f.stat().st_mtime < 20 * 3600:
+        return json.loads(f.read_text(encoding="utf-8"))
+    r = requests.get("https://pixabay.com/api" + chemin, params={"key": os.environ["PIXABAY_API_KEY"].strip(), **params}, timeout=20)
+    if r.status_code == 429:
+        raise RuntimeError("La banque d'images est très sollicitée : réessaie dans une minute.")
+    if r.status_code >= 400:
+        raise RuntimeError(f"Banque d'images indisponible ({r.status_code} : {r.text[:80]}).")
+    d = r.json()
+    f.write_text(json.dumps(d), encoding="utf-8")
+    return d
+
+
 def photos(requete: str, n: int = 15, orientation: str = "portrait") -> list[dict]:
     if not active():
         return demo_photos(requete, n)
+    if fournisseur() == "pixabay":
+        d = _pixabay("/", {"q": requete[:100], "per_page": max(3, n), "image_type": "photo", "safesearch": "true",
+                           "orientation": "vertical" if orientation == "portrait" else "all", "lang": "en"})
+        hits = d.get("hits", [])
+        if len(hits) < 4 and orientation == "portrait":  # peu de photos verticales : on élargit
+            hits += _pixabay("/", {"q": requete[:100], "per_page": max(3, n), "image_type": "photo", "safesearch": "true", "lang": "en"}).get("hits", [])
+        return [{"id": f"x{h['id']}", "type": "photo", "miniature": h.get("webformatURL") or h.get("previewURL"),
+                 "grande": h.get("largeImageURL") or h.get("webformatURL"), "auteur": h.get("user", ""), "lien": h.get("pageURL", ""),
+                 "alt": h.get("tags", "")} for h in hits[:n]]
     d = _get("/v1/search", {"query": requete[:120], "per_page": n, "orientation": orientation, "locale": "fr-FR"})
     return [{"id": f"p{x['id']}", "type": "photo", "miniature": x["src"].get("medium") or x["src"]["small"],
              "grande": x["src"].get("large2x") or x["src"]["original"], "auteur": x.get("photographer", ""),
@@ -56,6 +93,20 @@ def photos(requete: str, n: int = 15, orientation: str = "portrait") -> list[dic
 def videos(requete: str, n: int = 12) -> list[dict]:
     if not active():
         return []
+    if fournisseur() == "pixabay":
+        d = _pixabay("/videos/", {"q": requete[:100], "per_page": max(3, n * 2), "safesearch": "true", "lang": "en"})
+        res = []
+        for v in d.get("hits", []):
+            tailles = [x for x in (v.get("videos") or {}).values() if isinstance(x, dict) and x.get("url")]
+            if not tailles:
+                continue
+            fichier = min(tailles, key=lambda x: abs((x.get("height") or 0) - 1920) if (x.get("height") or 0) >= (x.get("width") or 0)
+                          else abs((x.get("width") or 0) - 1920) + 5000)
+            res.append({"id": f"y{v['id']}", "type": "video", "miniature": fichier.get("thumbnail") or "", "grande": fichier["url"],
+                        "auteur": v.get("user", ""), "lien": v.get("pageURL", ""), "duree": v.get("duration"),
+                        "vertical": (fichier.get("height") or 0) >= (fichier.get("width") or 0)})
+        res.sort(key=lambda x: not x["vertical"])  # les vidéos verticales d'abord
+        return res[:n]
     d = _get("/videos/search", {"query": requete[:120], "per_page": n, "orientation": "portrait", "locale": "fr-FR"})
     res = []
     for v in d.get("videos", []):

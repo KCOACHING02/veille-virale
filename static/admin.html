@@ -75,7 +75,7 @@ async function charge() {
     [k.mrr.toLocaleString("fr-FR") + " €", "revenu mensuel (abonnements actifs)"], [usd(k.cout_mois_usd), "coût Apify + Claude ce mois-ci"]]
     .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
   const c = D.config;
-  $("#config").innerHTML = [["Apify", c.apify], ["Claude", c.claude], ["Paiement Stripe", c.stripe], ["E-mails Resend", c.emails], ["Banque d'images Pexels", c.banque]]
+  $("#config").innerHTML = [["Apify", c.apify], ["Claude", c.claude], ["Paiement Stripe", c.stripe], ["E-mails Resend", c.emails], ["Banque d'images", c.banque]]
     .map(([n, ok]) => `<span class="puce ${ok ? "" : "non"}">${ok ? "✓" : "✗"} ${n}</span>`).join("") + (c.demo ? '<span class="puce non">Mode démo</span>' : "");
   rendu();
 }

@@ -12,7 +12,7 @@ Variables d'environnement (.env) :
     ADMIN_EMAILS                          e-mails à accès illimité, séparés par des virgules
     STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET   paiement (optionnel ; prix dans plans.yaml)
     RESEND_API_KEY, EMAIL_EXPEDITEUR      e-mails (mot de passe oublié, bienvenue, veille prête)
-    PEXELS_API_KEY                        banque d'images et de vidéos libres de droits du studio (gratuite)
+    PIXABAY_API_KEY (ou PEXELS_API_KEY)   banque d'images et de vidéos libres de droits du studio (gratuite)
     URL_PUBLIQUE                          adresse du site (ex. https://veille.mondomaine.fr), pour les liens des e-mails
 """
 
@@ -60,7 +60,7 @@ def cle_secrete() -> str:
 
 
 # Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
-for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY"):
+for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY", "PIXABAY_API_KEY"):
     if os.getenv(_v):
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
 
@@ -868,14 +868,14 @@ import banque  # noqa: E402
 def banque_recherche():
     q = (request.args.get("q") or "").strip()
     if not q:
-        return jsonify({"resultats": [], "active": banque.active() or en_demo()})
+        return jsonify({"resultats": [], "active": banque.active() or en_demo(), "source": banque.nom_source()})
     if not (banque.active() or en_demo()):
         return jsonify({"resultats": [], "active": False})
     try:
         res = banque.videos(q) if request.args.get("type") == "video" else banque.photos(q, n=18)
     except Exception as e:  # noqa: BLE001
         return jsonify({"erreur": str(e)}), 502
-    return jsonify({"resultats": res, "active": True})
+    return jsonify({"resultats": res, "active": True, "source": banque.nom_source()})
 
 
 @app.get("/banque-demo/<nom>")
@@ -891,7 +891,8 @@ def studio_banque(sid):
     c = request.get_json(force=True)
     el = c.get("element") or {}
     if not str(el.get("grande", "")).startswith(("https://images.pexels.com/", "https://videos.pexels.com/", "https://player.vimeo.com/",
-                                                   "https://www.pexels.com/", "/banque-demo/")):
+                                                   "https://www.pexels.com/", "https://pixabay.com/", "https://cdn.pixabay.com/",
+                                                   "/banque-demo/")):
         return jsonify({"erreur": "Image non autorisée."}), 400
     try:
         p = studio.choisit_banque(g.esp, sid, c.get("slide"), el)

@@ -1540,7 +1540,7 @@ async function ouvreBanque(i, video = false) {
     <div id="bq-banque">
       <form id="bq-form" class="bq-form"><input id="bq-q" value="${esc(q0.replace(/^\[démo\]\s*/, ""))}" aria-label="Rechercher" placeholder="Ex. femme cuisine lumière du matin"><button class="btn prim">Chercher</button></form>
       <div id="bq-res" class="bq-grille"></div>
-      <p class="aide" style="margin:10px 0 0">${video ? "Vidéos verticales" : "Photos"} libres de droits (Pexels), utilisables gratuitement pour tes publications.</p>
+      <p class="aide" style="margin:10px 0 0" id="bq-source">${video ? "Vidéos" : "Photos"} libres de droits, utilisables gratuitement pour tes publications.</p>
     </div>
     <div id="bq-moi" hidden><label class="depot"><input type="file" id="bq-fichier" accept="image/*" hidden><span><b>Choisis ta photo</b> pour cette slide</span><small>JPEG, PNG, HEIC</small></label></div>
     <div class="pied-modale" style="margin-top:14px"><button class="btn" data-fermer>Fermer</button></div>`;
@@ -1552,6 +1552,7 @@ async function ouvreBanque(i, video = false) {
     const q = $("#bq-q").value.trim(); if (!q) return;
     $("#bq-res").innerHTML = '<p class="encours"><span class="spin"></span>Recherche…</p>';
     try { const r = await api(`/api/banque?type=${video ? "video" : "photo"}&q=${encodeURIComponent(q)}`); res = r.resultats || [];
+      if (r.source && $("#bq-source")) $("#bq-source").textContent = `${video ? "Vidéos" : "Photos"} libres de droits fournies par ${r.source === "démo" ? "la banque de démonstration" : r.source}, utilisables gratuitement pour tes publications.`;
       $("#bq-res").innerHTML = res.length ? res.map((x, k) => `<button type="button" class="bq-el" data-k="${k}"><img src="${esc(x.miniature)}" alt="${esc(x.alt || "")}" loading="lazy">${x.type === "video" ? `<span class="bq-duree">${x.duree || ""} s</span>` : ""}<small>${esc(x.auteur)}</small></button>`).join("")
         : '<p class="aide">Aucun résultat : essaie des mots plus simples (en anglais, c\'est souvent mieux).</p>';
       $$(".bq-el").forEach(b => b.onclick = async () => {
