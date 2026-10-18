@@ -219,13 +219,15 @@ OUTIL_PROFIL = {
             "description_niche": {"type": "string", "description": "2 phrases : ce que fait la marque, pour qui, quel résultat."},
             "cible": {"type": "string", "description": "Le client idéal en une phrase (âge, situation, problème principal)."},
             "douleurs": {"type": "array", "items": {"type": "string"}, "description": "4 à 6 problèmes que vit la cible."},
-            "ton": {"type": "string", "description": "Le ton observé dans les légendes (tutoiement, énergie, humour…)."},
+            "ton": {"type": "string", "description": "Le ton observé dans les légendes, en quelques mots (ex. « Chaleureux, cash, tutoiement, un peu d'humour »)."},
+            "guide_voix": {"type": "array", "items": {"type": "string"}, "description": "5 à 8 constats concrets sur sa façon d'écrire, pour qu'un rédacteur puisse l'imiter : longueur des phrases, façon d'ouvrir et de conclure, ponctuation, usage des emojis et des hashtags, tutoiement ou vouvoiement, mots et tournures qui reviennent, niveau de langue. Uniquement ce qui est observé dans les légendes."},
+            "expressions_signature": {"type": "array", "items": {"type": "string"}, "description": "3 à 6 expressions ou formules qu'il emploie vraiment, citées telles quelles depuis ses légendes."},
             "offre": {"type": "string", "description": "Ce que la marque semble vendre ou offrir (lead magnet, accompagnement…). Vide si inconnu."},
             "hashtags": {"type": "array", "items": {"type": "string"}, "description": "8 hashtags de la niche, sans #, pour trouver des comptes similaires."},
             "points_forts": {"type": "array", "items": {"type": "string"}, "description": "3 constats sur ce qui marche dans ses Reels."},
             "a_ameliorer": {"type": "array", "items": {"type": "string"}, "description": "3 pistes concrètes d'amélioration."},
         },
-        "required": ["nom_marque", "description_niche", "cible", "douleurs", "ton", "offre", "hashtags", "points_forts", "a_ameliorer"],
+        "required": ["nom_marque", "description_niche", "cible", "douleurs", "ton", "guide_voix", "expressions_signature", "offre", "hashtags", "points_forts", "a_ameliorer"],
     },
 }
 
@@ -245,7 +247,7 @@ def propose_profil(cfg: dict, posts: list[Post], resume_chiffres: str) -> dict:
     ia.client, ia.cfg, ia.modele, ia.systeme = anthropic.Anthropic(), cfg, cfg["claude"]["modele"], ""
     texte = (f"Voici les Reels récents d'un compte ({resume_chiffres}). Déduis-en son profil de marque, en "
              f"{cfg['niche'].get('langue', 'français')}.\n\n" + "\n\n".join(
-                 f"[{p.vues or 0} vues, {p.commentaires or 0} commentaires, mécanique : {(p.adaptation or {}).get('mecanique', '?')}]\n{p.legende[:500]}"
+                 f"[{p.vues or 0} vues, {p.commentaires or 0} commentaires, mécanique : {(p.adaptation or {}).get('mecanique', '?')}]\n{p.legende[:900]}"
                  for p in posts[:40]))
     return ia._appel(OUTIL_PROFIL, texte, max_tokens=2500, systeme="Tu es stratège de marque pour créateurs de contenu.")
 

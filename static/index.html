@@ -953,11 +953,24 @@ const PAGES = {
     <div class="f"><span class="lab">Hashtags de ta niche</span><span class="aide">Ils servent à te suggérer chaque semaine de nouveaux comptes qui dépassent ton seuil de vues.</span>
       <div class="duo"><textarea id="w-hig" placeholder="Instagram, un par ligne" style="min-height:80px">${esc((W.p.hashtags.instagram || []).join("\n"))}</textarea><textarea id="w-htt" placeholder="TikTok, un par ligne" style="min-height:80px">${esc((W.p.hashtags.tiktok || []).join("\n"))}</textarea></div>
       <p style="margin:4px 0 0"><button class="btn petit" id="w-suggerer">Suggérer des hashtags</button></p></div>`; },
-  voix: () => { const leg = W.p.profil_compte?.apprentissage?.meilleures_legendes || []; return `<h2 id="a-titre">Ta voix</h2>
-    <p class="intro">Pour que les scripts et les légendes sonnent comme toi, et pas comme une IA.</p>
-    <div class="f"><label for="w-ton">Ton ton en quelques mots</label><input id="w-ton" value="${esc(W.p.niche.ton)}" placeholder="Ex. Chaleureux, direct, tutoiement, un peu d'humour"></div>
-    <div class="f"><label for="w-voix">Quelques-uns de tes textes</label><textarea id="w-voix" style="min-height:200px" placeholder="Colle 5 à 10 légendes, scripts ou messages qui te ressemblent, séparés par une ligne ---">${esc(W.p.voix)}</textarea>
-      ${leg.length ? `<p style="margin:4px 0 0"><button class="btn petit" id="w-legendes">Ajouter les légendes de mes ${leg.length} meilleurs Reels</button></p>` : ""}</div>`; },
+  voix: () => {
+    const pc = W.p.profil_compte || {}, pr = pc.proposition || {}, leg = pc.apprentissage?.meilleures_legendes || [];
+    const guide = pr.guide_voix || [], expr = pr.expressions_signature || [];
+    const tonDefaut = !W.p.niche.ton || W.p.niche.ton.startsWith("Chaleureux, direct, tutoiement");
+    const ton = tonDefaut && pr.ton ? pr.ton : W.p.niche.ton;
+    // Texte pré-rempli : le portrait de la voix + les meilleures légendes, si l'utilisateur n'a encore rien écrit
+    const auto = [guide.length ? "Ma façon d'écrire :\n" + guide.map(x => "- " + x).join("\n") + (expr.length ? "\nMes expressions : " + expr.join(", ") : "") : "", ...leg].filter(Boolean).join("\n\n---\n\n");
+    const texte = W.p.voix || auto, preRempli = !W.p.voix && !!auto;
+    return `<h2 id="a-titre">Ta voix</h2>
+    <p class="intro">${preRempli ? "Pré-rempli à partir de tes Reels : vérifie, corrige ou complète. C'est ce qui permet aux scripts et aux légendes de sonner comme toi." : "Pour que les scripts et les légendes sonnent comme toi, et pas comme une IA."}</p>
+    ${guide.length ? `<div class="proposition" style="margin-bottom:20px"><h3>Ce que Claude a repéré dans ta façon d'écrire</h3>
+      <ul style="margin:0;padding-left:18px">${guide.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      ${expr.length ? `<p style="margin:10px 0 0">${expr.map(x => `<span class="puce">${esc(x)}</span>`).join(" ")}</p>` : ""}</div>` : ""}
+    <div class="f"><label for="w-ton">Ton ton en quelques mots</label><input id="w-ton" value="${esc(ton)}" placeholder="Ex. Chaleureux, direct, tutoiement, un peu d'humour"></div>
+    <div class="f"><label for="w-voix">Tes textes de référence</label><textarea id="w-voix" style="min-height:240px" placeholder="Colle 5 à 10 légendes, scripts ou messages qui te ressemblent, séparés par une ligne ---">${esc(texte)}</textarea>
+      <span class="aide">${preRempli ? `Contient le portrait ci-dessus et les légendes de tes ${leg.length} meilleurs Reels. ` : ""}Tu peux ajouter des messages privés ou des scripts : plus il y a d'exemples, plus c'est fidèle.</span>
+      ${leg.length && !preRempli ? `<p style="margin:4px 0 0"><button class="btn petit" id="w-legendes">Ajouter les légendes de mes ${leg.length} meilleurs Reels</button></p>` : ""}</div>
+    ${!pc.proposition ? `<p class="aide" style="color:var(--ink-3)">Astuce : analyse ton compte à la première étape et cette page se remplira toute seule.</p>` : ""}`; },
   fin: () => { const p = W.p, n = p.niche, o = p.objectifs, a = p.analyse, nbC = (p.comptes.instagram || []).length + (p.comptes.tiktok || []).length;
     const ligne = (t, v, etape) => `<div><span>${t}</span><p style="margin:0">${v}</p><button class="btn petit" data-aller="${etape}">Modifier</button></div>`;
     return `<h2 id="a-titre">Tout est prêt</h2>
