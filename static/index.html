@@ -798,7 +798,18 @@ function suisJob(id, montrer, fini, surLog) {
   if (montrer) montreProgression();
   clearInterval(S.poll);
   const tick = async () => {
-    let j; try { j = await api("/api/jobs/" + id); } catch { return; }
+    let j;
+    try { j = await api("/api/jobs/" + id); S.echecs = 0; }
+    catch (e) {
+      // Tâche introuvable (serveur redémarré, par exemple lors d'une mise à jour) : on prévient au lieu de rester figé
+      if (++S.echecs < 4) return;
+      clearInterval(S.poll); S.jobId = null; S.echecs = 0; $("#job-rail").innerHTML = "";
+      const msg = "L'analyse a été interrompue (le serveur a redémarré, probablement pour une mise à jour). Relance-la : elle n'a pas été décomptée de ton quota.";
+      if ($("#p-erreur")) $("#p-erreur").innerHTML = `<p class="erreur">${msg}</p><p style="margin-top:10px"><button class="btn prim" onclick="fermeModale();ouvreNouvelle('veille')">Relancer une analyse</button></p>`;
+      else toast("Analyse interrompue : relance-la depuis « Nouvelle analyse ».");
+      if ($("#assistant").classList.contains("ouvert")) renduAssistant();
+      return;
+    }
     S.job = j; majProgression();
     if (surLog && j.logs.length) surLog(j.logs[j.logs.length - 1].m);
     $("#job-rail").innerHTML = j.statut === "en cours" || j.statut === "en attente" ? `<button class="mini-job" onclick="montreProgression()"><span class="spin"></span>${esc(j.titre)}…</button>` : "";
