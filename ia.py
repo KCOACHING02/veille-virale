@@ -28,7 +28,6 @@ OUTIL_ADAPTATION = {
             "mecanique": {"type": "string", "enum": MECANIQUES, "description": "La mécanique principale du hook."},
             "pourquoi_ca_marche": {"type": "string", "description": "2-3 phrases : levier psychologique + éléments de format qui expliquent la viralité."},
             "structure": {"type": "string", "description": "Structure en étapes courtes avec timing approximatif (ex : 0-3 s hook → 3-15 s problème → …)."},
-            "ce_que_dit_l_audience": {"type": "string", "description": "D'après les commentaires : ce qui a fait réagir, questions posées, objections, en 2-3 phrases. Vide s'il n'y a pas de commentaires."},
             "hooks_adaptes": {"type": "array", "items": {"type": "string"}, "description": "Variantes du hook adaptées à la niche de la marque (même mécanique), proposées en complément du hook viral repris."},
             "texte_ecran_adapte": {"type": "string", "description": "Le texte à afficher à l'écran pendant le hook (court, lisible sans le son)."},
             "script_reel": {"type": "string", "description": "Script adapté : [0-3 s] hook dit + texte écran / [corps] 3-5 phrases / [fin] CTA oral. 20 à 45 secondes."},
@@ -46,7 +45,7 @@ OUTIL_ADAPTATION = {
             "pertinence": {"type": "integer", "description": "1 à 5 : à quel point ce Reel est transposable à la niche."},
         },
         "required": ["hook_original", "langue_originale", "hook_viral", "legende_reprise", "texte_ecran", "analyse_visuelle", "sujet", "mecanique", "pourquoi_ca_marche",
-                     "structure", "ce_que_dit_l_audience", "hooks_adaptes", "texte_ecran_adapte", "script_reel",
+                     "structure", "hooks_adaptes", "texte_ecran_adapte", "script_reel",
                      "cta_conversation", "sequence_dm", "legende_adaptee", "format_conseille", "idee_visuelle", "pertinence"],
     },
 }
@@ -194,7 +193,7 @@ Chaque Reel se termine par un CTA qui fait commenter le mot-clé « {o['mot_cle_
 Règles :
 1. REPRISE FIDÈLE : le hook viral et la légende sont repris tels quels (champs hook_viral et legende_reprise). S'ils ne sont pas en {n['langue']}, traduis-les fidèlement, sans les réécrire ni les « améliorer ». Les variantes de hooks, le script, le CTA et la séquence DM sont, eux, adaptés à la marque.
 2. Le vrai hook est dans les 3 premières secondes : utilise la transcription et les images pour l'identifier. Si tu n'as que la légende, dis-le dans l'analyse.
-3. Hooks : moins de 12 mots, compréhensibles sans le son, pas d'emoji en début. Réutilise les expressions de l'audience quand c'est pertinent.
+3. Hooks : moins de 12 mots, compréhensibles sans le son, pas d'emoji en début.
 4. Script dit face caméra, naturel, comme à une amie. Légende naturelle, phrases courtes, rien qui sonne « publicité » ou « écrit par une IA ».
 5. Séquence DM : 3 à 4 messages courts. Le 1er livre ce qui a été promis et pose une question ouverte. On qualifie avant de proposer. Jamais de pression, jamais de promesse de résultat.
 6. Respect strict des interdits de la marque.
@@ -210,7 +209,6 @@ Règles :
     # --------------------------------------------------------
     def adapte(self, p: Post) -> dict:
         nb = self.cfg["claude"]["hooks_par_post"]
-        coms = "\n".join(f"- ({c['likes']} ❤) {c['texte'][:250]}" for c in p.commentaires_texte[:40]) or "(aucun)"
         texte = f"""Reel viral à analyser puis adapter.
 
 Plateforme : {p.plateforme} · @{p.compte} · durée {round(p.duree_s) if p.duree_s else '?'} s
@@ -221,9 +219,6 @@ TRANSCRIPTION DE L'AUDIO :
 
 LÉGENDE :
 \"\"\"{p.legende[:2500] or '(vide)'}\"\"\"
-
-COMMENTAIRES LES PLUS LIKÉS :
-{coms}
 
 {"IMAGES CLÉS jointes, dans l'ordre : 0,3 s / 1,5 s / 3 s / suite de la vidéo." if p.images else "(pas d'images disponibles)"}
 

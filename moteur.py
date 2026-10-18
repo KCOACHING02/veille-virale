@@ -140,7 +140,6 @@ def liste_analyses(esp: Espace) -> list[dict]:
 # Plafonds de coût fixés par l'éditeur : ils s'appliquent à tous les espaces, même créés avant cette version.
 PLAFONDS = {
     ("analyse", "posts_max_par_compte"): 60,   # 60 publications récentes suffisent sur 3 mois
-    ("commentaires", "par_post"): 10,          # les 10 commentaires les plus likés portent l'essentiel
     ("decouverte", "posts_par_hashtag"): 50,
     ("diversite", "marge_candidats"): 1.2,      # 17 Reels analysés pour en garder 14 (au lieu de 21)
 }
@@ -151,6 +150,8 @@ def applique_plafonds(cfg: dict) -> dict:
     for (bloc, cle_), maxi in PLAFONDS.items():
         if bloc in cfg and cle_ in cfg[bloc]:
             cfg[bloc][cle_] = min(cfg[bloc][cle_], maxi)
+    # Lecture des commentaires retirée : coûteuse et peu utile. Désactivée pour tous les espaces, même anciens.
+    cfg.setdefault("commentaires", {}).update(actif=False, synthese=False)
     return cfg
 
 
@@ -194,7 +195,7 @@ class AdaptationsCache:
 
     def ajoute(self, p: Post):
         self.d[cle(p)] = {"date": datetime.now().isoformat(timespec="seconds"), "adaptation": p.adaptation,
-                          "transcription": p.transcription, "commentaires_texte": p.commentaires_texte[:30], "miniature": p.miniature}
+                          "transcription": p.transcription, "miniature": p.miniature}
         tmp = self.f.with_suffix(".tmp")
         tmp.write_text(json.dumps(self.d, ensure_ascii=False), encoding="utf-8")
         tmp.replace(self.f)
@@ -316,7 +317,6 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                 "exclus": len([p for p in classes if histo.deja_utilise(p)]) if mode == "veille" else 0,
                 "adaptes": len([p for p in pool if p.adaptation and not p.adaptation.get("erreur")]),
                 "videos_lues": len([p for p in pool if p.images or p.transcription]),
-                "nb_commentaires": sum(len(p.commentaires_texte) for p in pool),
                 "cout_apify_usd": cout_apify(),
                 "cout_claude_usd": round(ia_cout(), 3),
             }
@@ -329,22 +329,12 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         log(f"{len(a_faire)} Reels à analyser en profondeur")
         enregistre(affiches, stats_courantes())
 
-        # ---------------- 3. Vidéos, commentaires ----------------
+        # ---------------- 3. Vidéos ----------------
         if demo:
             d.lit_videos(pool, travail / "media", esp.media)
-        elif a_faire:
-            # Lecture des vidéos et collecte des commentaires en parallèle
-            import concurrent.futures as cf
-            with cf.ThreadPoolExecutor(max_workers=2) as ex:
-                taches = []
-                if cfg["video"].get("actif", True):
-                    from video import traite_videos
-                    taches.append(ex.submit(traite_videos, a_faire, cfg, token, travail / "media", esp.media))
-                if cfg["commentaires"].get("actif", True) and token:
-                    from commentaires import recupere
-                    taches.append(ex.submit(recupere, a_faire, cfg, token))
-                for t in taches:
-                    t.result()
+        elif a_faire and cfg["video"].get("actif", True):
+            from video import traite_videos
+            traite_videos(a_faire, cfg, token, travail / "media", esp.media)
 
         # ---------------- 4. Apprentissage + voix ----------------
         from apprentissage import mon_compte, suivi_excel, synthese, voix
@@ -370,7 +360,6 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                 p.adaptation = d.adaptation(p, i)
                 _t.sleep(0.8)  # démo : simule la durée d'une adaptation pour montrer l'affichage progressif
                 enregistre(affiches, stats_courantes())
-            voix_client = d.voix_client()
         elif a_ia:
             ia = IA(cfg, voix=texte_voix, apprentissages=appr.get("texte", ""))
 
@@ -380,8 +369,6 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                 enregistre(affiches, stats_courantes())
             if a_faire:
                 ia.adapte_tous(a_faire, apres_chaque=apres_chaque)
-            if cfg["commentaires"].get("synthese", True):
-                voix_client = ia.voix_client(pool)
 
         # ---------------- 6. Planning (mode veille) ----------------
         planning = []
@@ -457,9 +444,6 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
             if cfg["video"].get("actif", True):
                 from video import traite_videos
                 traite_videos([p], cfg, token, travail, esp.media)
-            if token and cfg["commentaires"].get("actif", True):
-                from commentaires import recupere
-                recupere([p], cfg, token)
             from apprentissage import voix
             from ia import IA
             appr = analyse.get("apprentissage") or {}
@@ -577,7 +561,6 @@ def estime(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = N
     a_collecter = len(comptes) - len(en_cache)
     prix = {"Instagram": PRIX_REELS_ECO, "TikTok": PRIX_APIFY_RESULTAT}
     collecte = sum(maxi * prix.get(pl, PRIX_APIFY_RESULTAT) for pl, c in comptes if (pl, c) not in en_cache) + posts_precis * PRIX_APIFY_RESULTAT
-    commentaires = reels * cfg["commentaires"]["par_post"] * PRIX_APIFY_RESULTAT
     decouverte = 0.0
     if mode == "veille" and cfg["decouverte"].get("actif"):
         memo = esp.racine / "decouverte.json"
@@ -589,11 +572,11 @@ def estime(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = N
             nb_tags = len(cfg["decouverte"].get("hashtags_instagram") or []) + len(cfg["decouverte"].get("hashtags_tiktok") or [])
             decouverte = nb_tags * cfg["decouverte"]["posts_par_hashtag"] * PRIX_APIFY_RESULTAT
     claude = reels * PRIX_CLAUDE_REEL + 0.03
-    total = collecte + commentaires + decouverte + claude
+    total = collecte + decouverte + claude
     minutes = (3 if a_collecter else 0) + (2 if decouverte else 0) + max(2, round(reels * 0.45))
     return {
         "cout_usd": round(total, 2), "minutes": minutes, "reels": reels,
         "comptes": len(comptes), "comptes_en_cache": len(en_cache),
-        "detail": {"collecte": round(collecte, 2), "commentaires": round(commentaires, 2),
+        "detail": {"collecte": round(collecte, 2),
                    "decouverte": round(decouverte, 2), "claude": round(claude, 2)},
     }

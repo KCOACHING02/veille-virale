@@ -112,7 +112,6 @@ def adaptation(p: Post, i: int) -> dict:
         "sujet": "[démo] Ventre gonflé le matin", "mecanique": mec,
         "pourquoi_ca_marche": "[démo] Lance sans --demo avec ta clé Anthropic pour une vraie analyse.",
         "structure": "0-3 s hook → 3-15 s erreur → 15-30 s solution → CTA",
-        "ce_que_dit_l_audience": "[démo] Beaucoup demandent quoi manger à la place.",
         "langue_originale": "anglais", "hook_viral": "[démo] Ton ventre gonflé à 11 h ? Ce n'est pas ce que tu crois.",
         "legende_reprise": "[démo] Légende originale traduite fidèlement, avec ses emojis et ses hashtags 👇 #nutrition",
         "hooks_adaptes": [f"[démo] Hook {mec} n°1", "[démo] Hook n°2", "[démo] Hook n°3"],

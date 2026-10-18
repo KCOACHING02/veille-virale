@@ -55,11 +55,11 @@ video:
   modele_whisper: "base"     # local : "base" (rapide) | "small" (bon compromis) | "medium" (précis, lent)
   actor_tiktok_video: "maximedupre~tiktok-video-downloader"
 
-# --- Amélioration 2 : lire les commentaires ---
+# --- Lecture des commentaires : désactivée ---
 commentaires:
-  actif: true
+  actif: false               # retiré : coûteux et peu utile
   par_post: 10
-  synthese: true              # synthèse « voix du client » sur l'ensemble des commentaires
+  synthese: false              # synthèse « voix du client » sur l'ensemble des commentaires
   actor_tiktok: "clockworks~tiktok-comments-scraper"
 
 # --- Amélioration 3 : apprentissage ---

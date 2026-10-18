@@ -37,9 +37,9 @@ video:
   modele_whisper: base
   actor_tiktok_video: maximedupre~tiktok-video-downloader
 commentaires:
-  actif: true
+  actif: false               # retiré : coûteux et peu utile
   par_post: 10
-  synthese: true
+  synthese: false
   actor_tiktok: clockworks~tiktok-comments-scraper
 apprentissage:
   jours: 60

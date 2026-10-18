@@ -74,7 +74,6 @@
   <div class="kpi"><b>{{ stats.videos }}</b><span>Reels analysés · {{ stats.comptes }} comptes</span></div>
   <div class="kpi"><b>{{ stats.criteres_ok }}</b><span>remplissent les critères (inédits)</span></div>
   <div class="kpi"><b>{{ stats.videos_lues }}/{{ posts|length }}</b><span>vidéos regardées et transcrites</span></div>
-  <div class="kpi"><b>{{ stats.nb_commentaires }}</b><span>commentaires de l'audience lus</span></div>
   <div class="kpi"><b>{{ objectifs.conversations_par_jour * objectifs.jours_planifies }}</b><span>conversations visées cette semaine (mot-clé {{ objectifs.mot_cle_cta }})</span></div>
 </div>
 {% if stats.criteres_ok < posts|length %}<p class="warn">Seulement {{ stats.criteres_ok }} Reels inédits atteignent les critères : les autres sont marqués « critères assouplis ».{% if decouvertes %} Regarde les <a href="#comptes">comptes à ajouter</a>.{% endif %}</p>{% endif %}
