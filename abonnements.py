@@ -16,8 +16,10 @@ import requests
 import yaml
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from espace import DATA
+
 CODE = Path(__file__).resolve().parent
-BASE = CODE / "data" / "app.db"
+BASE = DATA / "app.db"
 _verrou = threading.Lock()
 
 

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
 import yaml
 
 CODE = Path(__file__).resolve().parent
+# Dossier des données (comptes, analyses, médias). Sur Railway, le volume attaché est détecté automatiquement,
+# quel que soit son chemin de montage : les données survivent aux mises à jour.
+DATA = Path(os.getenv("DATA_DIR") or os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or CODE / "data")
 
 
 class Espace:
@@ -39,8 +43,8 @@ class Espace:
 
 def espace_local() -> Espace:
     """Utilisation en local, mono-utilisateur (ligne de commande) : config.yaml à côté du code."""
-    return Espace(CODE, CODE / "data")
+    return Espace(CODE, DATA)
 
 
 def espace_client(uid: int | str) -> Espace:
-    return Espace(CODE / "data" / "espaces" / str(uid))
+    return Espace(DATA / "espaces" / str(uid))

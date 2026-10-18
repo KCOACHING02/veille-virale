@@ -36,7 +36,7 @@ from flask import Flask, abort, g, jsonify, redirect, request, send_from_directo
 
 import abonnements as ab
 import moteur
-from espace import CODE, espace_client
+from espace import CODE, DATA, espace_client
 from modele import LOG_HOOKS
 
 app = Flask(__name__, static_folder=str(CODE / "static"), static_url_path="/static")
@@ -46,7 +46,7 @@ DEMO_FORCE = False
 def cle_secrete() -> str:
     if os.getenv("SECRET_KEY"):
         return os.environ["SECRET_KEY"]
-    f = CODE / "data" / "secret.key"
+    f = DATA / "secret.key"
     f.parent.mkdir(parents=True, exist_ok=True)
     if not f.exists():
         f.write_text(secrets.token_hex(32))
@@ -480,6 +480,9 @@ def main():
     DEMO_FORCE = args.demo
     if not args.sans_planificateur:
         threading.Thread(target=planificateur, daemon=True).start()
+    print(f"Données : {DATA}")
+    if os.getenv("RAILWAY_ENVIRONMENT") and not os.getenv("RAILWAY_VOLUME_MOUNT_PATH") and not os.getenv("DATA_DIR"):
+        print("⚠️  Aucun volume Railway détecté : les comptes seront effacés à chaque mise à jour.")
     print(f"→ Ouvre http://{'localhost' if args.hote == '127.0.0.1' else args.hote}:{args.port}"
           + ("   (mode démo : données fictives)" if en_demo() else ""))
     try:
