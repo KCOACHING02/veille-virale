@@ -142,7 +142,8 @@ def slides_du_modele(ad: dict) -> list[dict]:
     res = []
     for x in ad.get("slides_modele") or []:
         if isinstance(x, dict) and (x.get("adapte") or x.get("original")):
-            res.append({"titre": (x.get("adapte") or x.get("original") or "").strip(), "texte": "", "photo": (x.get("photo") or "").strip()})
+            res.append({"titre": (x.get("adapte") or x.get("original") or "").strip(), "texte": "", "photo": (x.get("photo") or "").strip(),
+                        "recherche": (x.get("recherche") or "").strip()})
     return res[:10]
 
 
@@ -228,8 +229,10 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
     if not slides:
         raise RuntimeError("Claude n'a pas proposé de slides : tes textes pré-remplis sont gardés, réessaie « Réécrire dans ce style ».")
     p = charge(esp, sid)  # relu : l'utilisateur a pu importer des fichiers pendant ce temps
-    p["slides"] = [{"titre": x.get("titre", "").strip(), "texte": (x.get("texte") or "").strip(), "photo": (x.get("photo") or "").strip()}
-                   for x in slides][:10]
+    anciennes = p.get("slides") or []
+    p["slides"] = [{"titre": x.get("titre", "").strip(), "texte": (x.get("texte") or "").strip(), "photo": (x.get("photo") or "").strip(),
+                    "recherche": (x.get("recherche") or "").strip(),
+                    "image": anciennes[k].get("image", "") if k < len(anciennes) else ""} for k, x in enumerate(slides)][:10]
     p["nb_photos"] = sum(1 for x in p["slides"] if x["photo"])
     if res.get("legende"):
         p["legende"] = res["legende"]
@@ -237,11 +240,12 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
         p["script"] = res["script"]
     sauve(esp, p)
     log(f"✅ {len(p['slides'])} slides écrites")
+    remplit_banque(esp, sid, demo=demo)
     return {"id": sid}
 
 
-def ajoute_fichier(esp: Espace, sid: str, nom: str, flux) -> dict:
-    """Importe une image (convertie en JPEG) ou une vidéo dans le projet."""
+def ajoute_fichier(esp: Espace, sid: str, nom: str, flux, slide_i: int | None = None) -> dict:
+    """Importe une image (convertie en JPEG) ou une vidéo dans le projet ; slide_i : image destinée à cette slide."""
     p = charge(esp, sid)
     src = dossier(esp, sid) / "sources"
     src.mkdir(exist_ok=True)
@@ -258,8 +262,8 @@ def ajoute_fichier(esp: Espace, sid: str, nom: str, flux) -> dict:
         p["video"] = dest.name
         p["video_duree"] = round(d, 1)
     elif ext in EXT_IMAGES:
-        if len(p["images"]) >= 10:
-            raise ValueError("10 images maximum par projet.")
+        if len(p["images"]) >= 15:
+            raise ValueError("15 images maximum par projet.")
         from PIL import Image, ImageOps
         if ext in (".heic", ".heif"):
             try:
@@ -275,10 +279,81 @@ def ajoute_fichier(esp: Espace, sid: str, nom: str, flux) -> dict:
         dest = src / f"img_{uuid.uuid4().hex[:8]}.jpg"
         im.save(dest, "JPEG", quality=90)
         p["images"].append(dest.name)
+        if slide_i is not None and 0 <= slide_i < len(p["slides"]):
+            _remplace_image_slide(dossier(esp, sid), p, slide_i, dest.name)
     else:
         raise ValueError("Format non pris en charge : images JPEG/PNG/WEBP/HEIC ou vidéos MP4/MOV.")
     sauve(esp, p)
     return p
+
+
+def _remplace_image_slide(d: Path, p: dict, i: int, nom: str):
+    """Affecte une image à la slide i ; l'ancienne image de cette slide, si elle venait de la banque, est supprimée."""
+    ancienne = p["slides"][i].get("image")
+    p["slides"][i]["image"] = nom
+    if ancienne and ancienne != nom and ancienne.startswith("banque_") and not any(x.get("image") == ancienne for x in p["slides"]):
+        (d / "sources" / ancienne).unlink(missing_ok=True)
+        p["images"] = [x for x in p["images"] if x != ancienne]
+        p.setdefault("credits", {}).pop(ancienne, None)
+
+
+def choisit_banque(esp: Espace, sid: str, slide_i: int | None, element: dict) -> dict:
+    """Image (ou vidéo, pour un Reel) de la banque choisie pour une slide : téléchargée dans le projet."""
+    import banque
+    p = charge(esp, sid)
+    d = dossier(esp, sid)
+    (d / "sources").mkdir(exist_ok=True)
+    if element.get("type") == "video":
+        for ancien in (d / "sources").glob("video.*"):
+            ancien.unlink()
+        dest = banque.telecharge(element, d / "sources" / "video.mp4")
+        p["video"], p["video_duree"] = dest.name, round(_duree(dest) or 0, 1)
+    else:
+        nom = f"banque_{re.sub(r'[^a-z0-9]', '', str(element.get('id', '')).lower())[:20]}_{uuid.uuid4().hex[:4]}.jpg"
+        banque.telecharge(element, d / "sources" / nom)
+        p["images"].append(nom)
+        p.setdefault("credits", {})[nom] = {"auteur": element.get("auteur", ""), "lien": element.get("lien", "")}
+        if slide_i is not None and 0 <= slide_i < len(p["slides"]):
+            _remplace_image_slide(d, p, slide_i, nom)
+    sauve(esp, p)
+    return p
+
+
+def requete_photo(x: dict) -> str:
+    """Mots-clés de recherche d'une slide (fournis par Claude, sinon tirés de la description de la photo)."""
+    if x.get("recherche"):
+        return x["recherche"]
+    t = re.sub(r"\[[^\]]*\]", " ", x.get("photo") or x.get("titre") or "").lower()
+    t = re.sub(r"\b(toi|ton|ta|tes|te|tu|vous|votre|de|du|des|la|le|les|un|une|et|en|avec|qui|sur|dans|ou|à|au|aux|photo|plan|gros)\b", " ", t)
+    return " ".join(t.replace(",", " ").split()[:6]) or "lifestyle"
+
+
+def remplit_banque(esp: Espace, sid: str, demo: bool = False, toutes: bool = False) -> dict:
+    """Propose par défaut une image de la banque pour chaque slide qui demande une photo et n'en a pas encore."""
+    import banque
+    if not (banque.active() or demo):
+        log("Banque d'images non configurée")
+        return {"id": sid}
+    p = charge(esp, sid)
+    if p["type"] == "reel" and p.get("video"):
+        return {"id": sid}
+    deja = attribue(p["slides"], p["images"])
+    cibles = [i for i, x in enumerate(p["slides"]) if (x.get("photo") or toutes) and not deja[i]]
+    if not cibles:
+        return {"id": sid}
+    log(f"Je choisis des images pour {len(cibles)} slide(s)…")
+    utilises = set()
+    for i in cibles:
+        try:
+            res = [r for r in banque.photos(requete_photo(p["slides"][i]), n=8) if r["id"] not in utilises]
+        except Exception as e:  # noqa: BLE001
+            log(f"  ⚠️  {str(e)[:120]}")
+            break
+        if res:
+            utilises.add(res[0]["id"])
+            choisit_banque(esp, sid, i, res[0])
+    log("✅ Images proposées : remplace-les par les tiennes quand tu veux")
+    return {"id": sid}
 
 
 def retire_fichier(esp: Espace, sid: str, nom: str) -> dict:
@@ -286,6 +361,9 @@ def retire_fichier(esp: Espace, sid: str, nom: str) -> dict:
     nom = Path(nom).name
     (dossier(esp, sid) / "sources" / nom).unlink(missing_ok=True)
     p["images"] = [i for i in p["images"] if i != nom]
+    for x in p["slides"]:
+        if x.get("image") == nom:
+            x.pop("image")
     if p.get("video") == nom:
         p["video"] = None
     sauve(esp, p)
@@ -299,9 +377,14 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
             p[k] = champs[k]
     if isinstance(champs.get("slides"), list):
         anciennes = p.get("slides") or []
-        p["slides"] = [{"titre": str(s.get("titre", ""))[:200], "texte": str(s.get("texte", ""))[:400],
-                        "photo": str(s.get("photo", anciennes[i].get("photo", "") if i < len(anciennes) else ""))[:300]}
+        def garde(s, i, k, n):
+            return str(s.get(k, anciennes[i].get(k, "") if i < len(anciennes) else ""))[:n]
+        p["slides"] = [{"titre": str(s.get("titre", ""))[:200], "texte": str(s.get("texte", ""))[:400], "photo": garde(s, i, "photo", 300),
+                        "recherche": garde(s, i, "recherche", 120), "image": garde(s, i, "image", 80)}
                        for i, s in enumerate(champs["slides"])][:10]
+        for x in p["slides"]:
+            if x["image"] not in p["images"]:
+                x["image"] = ""
         p["nb_photos"] = sum(1 for x in p["slides"] if x.get("photo"))
     if isinstance(champs.get("images"), list):  # nouvel ordre des images
         p["images"] = [i for i in champs["images"] if i in p["images"]] + [i for i in p["images"] if i not in champs["images"]]
@@ -714,9 +797,16 @@ def attribue(slides: list[dict], images: list) -> list:
     les photos en trop complètent les slides suivantes. Sans indication, une photo par slide dans l'ordre.
     """
     res = [None] * len(slides)
-    prevues = [i for i, x in enumerate(slides) if x.get("photo")] or list(range(len(slides)))
-    ordre = prevues + [i for i in range(len(slides)) if i not in prevues]
-    for i, img in zip(ordre, images):
+    noms = {Path(str(img)).name: img for img in images}
+    # 1. Images choisies pour une slide précise (banque d'images ou « ma photo » sur cette slide)
+    for i, x in enumerate(slides):
+        if x.get("image") and x["image"] in noms:
+            res[i] = noms.pop(x["image"])
+    # 2. Les autres photos, dans l'ordre, aux slides qui demandent une photo, puis aux suivantes
+    libres = [img for img in images if Path(str(img)).name in noms]
+    prevues = [i for i, x in enumerate(slides) if x.get("photo") and res[i] is None] or [i for i in range(len(slides)) if res[i] is None]
+    ordre = prevues + [i for i in range(len(slides)) if i not in prevues and res[i] is None]
+    for i, img in zip(ordre, libres):
         res[i] = img
     return res
 

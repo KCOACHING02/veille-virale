@@ -375,6 +375,17 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-slides{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:sl}
 .st-slide{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;counter-increment:sl;position:relative}
 .st-slide>img,.st-slide>.st-fond{width:56px;height:70px;border-radius:8px;object-fit:cover}
+.st-vign{border:0;padding:0;background:none;cursor:pointer;display:grid;gap:3px;justify-items:center;align-self:start}
+.st-vign img,.st-vign .st-fond{width:56px;height:70px;border-radius:8px;object-fit:cover;display:grid;place-items:center;font-size:20px;color:var(--ink-3)}
+.st-vign em{font-style:normal;font-size:11.5px;color:var(--glow);font-weight:600}
+.bq-form{display:flex;gap:8px;margin-bottom:12px}
+.bq-form input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.bq-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:52vh;overflow-y:auto}
+.bq-el{border:2px solid transparent;padding:0;background:var(--sunk);border-radius:10px;overflow:hidden;cursor:pointer;position:relative;aspect-ratio:3/4}
+.bq-el img{width:100%;height:100%;object-fit:cover;display:block}
+.bq-el small{position:absolute;left:0;right:0;bottom:0;font-size:10.5px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:10px 6px 4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bq-el:hover,.bq-el.choisi{border-color:var(--glow)}
+.bq-duree{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;border-radius:99px;padding:1px 7px}
 .st-slide::before{content:counter(sl);position:absolute;left:4px;top:4px;background:rgba(39,27,45,.75);color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:0 6px;z-index:1}
 .st-slide div{display:grid;gap:6px}
 .st-photo-aide{font-size:12.5px;color:var(--ink-2);background:var(--sunk);border-radius:8px;padding:5px 9px}
@@ -416,6 +427,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
   .st-apercu.grand{width:min(300px,78vw)}
   .st-apercu.grand .ap-nav{display:flex}
   main:has(.st-apercu){padding-bottom:260px}
+  .st-grille.pret .st-apercu{display:none}
 }
 .st-final h3{font-size:19px}
 .btn.large{justify-content:center;padding:12px 16px;font-size:15.5px;width:100%}
@@ -1304,7 +1316,9 @@ async function choisirFormat(cle) {
       const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: b.dataset.format, style}});
       fermeModale(); fermeTiroir();
       S.projetId = r.projet.id; S.projet = r.projet;
-      S.tacheStudio = r.job ? {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"} : null;
+      S.tacheStudio = r.job ? (r.projet.copie_du_modele && r.projet.type === "carrousel"
+        ? {id: r.job, sid: r.projet.id, titre: "Choix des images", phrase: "Je choisis des images pour tes slides…"}
+        : {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"}) : null;
       va("studio"); if (r.job) suisTacheStudio(r.job);
     } catch (e) { toast(e.message); $$("[data-format]").forEach(x => x.disabled = false); }
   });
@@ -1365,7 +1379,7 @@ function besoinPhotos(p) {
     <ol>${besoins.map((b, k) => `<li class="${k < p.images.length ? "fait" : ""}"><span>Photo ${k + 1} · slide ${b.i + 1}</span>${esc(b.photo)}</li>`).join("")}</ol></div>`;
 }
 function slidesDuDom() {
-  return $$(".st-slide").map((x, i) => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value, photo: S.projet?.slides?.[i]?.photo || ""}));
+  return $$(".st-slide").map((x, i) => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value, photo: S.projet?.slides?.[i]?.photo || "", recherche: S.projet?.slides?.[i]?.recherche || "", image: S.projet?.slides?.[i]?.image || ""}));
 }
 function sauveProjet(immediat) {
   clearTimeout(S.minuteurStudio);
@@ -1416,6 +1430,9 @@ function renduProjet() {
         <div class="st-bloc">
           <h3>1. Tes ${p.type === "reel" ? "photos ou ta vidéo" : "photos"}</h3>
           ${ecrit ? "" : besoinPhotos(p)}
+          ${S.optionsStudio?.banque && !(p.type === "reel" && p.video) ? `<div class="st-outils" style="margin:0 0 12px">
+            ${p.slides.length ? `<button class="btn petit" id="st-bq-auto">✨ ${p.images.length ? "Compléter avec" : "Proposer"} des images de la banque</button>` : ""}
+            ${p.type === "reel" ? `<button class="btn petit" id="st-bq-video">🎬 Choisir une vidéo dans la banque</button>` : ""}</div>` : ""}
           <p class="aide">${p.type === "carrousel" ? (p.nb_photos ? "Ajoute-les dans cet ordre : chacune va sur sa slide. Les autres slides sont sur fond uni." : "Une photo par slide, dans l'ordre. Les slides sans photo sont sur fond uni.") : "Ta vidéo (face caméra, voix off…) : je la recadre et j'ajoute le hook et les sous-titres. Pas de vidéo ? Ajoute des photos : je monte un diaporama avec les textes."}</p>
           <label class="depot" id="st-depot"><input type="file" id="st-fichiers" multiple accept="${p.type === "reel" ? "image/*,video/*" : "image/*"}" hidden>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
@@ -1439,7 +1456,7 @@ function renduProjet() {
           ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Claude écrit tes slides…</p>` : `
             ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
             <ol class="st-slides">${(() => { const att = attribueJS(p.slides, p.images); return p.slides.map((x, i) => `<li class="st-slide">
-              ${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}">${x.photo ? "📷" : ""}</span>`}
+              <button type="button" class="st-vign" data-bq-slide="${i}" aria-label="Choisir l'image de la slide ${i + 1}">${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}">${x.photo ? "📷" : "+"}</span>`}<em>${att[i] ? "Changer" : "Image"}</em></button>
               <div><input class="st-input" data-k="titre" value="${esc(x.titre)}" aria-label="Titre de la slide ${i + 1}" placeholder="${i ? "Titre de la slide" : "Le hook"}">
               <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea>
               ${x.photo ? `<span class="st-photo-aide">📷 ${esc(x.photo)}</span>` : ""}</div>
@@ -1503,7 +1520,50 @@ function renduProjet() {
   depot.addEventListener("drop", e => envoieFichiers([...e.dataTransfer.files]));
   $$("#st-generer", el).forEach(b => b.onclick = genereProjet);
   if ($("#st-apercu")) brancheApercu();
+  $$("[data-bq-slide]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); ouvreBanque(+b.dataset.bqSlide); });
+  $("#st-bq-video")?.addEventListener("click", () => ouvreBanque(0, true));
+  $("#st-bq-auto")?.addEventListener("click", async () => {
+    await sauveProjet(true);
+    try { const r = await api(`/api/studio/${p.id}/banque/auto`, {method: "POST", body: {toutes: !p.slides.some(x => x.photo)}});
+      S.tacheStudio = {id: r.job, sid: p.id, titre: "Choix des images", phrase: "Je choisis des images…"}; renduProjet(); suisTacheStudio(r.job); }
+    catch (e) { toast(e.message); }
+  });
   if (p.statut === "pret") brancheResultat(p);
+}
+// ---- Banque d'images (Pexels) : choisir l'image d'une slide, ou sa propre photo
+async function ouvreBanque(i, video = false) {
+  const p = S.projet, sl = p.slides[i] || {};
+  const q0 = video ? (p.source?.slides_modele?.[0]?.visuel || p.hook || "") : (sl.recherche || sl.photo || sl.titre || "");
+  $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:24px;font-stretch:85%">${video ? "Une vidéo pour ton Reel" : `Image de la slide ${i + 1}`}</h2>
+    ${!video && sl.photo ? `<p class="aide" style="margin:6px 0 12px">📷 Idée : ${esc(sl.photo)}</p>` : ""}
+    ${video ? "" : `<div class="seg" style="margin:0 0 12px"><button type="button" aria-pressed="true" data-bq="banque">Banque d'images</button><button type="button" aria-pressed="false" data-bq="moi">Ma photo</button></div>`}
+    <div id="bq-banque">
+      <form id="bq-form" class="bq-form"><input id="bq-q" value="${esc(q0.replace(/^\[démo\]\s*/, ""))}" aria-label="Rechercher" placeholder="Ex. femme cuisine lumière du matin"><button class="btn prim">Chercher</button></form>
+      <div id="bq-res" class="bq-grille"></div>
+      <p class="aide" style="margin:10px 0 0">${video ? "Vidéos verticales" : "Photos"} libres de droits (Pexels), utilisables gratuitement pour tes publications.</p>
+    </div>
+    <div id="bq-moi" hidden><label class="depot"><input type="file" id="bq-fichier" accept="image/*" hidden><span><b>Choisis ta photo</b> pour cette slide</span><small>JPEG, PNG, HEIC</small></label></div>
+    <div class="pied-modale" style="margin-top:14px"><button class="btn" data-fermer>Fermer</button></div>`;
+  $("#modale").classList.add("ouvert");
+  $$("[data-bq]").forEach(b => b.onclick = () => { $$("[data-bq]").forEach(x => x.setAttribute("aria-pressed", x === b)); $("#bq-banque").hidden = b.dataset.bq !== "banque"; $("#bq-moi").hidden = b.dataset.bq !== "moi"; });
+  $("#bq-fichier")?.addEventListener("change", e => { fermeModale(); envoieFichiers([...e.target.files], i); });
+  let res = [];
+  const cherche = async () => {
+    const q = $("#bq-q").value.trim(); if (!q) return;
+    $("#bq-res").innerHTML = '<p class="encours"><span class="spin"></span>Recherche…</p>';
+    try { const r = await api(`/api/banque?type=${video ? "video" : "photo"}&q=${encodeURIComponent(q)}`); res = r.resultats || [];
+      $("#bq-res").innerHTML = res.length ? res.map((x, k) => `<button type="button" class="bq-el" data-k="${k}"><img src="${esc(x.miniature)}" alt="${esc(x.alt || "")}" loading="lazy">${x.type === "video" ? `<span class="bq-duree">${x.duree || ""} s</span>` : ""}<small>${esc(x.auteur)}</small></button>`).join("")
+        : '<p class="aide">Aucun résultat : essaie des mots plus simples (en anglais, c\'est souvent mieux).</p>';
+      $$(".bq-el").forEach(b => b.onclick = async () => {
+        $$(".bq-el").forEach(x => x.disabled = true); b.classList.add("choisi");
+        try { S.projet = await api(`/api/studio/${p.id}/banque`, {method: "POST", body: {slide: video ? null : i, element: res[+b.dataset.k]}});
+          fermeModale(); renduProjet(); toast(video ? "Vidéo ajoutée" : "Image ajoutée à la slide " + (i + 1)); }
+        catch (e) { toast(e.message); $$(".bq-el").forEach(x => x.disabled = false); }
+      });
+    } catch (e) { $("#bq-res").innerHTML = `<p class="erreur">${esc(e.message)}</p>`; }
+  };
+  $("#bq-form").onsubmit = e => { e.preventDefault(); cherche(); };
+  if (q0) cherche();
 }
 // ---- Aperçu en direct
 function majApercu() {
@@ -1550,11 +1610,11 @@ function brancheResultat(p) {
   });
   prepareFichiers(p);
 }
-function envoieFichiers(fichiers) {
+function envoieFichiers(fichiers, slideI) {
   if (!fichiers.length || !S.projet) return;
   const fd = new FormData(); fichiers.forEach(f => fd.append("fichiers", f));
-  const x = new XMLHttpRequest(), barre = $("#st-envoi");
-  barre.hidden = false;
+  const x = new XMLHttpRequest(), barre = $("#st-envoi") || document.createElement("i");
+  barre.hidden = false; if (!barre.firstChild) barre.appendChild(document.createElement("i"));
   x.upload.onprogress = e => { if (e.lengthComputable) $("i", barre).style.width = Math.round(100 * e.loaded / e.total) + "%"; };
   x.onload = () => {
     let j = {}; try { j = JSON.parse(x.responseText); } catch {}
@@ -1563,7 +1623,7 @@ function envoieFichiers(fichiers) {
     if (j.projet) { S.projet = j.projet; renduProjet(); } else barre.hidden = true;
   };
   x.onerror = () => { toast("L'envoi a échoué, vérifie ta connexion."); barre.hidden = true; };
-  x.open("POST", `/api/studio/${S.projet.id}/fichiers`); x.send(fd);
+  x.open("POST", `/api/studio/${S.projet.id}/fichiers${slideI != null ? "?slide=" + slideI : ""}`); x.send(fd);
 }
 async function genereProjet() {
   await sauveProjet(true);
@@ -1583,7 +1643,7 @@ function suisTacheStudio(jid) {
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.pollStudio); S.tacheStudio = null;
       if (j.statut === "erreur") toast("Studio : " + j.erreur);
-      else toast(/slides/i.test(j.titre) ? "Tes textes sont prêts" : "Ton contenu est prêt à publier");
+      else toast(/slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : "Ton contenu est prêt à publier");
       if (S.vue === "studio" && S.projetId === sid) { S.projet = await api("/api/studio/" + sid); renduProjet(); }
     }
   }, 1500);

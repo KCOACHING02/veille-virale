@@ -12,6 +12,7 @@ Variables d'environnement (.env) :
     ADMIN_EMAILS                          e-mails à accès illimité, séparés par des virgules
     STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET   paiement (optionnel ; prix dans plans.yaml)
     RESEND_API_KEY, EMAIL_EXPEDITEUR      e-mails (mot de passe oublié, bienvenue, veille prête)
+    PEXELS_API_KEY                        banque d'images et de vidéos libres de droits du studio (gratuite)
     URL_PUBLIQUE                          adresse du site (ex. https://veille.mondomaine.fr), pour les liens des e-mails
 """
 
@@ -59,7 +60,7 @@ def cle_secrete() -> str:
 
 
 # Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
-for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY"):
+for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY"):
     if os.getenv(_v):
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
 
@@ -739,10 +740,14 @@ def studio_liste():
                     **_options_studio()})
 
 
+def _banque_dispo() -> bool:
+    return banque.active() or en_demo()
+
+
 def _options_studio():
     return {"styles": [{"id": k, "nom": v[0], "aide": v[1]} for k, v in studio.STYLES.items()],
             "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5]} for k, v in studio.TYPOS.items()],
-            "voix_connue": studio.voix_connue(g.esp)}
+            "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo()}
 
 
 @app.post("/api/studio")
@@ -762,9 +767,12 @@ def studio_cree():
         return jsonify({"erreur": "Adapte d'abord ce Reel."}), 400
     cfg = g.esp.lit_config()
     p = studio.cree(g.esp, cfg, post, c.get("type", "carrousel"), c["analyse_id"], c.get("style") or "ma_voix")
-    # Carrousel copié d'un carrousel modèle : les slides sont déjà adaptées une par une pendant la veille, rien à réécrire
-    jid = None if (p.get("copie_du_modele") and p["type"] == "carrousel") else lance(
-        g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
+    # Carrousel copié d'un carrousel modèle : les slides sont déjà adaptées une par une pendant la veille, rien à réécrire ;
+    # on propose seulement des images de la banque pour les slides qui demandent une photo
+    if p.get("copie_du_modele") and p["type"] == "carrousel":
+        jid = lance(g.u["id"], "Choix des images", studio.remplit_banque, g.esp, p["id"], demo=en_demo(), file_=FILE_STUDIO)
+    else:
+        jid = lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
     p.pop("adaptation", None)
     return jsonify({"projet": p, "job": jid})
 
@@ -799,9 +807,10 @@ def studio_supprime(sid):
 def studio_import(sid):
     _projet(sid)
     erreurs, p = [], None
+    slide_i = request.args.get("slide", type=int)
     for f in request.files.getlist("fichiers"):
         try:
-            p = studio.ajoute_fichier(g.esp, sid, f.filename, f)
+            p = studio.ajoute_fichier(g.esp, sid, f.filename, f, slide_i)
         except ValueError as e:
             erreurs.append(str(e))
     p = p or studio.charge(g.esp, sid)
@@ -846,6 +855,60 @@ def studio_generer(sid):
     jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), file_=FILE_STUDIO,
                 apres=None if deja else (lambda _: ab.compte_usage(uid, studio=1)))
     return jsonify({"job": jid})
+
+
+# ------------------------------------------------------------
+#  Banque d'images (Pexels) : recherche gratuite, aucun quota consommé
+# ------------------------------------------------------------
+import banque  # noqa: E402
+
+
+@app.get("/api/banque")
+@connecte
+def banque_recherche():
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"resultats": [], "active": banque.active() or en_demo()})
+    if not (banque.active() or en_demo()):
+        return jsonify({"resultats": [], "active": False})
+    try:
+        res = banque.videos(q) if request.args.get("type") == "video" else banque.photos(q, n=18)
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"erreur": str(e)}), 502
+    return jsonify({"resultats": res, "active": True})
+
+
+@app.get("/banque-demo/<nom>")
+@connecte
+def banque_demo(nom):
+    return send_from_directory(banque.chemin_demo(nom).parent, Path(nom).name, max_age=86400)
+
+
+@app.post("/api/studio/<sid>/banque")
+@connecte
+def studio_banque(sid):
+    _projet(sid)
+    c = request.get_json(force=True)
+    el = c.get("element") or {}
+    if not str(el.get("grande", "")).startswith(("https://images.pexels.com/", "https://videos.pexels.com/", "https://player.vimeo.com/",
+                                                   "https://www.pexels.com/", "/banque-demo/")):
+        return jsonify({"erreur": "Image non autorisée."}), 400
+    try:
+        p = studio.choisit_banque(g.esp, sid, c.get("slide"), el)
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"erreur": f"Téléchargement impossible : {str(e)[:120]}"}), 502
+    p.pop("adaptation", None)
+    return jsonify(p)
+
+
+@app.post("/api/studio/<sid>/banque/auto")
+@connecte
+def studio_banque_auto(sid):
+    _projet(sid)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    return jsonify({"job": lance(g.u["id"], "Choix des images", studio.remplit_banque, g.esp, sid, demo=en_demo(),
+                                 toutes=bool((request.get_json(silent=True) or {}).get("toutes")), file_=FILE_STUDIO)})
 
 
 @app.get("/api/studio/<sid>/apercu/<int:i>")
@@ -917,7 +980,7 @@ def admin_donnees():
         "kpi": {"clients": len(clients), "payants": sum(1 for c in clients if c["prix"]),
                 "essais": sum(1 for c in clients if c["statut"] == "essai" and c["actif"]),
                 "mrr": mrr, "cout_mois_usd": round(cout_mois, 2)},
-        "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")), "banque": banque.active(),
                    "stripe": ab.stripe_actif(), "emails": emails.actif(), "demo": en_demo(), "url": url_site()},
     })
 
