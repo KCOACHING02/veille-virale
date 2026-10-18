@@ -875,7 +875,19 @@ def banque_recherche():
         res = banque.videos(q) if request.args.get("type") == "video" else banque.photos(q, n=18)
     except Exception as e:  # noqa: BLE001
         return jsonify({"erreur": str(e)}), 502
-    return jsonify({"resultats": res, "active": True, "source": banque.nom_source()})
+    return jsonify({"resultats": banque.via_serveur(res), "active": True, "source": banque.nom_source()})
+
+
+@app.get("/api/banque/vignette")
+@connecte
+def banque_vignette():
+    try:
+        f = banque.vignette(request.args.get("u", ""))
+    except ValueError:
+        abort(400)
+    except Exception:  # noqa: BLE001
+        abort(404)
+    return send_from_directory(f.parent, f.name, max_age=86400)
 
 
 @app.get("/banque-demo/<nom>")
@@ -909,7 +921,9 @@ def studio_propositions(sid, i):
     if not _banque_dispo():
         return jsonify({"requete": "", "resultats": []})
     try:
-        return jsonify(studio.propositions(g.esp, sid, i))
+        r = studio.propositions(g.esp, sid, i)
+        banque.via_serveur(r["resultats"])
+        return jsonify(r)
     except Exception as e:  # noqa: BLE001
         return jsonify({"erreur": str(e)[:150], "resultats": []}), 502
 

@@ -213,3 +213,38 @@ def telecharge(element: dict, dest: Path) -> Path:
         im.thumbnail((2160, 2160))
         im.save(dest, "JPEG", quality=90)
     return dest
+
+
+DOMAINES_VIGNETTES = ("https://images.pexels.com/", "https://pixabay.com/", "https://cdn.pixabay.com/", "https://i.vimeocdn.com/")
+
+
+def vignette(url: str) -> Path:
+    """Miniature récupérée par le serveur puis servie par lui : les liens Pixabay ne s'affichent pas toujours chez
+    l'utilisatrice (liens temporaires liés au serveur qui a fait la recherche)."""
+    if not url.startswith(DOMAINES_VIGNETTES):
+        raise ValueError("Adresse non autorisée")
+    d = DATA / "cache" / "vignettes"
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / (hashlib.sha1(url.encode()).hexdigest()[:24] + ".jpg")
+    if not f.exists() or time.time() - f.stat().st_mtime > 24 * 3600:
+        r = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        tmp = f.with_suffix(".tmp")
+        tmp.write_bytes(r.content)
+        try:
+            from PIL import Image
+            im = Image.open(tmp).convert("RGB")
+            im.thumbnail((360, 480))
+            im.save(tmp, "JPEG", quality=78)
+        except Exception:  # noqa: BLE001
+            pass
+        tmp.replace(f)
+    return f
+
+
+def via_serveur(resultats: list[dict]) -> list[dict]:
+    from urllib.parse import quote
+    for r in resultats:
+        if str(r.get("miniature", "")).startswith(DOMAINES_VIGNETTES):
+            r["miniature"] = "/api/banque/vignette?u=" + quote(r["miniature"], safe="")
+    return resultats

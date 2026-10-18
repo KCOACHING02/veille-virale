@@ -98,7 +98,9 @@ main{min-width:0;padding:20px 28px 80px}
 .bandeau-studio{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--glow-soft);border-radius:var(--r-m);padding:14px 16px;margin-bottom:6px}
 .bandeau-studio div{display:grid} .bandeau-studio span{color:var(--ink-2);font-size:14px}
 .formats button{position:relative}
-.formats button.reco{border-color:var(--glow)}
+.formats button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft);box-shadow:0 0 0 2px var(--glow-soft)}
+.pied-creer{position:sticky;bottom:-24px;background:var(--paper);padding:12px 0 4px}
+.pied-creer .btn.prim{padding:10px 20px;font-size:15px}
 .badge-reco{position:absolute;top:12px;right:12px;font-style:normal;font-size:12px;font-weight:600;background:var(--glow);color:#fff;border-radius:99px;padding:2px 9px}
 .plat{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;flex-shrink:0}
 .plat svg{width:14px;height:14px;color:#271B2D}
@@ -741,8 +743,17 @@ const TITRES = {accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", s
 const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]],
                  parametres: [["parametres", "Mon profil"], ["comptes", "Comptes surveillés"], ["abonnement", "Abonnement"]]};
 const groupeDe = vue => Object.keys(GROUPES).find(g => GROUPES[g].some(([v]) => v === vue)) || vue;
-function va(vue) {
+// ---- Historique du navigateur : le bouton « précédent » revient à l'écran précédent de l'outil au lieu d'en sortir
+function pousseHistorique(extra = {}) {
+  if (S.ignorePop) { S.pousseApres = extra; return; }   // un retour arrière est en cours : on attend qu'il soit fini
+  const st = {vue: S.vue, projet: S.projetId || null, ...extra};
+  const h = history.state || {};
+  if (h.vue === st.vue && (h.projet || null) === st.projet && !!h.tiroir === !!st.tiroir && !!h.modale === !!st.modale) return;
+  history.pushState(st, "", "#" + st.vue);
+}
+function va(vue, depuisHistorique) {
   S.vue = vue;
+  if (!depuisHistorique) setTimeout(() => pousseHistorique(), 0);
   const g = groupeDe(vue);
   $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === g ? "page" : "false"));
   $$("[data-section]").forEach(s => s.hidden = s.dataset.section !== vue);
@@ -933,6 +944,7 @@ document.addEventListener("click", e => {
 });
 function ouvreReel(cle, onglet) {
   const p = S.analyse.posts.find(x => x.cle === cle); if (!p) return;
+  if (!S.ouvert && !history.state?.tiroir) pousseHistorique({tiroir: 1});
   S.ouvert = cle;
   const c = S.analyse.criteres, ad = p.adaptation || {}, t = $("#tiroir");
   const onglets = [...(adapte(p) ? ["Adaptation", "Séquence DM", "Analyse"] : ["Original"]), ...(urlEmbed(p) ? ["Vidéo"] : [])];
@@ -1047,7 +1059,8 @@ function corpsOnglet(p, o) {
     <h3>Légende originale</h3><div class="carte">${esc(p.legende) || "Sans légende"}</div>
     ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
 }
-function fermeTiroir() { const t = $("#tiroir"); t.classList.remove("ouvert"); t.setAttribute("aria-hidden", "true"); $("#voile").classList.remove("ouvert"); S.ouvert = null; }
+function fermeTiroir() { if (!S.depuisPop) planifieDepile();
+  const t = $("#tiroir"); t.classList.remove("ouvert"); t.setAttribute("aria-hidden", "true"); $("#voile").classList.remove("ouvert"); S.ouvert = null; }
 $("#voile").onclick = fermeTiroir;
 document.addEventListener("click", e => { if (e.target.closest("[data-fermer-t]")) fermeTiroir(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { fermeTiroir(); fermeModale(); } });
@@ -1280,7 +1293,33 @@ function ouvreNouvelle(mode = "copie") {
   $("#modale").classList.add("ouvert");
   setTimeout(() => (mode === "copie" ? $("#m-texte") : $("#m-lancer")).focus(), 50);
 }
-function fermeModale() { $("#modale").classList.remove("ouvert"); }
+// Fermer une fenêtre ou le tiroir par un bouton retire aussi son étape d'historique (en une seule fois s'il y en a deux)
+function planifieDepile() {
+  if (S.depilePrevu) return; S.depilePrevu = true;
+  setTimeout(() => {
+    S.depilePrevu = false;
+    const h = history.state || {};
+    const n = (h.modale && !$("#modale").classList.contains("ouvert") ? 1 : 0) + (h.tiroir && !S.ouvert ? 1 : 0);
+    if (n) { S.ignorePop = true; history.go(-n); }
+  }, 0);
+}
+function fermeModale() { if (!S.depuisPop) planifieDepile();
+  $("#modale").classList.remove("ouvert"); }
+// Une fenêtre ouverte = une étape d'historique : « précédent » la ferme
+new MutationObserver(() => { if ($("#modale").classList.contains("ouvert") && !history.state?.modale) pousseHistorique({modale: 1, tiroir: history.state?.tiroir}); })
+  .observe($("#modale"), {attributes: true, attributeFilter: ["class"]});
+window.addEventListener("popstate", e => {
+  if (S.ignorePop) { S.ignorePop = false; if (S.pousseApres) { const x = S.pousseApres; S.pousseApres = null; pousseHistorique(x); } return; }
+  const st = e.state || {vue: "accueil"};
+  S.depuisPop = true;
+  try {
+    if ($("#modale").classList.contains("ouvert") && !st.modale) { $("#modale").classList.remove("ouvert"); return; }
+    if (S.ouvert && !st.tiroir) fermeTiroir();
+    if (st.vue === S.vue && (st.projet || null) === (S.projetId || null)) return;
+    S.projetId = st.projet || null; if (!S.projetId) S.projet = null;
+    if (S.projetId) { S.vue = "studio"; ouvreProjet(S.projetId, true); } else va(st.vue || "accueil", true);
+  } finally { S.depuisPop = false; }
+});
 $("#ouvrir-nouvelle").onclick = () => S.jobId ? montreProgression() : ouvreNouvelle();
 document.addEventListener("click", e => { if (e.target.closest("[data-fermer]")) fermeModale(); });
 
@@ -1307,31 +1346,37 @@ async function choisirFormat(cle) {
   let style = "ma_voix";
   const modele = S.analyse?.posts.find(x => x.cle === cle) || {};
   const estCar = estCarrousel(modele), nbSl = (modele.adaptation?.slides_modele || []).length;
+  let format = estCar ? "carrousel" : "reel";
   $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:26px;font-stretch:85%">Que veux-tu créer ?</h2>
-    <p style="color:var(--ink-2);margin:6px 0 18px">Claude écrit les textes à partir de ce Reel. Tu ajoutes tes photos ou ta vidéo, et tu récupères un package prêt à publier.</p>
+    <p style="color:var(--ink-2);margin:6px 0 18px">1. Choisis le format · 2. le style d'écriture · 3. clique sur « Créer ». Tu ajoutes ensuite tes photos ou ta vidéo et tu récupères tout prêt à publier.</p>
     <div class="formats">
-      ${(() => { const bc = `<button data-format="carrousel" class="${estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span>${estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Carrousel</b><span>${estCar && nbSl ? `Les ${nbSl} mêmes slides, réécrites pour toi, avec tes photos.` : "Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350."}</span></button>`;
-        const br = `<button data-format="reel" class="${!estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>${!estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>`;
+      ${(() => { const bc = `<button type="button" data-format="carrousel" aria-pressed="${estCar}" class="${estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span>${estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Carrousel</b><span>${estCar && nbSl ? `Les ${nbSl} mêmes slides, réécrites pour toi, avec tes photos.` : "Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350."}</span></button>`;
+        const br = `<button type="button" data-format="reel" aria-pressed="${!estCar}" class="${!estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>${!estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>`;
         return estCar ? bc + br : br + bc; })()}
     </div>
     <h3 style="font-size:16px;margin:0 0 4px">Style d'écriture</h3>
     <p style="color:var(--ink-2);margin:0 0 10px;font-size:14px">Le hook viral reste tel quel. Le reste est écrit dans ta voix, avec la construction choisie. Tu pourras en changer ensuite.</p>
     ${pucesStyles(opts, style)}${astuceVoix(opts)}
-    <div class="pied-modale" style="margin-top:18px"><button class="btn" data-fermer>Annuler</button></div>`;
+    <div class="pied-modale pied-creer" style="margin-top:18px"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="f-creer">${format === "carrousel" ? "Créer le carrousel" : "Créer le Reel"} →</button></div>`;
   $("#modale").classList.add("ouvert");
   $$("#feuille [data-style]").forEach(b => b.onclick = () => { style = b.dataset.style; $$("#feuille [data-style]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
-  $$("[data-format]").forEach(b => b.onclick = async () => {
-    $$("[data-format]").forEach(x => x.disabled = true);
+  $$("[data-format]").forEach(b => b.onclick = () => {
+    format = b.dataset.format;
+    $$("[data-format]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("#f-creer").textContent = (format === "carrousel" ? "Créer le carrousel" : "Créer le Reel") + " →";
+  });
+  $("#f-creer").onclick = async () => {
+    const b = $("#f-creer"); b.disabled = true; b.innerHTML = '<span class="spin" style="border-color:#fff;border-right-color:transparent"></span>Création…';
     try {
-      const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: b.dataset.format, style}});
+      const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: format, style}});
       fermeModale(); fermeTiroir();
       S.projetId = r.projet.id; S.projet = r.projet;
       S.tacheStudio = r.job ? (r.projet.copie_du_modele && r.projet.type === "carrousel"
         ? {id: r.job, sid: r.projet.id, titre: "Choix des images", phrase: "Je choisis des images pour tes slides…"}
         : {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"}) : null;
       va("studio"); if (r.job) suisTacheStudio(r.job);
-    } catch (e) { toast(e.message); $$("[data-format]").forEach(x => x.disabled = false); }
-  });
+    } catch (e) { toast(e.message); b.disabled = false; b.textContent = (format === "carrousel" ? "Créer le carrousel" : "Créer le Reel") + " →"; }
+  };
 }
 async function renduStudio() {
   const el = $("#studio");
@@ -1367,9 +1412,9 @@ async function renduStudio() {
     await api("/api/studio/" + b.dataset.suppr, {method: "DELETE"}); renduStudio();
   });
 }
-async function ouvreProjet(sid) {
+async function ouvreProjet(sid, depuisHistorique) {
   S.projetId = sid; S.projet = await api("/api/studio/" + sid); S.optionsStudio = {...(S.optionsStudio || {}), ...S.projet.options};
-  if (S.vue !== "studio") va("studio"); else renduProjet();
+  if (S.vue !== "studio") va("studio", depuisHistorique); else { renduProjet(); if (!depuisHistorique) pousseHistorique(); }
 }
 // Même règle que studio.attribue côté serveur : les photos vont d'abord aux slides qui en demandent une
 function attribueJS(slides, images) {
@@ -1536,7 +1581,7 @@ function renduProjet() {
         </div>
       </div>
     </div>`;
-  $("#st-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); };
+  $("#st-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); pousseHistorique(); };
   $$("[data-type]", el).forEach(b => b.onclick = async () => { if (b.dataset.type === p.type) return; await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {type: b.dataset.type}}); renduProjet(); });
   $$("[data-theme]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {theme: b.dataset.theme}}); renduProjet(); });
   $$("[data-typo]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {typo: b.dataset.typo}}); renduProjet(); });
@@ -2127,9 +2172,9 @@ async function renduAbonnement() {
 
 // ---------------------------------------------------------------- Démarrage
 (async () => {
-  await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil");
   const q = new URLSearchParams(location.search);
-  if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); history.replaceState(null, "", "/"); va("abonnement"); }
+  await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", q.has("paiement") ? "/" : location.pathname);
+  if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); va("abonnement"); }
   if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
 })();
 </script>

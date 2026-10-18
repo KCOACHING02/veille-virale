@@ -270,7 +270,7 @@ def slides_carrousels(posts: list[Post], dossier: Path, media: Path | None = Non
     for p in posts:  # carrousel sans slides lisibles : au minimum la couverture (elle porte le hook)
         if p.format == "Carrousel" and not p.medias and p.cover_url:
             p.medias = [p.cover_url]
-    a_faire = [p for p in posts if p.medias]
+    a_faire = [p for p in posts if p.medias or (p.format == "Carrousel" and p.miniature)]
     if not a_faire:
         return
     log(f"Lecture de {len(a_faire)} carrousel(s), slide par slide…")
@@ -290,7 +290,15 @@ def slides_carrousels(posts: list[Post], dossier: Path, media: Path | None = Non
                     chemins.append(str(f))
                 except Exception:  # noqa: BLE001
                     f.unlink(missing_ok=True)
+        # Liens Instagram expirés (analyse ancienne) : la couverture déjà enregistrée sert de slide 1 — c'est elle qui porte le hook
+        couv = media / p.miniature if (media is not None and p.miniature) else None
+        if not (d / "slide_01.jpg").exists() and couv and couv.exists():
+            f = d / "slide_01.jpg"
+            shutil.copy(couv, f)
+            chemins.insert(0, str(f))
         p.images = chemins
+        if not chemins:
+            log(f"  ⚠️  Slides illisibles pour @{p.compte} (liens expirés) : le hook ne pourra pas être lu sur l'image")
         if chemins and media is not None and not p.miniature:
             media.mkdir(parents=True, exist_ok=True)
             nom = f"{p.plateforme}_{p.id}.jpg"

@@ -287,6 +287,8 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
     def _adapte_carrousel(self, p: Post, nb: int) -> dict:
         n = len(p.images)
         seule_couverture = n <= 1 and (not p.medias or p.medias == [p.cover_url])
+        if not n:  # aucune image : on ne devine pas le hook à partir de la légende
+            return {"erreur": "Les images de ce carrousel n'ont pas pu être récupérées (liens Instagram expirés) : relance une veille pour le relire."}
         texte = f"""CARROUSEL viral à analyser puis adapter ({n or '?'} slides jointes, dans l'ordre).
 
 Plateforme : {p.plateforme} · @{p.compte}
