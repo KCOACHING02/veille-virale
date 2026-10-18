@@ -7,7 +7,7 @@ import statistics
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from modele import Post, log
+from modele import Post, date_utc, log
 
 FORMATS_VIDEO = {"Reel", "Vidéo"}
 
@@ -31,12 +31,9 @@ def calcule_scores(posts: list[Post], cfg: dict) -> list[Post]:
     for p in posts:
         if a.get("reels_uniquement", True) and p.format not in FORMATS_VIDEO:
             continue
-        try:
-            d = datetime.fromisoformat(p.date.replace("Z", "+00:00"))
-            if d < limite or maintenant - d < timedelta(hours=48):
-                continue
-        except ValueError:
-            pass
+        d = date_utc(p.date)
+        if d and (d < limite or maintenant - d < timedelta(hours=48)):
+            continue
         p.interactions = (p.likes or 0) + (p.commentaires or 0) + (p.partages or 0) + (p.enregistrements or 0)
         if p.vues:
             p.taux_engagement = round(p.interactions / p.vues, 4)

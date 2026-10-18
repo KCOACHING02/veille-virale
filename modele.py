@@ -56,6 +56,21 @@ class Post:
     adaptation: dict = field(default_factory=dict)
 
 
+def date_utc(v):
+    """Date d'une publication, quel que soit le format renvoyé par les collecteurs, en UTC (ou None)."""
+    from datetime import timezone
+    if v is None or v == "":
+        return None
+    try:
+        if isinstance(v, (int, float)) or (isinstance(v, str) and v.strip().isdigit()):
+            n = float(v)
+            return datetime.fromtimestamp(n / 1000 if n > 1e11 else n, tz=timezone.utc)
+        d = datetime.fromisoformat(str(v).strip().replace("Z", "+00:00").replace(" ", "T", 1))
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    except (ValueError, OverflowError, OSError):
+        return None
+
+
 def entier(v):
     try:
         v = int(v)

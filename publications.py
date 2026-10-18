@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from espace import Espace
-from modele import log
+from modele import date_utc, log
 
 JALONS_JOURS = (2, 7)   # relevés après publication
 
@@ -91,7 +91,7 @@ def supprime(esp: Espace, pid: str):
 
 def _age_jours(p: dict, maintenant: datetime) -> float:
     ref = p.get("publie_le") or p["ajoute_le"]
-    return (maintenant - datetime.fromisoformat(ref.replace("Z", "+00:00"))).total_seconds() / 86400
+    return (maintenant - (date_utc(ref) or maintenant)).total_seconds() / 86400
 
 
 def a_relever(p: dict, maintenant: datetime | None = None) -> bool:
@@ -177,7 +177,7 @@ def bilan_semaine(esp: Espace, cfg: dict) -> dict:
     o = cfg["objectifs"]
     debut = datetime.now(timezone.utc) - timedelta(days=7)
     pubs = [p for p in charge(esp)
-            if datetime.fromisoformat((p.get("publie_le") or p["ajoute_le"]).replace("Z", "+00:00")) >= debut]
+            if (date_utc(p.get("publie_le") or p["ajoute_le"]) or debut) >= debut]
     return {
         "publies": len(pubs), "objectif_publies": o["reels_par_jour"] * 7,
         "vues": sum(dernier(p).get("vues") or 0 for p in pubs),

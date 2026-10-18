@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
-from modele import Post, entier, log
+from modele import Post, date_utc, entier, log
 
 APIFY_BASE = "https://api.apify.com/v2"
 
@@ -79,6 +79,11 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
     return items
 
 
+def _iso(v) -> str:
+    d = date_utc(v)
+    return d.isoformat() if d else ""
+
+
 # ------------------------------------------------------------
 #  Normalisation
 # ------------------------------------------------------------
@@ -93,7 +98,7 @@ def post_instagram(it: dict) -> Post | None:
         compte=it.get("ownerUsername") or "?",
         id=str(it.get("shortCode") or it.get("id")),
         url=it.get("url") or f"https://www.instagram.com/p/{it.get('shortCode')}/",
-        date=it.get("timestamp") or "",
+        date=_iso(it.get("timestamp") or it.get("takenAt") or it.get("taken_at")),
         format=fmt,
         legende=it.get("caption") or "",
         likes=entier(it.get("likesCount")),
@@ -120,7 +125,7 @@ def post_tiktok(it: dict) -> Post | None:
         compte=auteur.get("name") or auteur.get("uniqueId") or "?",
         id=str(it["id"]),
         url=it.get("webVideoUrl") or "",
-        date=it.get("createTimeISO") or "",
+        date=_iso(it.get("createTimeISO") or it.get("createTime")),
         format="Carrousel" if it.get("isSlideshow") else "Vidéo",
         legende=it.get("text") or "",
         likes=entier(it.get("diggCount")),
