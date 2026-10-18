@@ -25,9 +25,9 @@ def mon_compte(cfg: dict, token: str, ia) -> list[Post]:
     m, ap = cfg.get("mon_compte") or {}, cfg["apprentissage"]
     posts = []
     if m.get("instagram"):
-        posts += collecte_instagram([m["instagram"]], ap["jours"], 100, cfg, token)
+        posts += collecte_instagram([m["instagram"]], ap["jours"], 40, cfg, token)
     if m.get("tiktok"):
-        posts += collecte_tiktok([m["tiktok"]], ap["jours"], 100, cfg, token)
+        posts += collecte_tiktok([m["tiktok"]], ap["jours"], 40, cfg, token)
     posts = [p for p in posts if p.format in ("Reel", "Vidéo") and p.vues]
     if not posts:
         return []

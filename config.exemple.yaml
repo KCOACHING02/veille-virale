@@ -25,7 +25,7 @@ analyse:
   reels_uniquement: true
   vues_min: 500000
   taux_engagement_min: 0.03
-  posts_max_par_compte: 120
+  posts_max_par_compte: 60
   completer_si_insuffisant: true
 video:
   actif: true
@@ -35,7 +35,7 @@ video:
   actor_tiktok_video: maximedupre~tiktok-video-downloader
 commentaires:
   actif: true
-  par_post: 50
+  par_post: 20
   synthese: true
   actor_tiktok: clockworks~tiktok-comments-scraper
 apprentissage:
@@ -44,13 +44,13 @@ decouverte:
   actif: true
   hashtags_instagram: []
   hashtags_tiktok: []
-  posts_par_hashtag: 100
+  posts_par_hashtag: 50
   min_reels_au_dessus_seuil: 2
   max_suggestions: 10
   auto_ajout: 0
 diversite:
   max_par_mecanique: 3
-  marge_candidats: 1.5
+  marge_candidats: 1.2
 voix:
   fichier: ma_voix.md
   legendes_auto: true

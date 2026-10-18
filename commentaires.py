@@ -31,7 +31,11 @@ def _rattache(items: list[dict], posts: list[Post], champs: tuple[str, ...], pla
 def recupere(posts: list[Post], cfg: dict, token: str):
     c = cfg["commentaires"]
     n = c["par_post"]
-    ig = [p for p in posts if p.plateforme == "Instagram"]
+    # Instagram fournit déjà les derniers commentaires avec chaque post : on ne recollecte que si c'est insuffisant
+    ig = [p for p in posts if p.plateforme == "Instagram" and len([x for x in p.commentaires_texte if utile(x["texte"])]) < min(n, 10)]
+    deja = len([p for p in posts if p.plateforme == "Instagram"]) - len(ig)
+    if deja:
+        log(f"Commentaires : {deja} Reel(s) Instagram ont déjà assez de commentaires, pas de collecte supplémentaire")
     tt = [p for p in posts if p.plateforme == "TikTok"]
 
     if ig:

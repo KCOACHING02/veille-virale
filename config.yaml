@@ -44,7 +44,7 @@ analyse:
   reels_uniquement: true
   vues_min: 500000            # minimum 500 000 vues
   taux_engagement_min: 0.03   # (likes + commentaires + partages + enregistrements) / vues ≥ 3 %
-  posts_max_par_compte: 120
+  posts_max_par_compte: 60
   completer_si_insuffisant: true
 
 # --- Amélioration 1 : regarder les vidéos ---
@@ -58,7 +58,7 @@ video:
 # --- Amélioration 2 : lire les commentaires ---
 commentaires:
   actif: true
-  par_post: 50
+  par_post: 20
   synthese: true              # synthèse « voix du client » sur l'ensemble des commentaires
   actor_tiktok: "clockworks~tiktok-comments-scraper"
 
@@ -71,7 +71,7 @@ decouverte:
   actif: true
   hashtags_instagram: ["ventregonfle", "reequilibragealimentaire", "nutritionfemme"]
   hashtags_tiktok: ["ventregonfle", "nutrition", "perteDePoids"]
-  posts_par_hashtag: 100
+  posts_par_hashtag: 50
   min_reels_au_dessus_seuil: 2   # un compte est suggéré s'il a au moins 2 Reels ≥ vues_min
   max_suggestions: 10
   auto_ajout: 0                  # 0 = suggestions seulement ; N = ajoute automatiquement les N meilleurs à ta liste
@@ -79,7 +79,7 @@ decouverte:
 # --- Amélioration 5 : diversité et historique ---
 diversite:
   max_par_mecanique: 3        # pas plus de 3 Reels d'une même mécanique par semaine
-  marge_candidats: 1.5        # on analyse 1,5× plus de Reels que nécessaire pour pouvoir choisir
+  marge_candidats: 1.2        # on analyse 20 % de Reels en plus pour pouvoir choisir
 
 # --- Amélioration 6 : ta voix ---
 voix:

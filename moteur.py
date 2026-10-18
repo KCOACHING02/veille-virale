@@ -135,6 +135,23 @@ def liste_analyses(esp: Espace) -> list[dict]:
     return res
 
 
+# Plafonds de coût fixés par l'éditeur : ils s'appliquent à tous les espaces, même créés avant cette version.
+PLAFONDS = {
+    ("analyse", "posts_max_par_compte"): 60,   # 60 publications récentes suffisent sur 3 mois
+    ("commentaires", "par_post"): 20,          # les 20 commentaires les plus likés portent l'essentiel
+    ("decouverte", "posts_par_hashtag"): 50,
+    ("diversite", "marge_candidats"): 1.2,      # 17 Reels analysés pour en garder 14 (au lieu de 21)
+}
+DECOUVERTE_TOUS_LES_JOURS = 28                   # découverte de nouveaux comptes : une fois par mois
+
+
+def applique_plafonds(cfg: dict) -> dict:
+    for (bloc, cle_), maxi in PLAFONDS.items():
+        if bloc in cfg and cle_ in cfg[bloc]:
+            cfg[bloc][cle_] = min(cfg[bloc][cle_], maxi)
+    return cfg
+
+
 def verifie_cle_claude():
     """Appel gratuit qui valide la clé Claude : on arrête tout de suite au lieu de collecter pour rien."""
     import anthropic
@@ -154,6 +171,7 @@ def verifie_cle_claude():
 # ------------------------------------------------------------
 def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = None, nb_adapter: int | None = None,
              demo: bool = False, sans_ia: bool = False, depuis: str | None = None, max_adaptations: int | None = None) -> dict:
+    cfg = applique_plafonds(cfg)
     o = cfg["objectifs"]
     token = os.getenv("APIFY_TOKEN")
     a_ia = not sans_ia and bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -290,14 +308,23 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             if demo:
                 decouvertes = d.decouvertes()
             elif cfg["decouverte"].get("actif") and token:
-                from collecte import collecte_hashtags
-                from decouverte import ajoute_a_config, comptes_a_ajouter
-                try:
-                    decouvertes = comptes_a_ajouter(collecte_hashtags(cfg, token), cfg)
-                    if cfg["decouverte"].get("auto_ajout", 0):
-                        ajoute_a_config(esp.config, decouvertes, cfg["decouverte"]["auto_ajout"])
-                except Exception as e:  # noqa: BLE001
-                    log(f"⚠️  Découverte impossible : {e}")
+                memo = esp.racine / "decouverte.json"
+                precedente = json.loads(memo.read_text(encoding="utf-8")) if memo.exists() else {}
+                age = (datetime.now() - datetime.fromisoformat(precedente["date"])).days if precedente.get("date") else 999
+                if age < DECOUVERTE_TOUS_LES_JOURS:
+                    decouvertes = precedente.get("comptes") or []
+                    log(f"Découverte de comptes : résultats du {precedente['date'][:10]} réutilisés (prochaine dans {DECOUVERTE_TOUS_LES_JOURS - age} j)")
+                else:
+                    from collecte import collecte_hashtags
+                    from decouverte import ajoute_a_config, comptes_a_ajouter
+                    try:
+                        decouvertes = comptes_a_ajouter(collecte_hashtags(cfg, token), cfg)
+                        memo.write_text(json.dumps({"date": datetime.now().isoformat(timespec="minutes"), "comptes": decouvertes},
+                                                   ensure_ascii=False), encoding="utf-8")
+                        if cfg["decouverte"].get("auto_ajout", 0):
+                            ajoute_a_config(esp.config, decouvertes, cfg["decouverte"]["auto_ajout"])
+                    except Exception as e:  # noqa: BLE001
+                        log(f"⚠️  Découverte impossible : {e}")
 
         # ---------------- 8. Rapports et sauvegarde ----------------
         maintenant = datetime.now()
@@ -341,6 +368,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
 #  Adapter un Reel à la demande (depuis la galerie)
 # ------------------------------------------------------------
 def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: bool = False) -> dict:
+    cfg = applique_plafonds(cfg)
     analyse = charge(esp, analyse_id)
     idx = next((i for i, x in enumerate(analyse["posts"]) if x["cle"] == cle_post), None)
     if idx is None:
