@@ -24,6 +24,9 @@ analyse:
   mois: 3
   reels_uniquement: true
   vues_min: 500000
+  seuil_mode: auto            # "auto" = N × les vues habituelles du compte (min. plancher) | "fixe" = vues_min
+  seuil_multiple: 3
+  seuil_plancher: 30000
   taux_engagement_min: 0.03
   posts_max_par_compte: 60
   completer_si_insuffisant: true

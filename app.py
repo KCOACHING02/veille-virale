@@ -37,6 +37,7 @@ from flask import Flask, abort, g, jsonify, redirect, request, send_from_directo
 
 import abonnements as ab
 import moteur
+import publications as pubs
 from espace import CODE, DATA, espace_client
 from modele import LOG_HOOKS
 
@@ -298,7 +299,8 @@ def nouvelle():
     else:
         if not _nb_comptes(cfg):
             return jsonify({"erreur": "Ajoute d'abord des comptes à surveiller (menu Comptes)."}), 400
-    for k_in, k_cfg, conv in (("vues_min", "vues_min", int), ("taux_engagement_min", "taux_engagement_min", lambda x: float(x) / 100), ("mois", "mois", int)):
+    for k_in, k_cfg, conv in (("vues_min", "vues_min", int), ("taux_engagement_min", "taux_engagement_min", lambda x: float(x) / 100), ("mois", "mois", int),
+                             ("seuil_mode", "seuil_mode", str), ("seuil_multiple", "seuil_multiple", float)):
         if c.get(k_in):
             cfg["analyse"][k_cfg] = conv(c[k_in])
     titre = "Veille de la semaine" if mode == "veille" else "Analyse de comptes"
@@ -405,7 +407,8 @@ def maj_profil():
             cfg.setdefault(bloc, {}).update({k: v for k, v in c[bloc].items() if v is not None})
     if isinstance(c.get("analyse"), dict):
         a = c["analyse"]
-        for k, conv in (("vues_min", int), ("taux_engagement_min", float), ("mois", int)):
+        for k, conv in (("vues_min", int), ("taux_engagement_min", float), ("mois", int), ("seuil_mode", str),
+                        ("seuil_multiple", float), ("seuil_plancher", int)):
             if a.get(k) is not None:
                 cfg["analyse"][k] = conv(a[k])
     if isinstance(c.get("comptes"), dict):
@@ -451,6 +454,68 @@ def assistant_hashtags():
         return jsonify(moteur.suggere_hashtags(cfg, demo=en_demo()))
     except Exception as e:  # noqa: BLE001
         return jsonify({"erreur": str(e)}), 500
+
+
+# ------------------------------------------------------------
+#  Mes publications (bouton « J'ai publié »)
+# ------------------------------------------------------------
+@app.get("/api/publications")
+@connecte
+def publications_liste():
+    cfg = g.esp.lit_config()
+    return jsonify({"publications": pubs.charge(g.esp), "bilan": pubs.bilan_semaine(g.esp, cfg)})
+
+
+@app.post("/api/publications")
+@connecte
+def publication_ajoute():
+    c = request.get_json(force=True)
+    inspiration = None
+    if c.get("analyse_id") and c.get("cle"):
+        try:
+            inspiration = next((p for p in moteur.charge(g.esp, c["analyse_id"])["posts"] if p["cle"] == c["cle"]), None)
+        except FileNotFoundError:
+            pass
+    try:
+        pub = pubs.ajoute(g.esp, c.get("url", ""), inspiration)
+    except ValueError as e:
+        return jsonify({"erreur": str(e)}), 400
+    _lance_releve(g.u["id"])
+    return jsonify(pub)
+
+
+@app.patch("/api/publications/<pid>")
+@connecte
+def publication_modifie(pid):
+    try:
+        return jsonify(pubs.modifie(g.esp, pid, **request.get_json(force=True)))
+    except KeyError:
+        abort(404)
+    except ValueError:
+        return jsonify({"erreur": "Nombre invalide."}), 400
+
+
+@app.delete("/api/publications/<pid>")
+@connecte
+def publication_supprime(pid):
+    pubs.supprime(g.esp, pid)
+    return jsonify({"ok": True})
+
+
+@app.post("/api/publications/maj")
+@connecte
+def publications_maj():
+    if job_en_cours(g.u["id"]):
+        return jsonify({"erreur": "Une tâche est déjà en cours."}), 409
+    return jsonify({"job": _lance_releve(g.u["id"], forcer=True)})
+
+
+def _lance_releve(uid: int, forcer: bool = False):
+    if job_en_cours(uid):
+        return None
+    esp = espace_client(uid)
+    return lance(uid, "Mise à jour de tes publications", pubs.releve, esp, esp.lit_config(), os.getenv("APIFY_TOKEN"),
+                 forcer=forcer, demo=en_demo())
 
 
 # ------------------------------------------------------------
@@ -510,6 +575,12 @@ def planificateur():
         try:
             now = datetime.now()
             lundi = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+            for u in ab.tous():  # relevés des Reels publiés (J+2, J+7)
+                try:
+                    if droits(u)["actif"] and pubs.a_relever_esp(espace_client(u["id"])):
+                        _lance_releve(u["id"])
+                except Exception:  # noqa: BLE001
+                    traceback.print_exc()
             if now.hour >= 6:
                 for u in ab.tous():
                     d = droits(u)

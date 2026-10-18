@@ -244,7 +244,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         """Sauvegarde (partielle ou finale) : la galerie affiche les Reels au fur et à mesure."""
         sauve(esp, {
             "id": aid, "date": debut.isoformat(timespec="minutes"), "mode": mode, "titre": titre, "demo": demo, "en_cours": en_cours,
-            "saisie": saisie, "criteres": {k: cfg["analyse"][k] for k in ("mois", "vues_min", "taux_engagement_min")},
+            "saisie": saisie, "criteres": {k: cfg["analyse"].get(k) for k in ("mois", "vues_min", "taux_engagement_min", "seuil_mode", "seuil_multiple", "seuil_plancher")},
             "objectifs": o, "stats": stats, "planning": extra.get("planning", []),
             "posts": [_post_vers_dict(p) for p in affiches],
             "voix_client": extra.get("voix_client", {}), "decouvertes": extra.get("decouvertes", []),
@@ -357,7 +357,8 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         else:
             a_un_compte = any((cfg.get("mon_compte") or {}).values())
             mes_posts = mon_compte(cfg, token, ia) if (token and ia and a_un_compte) else []
-            appr = synthese(mes_posts, suivi_excel([esp.suivi]))
+            import publications as pubs_mod
+            appr = synthese(mes_posts, suivi_excel([esp.suivi]) + pubs_mod.pour_apprentissage(esp))
             appr = complete_avec_profil(esp, appr)
         texte_voix = voix(cfg, esp.racine, appr.get("meilleures_legendes") or [])
 

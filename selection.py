@@ -50,9 +50,11 @@ def calcule_scores(posts: list[Post], cfg: dict) -> list[Post]:
     for (plat, compte), lst in par_compte.items():
         vues = [p.vues for p in lst if p.vues]
         med = statistics.median(vues) if vues else None
+        seuil = seuil_vues(a, med)
         for p in lst:
             p.score_viral = round(p.vues / med, 2) if (med and p.vues) else 0.0
-            p.criteres_ok = bool(p.vues and p.vues >= a["vues_min"]
+            p.seuil_vues = seuil
+            p.criteres_ok = bool(p.vues and p.vues >= seuil
                                  and (p.taux_engagement or 0) >= a["taux_engagement_min"])
             retenus.append(p)
 
@@ -64,6 +66,16 @@ def calcule_scores(posts: list[Post], cfg: dict) -> list[Post]:
     return retenus
 
 
+def seuil_vues(a: dict, mediane: float | None) -> int:
+    """
+    Seuil fixe (vues_min) ou automatique : N fois les vues habituelles du compte, avec un plancher.
+    Le mode automatique s'adapte aux petits comptes comme aux très gros.
+    """
+    if a.get("seuil_mode") == "auto" and mediane:
+        return int(max(a.get("seuil_plancher", 30000), a.get("seuil_multiple", 3) * mediane))
+    return int(a["vues_min"])
+
+
 def calcule_scores_individuels(posts: list[Post], cfg: dict):
     """Pour des Reels donnés un par un : pas de médiane de compte, mais engagement et critères."""
     a = cfg["analyse"]
@@ -72,7 +84,8 @@ def calcule_scores_individuels(posts: list[Post], cfg: dict):
         if p.vues:
             p.taux_engagement = round(p.interactions / p.vues, 4)
             p.taux_commentaires = round((p.commentaires or 0) / p.vues, 5)
-        p.criteres_ok = bool(p.vues and p.vues >= a["vues_min"] and (p.taux_engagement or 0) >= a["taux_engagement_min"])
+        p.seuil_vues = int(a["vues_min"])
+        p.criteres_ok = bool(p.vues and p.vues >= p.seuil_vues and (p.taux_engagement or 0) >= a["taux_engagement_min"])
 
 
 # ------------------------------------------------------------

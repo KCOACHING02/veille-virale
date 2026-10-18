@@ -50,6 +50,7 @@ class Post:
     taux_commentaires: float | None = None
     score_viral: float = 0.0
     criteres_ok: bool = False
+    seuil_vues: int | None = None  # seuil de vues appliqué à ce Reel (fixe ou propre à son compte)
     creneau: str = ""
     demande: bool = False          # Reel donné explicitement par l'utilisateur
     adaptation: dict = field(default_factory=dict)
