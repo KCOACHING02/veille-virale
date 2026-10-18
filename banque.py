@@ -8,6 +8,7 @@ Pixabay est utilisé en priorité. Sans clé, en mode démo, des images de démo
 from __future__ import annotations
 
 import hashlib
+import re
 import json
 import os
 import time
@@ -72,15 +73,49 @@ def _pixabay(chemin: str, params: dict) -> dict:
     return d
 
 
+MOTS_VIDES = set("""a au aux avec ce ces cet cette dans de des du elle en et il la le les leur ma mes mon ne ni ou où par pas pour qui que
+sa se ses son sur ta te tes toi ton tu un une vos votre vous plan photo gros image écran texte affiche s'affiche lisible sans
+the a an of with on in at to and or for your you""".split())
+
+
+def _langue(requete: str) -> str:
+    """Les mots-clés de Claude sont en anglais ; ce que tape l'utilisatrice est le plus souvent en français."""
+    bas = requete.lower()
+    if re.search(r"[éèêàâçùûôîœ]", bas) or re.search(r"\b(le|la|les|des|une|du|avec|pour|sur)\b", bas):
+        return "fr"
+    return "en"
+
+
+def _variantes(requete: str) -> list[str]:
+    """Requête complète, puis de plus en plus courte : une phrase entière trouve rarement quelque chose."""
+    mots = [m for m in re.split(r"[\s,;:.«»\"'’!?()]+", requete) if m and m.lower() not in MOTS_VIDES and len(m) > 1]
+    res = [requete.strip()]
+    for k in (5, 3, 2, 1):
+        v = " ".join(mots[:k])
+        if v and v not in res:
+            res.append(v)
+    return res
+
+
 def photos(requete: str, n: int = 15, orientation: str = "portrait") -> list[dict]:
     if not active():
         return demo_photos(requete, n)
+    for v in _variantes(requete):
+        res = _photos(v, n, orientation)
+        if len(res) >= 3:
+            return res
+    return res
+
+
+def _photos(requete: str, n: int, orientation: str) -> list[dict]:
     if fournisseur() == "pixabay":
+        lang = _langue(requete)
         d = _pixabay("/", {"q": requete[:100], "per_page": max(3, n), "image_type": "photo", "safesearch": "true",
-                           "orientation": "vertical" if orientation == "portrait" else "all", "lang": "en"})
+                           "orientation": "vertical" if orientation == "portrait" else "all", "lang": lang})
         hits = d.get("hits", [])
         if len(hits) < 4 and orientation == "portrait":  # peu de photos verticales : on élargit
-            hits += _pixabay("/", {"q": requete[:100], "per_page": max(3, n), "image_type": "photo", "safesearch": "true", "lang": "en"}).get("hits", [])
+            hits += _pixabay("/", {"q": requete[:100], "per_page": max(3, n), "image_type": "photo", "safesearch": "true",
+                                   "lang": lang}).get("hits", [])
         return [{"id": f"x{h['id']}", "type": "photo", "miniature": h.get("webformatURL") or h.get("previewURL"),
                  "grande": h.get("largeImageURL") or h.get("webformatURL"), "auteur": h.get("user", ""), "lien": h.get("pageURL", ""),
                  "alt": h.get("tags", "")} for h in hits[:n]]
@@ -94,7 +129,11 @@ def videos(requete: str, n: int = 12) -> list[dict]:
     if not active():
         return []
     if fournisseur() == "pixabay":
-        d = _pixabay("/videos/", {"q": requete[:100], "per_page": max(3, n * 2), "safesearch": "true", "lang": "en"})
+        d = {"hits": []}
+        for v in _variantes(requete):
+            d = _pixabay("/videos/", {"q": v[:100], "per_page": max(3, n * 2), "safesearch": "true", "lang": _langue(v)})
+            if len(d.get("hits", [])) >= 3:
+                break
         res = []
         for v in d.get("hits", []):
             tailles = [x for x in (v.get("videos") or {}).values() if isinstance(x, dict) and x.get("url")]
