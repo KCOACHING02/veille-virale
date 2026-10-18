@@ -152,7 +152,7 @@ def _source(post: dict) -> dict:
     return {"format": post.get("format"), "url": post.get("url"), "compte": post.get("compte"), "duree_s": post.get("duree_s"),
             "slides_modele": [{"original": x.get("original", ""), "visuel": x.get("visuel", "")} for x in ad.get("slides_modele") or []
                               if isinstance(x, dict)][:10],
-            "style_visuel": ad.get("style_visuel") or "",
+            "style_visuel": ad.get("style_visuel") or "", "son": post.get("son") or {},
             "legende": (post.get("legende") or "")[:1500], "transcription": (post.get("transcription") or "")[:2500],
             "structure": ad.get("structure") or "", "analyse_visuelle": ad.get("analyse_visuelle") or "",
             "texte_ecran": ad.get("texte_ecran") or "", "hook_original": ad.get("hook_original") or ""}
@@ -728,6 +728,16 @@ def _txt_dm(p: dict) -> str:
     return "\n".join(lignes).strip() + "\n"
 
 
+def _ligne_son(p: dict) -> str:
+    so = (p.get("source") or {}).get("son") or {}
+    if so.get("titre") and not so.get("original"):
+        return (f"3. Son du Reel modèle : « {so['titre']} »{' — ' + so['artiste'] if so.get('artiste') else ''}. Cherche-le dans Instagram "
+                f"(bouton Audio) au moment de publier{' : ' + so['url'] if so.get('url') else ''}.")
+    if so.get("original"):
+        return "3. Le Reel modèle utilisait un son original (la voix) : garde ta propre voix, ou ajoute un son tendance à volume bas."
+    return "3. Ajoute un son tendance dans Instagram si tu veux (volume bas si tu parles)."
+
+
 def package(p: dict, d: Path, sortie: Path, fichiers: list[str]) -> str:
     nom = f"{'carrousel' if p['type'] == 'carrousel' else 'reel'}_{p['id'][:15]}.zip"
     lisez = [
@@ -735,7 +745,7 @@ def package(p: dict, d: Path, sortie: Path, fichiers: list[str]) -> str:
         "1. Ouvre Instagram > + > " + ("Publication, et sélectionne les slides dans l'ordre (slide_01, slide_02…)."
                                       if p["type"] == "carrousel" else "Reel, et choisis reel.mp4. Mets couverture.jpg comme couverture."),
         "2. Colle la légende de « legende.txt ».",
-        "3. Ajoute un son tendance dans Instagram si tu veux (volume bas si tu parles).",
+        _ligne_son(p),
         "4. Active la réponse automatique au mot-clé avec le premier message de « messages-prives.txt ».",
         "5. Publie, puis colle le lien du post dans Veille virale (« J'ai publié ») pour suivre ses résultats.", "",
     ]
@@ -748,3 +758,32 @@ def package(p: dict, d: Path, sortie: Path, fichiers: list[str]) -> str:
         z.writestr("messages-prives.txt", _txt_dm(p))
         z.writestr("LISEZ-MOI.txt", "\n".join(lisez))
     return nom
+
+
+# ------------------------------------------------------------
+#  Aperçu en direct (rendu léger, sans file de tâches : aucune API consommée)
+# ------------------------------------------------------------
+def apercu(esp: Espace, sid: str, i: int) -> bytes:
+    """Image JPEG de la slide i telle qu'elle sera créée (ou de la couverture du Reel monté sur la vidéo)."""
+    import io
+    p = charge(esp, sid)
+    d = dossier(esp, sid)
+    theme, typo, pseudo = p.get("theme", "sombre"), p.get("typo", "moderne"), p.get("pseudo", "")
+    if p["type"] == "reel" and p.get("video"):
+        cadre = d / "apercu_cadre.jpg"
+        src = d / "sources" / p["video"]
+        if not cadre.exists() or cadre.stat().st_mtime < src.stat().st_mtime:
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "0.6", "-i", str(src), "-frames:v", "1",
+                            "-vf", "scale=1080:-2", str(cadre)], capture_output=True, timeout=60)
+        im = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, cadre if cadre.exists() else None, theme, "", VERTICAL,
+                   reel=True, typo=typo)
+    else:
+        slides = p["slides"] or [{"titre": p.get("hook") or "", "texte": ""}]
+        i = max(0, min(i, len(slides) - 1))
+        images = attribue(slides, [d / "sources" / x for x in p["images"]])
+        reel = p["type"] == "reel"
+        im = slide(slides[i], i, len(slides), images[i], theme, pseudo, VERTICAL if reel else CARROUSEL, reel=reel, typo=typo)
+    im.thumbnail((540, 960))
+    tampon = io.BytesIO()
+    im.save(tampon, "JPEG", quality=82)
+    return tampon.getvalue()

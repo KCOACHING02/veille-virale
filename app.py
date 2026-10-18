@@ -580,6 +580,22 @@ def assistant_compte():
     return jsonify({"job": jid})
 
 
+@app.post("/api/assistant/comptes-suggeres")
+@connecte
+def assistant_comptes():
+    """Suggestions de comptes à copier, vérifiées par une vraie collecte (quelques centimes) : file de tâches + abonnement actif."""
+    msg = refus(g.u)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    if job_en_cours(g.u["id"]):
+        return jsonify({"erreur": "Une veille est en cours : réessaie quand elle sera terminée."}), 409
+    import suggestions
+    cfg = g.esp.lit_config()
+    c = request.get_json(silent=True) or {}
+    cfg["niche"].update({k: v for k, v in (c.get("niche") or {}).items() if v})
+    return jsonify({"job": lance(g.u["id"], "Comptes suggérés", suggestions.suggere, cfg, os.getenv("APIFY_TOKEN"), demo=en_demo())})
+
+
 @app.post("/api/assistant/hashtags")
 @connecte
 def assistant_hashtags():
@@ -830,6 +846,18 @@ def studio_generer(sid):
     jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), file_=FILE_STUDIO,
                 apres=None if deja else (lambda _: ab.compte_usage(uid, studio=1)))
     return jsonify({"job": jid})
+
+
+@app.get("/api/studio/<sid>/apercu/<int:i>")
+@connecte
+def studio_apercu(sid, i):
+    _projet(sid)
+    from flask import Response
+    try:
+        return Response(studio.apercu(g.esp, sid, i), mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+        abort(500)
 
 
 @app.get("/studio/<sid>/<dossier_>/<nom>")

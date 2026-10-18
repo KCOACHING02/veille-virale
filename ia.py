@@ -454,3 +454,40 @@ def propose_hashtags(cfg: dict) -> dict:
     n = cfg["niche"]
     texte = f"Niche : {n['description']}\nCible : {n['cible']}\nLangue du marché : {n.get('langue', 'français')}\nPropose des hashtags où publient les comptes qui cartonnent dans cette niche."
     return ia._appel(OUTIL_HASHTAGS, texte, max_tokens=800, systeme="Tu es expert Instagram et TikTok.")
+
+
+OUTIL_COMPTES = {
+    "name": "proposer_comptes",
+    "description": "Comptes Instagram publics à surveiller pour une niche.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"comptes": {"type": "array", "items": {"type": "object", "properties": {
+            "pseudo": {"type": "string", "description": "Nom d'utilisateur Instagram exact, sans @."},
+            "pourquoi": {"type": "string", "description": "En 10 mots maximum : ce qu'on peut leur copier."}},
+            "required": ["pseudo", "pourquoi"]}}},
+        "required": ["comptes"],
+    },
+}
+
+
+def propose_comptes(cfg: dict, deja: list[str]) -> list[dict]:
+    """Candidats à vérifier ensuite (Claude peut se tromper de pseudo : chaque compte est contrôlé par une vraie collecte)."""
+    ia = IA.__new__(IA)
+    import anthropic
+    ia.client, ia.cfg, ia.modele, ia.systeme = anthropic.Anthropic(), cfg, cfg["claude"]["modele"], ""
+    n = cfg["niche"]
+    texte = (f"Niche : {n.get('description', '')}\nCible : {n.get('cible', '')}\nLangue du marché : {n.get('langue', 'français')}\n"
+             f"Déjà surveillés (à exclure) : {', '.join(deja) or 'aucun'}\n\n"
+             "Propose 18 comptes Instagram publics, actifs, qui publient des Reels ou des carrousels à forte audience : "
+             "la moitié dans cette niche et cette langue, l'autre moitié dans des niches voisines ou à l'international "
+             "dont les formats sont faciles à transposer. Donne uniquement des pseudos dont tu es sûr qu'ils existent.")
+    res = ia._appel(OUTIL_COMPTES, texte, max_tokens=1500, systeme="Tu es expert Instagram et veille de contenus viraux.")
+    if res.get("erreur"):
+        raise RuntimeError(res["erreur"])
+    c = res.get("comptes")
+    if isinstance(c, str):
+        try:
+            c = json.loads(c)
+        except ValueError:
+            c = []
+    return [x for x in c or [] if isinstance(x, dict) and x.get("pseudo")]

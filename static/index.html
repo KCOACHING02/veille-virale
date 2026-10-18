@@ -86,6 +86,10 @@ main{min-width:0;padding:20px 28px 80px}
 .badge.ok{background:var(--ok);color:#fff}
 .badge.dem{background:var(--glow);color:#fff}
 .badge.fmt{background:rgba(39,27,45,.78);color:#fff;margin-left:4px}
+.son{display:flex;gap:12px;align-items:flex-start;background:var(--sunk);border-radius:var(--r-m);padding:12px 14px;margin:0 0 6px}
+.son .ic-son{font-size:20px;line-height:1.2}
+.son small{display:block;color:var(--ink-3);font-size:13px;margin-top:2px}
+.son a{color:var(--glow);font-weight:600}
 .slides-modele{list-style:none;margin:0;padding:0;display:grid;gap:12px}
 .slides-modele li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
 .slides-modele .n{width:28px;height:28px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-weight:700;font-size:13px}
@@ -249,6 +253,11 @@ td.num{font-variant-numeric:tabular-nums}
 [hidden]{display:none!important}
 
 .pret-ok{margin:14px 0 0;color:var(--ok);font-weight:600}
+.sugg{display:grid;gap:8px}
+.sugg-c{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+.sugg-c input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--glow);flex-shrink:0}
+.sugg-c div{display:grid;gap:1px;min-width:0}
+.sugg-c span{font-size:13px;color:var(--ink-2)} .sugg-c small{font-size:12.5px;color:var(--ink-3)} .sugg-c a{color:var(--glow)}
 .a-pied div{flex-wrap:wrap}
 @media (max-width:860px){#w-plus-tard{order:3;width:100%;text-align:center}}
 details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--ink-2);font-weight:600;font-size:14px}
@@ -391,6 +400,23 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .coche{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-2);cursor:pointer;margin:0 0 14px}
 .coche input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--glow);flex-shrink:0}
 .st-final{display:grid;gap:12px}
+.st-apercu .ap-tete{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.st-apercu .ap-tete span{color:var(--ink-3);font-size:13px}
+.ap-cadre{position:relative;border-radius:12px;overflow:hidden;background:var(--sunk);aspect-ratio:4/5}
+.ap-cadre.reel{aspect-ratio:9/16;max-height:62vh;margin:0 auto}
+.ap-cadre img{width:100%;height:100%;object-fit:contain;display:block}
+.ap-charge{position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;border:2px solid var(--glow);border-right-color:transparent;animation:t .8s linear infinite;opacity:0;transition:opacity .2s}
+.ap-charge.vu{opacity:1}
+.ap-nav{display:flex;justify-content:center;gap:10px;margin-top:10px}
+/* Mobile : l'aperçu flotte en vignette au-dessus du menu, toujours visible pendant la saisie ; un toucher l'agrandit */
+@media (max-width:860px){
+  .st-apercu{position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));width:112px;z-index:14;padding:5px;margin:0;box-shadow:0 10px 30px -8px rgba(0,0,0,.45);cursor:pointer;transition:width .2s}
+  .st-apercu .ap-tete,.st-apercu .ap-nav{display:none}
+  .st-apercu .ap-cadre{max-width:none;border-radius:9px}
+  .st-apercu.grand{width:min(300px,78vw)}
+  .st-apercu.grand .ap-nav{display:flex}
+  main:has(.st-apercu){padding-bottom:260px}
+}
 .st-final h3{font-size:19px}
 .btn.large{justify-content:center;padding:12px 16px;font-size:15.5px;width:100%}
 .st-attente{display:grid;justify-items:center;text-align:center;gap:10px;padding:18px 6px}
@@ -402,7 +428,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 a.btn{text-decoration:none}
 .lien-admin{display:block;margin-top:6px;color:var(--glow);font-weight:600}
 .st-rendu.reel a{display:none}
-@media (max-width:1100px){.st-grille{grid-template-columns:1fr}.st-droite{position:static}.st-grille.pret .st-droite{order:-1}}
+@media (max-width:1100px){.st-grille{grid-template-columns:1fr}.st-droite{position:static;order:-1}.ap-cadre{max-width:300px;margin:0 auto}.ap-cadre.reel{max-width:220px}}
 @media (max-width:860px){.formats{grid-template-columns:1fr}.st-liste{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.st-actions .btn{flex:1}}
 
 /* ---------- Mobile ---------- */
@@ -935,6 +961,14 @@ function ouvreReel(cle, onglet) {
   $$("[data-studio]", t).forEach(b => b.addEventListener("click", () => choisirFormat(p.cle)));
   t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
 }
+function blocSon(p) {
+  const so = p.son || {};
+  if (!so.titre && !so.artiste) return "";
+  const lien = so.url ? ` <a href="${esc(so.url)}" target="_blank" rel="noopener">Écouter le son</a>` : "";
+  return so.original
+    ? `<div class="son"><span class="ic-son">🎙️</span><div><b>Son original</b>${so.artiste ? ` de @${esc(so.artiste)}` : ""}<small>La voix porte le Reel : tourne avec ta propre voix, ou réutilise ce son.${lien}</small></div></div>`
+    : `<div class="son"><span class="ic-son">🎵</span><div><b>${esc(so.titre)}</b>${so.artiste ? ` — ${esc(so.artiste)}` : ""}<small>Le son utilisé par le Reel viral : ajoute-le dans Instagram au moment de publier.${lien}</small></div></div>`;
+}
 function urlEmbed(p) {
   const u = p.url || "";
   let m = u.match(/instagram\.com\/(?:[^/]+\/)?(?:reels?|p|tv)\/([\w-]+)/);
@@ -961,6 +995,7 @@ function corpsOnglet(p, o) {
     <h3>Autres hooks possibles</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
     <h3>Transposabilité à ta niche</h3><p><span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
   if (o === "Adaptation") return `
+    ${blocSon(p)}
     ${ad.hook_viral ? `<h3>Hook viral à reprendre${ad.langue_originale && ad.hook_viral !== ad.hook_original ? ` (traduit de l'${esc(ad.langue_originale)})` : ""}</h3><div class="hooks">${copiable(ad.hook_viral)}</div>
       ${ad.hook_viral !== ad.hook_original ? `<p style="margin:6px 0 0;color:var(--ink-3);font-size:13.5px">Original : ${esc(ad.hook_original)}</p>` : ""}` : ""}
     ${ad.legende_reprise ? `<h3>Légende à reprendre${ad.legende_reprise !== p.legende ? " (traduite)" : ""}</h3>${copiable(ad.legende_reprise)}` : ""}
@@ -1094,15 +1129,47 @@ async function renduComptes() {
         <div><h3>Instagram</h3><div class="comptes-l">${(c.instagram || []).map(n => ligne("Instagram", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
         <div><h3>TikTok</h3><div class="comptes-l">${(c.tiktok || []).map(n => ligne("TikTok", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
       </div>
+      <div style="margin-top:14px"><button class="btn" id="c-sugg">✨ Suggère-moi des comptes qui cartonnent</button><div id="c-sugg-res" style="margin-top:10px"></div></div>
       <form class="ajout" id="form-ajout"><input id="ajout-txt" placeholder="@compte, tt:compte ou lien du profil" aria-label="Compte à ajouter"><select class="select" id="ajout-pl"><option>Instagram</option><option>TikTok</option></select><button class="btn prim">Ajouter</button></form>
     </div>
     ${dec.length ? `<div class="panneau"><h2>Comptes repérés dans ta niche</h2><p style="color:var(--ink-2);margin:-4px 0 12px">Ils dépassent régulièrement ${nbLong(S.analyse.criteres.vues_min)} vues sur les hashtags de ta niche.</p>
       <div style="overflow-x:auto"><table><thead><tr><th>Compte</th><th>Reels au-dessus du seuil</th><th>Meilleur</th><th>Engagement</th><th></th></tr></thead><tbody>
       ${dec.map(d => `<tr><td><b>@${esc(d.compte)}</b> <span style="color:var(--ink-3)">${d.plateforme}</span></td><td class="num">${d.reels_au_dessus_seuil}</td><td class="num"><a href="${esc(d.exemple)}" target="_blank" rel="noopener">${nb(d.vues_max)} vues</a></td><td class="num">${pc(d.engagement_median)}</td><td><button class="btn petit" data-ajoute="${d.plateforme}|${esc(d.compte)}">Ajouter</button></td></tr>`).join("")}
       </tbody></table></div></div>` : ""}`;
+  $("#c-sugg").onclick = () => suggereComptes($("#c-sugg-res"), async comptes => {
+    try { const r = await api("/api/comptes", {method: "POST", body: {texte: comptes.map(c => "@" + c).join("\n")}}); toast("Ajouté : " + r.ajoutes.join(", ")); }
+    catch (e) { toast(e.message); }
+    setTimeout(renduComptes, 1200);
+  });
   $("#form-ajout").onsubmit = async e => { e.preventDefault(); const r = await api("/api/comptes", {method: "POST", body: {texte: $("#ajout-txt").value, plateforme: $("#ajout-pl").value}}); toast(r.ajoutes.length ? "Ajouté : " + r.ajoutes.join(", ") : "Rien à ajouter"); renduComptes(); };
   $$("[data-retire]", el).forEach(b => b.onclick = async () => { const [pl, n] = b.dataset.retire.split("|"); await api("/api/comptes", {method: "DELETE", body: {plateforme: pl, compte: n}}); toast("@" + n + " retiré"); renduComptes(); });
   $$("[data-ajoute]", el).forEach(b => b.onclick = async () => { const [pl, n] = b.dataset.ajoute.split("|"); await api("/api/comptes", {method: "POST", body: {texte: (pl === "TikTok" ? "tt:" : "ig:") + n}}); toast("@" + n + " ajouté à ta veille"); renduComptes(); });
+}
+
+// ---------------------------------------------------------------- Comptes suggérés (vérifiés)
+async function suggereComptes(zone, ajoute, niche) {
+  zone.innerHTML = `<p class="encours"><span class="spin"></span><span class="sg-phrase">Je cherche des comptes qui cartonnent dans ta niche…</span></p>`;
+  let jid;
+  try { jid = (await api("/api/assistant/comptes-suggeres", {method: "POST", body: {niche}})).job; }
+  catch (e) { zone.innerHTML = ""; if (!e.data?.quota) toast(e.message); return; }
+  const fin = async () => {
+    let j; try { j = await api("/api/jobs/" + jid); } catch { return setTimeout(fin, 3000); }
+    const der = (j.logs || []).slice(-1)[0]; if (der && $(".sg-phrase", zone)) $(".sg-phrase", zone).textContent = der.m.replace(/^[✅\s]+/u, "");
+    if (!["terminé", "erreur"].includes(j.statut)) return setTimeout(fin, 2000);
+    if (j.statut === "erreur") { zone.innerHTML = `<p class="erreur">${esc(j.erreur)}</p>`; return; }
+    const r = j.resultat || [];
+    if (!r.length) { zone.innerHTML = `<p class="aide">Aucun compte vérifié cette fois. Réessaie, ou ajoute des comptes que tu connais.</p>`; return; }
+    zone.innerHTML = `<div class="sugg">${r.map((c, i) => `<label class="sugg-c"><input type="checkbox" data-sg="${i}" checked>
+        <div><b>@${esc(c.compte)}</b><span>${c.vues_mediane ? nb(c.vues_mediane) + " vues habituelles" : c.likes_median ? nb(c.likes_median) + " j'aime habituels" : ""}${c.reels || c.carrousels ? ` · ${c.reels} Reels, ${c.carrousels} carrousels` : ""}</span>
+        <small>${esc(c.pourquoi || "")}${c.exemple ? ` · <a href="${esc(c.exemple)}" target="_blank" rel="noopener">voir un exemple</a>` : ""}</small></div></label>`).join("")}</div>
+      <p style="margin:10px 0 0"><button class="btn prim petit" id="sg-ajout">Ajouter les comptes cochés</button></p>`;
+    $("#sg-ajout", zone).onclick = async () => {
+      const choisis = $$("[data-sg]", zone).filter(x => x.checked).map(x => r[+x.dataset.sg].compte);
+      if (!choisis.length) return toast("Coche au moins un compte.");
+      await ajoute(choisis); zone.innerHTML = `<p class="pret-ok">✓ ${choisis.length} compte${choisis.length > 1 ? "s" : ""} ajouté${choisis.length > 1 ? "s" : ""}</p>`;
+    };
+  };
+  setTimeout(fin, 1500);
 }
 
 // ---------------------------------------------------------------- Nouvelle analyse
@@ -1309,10 +1376,10 @@ function sauveProjet(immediat) {
     if ($("#st-hook")) corps.hook = $("#st-hook").value;
     if ($("#st-script")) corps.script = $("#st-script").value;
     if ($("#st-sous")) corps.sous_titres = $("#st-sous").checked;
-    try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: corps}); $("#st-enregistre").textContent = "Enregistré"; } catch (e) { toast(e.message); }
+    try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: corps}); $("#st-enregistre").textContent = "Enregistré"; majApercu(); } catch (e) { toast(e.message); }
   };
   $("#st-enregistre") && ($("#st-enregistre").textContent = "…");
-  return immediat ? go() : (S.minuteurStudio = setTimeout(go, 700));
+  return immediat ? go() : (S.minuteurStudio = setTimeout(go, 450));
 }
 function renduProjet() {
   const p = S.projet, el = $("#studio");
@@ -1332,7 +1399,9 @@ function renduProjet() {
       <div class="st-rendu ${p.type}">${p.fichiers.map(f => f.endsWith(".mp4")
         ? `<video src="${sortie(f)}?v=${encodeURIComponent(p.genere_le || "")}" controls playsinline preload="metadata"></video>`
         : `<a href="${sortie(f)}?telecharger=1" title="Télécharger ${esc(f)}"><img src="${sortie(f)}?v=${encodeURIComponent(p.genere_le || "")}" alt="${esc(f)}" loading="lazy"></a>`).join("")}</div>
-      <a class="btn prim large" href="${sortie(p.zip)}?telecharger=1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Télécharger le package (.zip)</a>
+      <button class="btn prim large" id="st-pellicule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>${partageNatif() ? "Enregistrer dans mes photos" : "Télécharger " + (p.type === "carrousel" ? "les slides" : "la vidéo")}</button>
+      <button class="btn large" id="st-copier-legende">Copier la légende</button>
+      <a class="btn large" href="${sortie(p.zip)}?telecharger=1">Tout télécharger (.zip)</a>
       <p class="aide">Le package contient ${p.type === "carrousel" ? "les slides dans l'ordre" : "le Reel et sa couverture"}, la légende, ${p.type === "reel" ? "le script, " : ""}le message automatique et la séquence de messages privés, avec les étapes pour publier.</p>
       <button class="btn" id="st-generer">Appliquer mes retouches</button>` : "";
   el.innerHTML = `
@@ -1363,6 +1432,7 @@ function renduProjet() {
           ${pucesStyles(S.optionsStudio || {styles: []}, p.style || "ma_voix")}${astuceVoix(S.optionsStudio || {voix_connue: true})}
           <div class="st-outils"><button class="btn petit prim" id="st-ecrire" ${ecrit ? "disabled" : ""}>Réécrire dans ce style</button></div>
           <hr class="st-sep">
+          ${p.type === "reel" && p.source?.son ? blocSon({son: p.source.son}) : ""}
           ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
             ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (ce que tu dis dans la vidéo)</label>` : ""}
             <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>` : ""}
@@ -1390,6 +1460,10 @@ function renduProjet() {
         </div>
       </div>
       <div class="st-droite">
+        ${!enCours ? (() => { const n = avecVideo ? 1 : Math.max(p.slides.length, 1); S.apercuI = Math.min(S.apercuI || 0, n - 1);
+          return `<div class="st-bloc st-apercu"><div class="ap-tete"><b>Aperçu</b><span id="ap-num">${n > 1 ? `${p.type === "reel" ? "Plan" : "Slide"} ${S.apercuI + 1} / ${n}` : avecVideo ? "Début de ton Reel" : ""}</span></div>
+            <div class="ap-cadre ${p.type}"><img id="st-apercu" alt="Aperçu de la slide"><span class="ap-charge" id="ap-charge"></span></div>
+            ${n > 1 ? `<div class="ap-nav"><button class="btn petit" id="ap-prec" aria-label="Slide précédente">←</button><button class="btn petit" id="ap-suiv" aria-label="Slide suivante">→</button></div>` : ""}</div>`; })() : ""}
         <div class="st-bloc st-final" id="st-final">
           ${enCours ? `<div class="st-attente"><span class="spin gros"></span><b id="st-phrase">${esc(tache?.phrase || "Création en cours…")}</b><p class="aide">Tu peux continuer à naviguer : je te préviens quand c'est prêt.</p></div>`
             : p.statut === "erreur" ? `<p class="erreur">${esc(p.erreur || "La création a échoué.")}</p><button class="btn prim large" id="st-generer">Réessayer</button>`
@@ -1428,6 +1502,53 @@ function renduProjet() {
   ["dragleave", "drop"].forEach(ev => depot.addEventListener(ev, e => { e.preventDefault(); depot.classList.remove("survol"); }));
   depot.addEventListener("drop", e => envoieFichiers([...e.dataTransfer.files]));
   $$("#st-generer", el).forEach(b => b.onclick = genereProjet);
+  if ($("#st-apercu")) brancheApercu();
+  if (p.statut === "pret") brancheResultat(p);
+}
+// ---- Aperçu en direct
+function majApercu() {
+  const img = $("#st-apercu"); if (!img || !S.projet) return;
+  $("#ap-charge")?.classList.add("vu");
+  img.onload = img.onerror = () => $("#ap-charge")?.classList.remove("vu");
+  img.src = `/api/studio/${S.projet.id}/apercu/${S.apercuI || 0}?t=${Date.now()}`;
+  const n = S.projet.type === "reel" && S.projet.video ? 1 : Math.max(S.projet.slides.length, 1);
+  if ($("#ap-num") && n > 1) $("#ap-num").textContent = `${S.projet.type === "reel" ? "Plan" : "Slide"} ${(S.apercuI || 0) + 1} / ${n}`;
+}
+function brancheApercu() {
+  const n = () => S.projet.type === "reel" && S.projet.video ? 1 : Math.max(S.projet.slides.length, 1);
+  $(".st-apercu")?.addEventListener("click", e => { if (matchMedia("(max-width:860px)").matches && !e.target.closest(".ap-nav")) $(".st-apercu").classList.toggle("grand"); });
+  $("#ap-prec")?.addEventListener("click", () => { S.apercuI = ((S.apercuI || 0) - 1 + n()) % n(); majApercu(); });
+  $("#ap-suiv")?.addEventListener("click", () => { S.apercuI = ((S.apercuI || 0) + 1) % n(); majApercu(); });
+  // L'aperçu suit la slide qu'on est en train de modifier
+  $$(".st-slide").forEach((li, i) => li.addEventListener("focusin", () => { if (S.apercuI !== i) { S.apercuI = i; majApercu(); } }));
+  majApercu();
+}
+// ---- Enregistrer dans la pellicule (partage natif iPhone / Android), sinon téléchargement
+const partageNatif = () => { try { return !!navigator.canShare && navigator.canShare({files: [new File(["x"], "x.jpg", {type: "image/jpeg"})]}); } catch { return false; } };
+async function prepareFichiers(p) {
+  // Préparés à l'avance : sur iPhone, le partage doit partir immédiatement après le geste de l'utilisateur
+  if (!partageNatif() || S.partage?.cle === p.id + p.genere_le) return;
+  const noms = p.type === "carrousel" ? p.fichiers.filter(f => f.endsWith(".jpg")) : p.fichiers.filter(f => f.endsWith(".mp4"));
+  try {
+    const fichiers = await Promise.all(noms.map(async n => { const b = await (await fetch(`/studio/${p.id}/sortie/${encodeURIComponent(n)}`)).blob();
+      return new File([b], n, {type: n.endsWith(".mp4") ? "video/mp4" : "image/jpeg"}); }));
+    S.partage = {cle: p.id + p.genere_le, fichiers};
+  } catch { S.partage = null; }
+}
+function brancheResultat(p) {
+  const copier = () => navigator.clipboard?.writeText(p.legende || "").then(() => toast("Légende copiée : colle-la dans Instagram"), () => {});
+  $("#st-copier-legende")?.addEventListener("click", copier);
+  $("#st-pellicule")?.addEventListener("click", () => {
+    if (partageNatif() && S.partage?.cle === p.id + p.genere_le) {
+      copier();
+      navigator.share({files: S.partage.fichiers}).catch(e => { if (e.name !== "AbortError") toast("Partage impossible : utilise « Tout télécharger »."); });
+      return;
+    }
+    // Ordinateur : téléchargement des fichiers un par un
+    const noms = p.type === "carrousel" ? p.fichiers.filter(f => f.endsWith(".jpg")) : p.fichiers.filter(f => f.endsWith(".mp4"));
+    noms.forEach((n, k) => setTimeout(() => { const a = document.createElement("a"); a.href = `/studio/${p.id}/sortie/${encodeURIComponent(n)}?telecharger=1`; a.download = n; document.body.appendChild(a); a.click(); a.remove(); }, k * 350));
+  });
+  prepareFichiers(p);
 }
 function envoieFichiers(fichiers) {
   if (!fichiers.length || !S.projet) return;
@@ -1696,6 +1817,7 @@ const PAGES = {
     <div class="f"><label for="w-comptes">Un compte par ligne</label>
       <textarea id="w-comptes" placeholder="@compte_insta&#10;tt:compte_tiktok&#10;https://www.instagram.com/compte/">${esc([...(c.instagram || []).map(x => "@" + x), ...(c.tiktok || []).map(x => "tt:" + x)].join("\n"))}</textarea>
       <div class="reconnus" id="w-reconnus"></div><span class="aide" id="w-limite"></span></div>
+    <div class="f"><button type="button" class="btn" id="w-sugg">✨ Suggère-moi des comptes qui cartonnent</button><div id="w-sugg-res" style="margin-top:10px"></div></div>
     <p class="aide">Conseil : 5 à 10 comptes qui font régulièrement beaucoup de vues. Ta première veille prend 10 à 20 minutes, tu peux fermer la page.</p>`; },
   compte: () => `<h2 id="a-titre">Commençons par ton compte</h2>
     <p class="intro">Claude lit tes derniers Reels pour comprendre ton positionnement, ce qui marche déjà chez toi et ton ton. Les étapes suivantes seront pré-remplies.</p>
@@ -1780,6 +1902,9 @@ const PAGES = {
 const APRES = {
   demarrer: () => {
     APRES.modeles();
+    $("#w-sugg").onclick = () => suggereComptes($("#w-sugg-res"), async comptes => {
+      const t = $("#w-comptes"); t.value = [t.value.trim(), ...comptes.map(c => "@" + c)].filter(Boolean).join("\n"); t.dispatchEvent(new Event("input"));
+    }, W.p.niche);
     const termine = async () => { const err = analyseSaisie($("#w-comptes").value, "Instagram").some(i => i.type === "compte");
       await enregistreEtape(); await api("/api/profil", {method: "PUT", body: {onboarding_termine: true}}); return err; };
     $("#w-plus-tard").onclick = async () => { await termine(); fermeAssistant(); await chargeEtat(); va("accueil"); };

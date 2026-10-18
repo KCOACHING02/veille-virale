@@ -17,7 +17,7 @@ APIFY_BASE = "https://api.apify.com/v2"
 # En cas d'échec sur un compte, repli automatique sur apify/instagram-scraper.
 ACTOR_REELS_ECO = os.getenv("APIFY_ACTOR_REELS", "esdrasdw~instagram-content-scraper")
 CHAMPS_REELS = ["displayUrl", "title", "ownerUsername", "url", "timestamp", "videoPlayCount", "likesCount", "commentsCount",
-                "videoDuration", "videoUrl", "shortCode", "id", "caption", "type", "productType", "childPosts", "images"]
+                "videoDuration", "videoUrl", "shortCode", "id", "caption", "type", "productType", "childPosts", "images", "musicInfo", "hasAudio"]
 MAX_SLIDES = 10
 
 # Coût réel des runs Apify (une analyse à la fois : un compteur global suffit)
@@ -88,6 +88,32 @@ def _iso(v) -> str:
 # ------------------------------------------------------------
 #  Normalisation
 # ------------------------------------------------------------
+def _premier(d: dict, *cles):
+    for k in cles:
+        if d.get(k) not in (None, ""):
+            return d[k]
+    return None
+
+
+def son_instagram(it: dict) -> dict:
+    """Son utilisé par un Reel (musique ou son original), quel que soit le format renvoyé par le collecteur."""
+    m = it.get("musicInfo") or {}
+    if not isinstance(m, dict) or not m:
+        return {}
+    m = {**m, **(m.get("music_info") or {}), **(m.get("music_asset_info") or {}), **(m.get("original_sound_info") or {})}
+    titre = _premier(m, "song_name", "songName", "title", "original_audio_title", "audio_title")
+    artiste = _premier(m, "artist_name", "artistName", "display_artist", "ig_artist_username", "artist")
+    if isinstance(artiste, dict):
+        artiste = artiste.get("username") or artiste.get("full_name")
+    original = bool(_premier(m, "uses_original_audio", "usesOriginalAudio", "is_original_audio", "is_original")) or (
+        bool(m.get("original_audio_title")) and not m.get("song_name"))
+    ident = _premier(m, "audio_id", "audioId", "audio_asset_id", "audio_cluster_id", "id")
+    if not (titre or artiste or ident):
+        return {}
+    return {"titre": str(titre or ("Son original" if original else "")), "artiste": str(artiste or ""), "original": original,
+            "url": f"https://www.instagram.com/reels/audio/{ident}/" if ident else ""}
+
+
 def post_instagram(it: dict) -> Post | None:
     if it.get("error") or not (it.get("shortCode") or it.get("id")):
         return None
@@ -109,6 +135,8 @@ def post_instagram(it: dict) -> Post | None:
         cover_url=it.get("displayUrl") or (it.get("images") or [None])[0],
         duree_s=it.get("videoDuration"),
     )
+    if fmt == "Reel":
+        p.son = son_instagram(it)
     if fmt == "Carrousel":
         for c in (it.get("childPosts") or [])[:MAX_SLIDES]:
             u = c.get("displayUrl") or (c.get("images") or [None])[0] if isinstance(c, dict) else None
@@ -128,7 +156,12 @@ def post_tiktok(it: dict) -> Post | None:
         return None
     auteur = it.get("authorMeta") or {}
     video = it.get("videoMeta") or {}
-    return Post(
+    mu = it.get("musicMeta") or {}
+    son = {}
+    if mu.get("musicName") or mu.get("musicId"):
+        son = {"titre": mu.get("musicName") or "", "artiste": mu.get("musicAuthor") or "", "original": bool(mu.get("musicOriginal")),
+               "url": f"https://www.tiktok.com/music/son-{mu['musicId']}" if mu.get("musicId") else ""}
+    return Post(son=son,
         plateforme="TikTok",
         compte=auteur.get("name") or auteur.get("uniqueId") or "?",
         id=str(it["id"]),
@@ -231,7 +264,7 @@ def _met_en_cache(plateforme: str, compte: str, jours: int, maxi: int, posts: li
     import json
     from dataclasses import asdict
     garde = ("plateforme", "compte", "id", "url", "date", "format", "legende", "likes", "commentaires", "vues",
-             "partages", "enregistrements", "video_url", "cover_url", "duree_s", "commentaires_texte", "medias")
+             "partages", "enregistrements", "video_url", "cover_url", "duree_s", "commentaires_texte", "medias", "son")
     _cache_fichier(plateforme, compte).write_text(json.dumps({
         "date": datetime.now().isoformat(timespec="seconds"), "jours": jours, "max": maxi, "n": len(posts),
         "posts": [{k: v for k, v in asdict(p).items() if k in garde} for p in posts]}, ensure_ascii=False), encoding="utf-8")

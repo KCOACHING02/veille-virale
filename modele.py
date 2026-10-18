@@ -40,6 +40,7 @@ class Post:
     cover_url: str | None = None
     duree_s: float | None = None
     medias: list = field(default_factory=list)              # carrousel : URL de l'image de chaque slide, dans l'ordre
+    son: dict = field(default_factory=dict)                 # {"titre", "artiste", "original": bool, "url"}
     # enrichissements
     commentaires_texte: list = field(default_factory=list)   # [{"texte":…, "likes":…}]
     transcription: str = ""

@@ -51,6 +51,9 @@ def posts_concurrents(comptes: list[tuple[str, str]] | None = None) -> list[Post
                 likes=int(vues * er * 0.8), commentaires=int(vues * er * random.uniform(0.02, 0.12)), vues=vues,
                 partages=int(vues * er * 0.05), enregistrements=int(vues * er * 0.08), duree_s=random.randint(15, 45),
             )
+            if p.format in ("Reel", "Vidéo"):
+                p.son = random.choice([{"titre": "[démo] Espresso", "artiste": "Sabrina Carpenter", "original": False, "url": "https://www.instagram.com/reels/audio/123/"},
+                                       {"titre": "Son original", "artiste": compte, "original": True, "url": ""}])
             if p.format == "Carrousel":  # comme sur Instagram : pas de vues publiques pour un carrousel
                 p.vues, p.partages, p.enregistrements, p.duree_s = None, None, None, None
                 p.likes = int(base * (random.uniform(0.15, 0.5) if viral else random.uniform(0.02, 0.06)))
