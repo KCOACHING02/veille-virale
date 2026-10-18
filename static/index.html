@@ -619,6 +619,7 @@ function corpsOnglet(p, o) {
     <h3>Commentaires les plus likés</h3>
     ${(p.commentaires_texte || []).length ? p.commentaires_texte.slice(0, 25).map(c => `<div class="com"><p>${esc(c.texte)}</p><span>${c.likes} ♥</span></div>`).join("") : "<p>Les commentaires sont lus quand le Reel est adapté.</p>"}`;
   return `
+    ${ad.erreur ? `<p class="erreur" style="margin-bottom:14px">Dernière tentative d'adaptation : ${esc(ad.erreur)}</p>` : ""}
     <div class="adapter-cta"><h2>Adapter ce Reel à ta niche</h2><p>Claude regarde la vidéo, lit les commentaires et écrit tes hooks, ton script, ta légende et ta séquence DM.</p>
     <button class="btn prim" data-adapter="${esc(p.cle)}">Adapter ce Reel</button></div>
     <h3>Légende originale</h3><div class="carte">${esc(p.legende) || "Sans légende"}</div>

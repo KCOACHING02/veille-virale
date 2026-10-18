@@ -152,18 +152,17 @@ def applique_plafonds(cfg: dict) -> dict:
     return cfg
 
 
-def verifie_cle_claude():
-    """Appel gratuit qui valide la clé Claude : on arrête tout de suite au lieu de collecter pour rien."""
+def verifie_cle_claude(cfg: dict | None = None):
+    """Mini-appel (~0,0001 $) avec le vrai modèle : vérifie la clé, le crédit et le modèle avant de dépenser des crédits Apify."""
     import anthropic
+    from ia import explique_erreur
+    modele = ((cfg or {}).get("claude") or {}).get("modele") or "claude-sonnet-5-5"
     try:
-        anthropic.Anthropic().models.list(limit=1)
-    except anthropic.AuthenticationError:
-        raise RuntimeError("La clé Claude (ANTHROPIC_API_KEY) est refusée : elle est invalide, incomplète ou supprimée. "
-                           "Crée une nouvelle clé dans la console Claude et remplace-la dans les variables Railway.") from None
-    except anthropic.PermissionDeniedError:
-        raise RuntimeError("La clé Claude n'a pas les droits nécessaires (organisation ou espace de travail).") from None
-    except Exception as e:  # noqa: BLE001 — réseau, etc. : on n'empêche pas l'analyse
-        log(f"⚠️  Vérification de la clé Claude impossible : {e}")
+        anthropic.Anthropic().messages.create(model=modele, max_tokens=1, messages=[{"role": "user", "content": "ok"}])
+    except (anthropic.AuthenticationError, anthropic.PermissionDeniedError, anthropic.NotFoundError, anthropic.BadRequestError) as e:
+        raise RuntimeError(explique_erreur(e)) from None
+    except Exception as e:  # noqa: BLE001 — réseau, surcharge passagère : on n'empêche pas l'analyse
+        log(f"⚠️  Vérification de Claude impossible : {explique_erreur(e)}")
 
 
 # ------------------------------------------------------------
@@ -186,7 +185,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         if not sans_ia and not a_ia:
             raise RuntimeError("Clé ANTHROPIC_API_KEY manquante (fichier .env).")
         if a_ia:
-            verifie_cle_claude()  # avant de dépenser des crédits Apify
+            verifie_cle_claude(cfg)  # avant de dépenser des crédits Apify
     if mode == "copie" and not (saisie["comptes"] or saisie["posts"]):
         raise RuntimeError("Aucun compte ni lien de Reel reconnu.")
 
@@ -437,7 +436,7 @@ def analyse_mon_compte(esp: Espace, cfg: dict, instagram: str = "", tiktok: str 
         bio = d.bio(instagram or tiktok)
     else:
         token = os.getenv("APIFY_TOKEN")
-        verifie_cle_claude()
+        verifie_cle_claude(cfg)
         from apprentissage import mon_compte
         from ia import IA, propose_profil
         from video import miniatures

@@ -79,6 +79,26 @@ OUTIL_MECANIQUES = {
 
 
 # ------------------------------------------------------------
+#  Messages d'erreur compréhensibles
+# ------------------------------------------------------------
+def explique_erreur(e) -> str:
+    t = str(e)
+    bas = t.lower()
+    if "credit balance" in bas or "billing" in bas or "insufficient" in bas:
+        return ("Pas de crédit sur l'organisation de ta clé Claude. Vérifie dans la console Claude (Facturation) que la clé "
+                "appartient bien à l'organisation qui a les 100 $ de crédits, sinon crée la clé dans la bonne organisation.")
+    if "invalid x-api-key" in bas or "authentication" in bas or " 401" in t:
+        return "La clé Claude est refusée : invalide, incomplète ou supprimée. Remplace-la dans les variables Railway."
+    if "not_found" in bas or "model:" in bas or " 404" in t:
+        return f"Le modèle Claude configuré n'est pas disponible pour cette clé ({t[:160]})."
+    if "rate_limit" in bas or " 429" in t:
+        return "Trop de requêtes vers Claude en même temps (limite de débit). Relance dans quelques minutes."
+    if "overloaded" in bas or " 529" in t:
+        return "Claude est momentanément surchargé. Relance dans quelques minutes."
+    return t[:300]
+
+
+# ------------------------------------------------------------
 #  Client
 # ------------------------------------------------------------
 class IA:
@@ -104,7 +124,7 @@ class IA:
                 raise ValueError("Réponse sans outil")
             except Exception as e:  # noqa: BLE001
                 if essai == 2:
-                    return {"erreur": str(e)}
+                    return {"erreur": explique_erreur(e)}
                 time.sleep(5 * (essai + 1))
         return {}
 
@@ -182,7 +202,10 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
                     log(f"  {i}/{len(posts)}")
         erreurs = [p for p in posts if p.adaptation.get("erreur")]
         if erreurs:
-            log(f"  ⚠️  {len(erreurs)} adaptation(s) en erreur : {erreurs[0].adaptation['erreur'][:200]}")
+            log(f"  ⚠️  {len(erreurs)} adaptation(s) en erreur : {erreurs[0].adaptation['erreur'][:300]}")
+        if posts and len(erreurs) == len(posts):
+            # Rien n'a marché : on arrête avec le vrai motif au lieu d'afficher une analyse vide
+            raise RuntimeError("Aucun Reel n'a pu être adapté. " + erreurs[0].adaptation["erreur"])
 
     # --------------------------------------------------------
     def voix_client(self, posts: list[Post]) -> dict:
