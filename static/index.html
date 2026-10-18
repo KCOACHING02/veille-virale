@@ -219,14 +219,63 @@ td.num{font-variant-numeric:tabular-nums}
 .compte-l .plat{background:var(--surface);border:1px solid var(--line)}
 .compte-l b{font-weight:600}
 .compte-l .btn{margin-left:auto}
-.ajout{display:flex;gap:8px;margin-top:12px}
-.ajout input{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px}
+.ajout{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ajout input{flex:1 1 200px;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;opacity:0;transition:.2s;z-index:50;font-size:14px;pointer-events:none}
 .toast.vu{opacity:1;transform:translateX(-50%)}
 .mini-job{display:flex;align-items:center;gap:10px;background:var(--glow-soft);border-radius:12px;padding:8px 12px;font-size:14px;cursor:pointer;border:0;width:100%;text-align:left}
 .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--glow);border-right-color:transparent;animation:t .8s linear infinite;flex-shrink:0}
 @keyframes t{to{transform:rotate(1turn)}}
 [hidden]{display:none!important}
+
+.pret-ok{margin:14px 0 0;color:var(--ok);font-weight:600}
+.a-pied div{flex-wrap:wrap}
+@media (max-width:860px){#w-plus-tard{order:3;width:100%;text-align:center}}
+details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--ink-2);font-weight:600;font-size:14px}
+
+/* ---------- Accueil ---------- */
+.hero{background:#271B2D;color:#fff;border-radius:var(--r-l);padding:28px;display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;margin-bottom:22px}
+.hero .sur{color:#FF8FAB;font-weight:600;font-size:13.5px;text-transform:uppercase;letter-spacing:.05em}
+.hero h2{font:800 clamp(26px,3.4vw,38px)/1.05 var(--display);font-stretch:82%;margin:6px 0 8px;color:#fff}
+.hero p{color:#D8CEDD;margin:0 0 18px;max-width:60ch}
+.hero .actions{display:flex;gap:10px;flex-wrap:wrap}
+.hero .btn.clair{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
+.ic-hero{width:76px;height:76px;border-radius:22px;background:rgba(255,79,121,.16);color:#FF4F79;display:grid;place-items:center;font:800 34px/1 var(--display)}
+.anneau{--p:0;width:96px;height:96px;border-radius:50%;background:conic-gradient(#FF4F79 calc(var(--p)*1%),rgba(255,255,255,.12) 0);display:grid;place-items:center;position:relative;transition:background .4s}
+.anneau::before{content:"";position:absolute;inset:8px;border-radius:50%;background:#271B2D}
+.anneau b{position:relative;font:800 26px/1 var(--display)} .anneau small{font-size:13px;margin-left:1px}
+.bloc-accueil{margin-bottom:26px}
+.bloc-accueil h2{font-size:20px;margin:0 0 12px}
+.titre-bloc{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.lien{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0;font-size:14px}
+.etapes-s{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.etape-s{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-m);padding:14px;text-align:left;cursor:pointer;display:grid;gap:2px;box-shadow:var(--shadow)}
+.etape-s:hover{border-color:var(--glow)}
+.etape-s .num{width:28px;height:28px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-weight:700;font-size:13px;margin-bottom:8px}
+.etape-s.fait .num{background:var(--ok);color:#fff}
+.etape-s b{font-size:16px} .etape-s small{color:var(--ink-3);font-size:13px}
+.du-jour{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.carte-jour{background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);display:grid;grid-template-columns:92px 1fr;overflow:hidden}
+.carte-jour .vign{border:0;padding:0;background:var(--sunk);cursor:pointer;min-height:140px}
+.carte-jour .vign img{width:100%;height:100%;object-fit:cover;display:block}
+.carte-jour .txt{padding:12px 14px;display:grid;gap:6px;align-content:start}
+.carte-jour small{color:var(--ink-3);font-size:12.5px;text-transform:capitalize} .carte-jour .ok{color:var(--ok);font-weight:600;text-transform:none}
+.carte-jour p{margin:0;font-weight:600;line-height:1.35}
+.carte-jour .actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.crea-recentes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.crea{border:0;background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);padding:0 0 10px;text-align:left;cursor:pointer;overflow:hidden;display:grid;gap:2px}
+.crea img,.crea>span{width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--sunk);display:block;margin-bottom:6px}
+.crea b{font-size:13.5px;padding:0 10px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.crea small{color:var(--ink-3);font-size:12px;padding:0 10px}
+.note-essai{color:var(--ink-3);font-size:14px} .note-essai a{color:var(--glow)}
+@media (max-width:860px){.hero{grid-template-columns:1fr;padding:22px;gap:14px}.ic-hero,.anneau{width:64px;height:64px;font-size:26px}.anneau b{font-size:20px}.etapes-s{grid-template-columns:repeat(2,1fr)}.du-jour{grid-template-columns:1fr}.crea-recentes{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- Sous-navigation et filtres ---------- */
+.sous-nav{margin:0 0 16px}
+.sous-nav .seg{max-width:100%;overflow-x:auto}
+.sous-nav .seg button{white-space:nowrap}
+.filtres-plus{display:flex;gap:10px;flex-wrap:wrap;width:100%}
+#f-plus[aria-expanded=true]{border-color:var(--glow);color:var(--glow)}
 
 /* ---------- Studio ---------- */
 @font-face{font-family:"VV Anton";src:url(/static/fonts/Anton-Regular.ttf);font-display:swap}
@@ -450,13 +499,11 @@ a.btn{text-decoration:none}
 <div class="app">
   <nav class="rail" aria-label="Navigation">
     <div class="marque"><i></i>Veille virale</div>
-    <button class="nav" data-vue="reels" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg>Reels<span class="n" id="n-reels"></span></button>
-    <button class="nav" data-vue="planning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Planning</button>
+    <button class="nav" data-vue="accueil" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>Accueil</button>
+    <button class="nav" data-vue="reels" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg><span class="long">Mes Reels</span><span class="court">Reels</span><span class="n" id="n-reels"></span></button>
     <button class="nav" data-vue="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Studio</button>
     <button class="nav" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
-    <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="long">Paramètres</span><span class="court">Réglages</span></button>
-    <button class="nav" data-vue="comptes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8M22 21c0-3-1.5-5-4-5.7"/></svg>Comptes</button>
-    <button class="nav" data-vue="abonnement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg><span class="long">Abonnement</span><span class="court">Formule</span></button>
+    <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
     <div class="bas">
       <div class="utilisateur" id="utilisateur"></div>
       <div id="job-rail"></div>
@@ -468,20 +515,27 @@ a.btn{text-decoration:none}
     <div class="barre">
       <h1 id="titre">Reels</h1>
       <select class="select" id="choix-analyse" aria-label="Analyse affichée"></select>
-      <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Nouvelle analyse</button>
+      <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Nouvelle veille</button>
     </div>
     <div class="bandeau" id="bandeau-demo" hidden><b>Mode démo.</b> Les clés Apify et Claude ne sont pas configurées : les analyses utilisent des données fictives. Ajoute-les dans le fichier .env puis relance l'application.</div>
     <div id="job-haut"></div>
 
+    <!-- ACCUEIL -->
+    <section data-section="accueil"><div id="accueil"></div></section>
+
     <!-- REELS -->
-    <section data-section="reels">
+    <section data-section="reels" hidden>
+      <div class="sous-nav" data-groupe="reels"></div>
       <div class="resume" id="resume"></div>
       <div class="filtres">
         <div class="seg" id="f-statut" role="group" aria-label="Statut">
-          <button data-v="cdc" aria-pressed="true">Dans le cahier des charges<span class="c"></span></button>
+          <button data-v="cdc" aria-pressed="true">Retenus<span class="c"></span></button>
           <button data-v="adaptes" aria-pressed="false">Adaptés<span class="c"></span></button>
           <button data-v="tous" aria-pressed="false">Tous<span class="c"></span></button>
         </div>
+        <input class="recherche" id="f-texte" type="search" placeholder="Chercher un mot, un hook…" aria-label="Chercher">
+        <button class="btn" id="f-plus" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtres</button>
+        <div class="filtres-plus" id="filtres-plus" hidden>
         <select class="select" id="f-plateforme" aria-label="Plateforme"><option value="">Instagram et TikTok</option><option>Instagram</option><option>TikTok</option></select>
         <select class="select" id="f-compte" aria-label="Compte"></select>
         <select class="select" id="f-tri" aria-label="Trier par">
@@ -491,13 +545,14 @@ a.btn{text-decoration:none}
           <option value="viral">Trier : surperformance</option>
           <option value="date">Trier : plus récents</option>
         </select>
-        <input class="recherche" id="f-texte" type="search" placeholder="Chercher un mot, un hook…" aria-label="Chercher">
+        </div>
       </div>
       <div class="grille" id="grille"></div>
     </section>
 
     <!-- PLANNING -->
     <section data-section="planning" hidden>
+      <div class="sous-nav" data-groupe="reels"></div>
       <div id="planning"></div>
     </section>
 
@@ -508,13 +563,13 @@ a.btn{text-decoration:none}
     <section data-section="resultats" hidden><div id="resultats"></div></section>
 
     <!-- PARAMÈTRES -->
-    <section data-section="parametres" hidden><div id="parametres"></div></section>
+    <section data-section="parametres" hidden><div class="sous-nav" data-groupe="parametres"></div><div id="parametres"></div></section>
 
     <!-- ABONNEMENT -->
-    <section data-section="abonnement" hidden><div id="abonnement"></div></section>
+    <section data-section="abonnement" hidden><div class="sous-nav" data-groupe="parametres"></div><div id="abonnement"></div></section>
 
     <!-- COMPTES -->
-    <section data-section="comptes" hidden><div id="comptes"></div></section>
+    <section data-section="comptes" hidden><div class="sous-nav" data-groupe="parametres"></div><div id="comptes"></div></section>
   </main>
 </div>
 
@@ -563,7 +618,7 @@ const ICONES = {
   TikTok: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.3 2.2 1.7 3.8 4 4v3.1c-1.5 0-2.9-.4-4-1.2V15a6 6 0 11-6-6c.3 0 .7 0 1 .1v3.2a2.9 2.9 0 10 2 2.7V3h3z"/></svg>'
 };
 
-const S = { etat: null, analyse: null, vue: "reels", filtre: "cdc", jobId: null, ouvert: null };
+const S = { etat: null, analyse: null, vue: "accueil", filtre: "cdc", jobId: null, ouvert: null };
 
 // ---------------------------------------------------------------- Données
 async function chargeEtat() {
@@ -583,7 +638,7 @@ async function chargeListe(selection) {
   const liste = await api("/api/analyses");
   const sel = $("#choix-analyse");
   sel.innerHTML = liste.length ? liste.map(a => `<option value="${a.id}">${esc(a.titre)} — ${new Date(a.id.slice(0,4)+"-"+a.id.slice(4,6)+"-"+a.id.slice(6,8)+"T"+a.id.slice(9,11)+":"+a.id.slice(11,13)).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}${a.demo ? " (démo)" : ""}${a.en_cours ? " — en cours…" : ""}</option>`).join("") : '<option value="">Aucune analyse</option>';
-  sel.hidden = !liste.length;
+  sel.hidden = !["reels", "planning"].includes(S.vue) || liste.length < 2;
   const id = selection || (liste[0] && liste[0].id);
   if (id) { sel.value = id; await chargeAnalyse(id); } else { S.analyse = null; rendu(); }
 }
@@ -594,21 +649,108 @@ async function chargeAnalyse(id) {
 }
 
 // ---------------------------------------------------------------- Navigation
-const TITRES = {reels: "Reels", planning: "Planning de la semaine", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Comptes surveillés", parametres: "Paramètres", abonnement: "Abonnement"};
+const TITRES = {accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
+// Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
+const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]],
+                 parametres: [["parametres", "Mon profil"], ["comptes", "Comptes surveillés"], ["abonnement", "Abonnement"]]};
+const groupeDe = vue => Object.keys(GROUPES).find(g => GROUPES[g].some(([v]) => v === vue)) || vue;
 function va(vue) {
   S.vue = vue;
-  $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === vue ? "page" : "false"));
+  const g = groupeDe(vue);
+  $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === g ? "page" : "false"));
   $$("[data-section]").forEach(s => s.hidden = s.dataset.section !== vue);
-  $("#titre").textContent = TITRES[vue];
-  $("#choix-analyse").style.visibility = vue === "studio" ? "hidden" : "";
-  $("#ouvrir-nouvelle").hidden = vue === "studio";
+  $("#titre").textContent = vue === "accueil" ? `Bonjour${S.etat?.utilisateur?.prenom ? " " + S.etat.utilisateur.prenom : ""}` : TITRES[vue];
+  const avecVeille = ["reels", "planning"].includes(vue);
+  $("#choix-analyse").hidden = !avecVeille || $("#choix-analyse").options.length < 2;
+  $("#ouvrir-nouvelle").hidden = !avecVeille;
+  $$(`[data-section="${vue}"] .sous-nav`).forEach(el => el.innerHTML = `<div class="seg" role="tablist">${GROUPES[g].map(([v, t]) =>
+    `<button role="tab" aria-pressed="${v === vue}" onclick="va('${v}')">${t}</button>`).join("")}</div>`);
+  window.scrollTo(0, 0);
   rendu();
 }
 $$(".nav").forEach(b => b.onclick = () => va(b.dataset.vue));
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
 
 function rendu() {
-  ({reels: renduReels, planning: renduPlanning, studio: renduStudio, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
+  ({accueil: renduAccueil, reels: renduReels, planning: renduPlanning, studio: renduStudio, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
+}
+
+// ---------------------------------------------------------------- Accueil
+const jobAnalyse = () => S.jobId && S.job && ["en cours", "en attente"].includes(S.job.statut) ? S.job : null;
+async function lanceVeilleDirecte() {
+  try { const r = await api("/api/analyses", {method: "POST", body: {mode: "veille"}}); suisJob(r.job, false); toast("C'est parti : ta veille est lancée"); setTimeout(renduAccueil, 600); }
+  catch (e) { if (!e.data?.quota) toast(e.message); }
+}
+function heroAccueil() {
+  const e = S.etat, a = S.analyse, ab = e.abonnement, j = jobAnalyse();
+  const nbComptes = (e.comptes.instagram || []).length + (e.comptes.tiktok || []).length;
+  if (j) { const et = etatAnalyse(j);
+    return `<div class="hero" id="hero-job"><div class="anneau" style="--p:${et.pct}"><b>${et.pct}<small>%</small></b></div>
+      <div><span class="sur">Ta veille tourne</span><h2 id="hero-phrase">${esc(et.phrase)}</h2><p>Tu peux fermer la page : je continue, et tes Reels apparaissent au fur et à mesure.</p>
+      <div class="actions"><button class="btn prim" onclick="montreProgression()">Suivre en direct</button>${j.analyse_id ? `<button class="btn clair" onclick="va('reels')">Voir les premiers Reels</button>` : ""}</div></div></div>`; }
+  if (ab && !ab.actif) return `<div class="hero"><div class="ic-hero">⏳</div><div><span class="sur">Accès en pause</span><h2>${ab.statut === "essai" ? "Ton essai gratuit est terminé" : "Ton abonnement n'est pas actif"}</h2><p>Tes Reels et tes créations restent consultables. Choisis une formule pour relancer des veilles.</p><div class="actions"><button class="btn prim" onclick="va('abonnement')">Choisir une formule</button></div></div></div>`;
+  if (!nbComptes) return `<div class="hero"><div class="ic-hero">1</div><div><span class="sur">Première étape</span><h2>Choisis les comptes à copier</h2><p>Ceux qui cartonnent dans ta niche, ou dans une niche voisine. L'outil y repérera chaque semaine les Reels qui ont explosé.</p><div class="actions"><button class="btn prim" onclick="va('comptes')">Ajouter des comptes</button></div></div></div>`;
+  if (!a) return `<div class="hero"><div class="ic-hero">2</div><div><span class="sur">Tout est prêt</span><h2>Lance ta première veille</h2><p>${nbComptes} compte${nbComptes > 1 ? "s" : ""} à passer au crible. Compte 10 à 20 minutes : tu peux fermer la page en attendant.</p><div class="actions"><button class="btn prim" onclick="lanceVeilleDirecte()">Lancer ma veille</button></div></div></div>`;
+  const ad = a.posts.filter(adapte).length, ret = a.posts.filter(p => p.criteres_ok || p.demande).length;
+  const age = (Date.now() - new Date(a.date)) / 864e5, date = new Date(a.date).toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long"});
+  const vieille = age > 6 && a.mode === "veille";
+  return `<div class="hero"><div class="ic-hero">✓</div><div><span class="sur">${a.mode === "veille" ? "Veille du " : "Analyse du "}${date}</span>
+    <h2>${vieille ? "Une nouvelle semaine commence" : `${ad} Reel${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} à reproduire`}</h2>
+    <p>${vieille ? "Ta dernière veille date de plus d'une semaine. Relance-la pour trouver les Reels qui viennent d'exploser." : `${ret} Reel${ret > 1 ? "s ont" : " a"} vraiment cartonné sur ${nbLong(a.stats.videos)} passés au crible. Chacun est adapté à ta niche : hook, script, légende et messages privés.`}</p>
+    <div class="actions">${vieille ? `<button class="btn prim" onclick="lanceVeilleDirecte()">Lancer la veille de la semaine</button><button class="btn clair" onclick="va('reels')">Revoir mes Reels</button>`
+      : `<button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels</button>${a.planning?.length ? `<button class="btn clair" onclick="va('planning')">Mon planning</button>` : ""}`}</div></div></div>`;
+}
+async function renduAccueil() {
+  const el = $("#accueil"), a = S.analyse, bi = S.bilan || {};
+  el.innerHTML = heroAccueil() + '<div id="accueil-suite"></div>';
+  let st = S.optionsStudio;
+  try { st = await api("/api/studio"); S.optionsStudio = st; } catch {}
+  if (S.vue !== "accueil") return;
+  const semaine = Date.now() - 7 * 864e5;
+  const crees = (st?.projets || []).filter(p => p.statut === "pret" && new Date(p.cree) > semaine).length;
+  const veilleOk = a && (Date.now() - new Date(a.date)) / 864e5 <= 6;
+  const ad = a ? a.posts.filter(adapte).length : 0;
+  const etape = (fait, n, titre, detail, action) => `<button class="etape-s ${fait ? "fait" : ""}" ${action ? `onclick="${action}"` : "disabled"}>
+      <span class="num">${fait ? "✓" : n}</span><b>${titre}</b><small>${detail}</small></button>`;
+  let html = `<section class="bloc-accueil"><h2>Ta semaine</h2><div class="etapes-s">
+    ${etape(veilleOk, 1, "Trouver", veilleOk ? `${ad} Reels adaptés` : "Lancer la veille", veilleOk ? "va('reels')" : "lanceVeilleDirecte()")}
+    ${etape(crees >= 3, 2, "Créer", `${crees} contenu${crees > 1 ? "s" : ""} prêt${crees > 1 ? "s" : ""}`, "va('studio')")}
+    ${etape((bi.publies || 0) >= (bi.objectif_publies || 1), 3, "Publier", `${bi.publies || 0} / ${bi.objectif_publies || 0} Reels`, "va('resultats')")}
+    ${etape((bi.conversations || 0) >= (bi.objectif_conversations || 1), 4, "Converser", `${bi.conversations || 0} / ${bi.objectif_conversations || 0} conversations`, "va('resultats')")}
+  </div></section>`;
+  // Reels prévus aujourd'hui (sinon les meilleurs Reels adaptés)
+  if (a) {
+    const jour = JOURS[(new Date().getDay() + 6) % 7];
+    const prevus = (a.planning || []).map(k => a.posts.find(p => p.cle === k)).filter(p => p && p.creneau?.startsWith(jour));
+    const liste = prevus.length ? prevus : a.posts.filter(adapte).sort((x, y) => (y.adaptation.pertinence || 0) - (x.adaptation.pertinence || 0)).slice(0, 3);
+    if (liste.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>${prevus.length ? `Au programme aujourd'hui` : "À tourner en priorité"}</h2><button class="lien" onclick="va('${prevus.length ? "planning" : "reels"}')">${prevus.length ? "Toute la semaine" : "Tous mes Reels"} →</button></div>
+      <div class="du-jour">${liste.map(p => { const publie = (S.pubs || []).some(x => x.inspiration?.cle === p.cle);
+        return `<article class="carte-jour">
+          <button class="vign" data-cle="${esc(p.cle)}" aria-label="Ouvrir">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}</button>
+          <div class="txt"><small>${esc(p.creneau ? p.creneau.replace(jour, "").trim() || p.creneau : "@" + p.compte)}${publie ? ' · <span class="ok">publié ✓</span>' : ""}</small>
+            <p>${esc(hookPrincipal(p.adaptation))}</p>
+            <div class="actions"><button class="btn petit prim" data-studio-acc="${esc(p.cle)}">Créer le contenu</button><button class="btn petit" data-cle="${esc(p.cle)}">Voir</button></div></div>
+        </article>`; }).join("")}</div></section>`;
+  }
+  const recents = (st?.projets || []).slice(0, 4);
+  if (recents.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Tes dernières créations</h2><button class="lien" onclick="va('studio')">Ouvrir le studio →</button></div>
+    <div class="crea-recentes">${recents.map(p => { const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
+      const src = img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
+      return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section>`;
+  const ab = S.etat.abonnement;
+  if (ab?.statut === "essai" && ab.actif && ab.fin_essai) {
+    const j = Math.max(0, Math.ceil((new Date(ab.fin_essai) - Date.now()) / 864e5));
+    html += `<p class="note-essai">Essai gratuit : encore ${j} jour${j > 1 ? "s" : ""}. <a href="#" onclick="va('abonnement');return false">Voir les formules</a></p>`;
+  }
+  $("#accueil-suite").innerHTML = html;
+  $$("[data-studio-acc]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); choisirFormat(b.dataset.studioAcc); });
+}
+function majAccueilJob() {
+  const j = jobAnalyse(); if (S.vue !== "accueil") return;
+  if (!j || !$("#hero-job")) return renduAccueil();
+  const et = etatAnalyse(j);
+  $("#hero-job .anneau").style.setProperty("--p", et.pct); $("#hero-job .anneau b").innerHTML = `${et.pct}<small>%</small>`;
+  $("#hero-phrase").textContent = et.phrase;
 }
 
 // ---------------------------------------------------------------- Reels
@@ -641,7 +783,7 @@ function carte(p) {
     <div class="ecran">
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
       <div class="haut">
-        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">✓ Cahier des charges</span>' : ""}</span>
+        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">✓ Retenu</span>' : ""}</span>
         <span class="plat" title="${p.plateforme}">${ICONES[p.plateforme]}</span>
       </div>
       <div class="bas">
@@ -668,9 +810,9 @@ function renduReels() {
   const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
   $("#resume").innerHTML = (a.en_cours ? `<p class="encours" style="width:100%;margin:0 0 4px"><span class="spin"></span>Analyse en cours : les Reels apparaissent au fur et à mesure (${s.adaptes} adapté${s.adaptes > 1 ? "s" : ""} pour l'instant).</p>` : "") + `
     <div><b>${nbLong(s.videos)}</b><span>Reels analysés sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
-    <div class="cible"><b>${cdc}</b><span>dans le cahier des charges</span></div>
+    <div class="cible"><b>${cdc}</b><span>retenus (vraiment viraux)</span></div>
     <div><b>${ad}</b><span>adaptés pour toi</span></div>
-    ${s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (Apify ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, Claude ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
+    ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (Apify ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, Claude ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
     <span class="criteres">${texteSeuil(a.criteres)} et ≥ ${(a.criteres.taux_engagement_min*100).toLocaleString("fr-FR")} % d'engagement, ${a.criteres.mois} derniers mois</span>`;
   const counts = {cdc, adaptes: ad, tous: a.posts.length};
   $$("#f-statut button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === S.filtre); $(".c", b).textContent = counts[b.dataset.v]; });
@@ -680,6 +822,7 @@ function renduReels() {
 }
 $$("#f-statut button").forEach(b => b.onclick = () => { S.filtre = b.dataset.v; renduReels(); });
 ["#f-plateforme", "#f-compte", "#f-tri"].forEach(s => $(s).onchange = renduReels);
+$("#f-plus").onclick = () => { const f = $("#filtres-plus"); f.hidden = !f.hidden; $("#f-plus").setAttribute("aria-expanded", !f.hidden); };
 $("#f-texte").oninput = renduReels;
 document.addEventListener("click", e => { const r = e.target.closest("[data-cle]"); if (r) ouvreReel(r.dataset.cle); });
 
@@ -1258,7 +1401,7 @@ function suisJob(id, montrer, fini, surLog) {
       if ($("#assistant").classList.contains("ouvert")) renduAssistant();
       return;
     }
-    S.job = j; majProgression();
+    S.job = j; majProgression(); if (S.vue === "accueil") majAccueilJob();
     // Affichage au fil de l'eau : la galerie se remplit pendant l'analyse
     if (j.analyse_id && j.statut === "en cours" && ["reels", "planning"].includes(S.vue) && Date.now() - (S.dernierRafraichi || 0) > 6000) {
       S.dernierRafraichi = Date.now();
@@ -1274,7 +1417,7 @@ function suisJob(id, montrer, fini, surLog) {
       if (j.statut === "terminé") {
         const f = S.jobFini; S.jobFini = null;
         if (f) await f();
-        else { fermeModale(); await chargeEtat(); await chargeListe(j.resultat?.id); S.filtre = "cdc"; va("reels"); toast("Analyse terminée"); }
+        else { fermeModale(); await chargeEtat(); await chargeListe(j.resultat?.id); S.filtre = "adaptes"; if (S.vue === "accueil") renduAccueil(); else va("reels"); toast("Ta veille est prête"); }
       } else if (!$("#modale").classList.contains("ouvert")) { toast("Erreur : " + j.erreur); if (S.ouvert) ouvreReel(S.ouvert);
         if ($("#assistant").classList.contains("ouvert")) renduAssistant(); }
     }
@@ -1353,26 +1496,30 @@ function majProgression() {
 const W = {i: 0, p: null, edition: false};
 const ETAPES_A = [
   {id: "compte", nom: "Ton compte"}, {id: "activite", nom: "Ton activité"}, {id: "client", nom: "Ton client idéal"},
-  {id: "objectifs", nom: "Tes objectifs"}, {id: "criteres", nom: "Ton cahier des charges"}, {id: "modeles", nom: "Les comptes à copier"},
+  {id: "objectifs", nom: "Tes objectifs"}, {id: "criteres", nom: "Critères de sélection"}, {id: "modeles", nom: "Les comptes à copier"},
   {id: "voix", nom: "Ta voix"}, {id: "fin", nom: "C'est parti"}];
+// Démarrage d'une nouvelle utilisatrice : 3 étapes seulement (le reste a des valeurs par défaut, modifiables dans Réglages)
+const ETAPES_D = [{id: "compte", nom: "Ton compte"}, {id: "essentiel", nom: "Ton activité"}, {id: "demarrer", nom: "Les comptes à copier"}];
+W.etapes = ETAPES_D;
 const val = s => ($(s)?.value ?? "").trim();
 const lignes = t => (t || "").split(/\n|,/).map(x => x.trim()).filter(Boolean);
 
 async function ouvreAssistant(etape = 0, edition = false) {
-  W.p = await api("/api/profil"); W.i = typeof etape === "string" ? ETAPES_A.findIndex(e => e.id === etape) : etape; W.edition = edition;
+  W.p = await api("/api/profil"); W.edition = edition; W.etapes = edition ? ETAPES_A : ETAPES_D;
+  W.i = typeof etape === "string" ? W.etapes.findIndex(e => e.id === etape) : etape;
   $("#assistant").classList.add("ouvert"); renduAssistant();
 }
 function fermeAssistant() { $("#assistant").classList.remove("ouvert"); }
 function renduAssistant() {
-  const e = ETAPES_A[W.i];
-  $("#a-etapes").innerHTML = ETAPES_A.map((x, i) => `<li class="${i < W.i ? "fait" : i === W.i ? "cours" : ""}" data-i="${i}">${x.nom}</li>`).join("");
+  const e = W.etapes[W.i];
+  $("#a-etapes").innerHTML = W.etapes.map((x, i) => `<li class="${i < W.i ? "fait" : i === W.i ? "cours" : ""}" data-i="${i}">${x.nom}</li>`).join("");
   $$("#a-etapes li.fait").forEach(li => li.onclick = async () => { await enregistreEtape(); W.i = +li.dataset.i; renduAssistant(); });
-  $("#a-contenu").innerHTML = (W.edition ? "" : `<div class="a-mobile-etape">Étape ${W.i + 1} sur ${ETAPES_A.length}</div>`) + PAGES[e.id]();
-  const dernier = W.i === ETAPES_A.length - 1;
+  $("#a-contenu").innerHTML = (W.edition ? "" : `<div class="a-mobile-etape">Étape ${W.i + 1} sur ${W.etapes.length}</div>`) + PAGES[e.id]();
+  const dernier = W.i === W.etapes.length - 1;
   $("#a-pied").innerHTML = W.edition
     ? `<button class="btn" id="a-annuler">Annuler</button><button class="btn prim" id="a-suivant">Enregistrer</button>`
     : `${W.i ? '<button class="btn" id="a-retour">Retour</button>' : ""}${["compte", "voix"].includes(e.id) ? `<button class="passer" id="a-passer">${e.id === "compte" ? "Je n'ai pas encore de compte" : "Passer cette étape"}</button>` : ""}
-       ${dernier ? "" : '<button class="btn prim" id="a-suivant">Continuer</button>'}`;
+       ${dernier ? '<button class="passer" id="w-plus-tard">Je lancerai plus tard</button><button class="btn prim" id="w-lancer">Lancer ma première veille</button>' : '<button class="btn prim" id="a-suivant">Continuer</button>'}`;
   $("#a-retour")?.addEventListener("click", async () => { await enregistreEtape(); W.i--; renduAssistant(); });
   $("#a-passer")?.addEventListener("click", () => { W.i++; renduAssistant(); });
   $("#a-annuler")?.addEventListener("click", fermeAssistant);
@@ -1386,13 +1533,21 @@ function renduAssistant() {
   setTimeout(() => $("#a-contenu input, #a-contenu textarea")?.focus(), 30);
 }
 function verifie(id) {
+  if (id === "essentiel" && !val("#w-desc")) return "Décris ton activité en une phrase.";
+  if (id === "essentiel" && !val("#w-cible")) return "Dis à qui tu t'adresses.";
   if (id === "activite" && !val("#w-desc")) return "Décris ton activité en une ou deux phrases.";
   if (id === "client" && !val("#w-cible")) return "Décris ton client idéal.";
   if (id === "objectifs" && !val("#w-mot")) return "Choisis un mot-clé à faire commenter.";
   return null;
 }
 async function enregistreEtape() {
-  const id = ETAPES_A[W.i].id, p = W.p, corps = {};
+  const id = W.etapes[W.i].id, p = W.p, corps = {};
+  if (id === "essentiel") { corps.niche = {nom: val("#w-nom"), description: val("#w-desc"), cible: val("#w-cible"), offre: val("#w-offre"), langue: val("#w-langue")};
+    corps.objectifs = {mot_cle_cta: (val("#w-mot") || p.objectifs.mot_cle_cta).toUpperCase()}; }
+  if (id === "demarrer") {
+    const it = analyseSaisie($("#w-comptes").value, "Instagram").filter(i => i.type === "compte");
+    corps.comptes = {instagram: it.filter(i => i.pl === "Instagram").map(i => i.txt.slice(1)), tiktok: it.filter(i => i.pl === "TikTok").map(i => i.txt.slice(1))};
+  }
   if (id === "activite") { corps.niche = {nom: val("#w-nom"), description: val("#w-desc"), offre: val("#w-offre"), langue: val("#w-langue")}; }
   if (id === "client") { corps.niche = {cible: val("#w-cible"), douleurs: lignes($("#w-douleurs").value), interdits: val("#w-interdits")}; }
   if (id === "objectifs") { corps.objectifs = {reels_par_jour: +$("#w-rpj [aria-pressed=true]").dataset.v, conversations_par_jour: +val("#w-conv") || 10, mot_cle_cta: val("#w-mot").toUpperCase()}; }
@@ -1412,7 +1567,7 @@ async function enregistreEtape() {
   if ("voix" in corps) p.voix = corps.voix;
 }
 const choix = (id, options, actuel) => `<div class="choix" id="${id}" role="group">${options.map(([v, t, s]) => `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(actuel)}">${t}${s ? `<small>${s}</small>` : ""}</button>`).join("")}</div>`;
-function activeChoix() { $$("#a-contenu .choix").forEach(g => $$("button", g).forEach(b => b.onclick = () => { $$("button", g).forEach(x => x.setAttribute("aria-pressed", x === b)); APRES[ETAPES_A[W.i].id]?.(true); })); }
+function activeChoix() { $$("#a-contenu .choix").forEach(g => $$("button", g).forEach(b => b.onclick = () => { $$("button", g).forEach(x => x.setAttribute("aria-pressed", x === b)); APRES[W.etapes[W.i].id]?.(true); })); }
 
 function blocAnalyseCompte(prof) {
   if (!prof) return "";
@@ -1431,10 +1586,28 @@ function blocAnalyseCompte(prof) {
     ${pr.description_niche ? `<div class="proposition"><h3>Ce que Claude comprend de ton compte</h3>
       <dl><dt>Ton activité</dt><dd>${esc(pr.description_niche)}</dd><dt>Ton client idéal</dt><dd>${esc(pr.cible)}</dd><dt>Ton ton</dt><dd>${esc(pr.ton)}</dd>${pr.offre ? `<dt>Ton offre</dt><dd>${esc(pr.offre)}</dd>` : ""}</dl>
       <div class="conseils"><div><b>Ce qui marche</b><ul>${(pr.points_forts || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div><div><b>À améliorer</b><ul>${(pr.a_ameliorer || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
-      <p style="margin:14px 0 0"><button class="btn prim" id="w-utiliser">Utiliser ces informations pour la suite</button></p></div>` : ""}
+      ${W.edition ? `<p style="margin:14px 0 0"><button class="btn prim" id="w-utiliser">Utiliser ces informations</button></p>` : `<p class="pret-ok">✓ Ces informations pré-remplissent l'étape suivante. Clique sur « Continuer ».</p>`}</div>` : ""}
   </div>`;
 }
 const PAGES = {
+  essentiel: () => { const n = W.p.niche, pr = W.p.profil_compte?.proposition || {}, o = W.p.objectifs;
+    const v = (a, b) => esc(a || b || "");
+    return `<h2 id="a-titre">Ton activité, en bref</h2>
+    <p class="intro">${pr.description_niche ? "Pré-rempli à partir de ton compte : relis et corrige si besoin." : "Quatre réponses courtes suffisent : elles servent à transposer les Reels des autres à ton univers."}</p>
+    <div class="f"><label for="w-desc">Ce que tu fais, pour qui</label><textarea id="w-desc" style="min-height:80px" placeholder="Ex. J'aide les femmes actives à dégonfler et à retrouver de l'énergie, sans régime strict.">${v(n.description, pr.description_niche)}</textarea></div>
+    <div class="f"><label for="w-cible">Ton client idéal</label><input id="w-cible" value="${v(n.cible, pr.cible)}" placeholder="Ex. Femme de 35 ans, maman, cadre, fatiguée des régimes"></div>
+    <div class="duo"><div class="f"><label for="w-offre">Ce que tu proposes</label><input id="w-offre" value="${v(n.offre, pr.offre)}" placeholder="Ex. Ebook gratuit, puis accompagnement"><span class="aide">Les messages privés y mèneront.</span></div>
+    <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">« Commente ${esc(o.mot_cle_cta)} et je t'envoie… »</span></div></div>
+    <details class="plus"><summary>Nom de marque et langue</summary>
+      <div class="duo" style="margin-top:12px"><div class="f"><label for="w-nom">Nom de ta marque</label><input id="w-nom" value="${v(n.nom, pr.nom_marque)}"></div>
+      <div class="f"><label for="w-langue">Langue de tes contenus</label><select id="w-langue">${["français", "anglais", "espagnol", "arabe", "darija", "allemand", "italien", "portugais"].map(l => `<option ${n.langue === l ? "selected" : ""}>${l}</option>`).join("")}</select></div></div></details>
+    <p class="aide">Ton rythme (2 Reels par jour), tes critères de sélection et ta voix sont réglés automatiquement. Tu pourras tout ajuster dans Réglages.</p>`; },
+  demarrer: () => { const c = W.p.comptes; return `<h2 id="a-titre">Les comptes à copier</h2>
+    <p class="intro">Les comptes dont tu veux reproduire les meilleurs Reels. Ils peuvent être hors de ta niche : on reprend leur mécanique, pas leur sujet.</p>
+    <div class="f"><label for="w-comptes">Un compte par ligne</label>
+      <textarea id="w-comptes" placeholder="@compte_insta&#10;tt:compte_tiktok&#10;https://www.instagram.com/compte/">${esc([...(c.instagram || []).map(x => "@" + x), ...(c.tiktok || []).map(x => "tt:" + x)].join("\n"))}</textarea>
+      <div class="reconnus" id="w-reconnus"></div><span class="aide" id="w-limite"></span></div>
+    <p class="aide">Conseil : 5 à 10 comptes qui font régulièrement beaucoup de vues. Ta première veille prend 10 à 20 minutes, tu peux fermer la page.</p>`; },
   compte: () => `<h2 id="a-titre">Commençons par ton compte</h2>
     <p class="intro">Claude lit tes derniers Reels pour comprendre ton positionnement, ce qui marche déjà chez toi et ton ton. Les étapes suivantes seront pré-remplies.</p>
     <div class="duo"><div class="f"><label for="w-ig">Ton compte Instagram</label><input id="w-ig" placeholder="@toncompte" value="${esc(W.p.mon_compte.instagram || "")}"></div>
@@ -1466,7 +1639,7 @@ const PAGES = {
     <div class="duo"><div class="f"><label for="w-conv">Conversations privées visées par jour</label><input id="w-conv" type="number" min="1" value="${o.conversations_par_jour}"></div>
     <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">Il déclenche ton message automatique.</span></div></div>
     <div class="phrase" id="w-phrase"></div>`; },
-  criteres: () => { const a = W.p.analyse; return `<h2 id="a-titre">Ton cahier des charges</h2>
+  criteres: () => { const a = W.p.analyse; return `<h2 id="a-titre">Critères de sélection</h2>
     <p class="intro">Seuls les Reels qui remplissent ces critères sont retenus comme modèles. Plus c'est exigeant, plus il faut surveiller de gros comptes.</p>
     <div class="f"><span class="lab">Comment repérer un Reel viral ?</span>${choix("w-seuil", [["auto", "Automatique", "recommandé : s'adapte à chaque compte"], ["fixe", "Seuil fixe", "un nombre de vues identique pour tous"]], a.seuil_mode || "fixe")}</div>
     <div class="f" id="w-bloc-auto"><span class="lab">Il doit avoir fait au moins</span>${choix("w-mult", [[2, "2× ses vues habituelles", "plus de choix"], [3, "3× ses vues habituelles", "recommandé"], [5, "5× ses vues habituelles", "les vrais cartons"]], a.seuil_multiple || 3)}</div>
@@ -1516,6 +1689,15 @@ const PAGES = {
     <p style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn prim" id="w-lancer" ${nbC ? "" : "disabled"}>Lancer ma première analyse</button><button class="btn" id="w-plus-tard">Je lancerai plus tard</button></p>`; },
 };
 const APRES = {
+  demarrer: () => {
+    APRES.modeles();
+    const termine = async () => { const err = analyseSaisie($("#w-comptes").value, "Instagram").some(i => i.type === "compte");
+      await enregistreEtape(); await api("/api/profil", {method: "PUT", body: {onboarding_termine: true}}); return err; };
+    $("#w-plus-tard").onclick = async () => { await termine(); fermeAssistant(); await chargeEtat(); va("accueil"); };
+    $("#w-lancer").onclick = async () => {
+      if (!analyseSaisie($("#w-comptes").value, "Instagram").some(i => i.type === "compte")) return toast("Ajoute au moins un compte à copier.");
+      await termine(); fermeAssistant(); await chargeEtat(); va("accueil"); lanceVeilleDirecte(); };
+  },
   activite: () => { $("#w-remplir")?.addEventListener("click", () => { const pr = W.p.profil_compte.proposition;
     if (pr.nom_marque) $("#w-nom").value = pr.nom_marque; if (pr.description_niche) $("#w-desc").value = pr.description_niche; if (pr.offre) $("#w-offre").value = pr.offre;
     toast("Rempli depuis ton compte"); }); },
@@ -1529,7 +1711,16 @@ const APRES = {
         const r = await api("/api/assistant/mon-compte", {method: "POST", body: {instagram: ig, tiktok: tt}});
         $("#w-analyser").disabled = true;
         $("#w-res").innerHTML = '<div class="encours"><span class="spin"></span><span id="w-etape">Lecture de tes Reels…</span></div>';
-        suisJob(r.job, false, async () => { W.p = await api("/api/profil"); W.p.mon_compte = {instagram: ig, tiktok: tt}; renduAssistant(); }, l => { const e = $("#w-etape"); if (e) e.textContent = l; });
+        suisJob(r.job, false, async () => {
+          W.p = await api("/api/profil"); W.p.mon_compte = {instagram: ig, tiktok: tt};
+          const pr = W.p.profil_compte?.proposition;
+          if (pr && !W.edition) {  // démarrage : on reprend directement ce que Claude a compris du compte
+            const n = W.p.niche, corps = {niche: {nom: n.nom || pr.nom_marque, description: n.description || pr.description_niche, cible: n.cible || pr.cible,
+              douleurs: (n.douleurs || []).length ? n.douleurs : pr.douleurs, ton: pr.ton || n.ton, offre: n.offre || pr.offre}};
+            if (pr.hashtags?.length) corps.hashtags = {instagram: pr.hashtags, tiktok: pr.hashtags};
+            try { await api("/api/profil", {method: "PUT", body: corps}); Object.assign(W.p.niche, corps.niche); } catch {}
+          }
+          renduAssistant(); }, l => { const e = $("#w-etape"); if (e) e.textContent = l; });
       } catch (e) { toast(e.message); }
     };
     $("#w-utiliser")?.addEventListener("click", async () => {
@@ -1537,7 +1728,7 @@ const APRES = {
       const corps = {niche: {nom: pr.nom_marque || W.p.niche.nom, description: pr.description_niche, cible: pr.cible, douleurs: pr.douleurs, ton: pr.ton, offre: pr.offre || W.p.niche.offre},
                      hashtags: {instagram: pr.hashtags || [], tiktok: pr.hashtags || []}};
       await api("/api/profil", {method: "PUT", body: corps}); Object.assign(W.p.niche, corps.niche); W.p.hashtags = corps.hashtags;
-      toast("Informations reprises"); W.i++; renduAssistant();
+      toast("Informations reprises"); if (W.edition) { fermeAssistant(); await chargeEtat(); rendu(); } else { W.i++; renduAssistant(); }
     });
   },
   objectifs: () => {
@@ -1552,9 +1743,9 @@ const APRES = {
     const lim = W.p.limite_comptes;
     const maj = () => { const it = analyseSaisie($("#w-comptes").value, "Instagram"); const n = it.filter(i => i.type === "compte").length;
       $("#w-reconnus").innerHTML = it.map(i => `<span class="puce ${i.type === "ko" || i.type === "post" ? "ko" : ""}">${i.pl ? `<span class="plat" style="width:16px;height:16px;background:none">${ICONES[i.pl]}</span>` : ""}${esc(i.txt)}</span>`).join("");
-      $("#w-limite").innerHTML = `${n} / ${lim} comptes inclus dans ta formule.${n > lim ? " <b>Retire des comptes ou change de formule.</b>" : ""} Les liens de Reels précis s'analysent depuis « Nouvelle analyse ».`; };
+      $("#w-limite").innerHTML = `${n} / ${lim} comptes inclus dans ta formule.${n > lim ? " <b>Retire des comptes ou change de formule.</b>" : ""} Les liens de Reels précis s'analysent depuis « Nouvelle veille ».`; };
     $("#w-comptes").oninput = maj; maj();
-    $("#w-suggerer").onclick = async () => { const b = $("#w-suggerer"); b.disabled = true; b.innerHTML = '<span class="spin"></span>Recherche…';
+    if ($("#w-suggerer")) $("#w-suggerer").onclick = async () => { const b = $("#w-suggerer"); b.disabled = true; b.innerHTML = '<span class="spin"></span>Recherche…';
       try { const h = await api("/api/assistant/hashtags", {method: "POST", body: {niche: W.p.niche}});
         $("#w-hig").value = [...new Set([...lignes($("#w-hig").value), ...(h.instagram || [])])].join("\n");
         $("#w-htt").value = [...new Set([...lignes($("#w-htt").value), ...(h.tiktok || [])])].join("\n"); } catch (e) { toast(e.message); }
@@ -1579,12 +1770,12 @@ async function renduParametres() {
     ${r("Ton activité", esc(n.nom || n.description || "Non renseignée"), "activite")}
     ${r("Ton client idéal", esc(n.cible || "Non renseigné"), "client")}
     ${r("Tes objectifs", `${o.reels_par_jour} Reel(s) par jour, ${o.conversations_par_jour} conversations, mot-clé « ${esc(o.mot_cle_cta)} »`, "objectifs")}
-    ${r("Cahier des charges", `${texteSeuil(a)}, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} %, ${a.mois} mois`, "criteres")}
+    ${r("Critères de sélection", `${texteSeuil(a)}, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} %, ${a.mois} mois`, "criteres")}
     ${r("Comptes à copier", `${nbC} compte(s), ${(p.hashtags.instagram || []).length + (p.hashtags.tiktok || []).length} hashtags`, "modeles")}
     ${r("Ta voix", esc(n.ton || "Non renseignée"), "voix")}
     </div>
     <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || S.etat.abonnement.plan !== "essai" ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
-    <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire l'assistant de configuration</button></p>`;
+    <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire le démarrage rapide</button></p>`;
   $$("[data-param]").forEach(b => b.onclick = () => ouvreAssistant(b.dataset.param, true));
   $("#p-auto").onchange = async e => { await api("/api/profil", {method: "PUT", body: {veille_auto: e.target.checked}}); await chargeEtat(); toast(e.target.checked ? "Veille automatique activée" : "Veille automatique désactivée"); };
 }
@@ -1611,7 +1802,7 @@ async function renduAbonnement() {
 
 // ---------------------------------------------------------------- Démarrage
 (async () => {
-  await chargeEtat(); await chargePubs(); await chargeListe(); va("reels");
+  await chargeEtat(); await chargePubs(); await chargeListe(); va("accueil");
   const q = new URLSearchParams(location.search);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); history.replaceState(null, "", "/"); va("abonnement"); }
   if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
