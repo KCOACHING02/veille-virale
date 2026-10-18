@@ -542,6 +542,7 @@ function renduReels() {
     <div class="cible"><b>${cdc}</b><span>dans le cahier des charges</span></div>
     <div><b>${ad}</b><span>adaptés pour toi</span></div>
     <div><b>${s.nb_commentaires}</b><span>commentaires lus</span></div>
+    ${s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (Apify ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, Claude ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
     <span class="criteres">≥ ${nbLong(a.criteres.vues_min)} vues et ≥ ${(a.criteres.taux_engagement_min*100).toLocaleString("fr-FR")} % d'engagement, ${a.criteres.mois} derniers mois</span>`;
   const counts = {cdc, adaptes: ad, tous: a.posts.length};
   $$("#f-statut button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === S.filtre); $(".c", b).textContent = counts[b.dataset.v]; });

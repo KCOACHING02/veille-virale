@@ -35,7 +35,7 @@ video:
   actor_tiktok_video: maximedupre~tiktok-video-downloader
 commentaires:
   actif: true
-  par_post: 20
+  par_post: 10
   synthese: true
   actor_tiktok: clockworks~tiktok-comments-scraper
 apprentissage:

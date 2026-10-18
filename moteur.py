@@ -140,7 +140,7 @@ def liste_analyses(esp: Espace) -> list[dict]:
 # Plafonds de coût fixés par l'éditeur : ils s'appliquent à tous les espaces, même créés avant cette version.
 PLAFONDS = {
     ("analyse", "posts_max_par_compte"): 60,   # 60 publications récentes suffisent sur 3 mois
-    ("commentaires", "par_post"): 20,          # les 20 commentaires les plus likés portent l'essentiel
+    ("commentaires", "par_post"): 10,          # les 10 commentaires les plus likés portent l'essentiel
     ("decouverte", "posts_par_hashtag"): 50,
     ("diversite", "marge_candidats"): 1.2,      # 17 Reels analysés pour en garder 14 (au lieu de 21)
 }
@@ -200,6 +200,14 @@ class AdaptationsCache:
         tmp.replace(self.f)
 
 
+def ia_cout() -> float:
+    try:
+        from ia import cout_claude
+        return cout_claude()
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
 # ------------------------------------------------------------
 #  Exécution
 # ------------------------------------------------------------
@@ -243,6 +251,13 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             "apprentissage": extra.get("apprentissage", {}), "fichiers": extra.get("fichiers", {}),
         })
 
+    from collecte import cout_apify, cout_apify_reinitialise
+    cout_apify_reinitialise()
+    try:
+        from ia import cout_claude_reinitialise
+        cout_claude_reinitialise()
+    except Exception:  # noqa: BLE001
+        pass
     try:
         # ---------------- 1. Collecte ----------------
         if demo:
@@ -302,6 +317,8 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                 "adaptes": len([p for p in pool if p.adaptation and not p.adaptation.get("erreur")]),
                 "videos_lues": len([p for p in pool if p.images or p.transcription]),
                 "nb_commentaires": sum(len(p.commentaires_texte) for p in pool),
+                "cout_apify_usd": cout_apify(),
+                "cout_claude_usd": round(ia_cout(), 3),
             }
 
         # Reels déjà adaptés récemment pour ce client (analyse relancée ou interrompue) : réutilisés sans rien repayer
@@ -410,7 +427,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                    apprentissage={k: appr.get(k) for k in ("par_mecanique", "mecaniques_top", "mecaniques_flop", "nb_reels", "nb_suivi", "texte")},
                    fichiers={"html": f"{base}.html", "xlsx": f"{base}.xlsx"})
         analyse = charge(esp, aid)
-        log(f"✅ Analyse terminée : {stats['adaptes']} Reels adaptés")
+        log(f"✅ Analyse terminée : {stats['adaptes']} Reels adaptés — coût réel Apify {stats['cout_apify_usd']:.2f} $, Claude ≈ {stats['cout_claude_usd']:.2f} $")
         return analyse
     finally:
         shutil.rmtree(travail, ignore_errors=True)
@@ -536,7 +553,8 @@ def suggere_hashtags(cfg: dict, demo: bool = False) -> dict:
 # ------------------------------------------------------------
 #  Estimation du coût et de la durée avant lancement
 # ------------------------------------------------------------
-PRIX_APIFY_RESULTAT = 0.0023     # $ par résultat (plan gratuit ; moins cher sur les plans payants)
+PRIX_APIFY_RESULTAT = 0.0023     # $ par résultat, collecteur standard (commentaires, hashtags, TikTok)
+PRIX_REELS_ECO = 0.00005         # $ par Reel, collecteur économique Instagram
 PRIX_CLAUDE_REEL = 0.045         # $ par Reel analysé et adapté (images + texte)
 
 
@@ -556,8 +574,9 @@ def estime(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = N
         reels = (nb or 10) + posts_precis
     en_cache = [c for c in comptes if cache_frais(c[0], c[1], jours, maxi) is not None]
     a_collecter = len(comptes) - len(en_cache)
-    collecte = a_collecter * maxi * PRIX_APIFY_RESULTAT + posts_precis * PRIX_APIFY_RESULTAT
-    commentaires = reels * cfg["commentaires"]["par_post"] * PRIX_APIFY_RESULTAT * 0.5  # la moitié environ déjà fournie par Instagram
+    prix = {"Instagram": PRIX_REELS_ECO, "TikTok": PRIX_APIFY_RESULTAT}
+    collecte = sum(maxi * prix.get(pl, PRIX_APIFY_RESULTAT) for pl, c in comptes if (pl, c) not in en_cache) + posts_precis * PRIX_APIFY_RESULTAT
+    commentaires = reels * cfg["commentaires"]["par_post"] * PRIX_APIFY_RESULTAT
     decouverte = 0.0
     if mode == "veille" and cfg["decouverte"].get("actif"):
         memo = esp.racine / "decouverte.json"

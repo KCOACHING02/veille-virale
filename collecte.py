@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -10,6 +12,25 @@ import requests
 from modele import Post, entier, log
 
 APIFY_BASE = "https://api.apify.com/v2"
+
+# Collecteur de Reels par profil : ~0,05 $ / 1 000 Reels (contre ~2,30 $ pour apify/instagram-scraper).
+# En cas d'échec sur un compte, repli automatique sur apify/instagram-scraper.
+ACTOR_REELS_ECO = os.getenv("APIFY_ACTOR_REELS", "esdrasdw~instagram-content-scraper")
+CHAMPS_REELS = ["displayUrl", "title", "ownerUsername", "url", "timestamp", "videoPlayCount", "likesCount", "commentsCount",
+                "videoDuration", "videoUrl", "shortCode", "id", "caption"]
+
+# Coût réel des runs Apify (une analyse à la fois : un compteur global suffit)
+_COUT = {"usd": 0.0}
+_COUT_VERROU = threading.Lock()
+
+
+def cout_apify_reinitialise():
+    with _COUT_VERROU:
+        _COUT["usd"] = 0.0
+
+
+def cout_apify() -> float:
+    return round(_COUT["usd"], 3)
 
 
 def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> list[dict]:
@@ -33,8 +54,12 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
     while True:
         s = requests.get(f"{APIFY_BASE}/actor-runs/{run_id}", params={"token": token}, timeout=60).json()["data"]
         if s["status"] == "SUCCEEDED":
+            with _COUT_VERROU:
+                _COUT["usd"] += float(s.get("usageTotalUsd") or 0)
             break
         if s["status"] in ("FAILED", "ABORTED", "TIMED-OUT"):
+            with _COUT_VERROU:
+                _COUT["usd"] += float(s.get("usageTotalUsd") or 0)
             raise RuntimeError(f"Run Apify {actor} terminé en {s['status']}")
         if time.time() > limite:
             raise TimeoutError(f"Run Apify {actor} trop long (> {timeout_min} min)")
@@ -114,6 +139,20 @@ def post_tiktok(it: dict) -> Post | None:
 def collecte_instagram(comptes: list[str], jours: int, max_par_compte: int, cfg: dict, token: str) -> list[Post]:
     if not comptes:
         return []
+    if ACTOR_REELS_ECO:
+        try:
+            items = apify_run(ACTOR_REELS_ECO, {
+                "directUrls": [c.strip("@") for c in comptes], "resultsType": "reels", "resultsLimit": max_par_compte,
+                "onlyPostsNewerThan": f"{jours} days", "skipPinnedPosts": True, "selectedFields": CHAMPS_REELS,
+            }, token)
+            posts = [p for p in map(post_instagram, items) if p]
+            for p in posts:
+                p.format = "Reel"
+            if posts:
+                return posts
+            log(f"  Collecteur économique sans résultat pour {', '.join(comptes)} : repli sur le collecteur standard")
+        except Exception as e:  # noqa: BLE001
+            log(f"  Collecteur économique indisponible ({str(e)[:100]}) : repli sur le collecteur standard")
     items = apify_run(cfg["apify"]["actor_instagram"], {
         "directUrls": [f"https://www.instagram.com/{c.strip('@')}/" for c in comptes],
         "resultsType": "posts",

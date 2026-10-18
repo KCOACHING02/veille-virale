@@ -82,6 +82,29 @@ OUTIL_MECANIQUES = {
 
 
 # ------------------------------------------------------------
+#  Coût Claude (estimé d'après les jetons consommés ; tarif à ajuster si besoin)
+# ------------------------------------------------------------
+PRIX_ENTREE_M, PRIX_SORTIE_M = 2.0, 10.0   # $ par million de jetons
+_JETONS = {"in": 0, "out": 0}
+
+
+def cout_claude_reinitialise():
+    _JETONS["in"] = _JETONS["out"] = 0
+
+
+def cout_claude() -> float:
+    return _JETONS["in"] / 1e6 * PRIX_ENTREE_M + _JETONS["out"] / 1e6 * PRIX_SORTIE_M
+
+
+def _compte(rep):
+    u = getattr(rep, "usage", None)
+    if u:
+        _JETONS["in"] += (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0) \
+            + int((getattr(u, "cache_read_input_tokens", 0) or 0) * 0.1)
+        _JETONS["out"] += getattr(u, "output_tokens", 0) or 0
+
+
+# ------------------------------------------------------------
 #  Messages d'erreur compréhensibles
 # ------------------------------------------------------------
 def explique_erreur(e) -> str:
@@ -130,6 +153,7 @@ class IA:
                     tools=[outil], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": contenu}],
                 )
+                _compte(rep)
                 for bloc in rep.content:
                     if getattr(bloc, "type", "") == "tool_use":
                         return bloc.input

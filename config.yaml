@@ -58,7 +58,7 @@ video:
 # --- Amélioration 2 : lire les commentaires ---
 commentaires:
   actif: true
-  par_post: 20
+  par_post: 10
   synthese: true              # synthèse « voix du client » sur l'ensemble des commentaires
   actor_tiktok: "clockworks~tiktok-comments-scraper"
 
