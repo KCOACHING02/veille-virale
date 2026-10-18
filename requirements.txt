@@ -5,6 +5,6 @@ Jinja2
 pandas
 openpyxl
 python-dotenv
-faster-whisper   # transcription locale (gratuite). Nécessite aussi ffmpeg installé sur la machine.
+faster-whisper
 flask>=3.0
 waitress
