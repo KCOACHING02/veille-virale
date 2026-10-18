@@ -80,13 +80,19 @@ def entier(v):
 
 
 LOG_HOOKS: list = []  # fonctions appelées à chaque ligne de log (suivi en direct dans l'interface)
+# Les tâches du studio tournent en parallèle des analyses : leur fil d'exécution est marqué pour que
+# leurs messages n'apparaissent que dans leur propre suivi (et inversement).
+import threading as _th
+FIL = _th.local()
 
 
 def log(msg: str):
     print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+    studio = getattr(FIL, "studio", False)
     for h in list(LOG_HOOKS):
         try:
-            h(msg)
+            if getattr(h, "studio", False) == studio:
+                h(msg)
         except Exception:  # noqa: BLE001
             pass
 

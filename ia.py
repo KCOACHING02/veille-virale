@@ -103,6 +103,26 @@ def _compte(rep):
         _JETONS["out"] += getattr(u, "output_tokens", 0) or 0
 
 
+OUTIL_CARROUSEL = {
+    "name": "enregistrer_carrousel",
+    "description": "Textes d'un carrousel Instagram prêt à publier.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "slides": {
+                "type": "array",
+                "description": "Les slides dans l'ordre. La 1re porte le hook, la dernière le CTA mot-clé.",
+                "items": {"type": "object", "properties": {
+                    "titre": {"type": "string", "description": "Texte principal de la slide, très lisible : 3 à 10 mots."},
+                    "texte": {"type": "string", "description": "Précision optionnelle sous le titre : 0 à 25 mots. Vide sur la 1re slide."}},
+                    "required": ["titre", "texte"]},
+            },
+            "legende": {"type": "string", "description": "Légende du carrousel prête à publier, avec le CTA et 3 à 6 hashtags à la fin."},
+        },
+        "required": ["slides", "legende"],
+    },
+}
+
 # ------------------------------------------------------------
 #  Messages d'erreur compréhensibles
 # ------------------------------------------------------------
@@ -236,6 +256,26 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
         if not res.get("erreur") and p.legende and str(res.get("langue_originale", "")).strip().lower() == str(self.cfg["niche"].get("langue", "français")).strip().lower():
             res["legende_reprise"] = p.legende
         return res
+
+    def carrousel(self, ad: dict, nb: int = 7) -> dict:
+        """Transforme une adaptation (hook, script, CTA) en textes de carrousel."""
+        texte = f"""Transforme ce Reel adapté en carrousel Instagram de {nb} slides.
+
+Hook viral : {ad.get('hook_viral') or ''}
+Hooks adaptés : {' / '.join(ad.get('hooks_adaptes') or [])}
+Sujet : {ad.get('sujet') or ''}
+Mécanique : {ad.get('mecanique') or ''}
+Script du Reel :
+\"\"\"{ad.get('script_reel') or ''}\"\"\"
+CTA : {ad.get('cta_conversation') or ''}
+
+Règles :
+- Slide 1 : le hook viral repris tel quel (ou traduit fidèlement), rien d'autre. Il doit donner envie de faire glisser.
+- Slides suivantes : une seule idée par slide, phrases courtes, concrètes, dans le ton de la marque. Chaque slide donne envie de passer à la suivante.
+- Dernière slide : le CTA qui fait commenter le mot-clé « {self.cfg['objectifs']['mot_cle_cta']} ».
+- Rien qui sonne publicité ou texte d'IA, pas de liste de bénéfices creux, pas d'emoji dans les titres.
+Remplis l'outil enregistrer_carrousel."""
+        return self._appel(OUTIL_CARROUSEL, texte, max_tokens=2000)
 
     def adapte_tous(self, posts: list[Post], apres_chaque=None):
         log(f"Analyse et adaptation par Claude de {len(posts)} Reels…")

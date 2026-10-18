@@ -86,9 +86,13 @@ def images_cles(video: Path, dossier: Path, nb: int, d: float | None) -> list[Pa
     return chemins
 
 
-def audio(video: Path, dossier: Path) -> Path | None:
+SECONDES_TRANSCRITES = int(os.getenv("SECONDES_TRANSCRITES", "60"))  # le hook et la structure sont dans la première minute
+
+
+def audio(video: Path, dossier: Path, secondes: int | None = SECONDES_TRANSCRITES) -> Path | None:
     sortie = dossier / "audio.wav"
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(sortie)],
+    limite = ["-t", str(secondes)] if secondes else []
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), *limite, "-vn", "-ac", "1", "-ar", "16000", str(sortie)],
                    capture_output=True, timeout=180)
     return sortie if sortie.exists() and sortie.stat().st_size > 1000 else None
 
@@ -96,6 +100,27 @@ def audio(video: Path, dossier: Path) -> Path | None:
 # ------------------------------------------------------------
 #  Transcription
 # ------------------------------------------------------------
+_MODELES: dict = {}   # modèle Whisper gardé en mémoire d'une analyse à l'autre (évite ~10 s de chargement)
+_VERROU_MODELE = __import__("threading").Lock()
+
+
+def modele_whisper(nom: str):
+    with _VERROU_MODELE:
+        if nom not in _MODELES:
+            from faster_whisper import WhisperModel
+            log(f"  Chargement du modèle Whisper « {nom} » (première fois : téléchargement)")
+            _MODELES[nom] = WhisperModel(nom, device="cpu", compute_type="int8", cpu_threads=os.cpu_count() or 2)
+        return _MODELES[nom]
+
+
+def lit_wav(wav: Path, secondes: int | None):
+    import wave
+    import numpy as np
+    with wave.open(str(wav), "rb") as w:
+        n = w.getnframes() if not secondes else min(w.getnframes(), w.getframerate() * secondes)
+        return np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float32) / 32768.0
+
+
 class Transcripteur:
     def __init__(self, cfg: dict):
         v = cfg["video"]
@@ -119,20 +144,14 @@ class Transcripteur:
                                       data={"model": "whisper-1"}, timeout=300)
                 r.raise_for_status()
                 return r.json().get("text", "").strip()
-            if self._local is None:
-                from faster_whisper import WhisperModel
-                log(f"  Chargement du modèle Whisper « {self.modele_local} » (première fois : téléchargement)")
-                self._local = WhisperModel(self.modele_local, device="cpu", compute_type="int8")
             # Le WAV (16 kHz mono, produit par ffmpeg) est lu directement : on évite le décodeur PyAV,
             # dont les versions récentes sont incompatibles avec faster-whisper (« metadata_errors »).
-            import wave
-            import numpy as np
-            with wave.open(str(wav), "rb") as w:
-                n = min(w.getnframes(), w.getframerate() * 150)  # 2 min 30 max : le hook est au début
-                audio = np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float32) / 32768.0
+            audio = lit_wav(wav, SECONDES_TRANSCRITES)
             if audio.size < 1600:
                 return ""
-            segments, _ = self._local.transcribe(audio, vad_filter=True, beam_size=1)
+            # vad_filter : les passages sans parole (musique seule) sont sautés → vidéos muettes traitées en un instant
+            segments, _ = modele_whisper(self.modele_local).transcribe(
+                audio, vad_filter=True, beam_size=1, condition_on_previous_text=False, without_timestamps=True)
             return " ".join(s.text.strip() for s in segments).strip()
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Transcription impossible : {e}")
@@ -173,22 +192,43 @@ def traite_videos(posts: list[Post], cfg: dict, token: str | None, dossier: Path
         return p, wav
 
     log(f"Lecture de {len(posts)} vidéos (images clés + audio)…")
-    a_transcrire = []
+    transcrire = Transcripteur(cfg) if v.get("transcription", "local") != "aucun" else None
+    # Chaîne de production : chaque audio est transcrit dès qu'il est prêt, pendant que les vidéos suivantes se téléchargent
+    import queue
+    import threading
+    file_audio: queue.Queue = queue.Queue()
+    faits = [0]
+
+    def transcripteur_en_continu():
+        while True:
+            el = file_audio.get()
+            if el is None:
+                return
+            p, wav = el
+            try:
+                p.transcription = transcrire(wav)[:4000]
+            finally:
+                wav.unlink(missing_ok=True)
+            faits[0] += 1
+            if faits[0] % 5 == 0:
+                log(f"  {faits[0]} vidéos transcrites")
+    fil = threading.Thread(target=transcripteur_en_continu, daemon=True) if transcrire else None
+    if fil:
+        fil.start()
     with cf.ThreadPoolExecutor(max_workers=4) as ex:
-        for p, wav in ex.map(prepare, posts):
-            if wav:
-                a_transcrire.append((p, wav))
+        for fut in cf.as_completed([ex.submit(prepare, p) for p in posts]):
+            p, wav = fut.result()
+            if wav and fil:
+                file_audio.put((p, wav))
+            elif wav:
+                wav.unlink(missing_ok=True)
     lues = sum(1 for p in posts if p.images)
     log(f"  {lues}/{len(posts)} vidéos lues" + ("" if lues == len(posts) else " (liens expirés ou indisponibles pour les autres)"))
-
-    if v.get("transcription", "local") != "aucun" and a_transcrire:
-        log(f"Transcription de {len(a_transcrire)} audios…")
-        transcrire = Transcripteur(cfg)
-        for i, (p, wav) in enumerate(a_transcrire, 1):
-            p.transcription = transcrire(wav)[:4000]
-            wav.unlink(missing_ok=True)
-            if i % 5 == 0:
-                log(f"  {i}/{len(a_transcrire)}")
+    if fil:
+        if not file_audio.empty():
+            log("Transcription des derniers audios…")
+        file_audio.put(None)
+        fil.join()
 
 
 def miniatures(posts: list[Post], media: Path):

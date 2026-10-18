@@ -113,7 +113,13 @@ main{min-width:0;padding:20px 28px 80px}
 .tiroir{position:fixed;top:0;right:0;bottom:0;width:min(680px,100%);background:var(--paper);z-index:21;transform:translateX(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1),visibility 0s .25s;visibility:hidden;display:flex;flex-direction:column}
 .tiroir.ouvert{transform:none;visibility:visible;transition:transform .25s cubic-bezier(.2,.8,.2,1);box-shadow:-20px 0 60px -30px rgba(0,0,0,.4)}
 .t-tete{display:grid;grid-template-columns:118px 1fr auto;gap:16px;padding:20px 22px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
-.t-tete img,.t-tete .ph{width:118px;aspect-ratio:9/14;object-fit:cover;border-radius:14px;background:var(--sunk)}
+.t-tete img,.t-tete .ph{width:118px;aspect-ratio:9/14;object-fit:cover;border-radius:14px;background:var(--sunk);display:block}
+.vignette{position:relative;border:0;padding:0;background:none;cursor:pointer;border-radius:14px;align-self:start}
+.vignette .lire{position:absolute;inset:0;display:grid;place-items:center}
+.vignette .lire svg{width:42px;height:42px;padding:10px;border-radius:50%;background:rgba(39,27,45,.6);color:#fff;transition:transform .15s}
+.vignette:hover .lire svg{transform:scale(1.1);background:var(--glow)}
+.lecteur{max-width:400px;margin:0 auto 12px;border-radius:16px;overflow:hidden;background:var(--sunk)}
+.lecteur iframe{display:block;width:100%;height:min(720px,72vh);border:0}
 .t-tete h2{font-size:22px;font-stretch:85%}
 .t-tete .meta{color:var(--ink-2);font-size:13.5px;margin:2px 0 10px}
 .chiffres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px}
@@ -222,6 +228,82 @@ td.num{font-variant-numeric:tabular-nums}
 @keyframes t{to{transform:rotate(1turn)}}
 [hidden]{display:none!important}
 
+/* ---------- Studio ---------- */
+.formats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.formats button{border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r-m);padding:18px;text-align:left;cursor:pointer;display:grid;gap:6px}
+.formats button:hover{border-color:var(--glow)}
+.formats .ic{width:40px;height:40px;border-radius:12px;background:var(--glow-soft);color:var(--glow);display:grid;place-items:center}
+.formats .ic svg{width:22px;height:22px}
+.formats b{font:700 19px/1.2 var(--display)}
+.formats span:not(.ic){color:var(--ink-2);font-size:14px}
+.st-quota{margin:0 0 14px}
+.st-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.st-carte{background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.st-ouvre{border:0;padding:0;background:var(--sunk);cursor:pointer;position:relative;aspect-ratio:4/5;display:block}
+.st-ouvre img,.st-ouvre .ph{width:100%;height:100%;object-fit:cover;display:block}
+.st-type,.st-statut{position:absolute;top:10px;font-size:12px;font-weight:600;border-radius:99px;padding:3px 9px;background:rgba(39,27,45,.75);color:#fff}
+.st-type{left:10px} .st-statut{right:10px}
+.st-statut.pret{background:var(--ok)} .st-statut.erreur{background:var(--warn)}
+.st-pied{padding:12px 14px 14px;display:grid;gap:4px}
+.st-pied b{font-size:14.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.st-pied span{color:var(--ink-3);font-size:13px}
+.st-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.st-tete{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.st-tete .aide{color:var(--ink-3);font-size:13px}
+.st-titre{font-size:24px;font-stretch:85%;margin:0 0 18px;max-width:46ch}
+.st-grille{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.st-droite{position:sticky;top:16px}
+.st-bloc{background:var(--surface);border-radius:var(--r-m);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.st-bloc h3{font-size:17px;margin:0 0 6px}
+.st-bloc .aide{color:var(--ink-3);font-size:13.5px;margin:0 0 12px}
+.depot{display:grid;justify-items:center;gap:4px;border:1.5px dashed var(--line);border-radius:var(--r-m);padding:22px 14px;text-align:center;cursor:pointer;color:var(--ink-2);position:relative;overflow:hidden}
+.depot:hover,.depot.survol{border-color:var(--glow);background:var(--glow-soft)}
+.depot svg{color:var(--glow)} .depot small{color:var(--ink-3);font-size:12.5px}
+.st-envoi{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--sunk)}
+.st-envoi i{display:block;height:100%;width:0;background:var(--glow);transition:width .2s}
+.st-medias{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:14px}
+.st-medias figure{margin:0;position:relative;border-radius:10px;overflow:hidden;background:var(--sunk);aspect-ratio:4/5}
+.st-medias img{width:100%;height:100%;object-fit:cover;display:block}
+.st-medias figcaption{position:absolute;top:6px;left:6px;background:rgba(39,27,45,.75);color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:1px 7px}
+.st-med-actions{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:4px;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.st-med-actions button{border:0;background:rgba(255,255,255,.92);color:#271B2D;width:26px;height:26px;border-radius:8px;cursor:pointer;font-weight:700}
+.st-med-actions button:disabled{opacity:.35;cursor:default}
+.st-video{display:flex;gap:12px;align-items:center;margin-top:14px;background:var(--sunk);border-radius:12px;padding:8px}
+.st-video video{width:54px;height:96px;object-fit:cover;border-radius:8px;background:#000}
+.st-video div{display:grid;flex:1} .st-video span{color:var(--ink-3);font-size:13px}
+.st-input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.st-slides{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:sl}
+.st-slide{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;counter-increment:sl;position:relative}
+.st-slide>img,.st-slide>.st-fond{width:56px;height:70px;border-radius:8px;object-fit:cover}
+.st-slide::before{content:counter(sl);position:absolute;left:4px;top:4px;background:rgba(39,27,45,.75);color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:0 6px;z-index:1}
+.st-slide div{display:grid;gap:6px}
+.st-slide [data-k=titre]{font-weight:600}
+.st-slide textarea{min-height:56px;padding:8px 12px;border-radius:10px;font-size:14px}
+.st-moins{border:0;background:none;color:var(--ink-3);font-size:20px;cursor:pointer;padding:4px 6px;line-height:1}
+.st-moins:hover{color:var(--warn)}
+.st-outils{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.st-fond{display:inline-block;width:18px;height:18px;border-radius:5px;vertical-align:middle}
+.st-fond.sombre{background:#271B2D} .st-fond.clair{background:#F6F4F8;border:1px solid var(--line)} .st-fond.rose{background:#FF4F79}
+.st-themes{display:flex;gap:8px;flex-wrap:wrap}
+.st-themes button{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;cursor:pointer;font-weight:500}
+.st-themes button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft)}
+.coche{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--ink-2);cursor:pointer;margin:0 0 14px}
+.coche input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--glow);flex-shrink:0}
+.st-final{display:grid;gap:12px}
+.st-final h3{font-size:19px}
+.btn.large{justify-content:center;padding:12px 16px;font-size:15.5px;width:100%}
+.st-attente{display:grid;justify-items:center;text-align:center;gap:10px;padding:18px 6px}
+.spin.gros{width:34px;height:34px;border-width:3px}
+.st-rendu{display:grid;gap:8px;grid-template-columns:repeat(2,1fr)}
+.st-rendu img{width:100%;display:block;border-radius:10px}
+.st-rendu.reel{grid-template-columns:1fr}
+.st-rendu video{display:block;margin:0 auto;height:min(520px,70vh);aspect-ratio:9/16;max-width:100%;border-radius:12px;background:#000}
+a.btn{text-decoration:none}
+.lien-admin{display:block;margin-top:6px;color:var(--glow);font-weight:600}
+.st-rendu.reel a{display:none}
+@media (max-width:1100px){.st-grille{grid-template-columns:1fr}.st-droite{position:static}.st-grille.pret .st-droite{order:-1}}
+@media (max-width:860px){.formats{grid-template-columns:1fr}.st-liste{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.st-actions .btn{flex:1}}
+
 /* ---------- Mobile ---------- */
 @media (max-width:860px){
   .app{grid-template-columns:1fr}
@@ -309,7 +391,8 @@ td.num{font-variant-numeric:tabular-nums}
 .conso{display:grid;gap:12px;max-width:520px}
 .conso .barre-ind{height:8px}
 .conso label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
-.utilisateur{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--ink-2)}
+.utilisateur{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:10px;color:var(--ink-2)}
+.utilisateur .lien-admin{flex-basis:100%;margin:0}
 .utilisateur button{border:0;background:none;color:var(--ink-3);cursor:pointer;text-decoration:underline;font-size:12.5px;padding:0}
 .reglages{display:grid;gap:10px}
 .reglage{display:grid;grid-template-columns:200px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
@@ -355,6 +438,7 @@ td.num{font-variant-numeric:tabular-nums}
     <div class="marque"><i></i>Veille virale</div>
     <button class="nav" data-vue="reels" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg>Reels<span class="n" id="n-reels"></span></button>
     <button class="nav" data-vue="planning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Planning</button>
+    <button class="nav" data-vue="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Studio</button>
     <button class="nav" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
     <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="long">Paramètres</span><span class="court">Réglages</span></button>
     <button class="nav" data-vue="comptes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8M22 21c0-3-1.5-5-4-5.7"/></svg>Comptes</button>
@@ -403,7 +487,8 @@ td.num{font-variant-numeric:tabular-nums}
       <div id="planning"></div>
     </section>
 
-    <!-- VOIX -->
+    <!-- STUDIO -->
+    <section data-section="studio" hidden><div id="studio"></div></section>
 
     <!-- RÉSULTATS -->
     <section data-section="resultats" hidden><div id="resultats"></div></section>
@@ -475,11 +560,11 @@ async function chargeEtat() {
     : '<span class="pastille"></span>Apify et Claude connectés';
   if (S.etat.job && !S.jobId) suisJob(S.etat.job.id, false);
   const u = S.etat.utilisateur, ab = S.etat.abonnement;
-  $("#utilisateur").innerHTML = `<span>${esc(u.prenom || u.email)}${ab ? ` — ${esc(ab.nom_plan)}` : ""}</span><button onclick="deconnexion()">Se déconnecter</button>`;
+  $("#utilisateur").innerHTML = `<span>${esc(u.prenom || u.email)}${ab ? ` — ${esc(ab.nom_plan)}` : ""}</span><button onclick="deconnexion()">Se déconnecter</button>${S.etat.admin ? '<a class="lien-admin" href="/admin">Administration</a>' : ""}`;
   $("#bandeau-demo").innerHTML = S.etat.demo ? "<b>Mode démo.</b> Les analyses utilisent des données fictives (clés Apify et Claude non configurées sur le serveur)." : "";
   if (ab && !ab.actif) { $("#bandeau-demo").hidden = false; $("#bandeau-demo").innerHTML = `<b>${ab.statut === "essai" ? "Ton essai gratuit est terminé." : "Ton abonnement n'est pas actif."}</b> <a href="#" onclick="va('abonnement');return false">Choisis une formule</a> pour lancer de nouvelles analyses.`; }
 }
-async function deconnexion() { await api("/api/deconnexion", {method: "POST"}); location.href = "/connexion#connexion"; }
+async function deconnexion() { await api("/api/deconnexion", {method: "POST"}); location.href = "/"; }
 async function chargeListe(selection) {
   const liste = await api("/api/analyses");
   const sel = $("#choix-analyse");
@@ -495,19 +580,21 @@ async function chargeAnalyse(id) {
 }
 
 // ---------------------------------------------------------------- Navigation
-const TITRES = {reels: "Reels", planning: "Planning de la semaine", voix: "Voix du client", resultats: "Mes résultats", comptes: "Comptes surveillés", parametres: "Paramètres", abonnement: "Abonnement"};
+const TITRES = {reels: "Reels", planning: "Planning de la semaine", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Comptes surveillés", parametres: "Paramètres", abonnement: "Abonnement"};
 function va(vue) {
   S.vue = vue;
   $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === vue ? "page" : "false"));
   $$("[data-section]").forEach(s => s.hidden = s.dataset.section !== vue);
   $("#titre").textContent = TITRES[vue];
+  $("#choix-analyse").style.visibility = vue === "studio" ? "hidden" : "";
+  $("#ouvrir-nouvelle").hidden = vue === "studio";
   rendu();
 }
 $$(".nav").forEach(b => b.onclick = () => va(b.dataset.vue));
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
 
 function rendu() {
-  ({reels: renduReels, planning: renduPlanning, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
+  ({reels: renduReels, planning: renduPlanning, studio: renduStudio, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
 }
 
 // ---------------------------------------------------------------- Reels
@@ -595,12 +682,13 @@ function ouvreReel(cle, onglet) {
   const p = S.analyse.posts.find(x => x.cle === cle); if (!p) return;
   S.ouvert = cle;
   const c = S.analyse.criteres, ad = p.adaptation || {}, t = $("#tiroir");
-  const onglets = adapte(p) ? ["Adaptation", "Séquence DM", "Analyse"] : ["Original"];
+  const onglets = [...(adapte(p) ? ["Adaptation", "Séquence DM", "Analyse"] : ["Original"]), ...(urlEmbed(p) ? ["Vidéo"] : [])];
   onglet = onglets.includes(onglet) ? onglet : onglets[0];
   const date = p.date ? new Date(p.date).toLocaleDateString("fr-FR", {day: "numeric", month: "long"}) : "";
   t.innerHTML = `
     <div class="t-tete">
-      ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="">` : '<div class="ph"></div>'}
+      ${urlEmbed(p) ? `<button class="vignette" data-onglet="Vidéo" aria-label="Regarder la vidéo originale">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="">` : '<div class="ph"></div>'}<span class="lire" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span></button>`
+        : p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="">` : '<div class="ph"></div>'}
       <div>
         <h2>@${esc(p.compte)}</h2>
         <div class="meta">${p.plateforme}, ${date}${p.duree_s ? ", " + Math.round(p.duree_s) + " s" : ""}${p.creneau ? ` — prévu ${esc(p.creneau.toLowerCase())}` : ""}</div>
@@ -619,6 +707,7 @@ function ouvreReel(cle, onglet) {
       ${(() => { const pub = (S.pubs || []).find(x => x.inspiration?.cle === p.cle);
         return pub ? `<button class="btn" onclick="fermeTiroir();va('resultats')">✓ Publié — voir les résultats</button>`
                    : adapte(p) ? `<button class="btn prim" data-publie="${esc(p.cle)}">J'ai publié ce Reel</button>` : ""; })()}
+      ${adapte(p) ? `<button class="btn" data-studio="${esc(p.cle)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Créer le contenu</button>` : ""}
       ${p.url ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Voir l'original</a>` : ""}
       ${adapte(p) ? `<button class="btn" data-adapter="${esc(p.cle)}">Refaire l'adaptation</button>` : ""}
       <form class="publie-form" id="publie-form" hidden>
@@ -633,10 +722,22 @@ function ouvreReel(cle, onglet) {
       await chargePubs(); toast("C'est noté : ce Reel est suivi"); ouvreReel(cle, onglet);
     } catch (err) { toast(err.message); } };
   $$("[data-onglet]", t).forEach(b => b.onclick = () => ouvreReel(cle, b.dataset.onglet));
+  $("[data-studio]", t)?.addEventListener("click", () => choisirFormat(p.cle));
   t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
+}
+function urlEmbed(p) {
+  const u = p.url || "";
+  let m = u.match(/instagram\.com\/(?:[^/]+\/)?(?:reels?|p|tv)\/([\w-]+)/);
+  if (m) return `https://www.instagram.com/reel/${m[1]}/embed/`;
+  m = u.match(/tiktok\.com\/.*\/video\/(\d+)/);
+  if (m) return `https://www.tiktok.com/embed/v2/${m[1]}`;
+  return null;
 }
 function corpsOnglet(p, o) {
   const ad = p.adaptation || {};
+  if (o === "Vidéo") return `
+    <div class="lecteur"><iframe src="${esc(urlEmbed(p))}" title="Vidéo originale de @${esc(p.compte)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+    <p class="aide" style="text-align:center">La vidéo ne s'affiche pas ? Elle a peut-être été supprimée ou rendue privée. <a href="${esc(p.url)}" target="_blank" rel="noopener">L'ouvrir sur ${esc(p.plateforme)}</a></p>`;
   if (o === "Adaptation") return `
     ${ad.hook_viral ? `<h3>Hook viral à reprendre${ad.langue_originale && ad.hook_viral !== ad.hook_original ? ` (traduit de l'${esc(ad.langue_originale)})` : ""}</h3><div class="hooks">${copiable(ad.hook_viral)}</div>
       ${ad.hook_viral !== ad.hook_original ? `<p style="margin:6px 0 0;color:var(--ink-3);font-size:13.5px">Original : ${esc(ad.hook_original)}</p>` : ""}` : ""}
@@ -882,6 +983,218 @@ async function lanceAnalyse() {
     const r = await api("/api/analyses", {method: "POST", body: corps});
     suisJob(r.job, true);
   } catch (e) { $("#m-erreur").innerHTML = `<p class="erreur">${esc(e.message)}</p>`; }
+}
+
+// ---------------------------------------------------------------- Studio
+const NOMS_THEMES = {sombre: "Nuit", clair: "Clair", rose: "Rose"};
+function choisirFormat(cle) {
+  $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:26px;font-stretch:85%">Que veux-tu créer ?</h2>
+    <p style="color:var(--ink-2);margin:6px 0 18px">Claude écrit les textes à partir de ce Reel. Tu ajoutes tes photos ou ta vidéo, et tu récupères un package prêt à publier.</p>
+    <div class="formats">
+      <button data-format="carrousel"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span><b>Carrousel</b><span>Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350.</span></button>
+      <button data-format="reel"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>
+    </div>
+    <div class="pied-modale"><button class="btn" data-fermer>Annuler</button></div>`;
+  $("#modale").classList.add("ouvert");
+  $$("[data-format]").forEach(b => b.onclick = async () => {
+    $$("[data-format]").forEach(x => x.disabled = true);
+    try {
+      const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: b.dataset.format}});
+      fermeModale(); fermeTiroir();
+      S.projetId = r.projet.id; S.projet = r.projet; S.tacheStudio = {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"};
+      va("studio"); suisTacheStudio(r.job);
+    } catch (e) { toast(e.message); $$("[data-format]").forEach(x => x.disabled = false); }
+  });
+}
+async function renduStudio() {
+  const el = $("#studio");
+  if (S.projetId) return renduProjet();
+  const r = await api("/api/studio");
+  if (S.vue !== "studio" || S.projetId) return;
+  const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} ce mois-ci sur ${r.quota}`} · retoucher et refaire une création ne compte pas.</p>`;
+  if (!r.projets.length) {
+    el.innerHTML = `<div class="vide"><h2>Ton studio est vide</h2><p>Ouvre un Reel adapté dans la galerie et clique sur <b>Créer le contenu</b> :<br>tu choisis carrousel ou Reel, tu ajoutes tes photos ou ta vidéo, et tu récupères tout prêt à publier.</p>
+      <button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels adaptés</button></div>${quota}`;
+    return;
+  }
+  const vignette = p => {
+    const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
+    return img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
+  };
+  const STATUTS = {brouillon: "Brouillon", en_cours: "En cours…", pret: "Prêt", erreur: "À revoir"};
+  el.innerHTML = quota + `<div class="st-liste">${r.projets.map(p => `
+    <article class="st-carte">
+      <button class="st-ouvre" data-projet="${p.id}" aria-label="Ouvrir ${esc(p.titre)}">
+        ${vignette(p) ? `<img src="${vignette(p)}" alt="" loading="lazy">` : '<div class="ph"></div>'}
+        <span class="st-type">${p.type === "reel" ? "Reel" : "Carrousel"}</span>
+        <span class="st-statut ${p.statut}">${STATUTS[p.statut] || p.statut}</span>
+      </button>
+      <div class="st-pied"><b>${esc(p.titre)}</b><span>${new Date(p.cree).toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}${p.compte ? " · d'après @" + esc(p.compte) : ""}</span>
+        <div class="st-actions">${p.zip ? `<a class="btn petit prim" href="/studio/${p.id}/sortie/${encodeURIComponent(p.zip)}?telecharger=1">Télécharger</a>` : ""}<button class="btn petit" data-projet="${p.id}">Ouvrir</button><button class="btn petit" data-suppr="${p.id}" aria-label="Supprimer">Supprimer</button></div>
+      </div>
+    </article>`).join("")}</div>`;
+  $$("[data-projet]", el).forEach(b => b.onclick = () => ouvreProjet(b.dataset.projet));
+  $$("[data-suppr]", el).forEach(b => b.onclick = async () => {
+    if (!confirm("Supprimer cette création et ses fichiers ?")) return;
+    await api("/api/studio/" + b.dataset.suppr, {method: "DELETE"}); renduStudio();
+  });
+}
+async function ouvreProjet(sid) {
+  S.projetId = sid; S.projet = await api("/api/studio/" + sid);
+  if (S.vue !== "studio") va("studio"); else renduProjet();
+}
+function slidesDuDom() {
+  return $$(".st-slide").map(x => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value}));
+}
+function sauveProjet(immediat) {
+  clearTimeout(S.minuteurStudio);
+  const go = async () => {
+    const p = S.projet; if (!p || !$("#st-legende")) return;
+    const corps = {legende: $("#st-legende").value, pseudo: $("#st-pseudo").value.trim().replace(/^@/, "")};
+    if ($(".st-slide") || p.type === "carrousel") corps.slides = slidesDuDom();
+    if ($("#st-hook")) corps.hook = $("#st-hook").value;
+    if ($("#st-sous")) corps.sous_titres = $("#st-sous").checked;
+    try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: corps}); $("#st-enregistre").textContent = "Enregistré"; } catch (e) { toast(e.message); }
+  };
+  $("#st-enregistre") && ($("#st-enregistre").textContent = "…");
+  return immediat ? go() : (S.minuteurStudio = setTimeout(go, 700));
+}
+function renduProjet() {
+  const p = S.projet, el = $("#studio");
+  if (!p) return;
+  const tache = S.tacheStudio && S.tacheStudio.sid === p.id ? S.tacheStudio : null;
+  const ecrit = !!tache && /slides/i.test(tache.titre || "");
+  const enCours = !!tache || p.statut === "en_cours";
+  if (p.statut === "en_cours" && !tache) {  // page rechargée pendant un montage : on surveille le projet
+    clearTimeout(S.rechargeProjet);
+    S.rechargeProjet = setTimeout(async () => { if (S.projetId === p.id && S.vue === "studio") { S.projet = await api("/api/studio/" + p.id); renduProjet(); } }, 3000);
+  }
+  const avecVideo = p.type === "reel" && p.video;
+  const slidesVisibles = p.type === "carrousel" || !avecVideo;
+  const src = n => `/studio/${p.id}/sources/${encodeURIComponent(n)}`;
+  const sortie = n => `/studio/${p.id}/sortie/${encodeURIComponent(n)}`;
+  const resultat = p.statut === "pret" && (p.fichiers || []).length ? `
+      <div class="st-rendu ${p.type}">${p.fichiers.map(f => f.endsWith(".mp4")
+        ? `<video src="${sortie(f)}?v=${encodeURIComponent(p.genere_le || "")}" controls playsinline preload="metadata"></video>`
+        : `<a href="${sortie(f)}?telecharger=1" title="Télécharger ${esc(f)}"><img src="${sortie(f)}?v=${encodeURIComponent(p.genere_le || "")}" alt="${esc(f)}" loading="lazy"></a>`).join("")}</div>
+      <a class="btn prim large" href="${sortie(p.zip)}?telecharger=1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Télécharger le package (.zip)</a>
+      <p class="aide">Le package contient ${p.type === "carrousel" ? "les slides dans l'ordre" : "le Reel et sa couverture"}, la légende, ${p.type === "reel" ? "le script, " : ""}le message automatique et la séquence de messages privés, avec les étapes pour publier.</p>
+      <button class="btn" id="st-generer">Appliquer mes retouches</button>` : "";
+  el.innerHTML = `
+    <div class="st-tete">
+      <button class="btn petit" id="st-retour">← Mes créations</button>
+      <div class="seg" role="group" aria-label="Format">${["carrousel", "reel"].map(t => `<button data-type="${t}" aria-pressed="${p.type === t}">${t === "reel" ? "Reel" : "Carrousel"}</button>`).join("")}</div>
+      <span class="aide" id="st-enregistre" aria-live="polite"></span>
+    </div>
+    <h2 class="st-titre">${esc(p.titre)}</h2>
+    <div class="st-grille ${p.statut === "pret" || enCours ? "pret" : ""}">
+      <div>
+        <div class="st-bloc">
+          <h3>1. Tes ${p.type === "reel" ? "photos ou ta vidéo" : "photos"}</h3>
+          <p class="aide">${p.type === "carrousel" ? "Une photo par slide, dans l'ordre. Les slides sans photo sont sur fond uni." : "Ta vidéo (face caméra, voix off…) : je la recadre et j'ajoute le hook et les sous-titres. Pas de vidéo ? Ajoute des photos : je monte un diaporama avec les textes."}</p>
+          <label class="depot" id="st-depot"><input type="file" id="st-fichiers" multiple accept="${p.type === "reel" ? "image/*,video/*" : "image/*"}" hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
+            <span><b>Choisis tes fichiers</b> ou dépose-les ici</span><small>JPEG, PNG, HEIC${p.type === "reel" ? " · MP4, MOV jusqu'à 300 Mo et 3 min" : ""} · 10 photos max</small>
+            <i class="st-envoi" id="st-envoi" hidden><i></i></i>
+          </label>
+          ${avecVideo ? `<div class="st-video"><video src="${src(p.video)}" muted playsinline preload="metadata"></video><div><b>Ta vidéo</b><span>${p.video_duree ? Math.round(p.video_duree) + " s" : ""}${p.video_duree > 180 ? " · seules les 3 premières minutes seront gardées" : ""}</span></div><button class="btn petit" data-retire="${esc(p.video)}">Retirer</button></div>` : ""}
+          ${p.images.length ? `<div class="st-medias">${p.images.map((n, i) => `<figure><img src="${src(n)}" alt="Photo ${i + 1}"><figcaption>${i + 1}</figcaption>
+            <div class="st-med-actions"><button data-bouge="${i}" data-sens="-1" aria-label="Avancer" ${i ? "" : "disabled"}>←</button><button data-retire="${esc(n)}" aria-label="Retirer">×</button><button data-bouge="${i}" data-sens="1" aria-label="Reculer" ${i < p.images.length - 1 ? "" : "disabled"}>→</button></div></figure>`).join("")}</div>` : ""}
+        </div>
+        <div class="st-bloc">
+          <h3>2. Les textes</h3>
+          ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
+            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (ce que tu dis dans la vidéo)</label>` : ""}` : ""}
+          ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Claude écrit tes slides…</p>` : `
+            ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
+            <ol class="st-slides">${p.slides.map((x, i) => `<li class="st-slide">
+              ${p.images[i] ? `<img src="${src(p.images[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}"></span>`}
+              <div><input class="st-input" data-k="titre" value="${esc(x.titre)}" aria-label="Titre de la slide ${i + 1}" placeholder="${i ? "Titre de la slide" : "Le hook"}">
+              <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea></div>
+              <button class="st-moins" data-moins="${i}" aria-label="Supprimer la slide ${i + 1}">×</button></li>`).join("")}</ol>
+            <div class="st-outils"><button class="btn petit" id="st-ajout" ${p.slides.length >= 10 ? "disabled" : ""}>+ Ajouter une slide</button><button class="btn petit" id="st-ecrire">Réécrire avec Claude</button></div>`) : ""}
+        </div>
+        <div class="st-bloc">
+          <h3>3. Le style</h3>
+          <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(NOMS_THEMES).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${p.theme === k}"><span class="st-fond ${k}"></span>${n}</button>`).join("")}</div>
+          <div class="champ" style="margin-top:14px"><label for="st-pseudo">Ton @ affiché sur les visuels</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte (laisser vide pour ne rien afficher)"></div>
+        </div>
+        <div class="st-bloc">
+          <h3>4. La légende</h3>
+          <textarea id="st-legende" rows="8">${esc(p.legende)}</textarea>
+        </div>
+      </div>
+      <div class="st-droite">
+        <div class="st-bloc st-final" id="st-final">
+          ${enCours ? `<div class="st-attente"><span class="spin gros"></span><b id="st-phrase">${esc(tache?.phrase || "Création en cours…")}</b><p class="aide">Tu peux continuer à naviguer : je te préviens quand c'est prêt.</p></div>`
+            : p.statut === "erreur" ? `<p class="erreur">${esc(p.erreur || "La création a échoué.")}</p><button class="btn prim large" id="st-generer">Réessayer</button>`
+            : resultat || `<h3>Prêt à créer ?</h3><p class="aide">${p.type === "carrousel" ? `${p.slides.length} slides, ${p.images.length} photo${p.images.length > 1 ? "s" : ""}.` : avecVideo ? "Ta vidéo sera recadrée en 9:16 avec le hook et les sous-titres." : p.images.length ? `Diaporama de ${p.slides.length} plans avec tes photos.` : "Ajoute ta vidéo ou des photos."}</p>
+              <button class="btn prim large" id="st-generer" ${p.type === "reel" && !avecVideo && !p.images.length && !p.slides.length ? "disabled" : ""}>${p.type === "carrousel" ? "Créer mon carrousel" : avecVideo ? "Monter mon Reel" : "Créer mon diaporama"}</button>
+              <p class="aide">${p.type === "reel" && avecVideo ? "Compte 1 à 3 minutes selon la longueur de ta vidéo." : "Quelques secondes."}</p>`}
+        </div>
+      </div>
+    </div>`;
+  $("#st-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); };
+  $$("[data-type]", el).forEach(b => b.onclick = async () => { if (b.dataset.type === p.type) return; await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {type: b.dataset.type}}); renduProjet(); });
+  $$("[data-theme]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {theme: b.dataset.theme}}); renduProjet(); });
+  $$(".st-input, #st-legende, .st-slide textarea", el).forEach(i => i.addEventListener("input", () => sauveProjet()));
+  $("#st-sous")?.addEventListener("change", () => sauveProjet());
+  $("#st-ajout")?.addEventListener("click", async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: [...S.projet.slides, {titre: "", texte: ""}]}}); renduProjet(); $$(".st-slide [data-k=titre]").pop()?.focus(); });
+  $$("[data-moins]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); const sl = S.projet.slides.filter((_, i) => i !== +b.dataset.moins); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: sl}}); renduProjet(); });
+  $("#st-ecrire")?.addEventListener("click", async () => {
+    if (p.slides.length && !confirm("Remplacer tes textes actuels par une nouvelle proposition de Claude ?")) return;
+    try { const r = await api(`/api/studio/${p.id}/ecrire`, {method: "POST"}); S.tacheStudio = {id: r.job, sid: p.id, titre: "Écriture des slides", phrase: "Claude écrit tes slides…"}; renduProjet(); suisTacheStudio(r.job); } catch (e) { toast(e.message); }
+  });
+  $$("[data-retire]", el).forEach(b => b.onclick = async () => { S.projet = await api(`/api/studio/${p.id}/fichiers/${encodeURIComponent(b.dataset.retire)}`, {method: "DELETE"}); renduProjet(); });
+  $$("[data-bouge]", el).forEach(b => b.onclick = async () => {
+    const im = [...p.images], i = +b.dataset.bouge, j = i + +b.dataset.sens;
+    [im[i], im[j]] = [im[j], im[i]];
+    S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {images: im}}); renduProjet();
+  });
+  const depot = $("#st-depot");
+  $("#st-fichiers").onchange = e => envoieFichiers([...e.target.files]);
+  ["dragenter", "dragover"].forEach(ev => depot.addEventListener(ev, e => { e.preventDefault(); depot.classList.add("survol"); }));
+  ["dragleave", "drop"].forEach(ev => depot.addEventListener(ev, e => { e.preventDefault(); depot.classList.remove("survol"); }));
+  depot.addEventListener("drop", e => envoieFichiers([...e.dataTransfer.files]));
+  $$("#st-generer", el).forEach(b => b.onclick = genereProjet);
+}
+function envoieFichiers(fichiers) {
+  if (!fichiers.length || !S.projet) return;
+  const fd = new FormData(); fichiers.forEach(f => fd.append("fichiers", f));
+  const x = new XMLHttpRequest(), barre = $("#st-envoi");
+  barre.hidden = false;
+  x.upload.onprogress = e => { if (e.lengthComputable) $("i", barre).style.width = Math.round(100 * e.loaded / e.total) + "%"; };
+  x.onload = () => {
+    let j = {}; try { j = JSON.parse(x.responseText); } catch {}
+    if (x.status === 413) toast("Fichier trop lourd : 300 Mo maximum.");
+    else if (j.erreurs?.length) toast(j.erreurs[0]);
+    if (j.projet) { S.projet = j.projet; renduProjet(); } else barre.hidden = true;
+  };
+  x.onerror = () => { toast("L'envoi a échoué, vérifie ta connexion."); barre.hidden = true; };
+  x.open("POST", `/api/studio/${S.projet.id}/fichiers`); x.send(fd);
+}
+async function genereProjet() {
+  await sauveProjet(true);
+  try {
+    const r = await api(`/api/studio/${S.projet.id}/generer`, {method: "POST"});
+    S.tacheStudio = {id: r.job, sid: S.projet.id, titre: "Création", phrase: "Je m'en occupe…"}; renduProjet(); suisTacheStudio(r.job);
+  } catch (e) { toast(e.message); }
+}
+function suisTacheStudio(jid) {
+  clearInterval(S.pollStudio);
+  const sid = S.projetId;
+  S.pollStudio = setInterval(async () => {
+    let j; try { j = await api("/api/jobs/" + jid); } catch { return; }
+    const dernier = (j.logs || []).slice(-1)[0];
+    if (S.tacheStudio) { S.tacheStudio.titre = j.titre; if (dernier) S.tacheStudio.phrase = dernier.m.replace(/^[\s✅⚠️]+/u, ""); }
+    if ($("#st-phrase") && dernier) $("#st-phrase").textContent = S.tacheStudio.phrase;
+    if (j.statut === "terminé" || j.statut === "erreur") {
+      clearInterval(S.pollStudio); S.tacheStudio = null;
+      if (j.statut === "erreur") toast("Studio : " + j.erreur);
+      else toast(/slides/i.test(j.titre) ? "Tes textes sont prêts" : "Ton contenu est prêt à publier");
+      if (S.vue === "studio" && S.projetId === sid) { S.projet = await api("/api/studio/" + sid); renduProjet(); }
+    }
+  }, 1500);
 }
 
 // ---------------------------------------------------------------- Suivi des tâches

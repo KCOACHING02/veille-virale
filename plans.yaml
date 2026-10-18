@@ -9,6 +9,7 @@ essai:
   analyses_par_mois: 3          # veilles + analyses de comptes
   adaptations_par_mois: 35      # Reels adaptés par Claude (une veille en consomme ~14 à 21)
   comptes_surveilles: 5
+  studio_par_mois: 3           # carrousels et Reels montés
   veille_auto: false
   stripe_price: ""
 
@@ -18,6 +19,7 @@ createur:
   analyses_par_mois: 8
   adaptations_par_mois: 80
   comptes_surveilles: 10
+  studio_par_mois: 20          # carrousels et Reels montés
   veille_auto: true
   stripe_price: ""
 
@@ -27,6 +29,7 @@ pro:
   analyses_par_mois: 25
   adaptations_par_mois: 200
   comptes_surveilles: 30
+  studio_par_mois: 60          # carrousels et Reels montés
   veille_auto: true
   stripe_price: ""
 
@@ -36,5 +39,6 @@ agence:
   analyses_par_mois: 80
   adaptations_par_mois: 600
   comptes_surveilles: 100
+  studio_par_mois: 200         # carrousels et Reels montés
   veille_auto: true
   stripe_price: ""

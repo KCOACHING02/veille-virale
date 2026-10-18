@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veille virale — tes Reels de la semaine, inspirés de ceux qui ont explosé</title>
+<meta name="description" content="Repère les Reels Instagram et TikTok qui explosent dans ta niche, comprends pourquoi, et reçois-les adaptés à ton audience : hook, script, légende, carrousel et messages privés.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F6F4F8;--surface:#fff;--sunk:#EDE9F1;--ink:#271B2D;--ink-2:#5E5166;--ink-3:#8E8296;--line:#E2DCE7;--glow:#FF4F79;--glow-soft:#FFE3EA;--ok:#13936B;--nuit:#271B2D;
+  --shadow:0 1px 2px rgba(39,27,45,.06),0 12px 32px -16px rgba(39,27,45,.25);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;--body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root{--paper:#17111B;--surface:#211A26;--sunk:#2B2231;--ink:#F3EEF6;--ink-2:#C2B7C9;--ink-3:#8F8398;--line:#352B3B;--glow:#FF5C84;--glow-soft:#3E1F2A;--ok:#3CC796;--nuit:#0F0A12}}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit} :focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
+.l{max-width:1120px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 20px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.btn.prim{background:var(--glow);border-color:var(--glow);color:#fff}
+.btn.prim:hover{filter:brightness(1.06)}
+/* En-tête */
+.tete{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid transparent}
+.tete .l{display:flex;align-items:center;gap:22px;height:66px}
+.marque{font:800 22px/1 var(--display);font-stretch:80%;display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto}
+.marque i{width:12px;height:22px;border-radius:4px;background:var(--glow);display:inline-block;transform:skewX(-10deg)}
+.tete nav a{text-decoration:none;color:var(--ink-2);font-weight:500;font-size:15px}
+.tete nav{display:flex;gap:22px}
+.tete .btn{padding:9px 16px}
+.connexion{text-decoration:none;font-weight:600;font-size:15px}
+/* Héros */
+.heros{background:var(--nuit);color:#fff;overflow:hidden}
+.heros .l{display:grid;grid-template-columns:1.15fr 1fr;gap:40px;align-items:center;padding-top:72px;padding-bottom:80px}
+.heros h1{font-weight:800;font-size:clamp(40px,6vw,70px);line-height:.98;font-stretch:78%;max-width:13ch}
+.heros h1 em{font-style:normal;color:var(--glow)}
+.heros p{color:#D8CEDD;font-size:18px;max-width:46ch;margin:22px 0 30px}
+.heros .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.heros .cta small{color:#B9AEC0;font-size:14px}
+.pile{display:flex;gap:16px;justify-content:center;transform:rotate(-4deg)}
+.tel{width:150px;aspect-ratio:9/16;border-radius:22px;background:linear-gradient(160deg,#4A2F55,#2E1F35);position:relative;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0;box-shadow:0 30px 60px -24px rgba(0,0,0,.7)}
+.tel:nth-child(2){transform:translateY(-30px);background:linear-gradient(160deg,#FF4F79,#B9305A)}
+.tel:nth-child(3){transform:translateY(14px);background:linear-gradient(160deg,#3D2A49,#22172A)}
+.tel b{font:800 36px/1 var(--display);font-stretch:75%}
+.tel small{font-size:12px;opacity:.85}
+.tel .ok{position:absolute;top:12px;left:12px;font-size:11px;font-weight:600;background:#13936B;border-radius:99px;padding:3px 8px}
+.tel .hook{position:absolute;top:44px;left:12px;right:12px;font:700 15px/1.2 var(--display);background:rgba(0,0,0,.35);border-radius:10px;padding:8px}
+/* Sections */
+section.s{padding:84px 0}
+.surtitre{color:var(--glow);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+.s h2{font-size:clamp(30px,4vw,44px);line-height:1.05;font-stretch:85%;font-weight:800;max-width:22ch}
+.s .intro{color:var(--ink-2);font-size:18px;max-width:58ch;margin:14px 0 0}
+.etapes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px;counter-reset:e}
+.etape{background:var(--surface);border-radius:20px;padding:26px;box-shadow:var(--shadow)}
+.etape::before{counter-increment:e;content:counter(e);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--glow-soft);color:var(--glow);font:800 18px/1 var(--display);margin-bottom:16px}
+.etape h3{font-size:21px;margin-bottom:6px}
+.etape p{color:var(--ink-2);margin:0}
+.grille{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.bloc{border:1px solid var(--line);border-radius:18px;padding:22px;background:var(--surface)}
+.bloc h3{font-size:18px;margin:0 0 6px}
+.bloc p{color:var(--ink-2);margin:0;font-size:15px}
+.bloc .ic{width:38px;height:38px;border-radius:11px;background:var(--glow-soft);color:var(--glow);display:grid;place-items:center;margin-bottom:14px}
+.bloc .ic svg{width:20px;height:20px}
+.alt{background:var(--sunk)}
+/* Tarifs */
+.tarifs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:40px}
+.tarif{background:var(--surface);border-radius:20px;padding:26px;box-shadow:var(--shadow);display:flex;flex-direction:column;border:2px solid transparent}
+.tarif.fort{border-color:var(--glow)}
+.tarif .badge{align-self:flex-start;background:var(--glow);color:#fff;font-size:12px;font-weight:600;border-radius:99px;padding:3px 10px;margin-bottom:10px}
+.tarif h3{font-size:22px}
+.tarif .prix{font:800 44px/1 var(--display);font-stretch:80%;margin:12px 0 4px}
+.tarif .prix small{font:500 15px var(--body);color:var(--ink-3)}
+.tarif ul{list-style:none;padding:0;margin:16px 0 22px;color:var(--ink-2);font-size:15px}
+.tarif li{padding:5px 0 5px 24px;position:relative}
+.tarif li::before{content:"";position:absolute;left:2px;top:12px;width:12px;height:7px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
+.tarif .btn{margin-top:auto}
+/* FAQ */
+.faq{max-width:780px;margin-top:34px}
+details{border-bottom:1px solid var(--line);padding:18px 0}
+summary{cursor:pointer;font-weight:600;font-size:17px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";color:var(--glow);font-size:22px;line-height:1}
+details[open] summary::after{content:"–"}
+details p{color:var(--ink-2);margin:10px 0 0}
+.final{background:var(--nuit);color:#fff;border-radius:28px;padding:56px 32px;text-align:center}
+.final h2{color:#fff;margin:0 auto;max-width:20ch}
+.final p{color:#D8CEDD;margin:14px auto 28px;max-width:50ch}
+footer{padding:36px 0 50px;color:var(--ink-3);font-size:14px}
+footer .l{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+footer .l span{margin-right:auto}
+@media (max-width:900px){
+  .heros .l{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px}
+  .pile{transform:rotate(-4deg) scale(.8);margin:-10px 0 -30px}
+  .etapes,.grille{grid-template-columns:1fr}
+  .tete nav{display:none}
+  section.s{padding:60px 0}
+}
+@media (max-width:420px){.tel{width:110px}.tel b{font-size:28px}.tel .hook{font-size:12px}.tete .btn{display:none}}
+</style>
+</head>
+<body>
+<header class="tete"><div class="l">
+  <a class="marque" href="/"><i></i>Veille virale</a>
+  <nav aria-label="Sections"><a href="#fonctionnement">Comment ça marche</a><a href="#contenu">Ce que tu reçois</a><a href="#tarifs">Tarifs</a><a href="#faq">Questions</a></nav>
+  <a class="connexion" href="/connexion#connexion">Se connecter</a>
+  <a class="btn prim" href="/connexion">Essai gratuit</a>
+</div></header>
+
+<section class="heros"><div class="l">
+  <div>
+    <h1>Les Reels qui explosent chez les autres, <em>réécrits pour ta niche.</em></h1>
+    <p>Choisis les comptes que tu admires. Chaque semaine, Veille virale repère leurs Reels qui ont fait bien plus de vues que d'habitude, comprend pourquoi, et te les rend adaptés à ton audience, prêts à tourner et à publier.</p>
+    <div class="cta"><a class="btn prim" href="/connexion" id="cta-essai">Essayer 7 jours gratuitement</a><small>Sans carte bancaire</small></div>
+  </div>
+  <div class="pile" aria-hidden="true">
+    <div class="tel"><span class="ok">✓ Retenu</span><b>1,2 M</b><small>vues · 3× sa moyenne</small></div>
+    <div class="tel"><span class="ok">✓ Adapté</span><span class="hook">« Arrête de faire ça le matin si… »</span><b>2,8 M</b><small>vues · 8,4 % d'engagement</small></div>
+    <div class="tel"><b>740 k</b><small>vues · 4,9 % d'engagement</small></div>
+  </div>
+</div></section>
+
+<section class="s" id="fonctionnement"><div class="l">
+  <p class="surtitre">Comment ça marche</p>
+  <h2>Ton contenu de la semaine en trois étapes.</h2>
+  <div class="etapes">
+    <div class="etape"><h3>Tu choisis tes modèles</h3><p>Les comptes Instagram et TikTok qui cartonnent dans ta niche, ou dans une niche voisine. L'assistant t'aide aussi à décrire ta cible et ta façon d'écrire.</p></div>
+    <div class="etape"><h3>L'outil trouve ce qui a explosé</h3><p>Il ne garde que les Reels des 3 derniers mois qui ont fait plusieurs fois les vues habituelles du compte, avec un vrai engagement. Puis il regarde chaque vidéo et comprend ce qui a accroché.</p></div>
+    <div class="etape"><h3>Tu reçois tout, prêt à publier</h3><p>Le hook qui a marché, son adaptation à ton sujet, le script, la légende, le mot-clé à faire commenter et les messages privés qui suivent. Tu ajoutes tes images : le carrousel ou le Reel sort monté.</p></div>
+  </div>
+</div></section>
+
+<section class="s alt" id="contenu"><div class="l">
+  <p class="surtitre">Ce que tu reçois</p>
+  <h2>Moins de temps à chercher quoi poster, plus de conversations en privé.</h2>
+  <div class="grille">
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><h3>Les vrais Reels viraux</h3><p>Filtrés selon la taille de chaque compte : un petit compte qui fait 10 fois sa moyenne compte autant qu'un gros.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg></div><h3>Le hook qui a marché</h3><p>Repris mot pour mot, et traduit fidèlement quand le Reel vient d'un compte étranger. Avec des variantes pour ton sujet.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 8l4 2.5-4 2.5z"/></svg></div><h3>Le script et le texte écran</h3><p>Seconde par seconde, dans ton ton à toi, appris à partir de tes propres légendes.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg></div><h3>Le mot-clé et les messages privés</h3><p>Un appel à commenter qui ouvre la conversation, et la suite des messages pour la transformer en rendez-vous.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg></div><h3>Le studio</h3><p>Tu ajoutes tes photos ou ta vidéo : l'outil sort le carrousel avec les textes posés, ou le Reel avec le hook et les sous-titres incrustés.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Ce qui marche chez toi</h3><p>Tes publications sont suivies à J+2 et J+7. L'outil apprend quels types de Reels te rapportent le plus de conversations.</p></div>
+  </div>
+</div></section>
+
+<section class="s" id="tarifs"><div class="l">
+  <p class="surtitre">Tarifs</p>
+  <h2>Sans engagement, résiliable en un clic.</h2>
+  <p class="intro" id="intro-tarifs">Commence par 7 jours gratuits, sans carte bancaire.</p>
+  <div class="tarifs" id="tarifs-liste"></div>
+</div></section>
+
+<section class="s alt" id="faq"><div class="l">
+  <p class="surtitre">Questions</p>
+  <h2>Ce qu'on nous demande souvent.</h2>
+  <div class="faq">
+    <details><summary>Est-ce que c'est du copier-coller ?</summary><p>Non. L'outil reprend ce qui fait marcher un Reel : l'accroche, la structure, le format. Le reste est réécrit pour ton sujet, ta cible et ta façon de parler. Tu tournes ta propre vidéo.</p></details>
+    <details><summary>Faut-il se montrer face caméra ?</summary><p>Non. Pour chaque Reel, l'outil propose un format : face caméra, voix off, texte à l'écran ou carrousel. Le studio permet de faire un carrousel avec tes propres images.</p></details>
+    <details><summary>Quels réseaux sont pris en charge ?</summary><p>Instagram et TikTok, pour les comptes publics. Tu peux mélanger les deux dans ta veille.</p></details>
+    <details><summary>Combien de temps prend une veille ?</summary><p>De quelques minutes à une demi-heure selon le nombre de comptes, sans rien faire de ton côté. Avec les formules payantes, elle se lance toute seule chaque lundi matin et tu reçois un e-mail quand elle est prête.</p></details>
+    <details><summary>Il faut donner mon mot de passe Instagram ?</summary><p>Jamais. L'outil ne lit que des publications publiques et ne publie rien à ta place.</p></details>
+    <details><summary>Je peux arrêter quand je veux ?</summary><p>Oui. L'abonnement est mensuel, sans engagement, et se résilie depuis ton espace. Tu gardes l'accès jusqu'à la fin du mois payé.</p></details>
+  </div>
+</div></section>
+
+<section class="s"><div class="l">
+  <div class="final">
+    <h2>Ta prochaine semaine de Reels est déjà quelque part.</h2>
+    <p>Indique les comptes que tu suis. Dans quelques minutes, tu sais lesquels de leurs Reels refaire, et comment.</p>
+    <a class="btn prim" href="/connexion">Commencer mon essai gratuit</a>
+  </div>
+</div></section>
+
+<footer><div class="l"><span>© <span id="annee"></span> Veille virale</span><a href="/cgv">CGV</a><a href="/confidentialite">Confidentialité</a><a href="/mentions-legales">Mentions légales</a><a href="/connexion#connexion">Se connecter</a></div></footer>
+
+<script>
+document.getElementById("annee").textContent = new Date().getFullYear();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+fetch("/api/formules").then(r => r.json()).then(f => {
+  document.getElementById("intro-tarifs").textContent = `Commence par ${f.essai_jours} jours gratuits, sans carte bancaire.`;
+  const milieu = f.plans.length > 2 ? 1 : 0;
+  document.getElementById("tarifs-liste").innerHTML = f.plans.map((p, i) => `
+    <div class="tarif ${i === milieu ? "fort" : ""}">
+      ${i === milieu ? '<span class="badge">Le plus choisi</span>' : ""}
+      <h3>${esc(p.nom)}</h3>
+      <div class="prix">${p.prix_mensuel} €<small> / mois</small></div>
+      <ul>
+        <li>${p.comptes_surveilles} comptes surveillés</li>
+        <li>${p.adaptations_par_mois} Reels adaptés par mois</li>
+        <li>${p.analyses_par_mois} analyses par mois</li>
+        ${p.studio_par_mois ? `<li>${p.studio_par_mois} créations au studio</li>` : ""}
+        ${p.veille_auto ? "<li>Veille automatique chaque lundi</li>" : ""}
+      </ul>
+      <a class="btn ${i === milieu ? "prim" : ""}" href="/connexion">Essayer gratuitement</a>
+    </div>`).join("");
+}).catch(() => {});
+</script>
+</body>
+</html>

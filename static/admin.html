@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administration — Veille virale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F6F4F8;--surface:#fff;--sunk:#EDE9F1;--ink:#271B2D;--ink-2:#5E5166;--ink-3:#8E8296;--line:#E2DCE7;--glow:#FF4F79;--glow-soft:#FFE3EA;--ok:#13936B;--ok-soft:#DDF4EB;--warn:#B86E00;--warn-soft:#FDF0D9;
+  --shadow:0 1px 2px rgba(39,27,45,.06),0 8px 24px -12px rgba(39,27,45,.18);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;--body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root{--paper:#17111B;--surface:#211A26;--sunk:#2B2231;--ink:#F3EEF6;--ink-2:#C2B7C9;--ink-3:#8F8398;--line:#352B3B;--glow:#FF5C84;--glow-soft:#3E1F2A;--ok:#3CC796;--ok-soft:#163328;--warn:#F0A63A;--warn-soft:#3A2A12}}
+*{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font:14.5px/1.5 var(--body)}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+.page{max-width:1200px;margin:0 auto;padding:24px 16px 60px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+h1{font:800 28px/1.1 var(--display);font-stretch:85%;margin:0 auto 0 0}
+a{color:inherit}
+.btn{text-decoration:none;display:inline-block}
+td.num{white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn.petit{padding:4px 9px;font-size:12.5px;border-radius:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi b{display:block;font:800 26px/1.1 var(--display);font-stretch:85%}
+.kpi span{color:var(--ink-3);font-size:13px}
+.config{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.puce{border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:600;background:var(--ok-soft);color:var(--ok)}
+.puce.non{background:var(--warn-soft);color:var(--warn)}
+.outils{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.outils input{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;flex:1;min-width:200px}
+.tableau{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.qui b{display:block} .qui small{color:var(--ink-3)}
+.statut{font-size:12px;font-weight:600;border-radius:99px;padding:2px 8px;background:var(--sunk);color:var(--ink-2)}
+.statut.actif{background:var(--ok-soft);color:var(--ok)} .statut.fin{background:var(--warn-soft);color:var(--warn)}
+select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 6px}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.cher{color:var(--warn);font-weight:600}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;transition:transform .25s;max-width:calc(100% - 32px)}
+#toast.vu{transform:translateX(-50%)}
+.lien{word-break:break-all;background:var(--sunk);border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="page">
+  <header><h1>Administration</h1><a class="btn" href="/app">Retour à l'application</a></header>
+  <div class="kpis" id="kpis"></div>
+  <div class="config" id="config"></div>
+  <div id="lien"></div>
+  <div class="outils"><input id="q" type="search" placeholder="Rechercher un client (e-mail, prénom)…" aria-label="Rechercher un client"></div>
+  <div class="tableau"><table><thead><tr><th>Client</th><th>Formule</th><th>Statut</th><th>Inscrit</th><th>Dernière connexion</th><th class="num">Analyses (mois)</th><th class="num">Adaptations (mois)</th><th class="num">Coût mois</th><th class="num">Coût total</th><th class="num">Payé/mois</th><th>Actions</th></tr></thead><tbody id="lignes"></tbody></table></div>
+</div>
+<div id="toast" role="status"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const d = s => s ? new Date(s).toLocaleDateString("fr-FR", {day: "numeric", month: "short", year: "2-digit"}) : "—";
+const usd = x => (x || 0).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $";
+const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("vu"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("vu"), 2200); };
+let D = null;
+async function charge() {
+  const r = await fetch("/api/admin");
+  if (!r.ok) { document.body.innerHTML = "<p style='padding:24px'>Accès réservé.</p>"; return; }
+  D = await r.json();
+  const k = D.kpi;
+  $("#kpis").innerHTML = [[k.clients, "clients inscrits"], [k.payants, "clients payants"], [k.essais, "essais en cours"],
+    [k.mrr.toLocaleString("fr-FR") + " €", "revenu mensuel (abonnements actifs)"], [usd(k.cout_mois_usd), "coût Apify + Claude ce mois-ci"]]
+    .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+  const c = D.config;
+  $("#config").innerHTML = [["Apify", c.apify], ["Claude", c.claude], ["Paiement Stripe", c.stripe], ["E-mails Resend", c.emails]]
+    .map(([n, ok]) => `<span class="puce ${ok ? "" : "non"}">${ok ? "✓" : "✗"} ${n}</span>`).join("") + (c.demo ? '<span class="puce non">Mode démo</span>' : "");
+  rendu();
+}
+function rendu() {
+  const q = $("#q").value.trim().toLowerCase();
+  const plans = Object.entries(D.plans);
+  $("#lignes").innerHTML = D.clients.filter(c => !q || (c.email + " " + (c.prenom || "")).toLowerCase().includes(q)).map(c => `
+    <tr data-id="${c.id}">
+      <td class="qui"><b>${esc(c.prenom || "—")}${c.admin ? " · admin" : ""}</b><small>${esc(c.email)}</small>${c.job ? `<br><small>⏳ ${esc(c.job)}</small>` : ""}</td>
+      <td><select data-champ="plan" aria-label="Formule">${plans.map(([id, nom]) => `<option value="${id}" ${id === c.plan ? "selected" : ""}>${esc(nom)}</option>`).join("")}</select></td>
+      <td><select data-champ="statut" aria-label="Statut">${["essai", "actif", "impaye", "resilie", "suspendu"].map(s => `<option ${s === c.statut ? "selected" : ""}>${s}</option>`).join("")}</select>
+        <br><span class="statut ${c.actif ? "actif" : "fin"}">${c.actif ? "accès ouvert" : "accès fermé"}</span>${c.statut === "essai" ? `<br><small>fin d'essai ${d(c.fin_essai)}</small>` : ""}</td>
+      <td>${d(c.cree)}</td><td>${d(c.derniere_connexion)}</td>
+      <td class="num">${c.analyses_mois}</td><td class="num">${c.adaptations_mois}</td>
+      <td class="num ${c.prix && c.cout_mois * 0.95 > c.prix * 0.5 ? "cher" : ""}">${usd(c.cout_mois)}</td><td class="num">${usd(c.cout_total)}</td>
+      <td class="num">${c.prix ? c.prix + " €" : "—"}</td>
+      <td><div class="actions"><button class="btn petit" data-action="prolonger">+7 j d'essai</button><button class="btn petit" data-action="mdp">Lien mot de passe</button></div></td>
+    </tr>`).join("") || '<tr><td colspan="11">Aucun client.</td></tr>';
+}
+async function modifie(id, corps) {
+  const r = await fetch("/api/admin/clients/" + id, {method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify(corps)});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) return toast("Erreur");
+  if (j.lien) $("#lien").innerHTML = `<p class="lien">Lien de nouveau mot de passe (valable 48 h), à envoyer au client :<br><b>${esc(j.lien)}</b></p>`;
+  toast("Enregistré"); charge();
+}
+$("#lignes").addEventListener("change", e => { const s = e.target.closest("select"); if (s) modifie(s.closest("tr").dataset.id, {[s.dataset.champ]: s.value}); });
+$("#lignes").addEventListener("click", e => {
+  const b = e.target.closest("[data-action]"); if (!b) return;
+  const id = b.closest("tr").dataset.id;
+  modifie(id, b.dataset.action === "prolonger" ? {prolonger_jours: 7} : {lien_mdp: true});
+});
+$("#q").addEventListener("input", rendu);
+charge();
+</script>
+</body>
+</html>

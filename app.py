@@ -11,6 +11,8 @@ Variables d'environnement (.env) :
     SECRET_KEY                            clé de session (générée automatiquement si absente)
     ADMIN_EMAILS                          e-mails à accès illimité, séparés par des virgules
     STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET   paiement (optionnel ; prix dans plans.yaml)
+    RESEND_API_KEY, EMAIL_EXPEDITEUR      e-mails (mot de passe oublié, bienvenue, veille prête)
+    URL_PUBLIQUE                          adresse du site (ex. https://veille.mondomaine.fr), pour les liens des e-mails
 """
 
 from __future__ import annotations
@@ -36,10 +38,11 @@ except ImportError:
 from flask import Flask, abort, g, jsonify, redirect, request, send_from_directory, session
 
 import abonnements as ab
+import emails
 import moteur
 import publications as pubs
 from espace import CODE, DATA, espace_client
-from modele import LOG_HOOKS
+from modele import FIL, LOG_HOOKS
 
 app = Flask(__name__, static_folder=str(CODE / "static"), static_url_path="/static")
 DEMO_FORCE = False
@@ -56,12 +59,13 @@ def cle_secrete() -> str:
 
 
 # Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
-for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"):
+for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY"):
     if os.getenv(_v):
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
 
 app.secret_key = cle_secrete()
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+                  MAX_CONTENT_LENGTH=300 * 1024 * 1024)  # vidéos du studio : 300 Mo maximum
 ab.init()
 
 
@@ -77,12 +81,12 @@ def droits(u: dict) -> dict:
     d = ab.droits(u)
     if est_admin(u):
         d.update(actif=True, nom_plan="Administrateur", veille_auto=bool(u.get("veille_auto")),
-                 reste={"analyses": 9999, "adaptations": 9999})
+                 reste={"analyses": 9999, "adaptations": 9999, "studio": 9999})
     return d
 
 
-def refus(u: dict, analyses=0, adaptations=0) -> str | None:
-    return None if est_admin(u) else ab.peut(u, analyses, adaptations)
+def refus(u: dict, analyses=0, adaptations=0, studio=0) -> str | None:
+    return None if est_admin(u) else ab.peut(u, analyses, adaptations, studio)
 
 
 # ------------------------------------------------------------
@@ -90,16 +94,18 @@ def refus(u: dict, analyses=0, adaptations=0) -> str | None:
 # ------------------------------------------------------------
 JOBS: dict[str, dict] = {}
 FILE = threading.Lock()
+FILE_STUDIO = threading.Lock()  # montages du studio : file séparée, pour ne pas attendre la fin d'une veille
 
 
 JOBS_DIR = DATA / "jobs"
 
 
-def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | None = None, **kwargs) -> str:
+def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | None = None, file_=None, **kwargs) -> str:
     """Lance une tâche. `persiste` (paramètres JSON d'une analyse) permet de la reprendre si le serveur redémarre."""
     jid = uuid.uuid4().hex[:10]
     job = {"id": jid, "uid": uid, "titre": titre, "statut": "en attente", "logs": [], "resultat": None, "erreur": None,
-           "debut": datetime.now().isoformat(timespec="seconds"), "analyse_id": kwargs.get("aid")}
+           "debut": datetime.now().isoformat(timespec="seconds"), "analyse_id": kwargs.get("aid"),
+           "studio": file_ is FILE_STUDIO}
     JOBS[jid] = job
     fichier = None
     if persiste is not None:
@@ -108,9 +114,11 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
         fichier.write_text(json.dumps({"uid": uid, "titre": titre, "params": persiste}, ensure_ascii=False), encoding="utf-8")
 
     def tourne():
-        with FILE:
+        with (file_ or FILE):
             job["statut"] = "en cours"
-            hook = lambda m: job["logs"].append({"t": datetime.now().strftime("%H:%M:%S"), "m": m})  # noqa: E731
+            def hook(m):
+                job["logs"].append({"t": datetime.now().strftime("%H:%M:%S"), "m": m})
+            hook.studio = FIL.studio = job["studio"]
             LOG_HOOKS.append(hook)
             try:
                 job["resultat"] = fonction(*args, **kwargs)
@@ -158,8 +166,9 @@ def reprend_analyses():
             traceback.print_exc()
 
 
-def job_en_cours(uid: int):
-    return next((j for j in JOBS.values() if j["uid"] == uid and j["statut"] in ("en attente", "en cours")), None)
+def job_en_cours(uid: int, studio_: bool = False):
+    return next((j for j in JOBS.values() if j["uid"] == uid and j["statut"] in ("en attente", "en cours")
+                 and j.get("studio", False) == studio_), None)
 
 
 # ------------------------------------------------------------
@@ -181,11 +190,51 @@ def page_connexion():
     return send_from_directory(CODE / "static", "connexion.html")
 
 
+def url_site() -> str:
+    """Adresse publique du site (liens des e-mails). Sur Railway, déduite du domaine si URL_PUBLIQUE est absente."""
+    if os.getenv("URL_PUBLIQUE"):
+        return os.environ["URL_PUBLIQUE"].rstrip("/")
+    if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
+        return "https://" + os.environ["RAILWAY_PUBLIC_DOMAIN"]
+    try:
+        return request.host_url.rstrip("/")
+    except RuntimeError:  # hors requête (planificateur)
+        return "http://localhost:8000"
+
+
 @app.post("/api/inscription")
 def inscription():
     c = request.get_json(force=True)
+    if not c.get("cgv"):
+        return jsonify({"erreur": "Accepte les conditions générales pour créer ton compte."}), 400
     try:
-        u = ab.cree(c.get("email", ""), c.get("mdp", ""), c.get("prenom", ""))
+        u = ab.cree(c.get("email", ""), c.get("mdp", ""), c.get("prenom", ""), cgv=True)
+    except ValueError as e:
+        return jsonify({"erreur": str(e)}), 400
+    session.permanent, session["uid"] = True, u["id"]
+    ab.maj(u["id"], derniere_connexion=datetime.now().isoformat(timespec="minutes"))
+    emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app")
+    return jsonify({"ok": True})
+
+
+@app.post("/api/mot-de-passe-oublie")
+def mot_de_passe_oublie():
+    time.sleep(0.4)
+    u = ab.par_email((request.get_json(force=True) or {}).get("email", ""))
+    res = {"ok": True}  # même réponse que le compte existe ou non (on ne révèle pas les adresses inscrites)
+    if u:
+        lien = f"{url_site()}/connexion?t={ab.jeton_reinit(u['id'])}"
+        emails.reinitialisation(u["email"], lien)
+        if en_demo() and not emails.actif():
+            res["lien_demo"] = lien
+    return jsonify(res)
+
+
+@app.post("/api/reinitialiser")
+def reinitialiser():
+    c = request.get_json(force=True)
+    try:
+        u = ab.reinitialise(c.get("jeton", ""), c.get("mdp", ""))
     except ValueError as e:
         return jsonify({"erreur": str(e)}), 400
     session.permanent, session["uid"] = True, u["id"]
@@ -200,6 +249,7 @@ def connexion():
     if not u:
         return jsonify({"erreur": "E-mail ou mot de passe incorrect."}), 401
     session.permanent, session["uid"] = True, u["id"]
+    ab.maj(u["id"], derniere_connexion=datetime.now().isoformat(timespec="minutes"))
     return jsonify({"ok": True})
 
 
@@ -213,9 +263,32 @@ def deconnexion():
 #  Pages et fichiers
 # ------------------------------------------------------------
 @app.get("/")
-@connecte
 def accueil():
+    """Visiteur : page de présentation. Client connecté : son application."""
+    if ab.get(session.get("uid", 0)):
+        return send_from_directory(CODE / "static", "index.html")
+    return send_from_directory(CODE / "static", "accueil.html")
+
+
+@app.get("/app")
+@connecte
+def application():
     return send_from_directory(CODE / "static", "index.html")
+
+
+@app.get("/api/formules")
+def formules_publiques():
+    p = ab.plans()
+    return jsonify({"essai_jours": p["essai"].get("duree_jours", 7),
+                    "plans": [{"id": k, **{x: v.get(x) for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois",
+                                                                 "comptes_surveilles", "veille_auto", "studio_par_mois")}}
+                              for k, v in p.items() if k != "essai"]})
+
+
+@app.get("/<any(cgv, confidentialite, 'mentions-legales'):page>")
+def page_legale(page):
+    import legal
+    return legal.page(page)
 
 
 @app.get("/media/<path:nom>")
@@ -240,7 +313,7 @@ def etat():
     return jsonify({
         "utilisateur": {"prenom": g.u["prenom"], "email": g.u["email"], "onboarding": bool(g.u["onboarding"]),
                         "veille_auto": bool(g.u["veille_auto"])},
-        "abonnement": droits(g.u), "demo": en_demo(),
+        "abonnement": droits(g.u), "demo": en_demo(), "admin": est_admin(g.u),
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
     })
@@ -269,7 +342,14 @@ def supprime(aid):
 
 
 def _apres_analyse(uid):
-    return lambda a: ab.compte_usage(uid, analyses=1, adaptations=(a.get("stats") or {}).get("adaptes", 0))
+    def fin(a):
+        st = a.get("stats") or {}
+        ab.compte_usage(uid, analyses=1, adaptations=st.get("adaptes", 0),
+                        cout=0 if a.get("demo") else (st.get("cout_apify_usd") or 0) + (st.get("cout_claude_usd") or 0))
+        u = ab.get(uid)
+        if u and a.get("mode") == "veille" and st.get("adaptes"):
+            emails.veille_prete(u["email"], u.get("prenom") or "", st["adaptes"], url_site() + "/app")
+    return fin
 
 
 @app.post("/api/analyses")
@@ -565,6 +645,209 @@ def stripe_webhook():
     except PermissionError:
         abort(400)
     return jsonify({"recu": typ})
+
+
+# ------------------------------------------------------------
+#  Studio : carrousels et Reels montés à partir des fichiers de l'utilisateur
+# ------------------------------------------------------------
+import studio  # noqa: E402
+
+
+def _projet(sid):
+    try:
+        return studio.charge(g.esp, sid)
+    except FileNotFoundError:
+        abort(404)
+
+
+@app.get("/api/studio")
+@connecte
+def studio_liste():
+    return jsonify({"projets": studio.liste(g.esp), "reste": droits(g.u)["reste"]["studio"], "quota": droits(g.u)["quotas"]["studio_par_mois"]})
+
+
+@app.post("/api/studio")
+@connecte
+def studio_cree():
+    c = request.get_json(force=True)
+    msg = refus(g.u)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    try:
+        post = next(p for p in moteur.charge(g.esp, c["analyse_id"])["posts"] if p["cle"] == c["cle"])
+    except (FileNotFoundError, StopIteration, KeyError):
+        return jsonify({"erreur": "Reel introuvable."}), 404
+    if not (post.get("adaptation") and not post["adaptation"].get("erreur")):
+        return jsonify({"erreur": "Adapte d'abord ce Reel."}), 400
+    cfg = g.esp.lit_config()
+    p = studio.cree(g.esp, cfg, post, c.get("type", "carrousel"), c["analyse_id"])
+    jid = lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
+    return jsonify({"projet": p, "job": jid})
+
+
+@app.get("/api/studio/<sid>")
+@connecte
+def studio_projet(sid):
+    p = _projet(sid)
+    p.pop("adaptation", None)
+    return jsonify(p)
+
+
+@app.put("/api/studio/<sid>")
+@connecte
+def studio_modifie(sid):
+    _projet(sid)
+    p = studio.modifie(g.esp, sid, request.get_json(force=True) or {})
+    p.pop("adaptation", None)
+    return jsonify(p)
+
+
+@app.delete("/api/studio/<sid>")
+@connecte
+def studio_supprime(sid):
+    _projet(sid)
+    studio.supprime(g.esp, sid)
+    return jsonify({"ok": True})
+
+
+@app.post("/api/studio/<sid>/fichiers")
+@connecte
+def studio_import(sid):
+    _projet(sid)
+    erreurs, p = [], None
+    for f in request.files.getlist("fichiers"):
+        try:
+            p = studio.ajoute_fichier(g.esp, sid, f.filename, f)
+        except ValueError as e:
+            erreurs.append(str(e))
+    p = p or studio.charge(g.esp, sid)
+    p.pop("adaptation", None)
+    return jsonify({"projet": p, "erreurs": erreurs}), (400 if erreurs and not request.files else 200)
+
+
+@app.delete("/api/studio/<sid>/fichiers/<nom>")
+@connecte
+def studio_retire(sid, nom):
+    _projet(sid)
+    p = studio.retire_fichier(g.esp, sid, nom)
+    p.pop("adaptation", None)
+    return jsonify(p)
+
+
+@app.post("/api/studio/<sid>/ecrire")
+@connecte
+def studio_ecrire(sid):
+    _projet(sid)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    msg = refus(g.u)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    return jsonify({"job": lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, g.esp.lit_config(), sid,
+                                 demo=en_demo(), file_=FILE_STUDIO)})
+
+
+@app.post("/api/studio/<sid>/generer")
+@connecte
+def studio_generer(sid):
+    p = _projet(sid)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    deja = bool(p.get("genere_le"))  # régénérer après une retouche ne consomme pas de nouvelle création
+    msg = None if deja else refus(g.u, studio=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    uid = g.u["id"]
+    titre = "Création du carrousel" if p["type"] == "carrousel" else "Montage du Reel"
+    jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), file_=FILE_STUDIO,
+                apres=None if deja else (lambda _: ab.compte_usage(uid, studio=1)))
+    return jsonify({"job": jid})
+
+
+@app.get("/studio/<sid>/<dossier_>/<nom>")
+@connecte
+def studio_fichier(sid, dossier_, nom):
+    if dossier_ not in ("sources", "sortie"):
+        abort(404)
+    try:
+        d = studio.dossier(g.esp, sid) / dossier_
+    except FileNotFoundError:
+        abort(404)
+    return send_from_directory(d, nom, as_attachment=request.args.get("telecharger") == "1")
+
+
+# ------------------------------------------------------------
+#  Administration (réservée aux adresses ADMIN_EMAILS)
+# ------------------------------------------------------------
+def admin_requis(f):
+    @wraps(f)
+    @connecte
+    def w(*a, **kw):
+        if not est_admin(g.u):
+            abort(404)
+        return f(*a, **kw)
+    return w
+
+
+@app.get("/admin")
+@admin_requis
+def page_admin():
+    return send_from_directory(CODE / "static", "admin.html")
+
+
+@app.get("/api/admin")
+@admin_requis
+def admin_donnees():
+    p = ab.plans()
+    us = ab.usage_tous()
+    clients, mrr, cout_mois = [], 0, 0.0
+    for u in ab.tous():
+        d = ab.droits(u)
+        m = (us.get(u["id"]) or {}).get("mois") or {}
+        prix = (p.get(u["plan"]) or {}).get("prix_mensuel", 0) if u["statut"] == "actif" else 0
+        mrr += prix
+        cout_mois += m.get("cout_usd", 0)
+        clients.append({
+            "id": u["id"], "email": u["email"], "prenom": u["prenom"], "plan": u["plan"], "nom_plan": d["nom_plan"],
+            "statut": u["statut"], "actif": d["actif"], "admin": est_admin(u), "cree": u["cree"], "fin_essai": u["fin_essai"],
+            "derniere_connexion": u.get("derniere_connexion"), "onboarding": bool(u["onboarding"]), "stripe": bool(u.get("stripe_client")),
+            "analyses_mois": m.get("analyses", 0), "adaptations_mois": m.get("adaptations", 0),
+            "cout_mois": round(m.get("cout_usd", 0), 2), "cout_total": round((us.get(u["id"]) or {}).get("total_cout", 0), 2),
+            "prix": prix, "job": (job_en_cours(u["id"]) or {}).get("titre"),
+        })
+    clients.sort(key=lambda c: c["cree"] or "", reverse=True)
+    return jsonify({
+        "clients": clients, "plans": {k: v["nom"] for k, v in p.items()},
+        "kpi": {"clients": len(clients), "payants": sum(1 for c in clients if c["prix"]),
+                "essais": sum(1 for c in clients if c["statut"] == "essai" and c["actif"]),
+                "mrr": mrr, "cout_mois_usd": round(cout_mois, 2)},
+        "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")),
+                   "stripe": ab.stripe_actif(), "emails": emails.actif(), "demo": en_demo(), "url": url_site()},
+    })
+
+
+@app.patch("/api/admin/clients/<int:uid>")
+@admin_requis
+def admin_modifie(uid):
+    c = request.get_json(force=True)
+    u = ab.get(uid)
+    if not u:
+        abort(404)
+    champs = {}
+    if c.get("plan") in ab.plans():
+        champs["plan"] = c["plan"]
+    if c.get("statut") in ("essai", "actif", "impaye", "resilie", "suspendu"):
+        champs["statut"] = c["statut"]
+    if c.get("prolonger_jours"):
+        base = max(datetime.now(), datetime.fromisoformat(u["fin_essai"]) if u.get("fin_essai") else datetime.now())
+        champs.update(fin_essai=(base + timedelta(days=int(c["prolonger_jours"]))).isoformat(timespec="minutes"), statut="essai")
+    ab.maj(uid, **champs)
+    res = {"ok": True}
+    if c.get("lien_mdp"):
+        res["lien"] = f"{url_site()}/connexion?t={ab.jeton_reinit(uid, heures=48)}"
+    return jsonify(res)
 
 
 # ------------------------------------------------------------

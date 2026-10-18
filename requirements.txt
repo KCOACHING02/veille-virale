@@ -8,3 +8,5 @@ python-dotenv
 faster-whisper
 flask>=3.0
 waitress
+Pillow
+pillow-heif

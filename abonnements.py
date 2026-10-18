@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import os
+import secrets
 import sqlite3
 import threading
 import time
@@ -44,22 +45,30 @@ def init():
             stripe_client TEXT, stripe_abonnement TEXT);
         CREATE TABLE IF NOT EXISTS usage(
             uid INTEGER, mois TEXT, analyses INTEGER DEFAULT 0, adaptations INTEGER DEFAULT 0, PRIMARY KEY(uid, mois));
+        CREATE TABLE IF NOT EXISTS reinit(jeton TEXT PRIMARY KEY, uid INTEGER, expire TEXT);
         """)
+        for table, col, typ in (("usage", "cout_usd", "REAL DEFAULT 0"), ("usage", "studio", "INTEGER DEFAULT 0"), ("utilisateurs", "derniere_connexion", "TEXT"),
+                                ("utilisateurs", "cgv_acceptees", "TEXT")):
+            try:
+                c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+            except sqlite3.OperationalError:
+                pass  # colonne déjà présente
 
 
 # ------------------------------------------------------------
 #  Utilisateurs
 # ------------------------------------------------------------
-def cree(email: str, mdp: str, prenom: str = "") -> dict:
+def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False) -> dict:
     email = email.strip().lower()
     if "@" not in email or len(mdp) < 8:
         raise ValueError("Adresse e-mail invalide ou mot de passe trop court (8 caractères minimum).")
     duree = plans()["essai"].get("duree_jours", 7)
     with _verrou, _db() as c:
         try:
-            c.execute("INSERT INTO utilisateurs(email, mdp, prenom, fin_essai, cree) VALUES (?,?,?,?,?)",
+            c.execute("INSERT INTO utilisateurs(email, mdp, prenom, fin_essai, cree, cgv_acceptees) VALUES (?,?,?,?,?,?)",
                       (email, generate_password_hash(mdp), prenom.strip(),
-                       (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"), datetime.now().isoformat(timespec="minutes")))
+                       (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"), datetime.now().isoformat(timespec="minutes"),
+                       datetime.now().isoformat(timespec="minutes") if cgv else None))
         except sqlite3.IntegrityError:
             raise ValueError("Un compte existe déjà avec cette adresse.") from None
     return verifie(email, mdp)
@@ -69,6 +78,37 @@ def verifie(email: str, mdp: str) -> dict | None:
     with _db() as c:
         r = c.execute("SELECT * FROM utilisateurs WHERE email=?", (email.strip().lower(),)).fetchone()
     return dict(r) if r and check_password_hash(r["mdp"], mdp) else None
+
+
+def par_email(email: str) -> dict | None:
+    with _db() as c:
+        r = c.execute("SELECT * FROM utilisateurs WHERE email=?", (email.strip().lower(),)).fetchone()
+    return dict(r) if r else None
+
+
+def _h(jeton: str) -> str:
+    return hashlib.sha256(jeton.encode()).hexdigest()
+
+
+def jeton_reinit(uid: int, heures: int = 1) -> str:
+    """Jeton de réinitialisation à usage unique (seule son empreinte est stockée)."""
+    jeton = secrets.token_urlsafe(32)
+    with _verrou, _db() as c:
+        c.execute("DELETE FROM reinit WHERE uid=? OR expire < ?", (uid, datetime.now().isoformat()))
+        c.execute("INSERT INTO reinit VALUES (?,?,?)", (_h(jeton), uid, (datetime.now() + timedelta(hours=heures)).isoformat()))
+    return jeton
+
+
+def reinitialise(jeton: str, mdp: str) -> dict:
+    if len(mdp) < 8:
+        raise ValueError("Le mot de passe doit faire au moins 8 caractères.")
+    with _verrou, _db() as c:
+        r = c.execute("SELECT uid, expire FROM reinit WHERE jeton=?", (_h(jeton or ""),)).fetchone()
+        if not r or r["expire"] < datetime.now().isoformat():
+            raise ValueError("Ce lien a expiré ou a déjà servi. Refais une demande.")
+        c.execute("DELETE FROM reinit WHERE uid=?", (r["uid"],))
+        c.execute("UPDATE utilisateurs SET mdp=? WHERE id=?", (generate_password_hash(mdp), r["uid"]))
+    return get(r["uid"])
 
 
 def get(uid: int) -> dict | None:
@@ -98,15 +138,27 @@ def _mois():
 
 def usage(uid: int) -> dict:
     with _db() as c:
-        r = c.execute("SELECT analyses, adaptations FROM usage WHERE uid=? AND mois=?", (uid, _mois())).fetchone()
-    return {"analyses": r["analyses"] if r else 0, "adaptations": r["adaptations"] if r else 0}
+        r = c.execute("SELECT analyses, adaptations, studio FROM usage WHERE uid=? AND mois=?", (uid, _mois())).fetchone()
+    return {"analyses": r["analyses"] if r else 0, "adaptations": r["adaptations"] if r else 0, "studio": (r["studio"] or 0) if r else 0}
 
 
-def compte_usage(uid: int, analyses: int = 0, adaptations: int = 0):
+def compte_usage(uid: int, analyses: int = 0, adaptations: int = 0, cout: float = 0.0, studio: int = 0):
     with _verrou, _db() as c:
-        c.execute("INSERT INTO usage(uid, mois, analyses, adaptations) VALUES (?,?,?,?) "
-                  "ON CONFLICT(uid, mois) DO UPDATE SET analyses=analyses+?, adaptations=adaptations+?",
-                  (uid, _mois(), analyses, adaptations, analyses, adaptations))
+        c.execute("INSERT INTO usage(uid, mois, analyses, adaptations, cout_usd, studio) VALUES (?,?,?,?,?,?) "
+                  "ON CONFLICT(uid, mois) DO UPDATE SET analyses=analyses+?, adaptations=adaptations+?, cout_usd=cout_usd+?, studio=studio+?",
+                  (uid, _mois(), analyses, adaptations, cout, studio, analyses, adaptations, cout, studio))
+
+
+def usage_tous() -> dict:
+    """{uid: {"mois": {...}, "total_cout": x}} pour le tableau de bord administrateur."""
+    res: dict = {}
+    with _db() as c:
+        for r in c.execute("SELECT uid, mois, analyses, adaptations, cout_usd FROM usage"):
+            d = res.setdefault(r["uid"], {"mois": {"analyses": 0, "adaptations": 0, "cout_usd": 0.0}, "total_cout": 0.0})
+            d["total_cout"] += r["cout_usd"] or 0
+            if r["mois"] == _mois():
+                d["mois"] = {"analyses": r["analyses"], "adaptations": r["adaptations"], "cout_usd": r["cout_usd"] or 0}
+    return res
 
 
 def droits(u: dict) -> dict:
@@ -118,14 +170,16 @@ def droits(u: dict) -> dict:
     us = usage(u["id"])
     return {
         "plan": u["plan"], "nom_plan": plan["nom"], "statut": u["statut"], "actif": actif, "fin_essai": u.get("fin_essai"),
-        "quotas": {k: plan[k] for k in ("analyses_par_mois", "adaptations_par_mois", "comptes_surveilles")},
+        "quotas": {**{k: plan[k] for k in ("analyses_par_mois", "adaptations_par_mois", "comptes_surveilles")},
+                   "studio_par_mois": plan.get("studio_par_mois", 10)},
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
         "usage": us,
-        "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"]},
+        "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"],
+                  "studio": plan.get("studio_par_mois", 10) - us["studio"]},
     }
 
 
-def peut(u: dict, analyses: int = 0, adaptations: int = 0) -> str | None:
+def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> str | None:
     """Renvoie None si c'est autorisé, sinon le message à afficher."""
     d = droits(u)
     if not d["actif"]:
@@ -134,6 +188,8 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0) -> str | None:
         return f"Tu as utilisé tes {d['quotas']['analyses_par_mois']} analyses du mois. Passe à la formule supérieure ou attends le mois prochain."
     if adaptations and d["reste"]["adaptations"] < adaptations:
         return f"Il te reste {max(d['reste']['adaptations'], 0)} adaptations ce mois-ci, il en faut {adaptations}."
+    if studio and d["reste"]["studio"] < studio:
+        return f"Tu as utilisé tes {d['quotas']['studio_par_mois']} créations du mois au studio. Passe à la formule supérieure ou attends le mois prochain."
     return None
 
 

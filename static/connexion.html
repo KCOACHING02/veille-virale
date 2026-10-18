@@ -37,13 +37,21 @@ input{width:100%;border:1px solid var(--line);background:var(--surface);border-r
 .bascule{margin-top:18px;text-align:center;color:var(--ink-2);font-size:14px}
 .bascule button{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0}
 .erreur{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:9px 12px;margin-bottom:14px;font-size:14px}
-.mentions{font-size:12.5px;color:var(--ink-3);margin-top:14px}
+.mentions{font-size:12.5px;color:var(--ink-3);margin-top:22px;text-align:center}
+.mentions a,.coche a{color:inherit}
+.info{background:var(--sunk);border-radius:10px;padding:9px 12px;margin-bottom:14px;font-size:14px}
+.info a{color:var(--glow);font-weight:600}
+.coche{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:13.5px;color:var(--ink-2);margin:0 0 16px;cursor:pointer}
+.coche input{width:18px;height:18px;margin:2px 0 0;flex-shrink:0;accent-color:var(--glow)}
+.lien-oubli{text-align:right;margin:10px 0 0}
+.lien-oubli button,.bascule button{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0;font-size:14px}
+[hidden]{display:none!important}
 @media (max-width:860px){body{grid-template-columns:1fr}.scene{padding:28px 20px}.pile{display:none}.scene h1{font-size:38px}}
 </style>
 </head>
 <body>
 <section class="scene">
-  <div class="marque"><i></i>Veille virale</div>
+  <a class="marque" href="/" style="color:inherit;text-decoration:none"><i></i>Veille virale</a>
   <div>
     <h1>Les Reels qui cartonnent, réécrits pour ta niche.</h1>
     <p>Repère les Reels à plus de 500 000 vues chez les comptes que tu admires, comprends pourquoi ils marchent et reçois chaque semaine tes 14 Reels adaptés, avec le script, la légende et les messages pour transformer les commentaires en conversations.</p>
@@ -56,37 +64,63 @@ input{width:100%;border:1px solid var(--line);background:var(--surface);border-r
   <span></span>
 </section>
 <section class="form">
-  <form class="carte" id="f">
+  <form class="carte" id="f" novalidate>
     <h2 id="t">Crée ton compte</h2>
-    <p class="sous" id="s">7 jours d'essai gratuit, sans carte bancaire.</p>
+    <p class="sous" id="s"></p>
     <div id="e"></div>
     <div id="champ-prenom"><label for="prenom">Prénom</label><input id="prenom" autocomplete="given-name"></div>
-    <label for="email">E-mail</label><input id="email" type="email" autocomplete="email" required>
-    <label for="mdp">Mot de passe</label><input id="mdp" type="password" autocomplete="new-password" minlength="8" required>
+    <div id="champ-email"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email"></div>
+    <div id="champ-mdp"><label for="mdp" id="l-mdp">Mot de passe</label><input id="mdp" type="password" autocomplete="new-password" minlength="8"></div>
+    <label class="coche" id="champ-cgv"><input type="checkbox" id="cgv"> <span>J'accepte les <a href="/cgv" target="_blank">conditions générales</a> et la <a href="/confidentialite" target="_blank">politique de confidentialité</a>.</span></label>
     <button class="btn" id="b">Commencer mon essai</button>
-    <p class="mentions" id="m">En créant un compte, tu acceptes les conditions générales d'utilisation.</p>
-    <div class="bascule" id="bas">Déjà un compte ? <button type="button" id="sw">Se connecter</button></div>
+    <p class="lien-oubli" id="oubli"><button type="button" id="b-oubli">Mot de passe oublié ?</button></p>
+    <div class="bascule" id="bas"></div>
+    <p class="mentions"><a href="/">Accueil</a> · <a href="/cgv">CGV</a> · <a href="/confidentialite">Confidentialité</a> · <a href="/mentions-legales">Mentions légales</a></p>
   </form>
 </section>
 <script>
-let inscription = !location.hash.includes("connexion");
 const $ = s => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+// Modes : inscription, connexion, oubli (demande de lien), nouveau (choix du nouveau mot de passe depuis le lien reçu)
+let mode = params.get("t") ? "nouveau" : location.hash.includes("connexion") ? "connexion" : "inscription";
+const TEXTES = {
+  inscription: ["Crée ton compte", "7 jours d'essai gratuit, sans carte bancaire.", "Commencer mon essai"],
+  connexion: ["Bon retour", "Connecte-toi pour retrouver tes Reels.", "Se connecter"],
+  oubli: ["Mot de passe oublié", "Indique ton e-mail : tu reçois un lien pour en choisir un nouveau.", "Recevoir le lien"],
+  nouveau: ["Nouveau mot de passe", "Choisis ton nouveau mot de passe (8 caractères minimum).", "Enregistrer et me connecter"],
+};
 function maj() {
-  $("#t").textContent = inscription ? "Crée ton compte" : "Bon retour";
-  $("#s").textContent = inscription ? "7 jours d'essai gratuit, sans carte bancaire." : "Connecte-toi pour retrouver tes Reels.";
-  $("#champ-prenom").hidden = $("#m").hidden = !inscription;
-  $("#b").textContent = inscription ? "Commencer mon essai" : "Se connecter";
-  $("#mdp").autocomplete = inscription ? "new-password" : "current-password";
-  $("#bas").innerHTML = inscription ? 'Déjà un compte ? <button type="button" id="sw">Se connecter</button>' : 'Pas encore de compte ? <button type="button" id="sw">Créer un compte</button>';
-  $("#sw").onclick = () => { inscription = !inscription; $("#e").innerHTML = ""; maj(); };
+  const [t, s, b] = TEXTES[mode];
+  $("#t").textContent = t; $("#s").textContent = s; $("#b").textContent = b; $("#b").disabled = false;
+  $("#champ-prenom").hidden = $("#champ-cgv").hidden = mode !== "inscription";
+  $("#champ-email").hidden = mode === "nouveau";
+  $("#champ-mdp").hidden = mode === "oubli";
+  $("#oubli").hidden = mode !== "connexion";
+  $("#l-mdp").textContent = mode === "nouveau" ? "Nouveau mot de passe" : "Mot de passe";
+  $("#mdp").autocomplete = mode === "connexion" ? "current-password" : "new-password";
+  $("#bas").innerHTML = mode === "inscription" ? 'Déjà un compte ? <button type="button" data-m="connexion">Se connecter</button>'
+    : mode === "connexion" ? 'Pas encore de compte ? <button type="button" data-m="inscription">Créer un compte</button>'
+    : '<button type="button" data-m="connexion">Retour à la connexion</button>';
+  document.querySelectorAll("[data-m]").forEach(x => x.onclick = () => { mode = x.dataset.m; $("#e").innerHTML = ""; maj(); });
 }
+$("#b-oubli").onclick = () => { mode = "oubli"; $("#e").innerHTML = ""; maj(); $("#email").focus(); };
 maj();
+const message = (txt, ok) => $("#e").innerHTML = `<p class="${ok ? "info" : "erreur"}">${txt.replace(/</g, "&lt;")}</p>`;
 $("#f").onsubmit = async ev => {
-  ev.preventDefault(); $("#b").disabled = true;
-  const r = await fetch(inscription ? "/api/inscription" : "/api/connexion", {method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value})});
+  ev.preventDefault();
+  if (mode === "inscription" && !$("#cgv").checked) return message("Coche la case pour accepter les conditions générales.");
+  $("#b").disabled = true;
+  const url = {inscription: "/api/inscription", connexion: "/api/connexion", oubli: "/api/mot-de-passe-oublie", nouveau: "/api/reinitialiser"}[mode];
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value, cgv: $("#cgv").checked, jeton: params.get("t")})});
   const j = await r.json().catch(() => ({}));
-  if (r.ok) location.href = "/"; else { $("#e").innerHTML = `<p class="erreur">${(j.erreur || "Erreur").replace(/</g, "&lt;")}</p>`; $("#b").disabled = false; }
+  if (!r.ok) { message(j.erreur || "Erreur, réessaie."); $("#b").disabled = false; return; }
+  if (mode === "oubli") {
+    message("Si un compte existe avec cette adresse, un e-mail vient de partir. Pense à regarder dans les indésirables.", true);
+    if (j.lien_demo) $("#e").insertAdjacentHTML("beforeend", `<p class="info">Mode démo (aucun e-mail envoyé) : <a href="${j.lien_demo}">ouvrir le lien</a></p>`);
+    return;
+  }
+  location.href = "/app";
 };
 </script>
 </body>
