@@ -456,7 +456,7 @@ async function deconnexion() { await api("/api/deconnexion", {method: "POST"}); 
 async function chargeListe(selection) {
   const liste = await api("/api/analyses");
   const sel = $("#choix-analyse");
-  sel.innerHTML = liste.length ? liste.map(a => `<option value="${a.id}">${esc(a.titre)} — ${new Date(a.id.slice(0,4)+"-"+a.id.slice(4,6)+"-"+a.id.slice(6,8)+"T"+a.id.slice(9,11)+":"+a.id.slice(11,13)).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}${a.demo ? " (démo)" : ""}</option>`).join("") : '<option value="">Aucune analyse</option>';
+  sel.innerHTML = liste.length ? liste.map(a => `<option value="${a.id}">${esc(a.titre)} — ${new Date(a.id.slice(0,4)+"-"+a.id.slice(4,6)+"-"+a.id.slice(6,8)+"T"+a.id.slice(9,11)+":"+a.id.slice(11,13)).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}${a.demo ? " (démo)" : ""}${a.en_cours ? " — en cours…" : ""}</option>`).join("") : '<option value="">Aucune analyse</option>';
   sel.hidden = !liste.length;
   const id = selection || (liste[0] && liste[0].id);
   if (id) { sel.value = id; await chargeAnalyse(id); } else { S.analyse = null; rendu(); }
@@ -537,7 +537,7 @@ function renduReels() {
     $("#n-reels").textContent = ""; return;
   }
   const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
-  $("#resume").innerHTML = `
+  $("#resume").innerHTML = (a.en_cours ? `<p class="encours" style="width:100%;margin:0 0 4px"><span class="spin"></span>Analyse en cours : les Reels apparaissent au fur et à mesure (${s.adaptes} adapté${s.adaptes > 1 ? "s" : ""} pour l'instant).</p>` : "") + `
     <div><b>${nbLong(s.videos)}</b><span>Reels analysés sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
     <div class="cible"><b>${cdc}</b><span>dans le cahier des charges</span></div>
     <div><b>${ad}</b><span>adaptés pour toi</span></div>
@@ -764,16 +764,31 @@ function ouvreNouvelle(mode = "copie") {
     </div>
     <div class="champ" id="m-nb-champ" ${mode === "copie" ? "" : "hidden"}><label for="m-nb">Nombre de Reels à adapter</label><input id="m-nb" type="number" min="1" max="40" value="10" style="width:120px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px"><span class="aide">Les meilleurs Reels du cahier des charges. Tu pourras en adapter d'autres un par un depuis la galerie.</span></div>
     <div id="m-erreur"></div>
-    <div class="pied-modale"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-lancer">Lancer l'analyse</button></div>`;
+    <div class="pied-modale" style="align-items:center"><span id="m-estim" class="aide" style="margin-right:auto"></span><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-lancer">Lancer l'analyse</button></div>`;
   const majReconnus = () => {
     const it = analyseSaisie($("#m-texte").value, $("#m-pl").value);
     $("#m-reconnus").innerHTML = it.map(i => `<span class="puce ${i.type === "post" ? "post" : i.type === "ko" ? "ko" : ""}">${i.pl ? `<span class="plat" style="width:16px;height:16px;background:none">${ICONES[i.pl]}</span>` : ""}${esc(i.txt)}</span>`).join("");
   };
-  $("#m-texte").oninput = majReconnus; $("#m-pl").onchange = majReconnus;
+  let tEstim;
+  const majEstim = () => { clearTimeout(tEstim); tEstim = setTimeout(async () => {
+    if (!$("#m-mode [aria-pressed=true]") || !$("#m-estim")) return;  // fenêtre fermée entre-temps
+    const md = $("#m-mode [aria-pressed=true]").dataset.v;
+    if (md === "copie" && !analyseSaisie($("#m-texte").value, $("#m-pl").value).some(i => i.type !== "ko")) { $("#m-estim").textContent = ""; return; }
+    try {
+      const e = await api("/api/estimation", {method: "POST", body: {mode: md, texte: $("#m-texte").value, plateforme: $("#m-pl").value, nb: +$("#m-nb").value, mois: +$("#m-mois").value}});
+      if (!$("#m-estim")) return;
+      $("#m-estim").innerHTML = `Estimation : <b>≈ ${e.cout_usd.toLocaleString("fr-FR", {minimumFractionDigits: 2})} $</b>, environ ${e.minutes} min` +
+        (e.comptes_en_cache ? ` <span title="collectés il y a moins de 24 h">(${e.comptes_en_cache}/${e.comptes} compte${e.comptes > 1 ? "s" : ""} déjà en mémoire)</span>` : "");
+    } catch { if ($("#m-estim")) $("#m-estim").textContent = ""; }
+  }, 350); };
+  $("#m-texte").oninput = () => { majReconnus(); majEstim(); }; $("#m-pl").onchange = () => { majReconnus(); majEstim(); };
+  ["#m-nb", "#m-mois"].forEach(s => $(s).addEventListener("input", majEstim));
   $$("#m-mode button").forEach(b => b.onclick = () => {
     $$("#m-mode button").forEach(x => x.setAttribute("aria-pressed", x === b));
     $("#m-copie").hidden = $("#m-nb-champ").hidden = b.dataset.v !== "copie"; $("#m-veille").hidden = b.dataset.v !== "veille";
+    majEstim();
   });
+  majEstim();
   $("#m-lancer").onclick = lanceAnalyse;
   $("#modale").classList.add("ouvert");
   setTimeout(() => (mode === "copie" ? $("#m-texte") : $("#m-lancer")).focus(), 50);
@@ -806,8 +821,12 @@ function suisJob(id, montrer, fini, surLog) {
     let j;
     try { j = await api("/api/jobs/" + id); S.echecs = 0; }
     catch (e) {
-      // Tâche introuvable (serveur redémarré, par exemple lors d'une mise à jour) : on prévient au lieu de rester figé
+      // Tâche introuvable : serveur redémarré. L'analyse est normalement reprise automatiquement : on la suit.
       if (++S.echecs < 4) return;
+      try {
+        const et = await api("/api/etat");
+        if (et.job && et.job.id !== id) { S.echecs = 0; toast("Le serveur a redémarré : l'analyse reprend automatiquement."); suisJob(et.job.id, !!$("#p-journal"), fini, surLog); return; }
+      } catch {}
       clearInterval(S.poll); S.jobId = null; S.echecs = 0; $("#job-rail").innerHTML = "";
       const msg = "L'analyse a été interrompue (le serveur a redémarré, probablement pour une mise à jour). Relance-la : elle n'a pas été décomptée de ton quota.";
       if ($("#p-erreur")) $("#p-erreur").innerHTML = `<p class="erreur">${msg}</p><p style="margin-top:10px"><button class="btn prim" onclick="fermeModale();ouvreNouvelle('veille')">Relancer une analyse</button></p>`;
@@ -816,6 +835,14 @@ function suisJob(id, montrer, fini, surLog) {
       return;
     }
     S.job = j; majProgression();
+    // Affichage au fil de l'eau : la galerie se remplit pendant l'analyse
+    if (j.analyse_id && j.statut === "en cours" && ["reels", "planning"].includes(S.vue) && Date.now() - (S.dernierRafraichi || 0) > 6000) {
+      S.dernierRafraichi = Date.now();
+      try {
+        if (!$$("#choix-analyse option").some(o => o.value === j.analyse_id)) await chargeListe(j.analyse_id);
+        else if (S.analyse?.id === j.analyse_id || !S.analyse) { S.analyse = await api("/api/analyses/" + j.analyse_id); remplitComptes(); if (!S.ouvert) rendu(); }
+      } catch {}
+    }
     if (surLog && j.logs.length) surLog(j.logs[j.logs.length - 1].m);
     $("#job-rail").innerHTML = j.statut === "en cours" || j.statut === "en attente" ? `<button class="mini-job" onclick="montreProgression()"><span class="spin"></span>${esc(j.titre)}…</button>` : "";
     if (j.statut === "terminé" || j.statut === "erreur") {

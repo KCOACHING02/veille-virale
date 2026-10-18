@@ -14,7 +14,7 @@ import re
 import shutil
 import tempfile
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import yaml
@@ -117,7 +117,9 @@ def _dict_vers_post(d: dict) -> Post:
 
 
 def sauve(esp: Espace, analyse: dict):
-    (esp.analyses / f"{analyse['id']}.json").write_text(json.dumps(analyse, ensure_ascii=False), encoding="utf-8")
+    tmp = esp.analyses / f"{analyse['id']}.tmp"
+    tmp.write_text(json.dumps(analyse, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(esp.analyses / f"{analyse['id']}.json")
 
 
 def charge(esp: Espace, analyse_id: str) -> dict:
@@ -131,7 +133,7 @@ def liste_analyses(esp: Espace) -> list[dict]:
             a = json.loads(f.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
-        res.append({k: a.get(k) for k in ("id", "date", "mode", "titre", "stats", "demo")})
+        res.append({k: a.get(k) for k in ("id", "date", "mode", "titre", "stats", "demo", "en_cours")})
     return res
 
 
@@ -168,12 +170,45 @@ def verifie_cle_claude(cfg: dict | None = None):
         log(f"⚠️  Vérification de Claude impossible : {explique_erreur(e)}")
 
 
+class AdaptationsCache:
+    """Adaptations déjà produites pour ce client (14 jours) : une analyse relancée ne repaie ni Apify ni Claude pour elles."""
+    JOURS = 14
+
+    def __init__(self, esp: Espace):
+        self.f = esp.racine / "adaptations.json"
+        try:
+            self.d = json.loads(self.f.read_text(encoding="utf-8")) if self.f.exists() else {}
+        except ValueError:
+            self.d = {}
+        limite = (datetime.now() - timedelta(days=self.JOURS)).isoformat()
+        self.d = {k: v for k, v in self.d.items() if v.get("date", "") >= limite}
+
+    def restaure(self, p: Post) -> bool:
+        e = self.d.get(cle(p))
+        if not e:
+            return False
+        p.adaptation, p.transcription = e["adaptation"], e.get("transcription", "")
+        p.commentaires_texte = e.get("commentaires_texte") or p.commentaires_texte
+        p.miniature = p.miniature or e.get("miniature", "")
+        return True
+
+    def ajoute(self, p: Post):
+        self.d[cle(p)] = {"date": datetime.now().isoformat(timespec="seconds"), "adaptation": p.adaptation,
+                          "transcription": p.transcription, "commentaires_texte": p.commentaires_texte[:30], "miniature": p.miniature}
+        tmp = self.f.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.d, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(self.f)
+
+
 # ------------------------------------------------------------
 #  Exécution
 # ------------------------------------------------------------
 def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = None, nb_adapter: int | None = None,
-             demo: bool = False, sans_ia: bool = False, depuis: str | None = None, max_adaptations: int | None = None) -> dict:
+             demo: bool = False, sans_ia: bool = False, depuis: str | None = None, max_adaptations: int | None = None,
+             aid: str | None = None) -> dict:
     cfg = applique_plafonds(cfg)
+    debut = datetime.now()
+    aid = aid or f"{debut:%Y%m%d-%H%M%S}-{mode}"
     o = cfg["objectifs"]
     token = os.getenv("APIFY_TOKEN")
     a_ia = not sans_ia and bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -191,6 +226,22 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             verifie_cle_claude(cfg)  # avant de dépenser des crédits Apify
     if mode == "copie" and not (saisie["comptes"] or saisie["posts"]):
         raise RuntimeError("Aucun compte ni lien de Reel reconnu.")
+    if mode == "veille":
+        titre = "Veille de la semaine"
+    else:
+        noms = [f"@{c}" for _, c in saisie["comptes"]] + [f"{len(saisie['posts'])} Reel(s) précis"] * bool(saisie["posts"])
+        titre = "Analyse " + ", ".join(noms[:4]) + ("…" if len(noms) > 4 else "")
+
+    def enregistre(affiches, stats, en_cours=True, **extra):
+        """Sauvegarde (partielle ou finale) : la galerie affiche les Reels au fur et à mesure."""
+        sauve(esp, {
+            "id": aid, "date": debut.isoformat(timespec="minutes"), "mode": mode, "titre": titre, "demo": demo, "en_cours": en_cours,
+            "saisie": saisie, "criteres": {k: cfg["analyse"][k] for k in ("mois", "vues_min", "taux_engagement_min")},
+            "objectifs": o, "stats": stats, "planning": extra.get("planning", []),
+            "posts": [_post_vers_dict(p) for p in affiches],
+            "voix_client": extra.get("voix_client", {}), "decouvertes": extra.get("decouvertes", []),
+            "apprentissage": extra.get("apprentissage", {}), "fichiers": extra.get("fichiers", {}),
+        })
 
     try:
         # ---------------- 1. Collecte ----------------
@@ -205,17 +256,13 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             posts = [_dict_vers_post(x) for x in json.loads(Path(depuis).read_text(encoding="utf-8"))]
             log(f"{len(posts)} posts rechargés depuis {depuis}")
         else:
-            from collecte import collecte_concurrents, collecte_instagram, collecte_posts, collecte_tiktok
+            from collecte import collecte_comptes, collecte_concurrents, collecte_posts
             if mode == "veille":
                 posts = collecte_concurrents(cfg, token)
             else:
                 a = cfg["analyse"]
-                jours = a["mois"] * 30
-                ig = [c for pl, c in saisie["comptes"] if pl == "Instagram"]
-                tt = [c for pl, c in saisie["comptes"] if pl == "TikTok"]
-                posts = (collecte_instagram(ig, jours, a["posts_max_par_compte"], cfg, token)
-                         + collecte_tiktok(tt, jours, a["posts_max_par_compte"], cfg, token)
-                         + (collecte_posts(saisie["posts"], cfg, token) if saisie["posts"] else []))
+                posts = (collecte_comptes([tuple(x) for x in saisie["comptes"]], a["mois"] * 30, a["posts_max_par_compte"], cfg, token)
+                         + (collecte_posts([tuple(x) for x in saisie["posts"]], cfg, token) if saisie["posts"] else []))
             (esp.rapports / f"brut_{datetime.now():%Y-%m-%d_%H%M}.json").write_text(
                 json.dumps([_post_vers_dict(p) for p in posts], ensure_ascii=False), encoding="utf-8")
             log(f"{len(posts)} publications collectées")
@@ -238,25 +285,6 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                 pool += reste[:nb_adapter + len(demandes) - len(pool)]
         if max_adaptations is not None and len(pool) > max_adaptations:
             pool = pool[:max(max_adaptations, 1)]  # on reste dans le quota restant de la formule
-        log(f"{len(pool)} Reels à analyser en profondeur")
-
-        # ---------------- 3. Vidéos, commentaires, miniatures ----------------
-        if demo:
-            d.lit_videos(pool, travail / "media", esp.media)
-        else:
-            # Lecture des vidéos et collecte des commentaires en parallèle
-            import concurrent.futures as cf
-            with cf.ThreadPoolExecutor(max_workers=2) as ex:
-                taches = []
-                if cfg["video"].get("actif", True):
-                    from video import traite_videos
-                    taches.append(ex.submit(traite_videos, pool, cfg, token, travail / "media", esp.media))
-                if cfg["commentaires"].get("actif", True) and token:
-                    from commentaires import recupere
-                    taches.append(ex.submit(recupere, pool, cfg, token))
-                for t in taches:
-                    t.result()
-
         tous = demandes + classes
         affiches = (demandes + [p for p in classes if p.criteres_ok] + pool + classes[:80])
         affiches = list({cle(p): p for p in affiches}.values())[:MAX_AFFICHES]
@@ -265,6 +293,41 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         elif not depuis:
             from video import miniatures
             miniatures(affiches, esp.media)
+
+        def stats_courantes():
+            return {
+                "videos": len(tous), "comptes": len({(p.plateforme, p.compte) for p in tous}),
+                "criteres_ok": len([p for p in classes if p.criteres_ok]),
+                "exclus": len([p for p in classes if histo.deja_utilise(p)]) if mode == "veille" else 0,
+                "adaptes": len([p for p in pool if p.adaptation and not p.adaptation.get("erreur")]),
+                "videos_lues": len([p for p in pool if p.images or p.transcription]),
+                "nb_commentaires": sum(len(p.commentaires_texte) for p in pool),
+            }
+
+        # Reels déjà adaptés récemment pour ce client (analyse relancée ou interrompue) : réutilisés sans rien repayer
+        cache_adapt = AdaptationsCache(esp) if not demo else None
+        a_faire = [p for p in pool if not (cache_adapt and cache_adapt.restaure(p))]
+        if len(a_faire) < len(pool):
+            log(f"{len(pool) - len(a_faire)} Reel(s) déjà adaptés récemment, réutilisés sans nouveau coût")
+        log(f"{len(a_faire)} Reels à analyser en profondeur")
+        enregistre(affiches, stats_courantes())
+
+        # ---------------- 3. Vidéos, commentaires ----------------
+        if demo:
+            d.lit_videos(pool, travail / "media", esp.media)
+        elif a_faire:
+            # Lecture des vidéos et collecte des commentaires en parallèle
+            import concurrent.futures as cf
+            with cf.ThreadPoolExecutor(max_workers=2) as ex:
+                taches = []
+                if cfg["video"].get("actif", True):
+                    from video import traite_videos
+                    taches.append(ex.submit(traite_videos, a_faire, cfg, token, travail / "media", esp.media))
+                if cfg["commentaires"].get("actif", True) and token:
+                    from commentaires import recupere
+                    taches.append(ex.submit(recupere, a_faire, cfg, token))
+                for t in taches:
+                    t.result()
 
         # ---------------- 4. Apprentissage + voix ----------------
         from apprentissage import mon_compte, suivi_excel, synthese, voix
@@ -284,12 +347,21 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         # ---------------- 5. Adaptation ----------------
         voix_client = {}
         if demo and not a_ia:
+            import time as _t
             for i, p in enumerate(pool):
                 p.adaptation = d.adaptation(p, i)
+                _t.sleep(0.8)  # démo : simule la durée d'une adaptation pour montrer l'affichage progressif
+                enregistre(affiches, stats_courantes())
             voix_client = d.voix_client()
         elif a_ia:
             ia = IA(cfg, voix=texte_voix, apprentissages=appr.get("texte", ""))
-            ia.adapte_tous(pool)
+
+            def apres_chaque(p):
+                if cache_adapt and p.adaptation and not p.adaptation.get("erreur"):
+                    cache_adapt.ajoute(p)
+                enregistre(affiches, stats_courantes())
+            if a_faire:
+                ia.adapte_tous(a_faire, apres_chaque=apres_chaque)
             if cfg["commentaires"].get("synthese", True):
                 voix_client = ia.voix_client(pool)
 
@@ -329,37 +401,15 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                         log(f"⚠️  Découverte impossible : {e}")
 
         # ---------------- 8. Rapports et sauvegarde ----------------
-        maintenant = datetime.now()
-        aid = f"{maintenant:%Y%m%d-%H%M%S}-{mode}"
-        if mode == "veille":
-            titre = "Veille de la semaine"
-        else:
-            noms = [f"@{c}" for _, c in saisie["comptes"]] + [f"{len(saisie['posts'])} Reel(s) précis"] * bool(saisie["posts"])
-            titre = "Analyse " + ", ".join(noms[:4]) + ("…" if len(noms) > 4 else "")
-        stats = {
-            "videos": len(tous), "comptes": len({(p.plateforme, p.compte) for p in tous}),
-            "criteres_ok": len([p for p in classes if p.criteres_ok]),
-            "exclus": len([p for p in classes if histo.deja_utilise(p)]) if mode == "veille" else 0,
-            "adaptes": len([p for p in pool if p.adaptation and not p.adaptation.get("erreur")]),
-            "videos_lues": len([p for p in pool if p.images]),
-            "nb_commentaires": sum(len(p.commentaires_texte) for p in pool),
-        }
-        sortie = esp.rapports
-        base = f"{'veille' if mode == 'veille' else 'copie'}_{maintenant:%Y-%m-%d_%H%M}"
-        rapports.export_excel(semaine, sortie / f"{base}.xlsx", cfg, voix_client, decouvertes, appr)
-        rapports.export_html(semaine, cfg, sortie / f"{base}.html", stats, voix_client, decouvertes, appr, esp.media)
-
-        analyse = {
-            "id": aid, "date": maintenant.isoformat(timespec="minutes"), "mode": mode, "titre": titre, "demo": demo,
-            "saisie": saisie, "criteres": {k: cfg["analyse"][k] for k in ("mois", "vues_min", "taux_engagement_min")},
-            "objectifs": o, "stats": stats, "planning": planning,
-            "posts": [_post_vers_dict(p) for p in affiches],
-            "voix_client": voix_client if not voix_client.get("erreur") else {},
-            "decouvertes": decouvertes,
-            "apprentissage": {k: appr.get(k) for k in ("par_mecanique", "mecaniques_top", "mecaniques_flop", "nb_reels", "nb_suivi", "texte")},
-            "fichiers": {"html": f"{base}.html", "xlsx": f"{base}.xlsx"},
-        }
-        sauve(esp, analyse)
+        stats = stats_courantes()
+        base = f"{'veille' if mode == 'veille' else 'copie'}_{debut:%Y-%m-%d_%H%M}"
+        rapports.export_excel(semaine, esp.rapports / f"{base}.xlsx", cfg, voix_client, decouvertes, appr)
+        rapports.export_html(semaine, cfg, esp.rapports / f"{base}.html", stats, voix_client, decouvertes, appr, esp.media)
+        enregistre(affiches, stats, en_cours=False, planning=planning, decouvertes=decouvertes,
+                   voix_client=voix_client if not voix_client.get("erreur") else {},
+                   apprentissage={k: appr.get(k) for k in ("par_mecanique", "mecaniques_top", "mecaniques_flop", "nb_reels", "nb_suivi", "texte")},
+                   fichiers={"html": f"{base}.html", "xlsx": f"{base}.xlsx"})
+        analyse = charge(esp, aid)
         log(f"✅ Analyse terminée : {stats['adaptes']} Reels adaptés")
         return analyse
     finally:
@@ -481,3 +531,49 @@ def suggere_hashtags(cfg: dict, demo: bool = False) -> dict:
                 "tiktok": ["nutrition", "ventregonfle", "astucesante", "recettehealthy", "perdredupoids", "bienetre"]}
     from ia import propose_hashtags
     return propose_hashtags(cfg)
+
+
+# ------------------------------------------------------------
+#  Estimation du coût et de la durée avant lancement
+# ------------------------------------------------------------
+PRIX_APIFY_RESULTAT = 0.0023     # $ par résultat (plan gratuit ; moins cher sur les plans payants)
+PRIX_CLAUDE_REEL = 0.045         # $ par Reel analysé et adapté (images + texte)
+
+
+def estime(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = None, nb: int | None = None) -> dict:
+    from collecte import cache_frais
+    cfg = applique_plafonds(cfg)
+    a, o = cfg["analyse"], cfg["objectifs"]
+    jours, maxi = a["mois"] * 30, a["posts_max_par_compte"]
+    if mode == "veille":
+        comptes = [("Instagram", x) for x in cfg["comptes"].get("instagram") or []] + [("TikTok", x) for x in cfg["comptes"].get("tiktok") or []]
+        reels = int(o["reels_par_jour"] * o["jours_planifies"] * cfg["diversite"]["marge_candidats"] + .999)
+        posts_precis = 0
+    else:
+        saisie = saisie or {"comptes": [], "posts": []}
+        comptes = [tuple(x) for x in saisie["comptes"]]
+        posts_precis = len(saisie["posts"])
+        reels = (nb or 10) + posts_precis
+    en_cache = [c for c in comptes if cache_frais(c[0], c[1], jours, maxi) is not None]
+    a_collecter = len(comptes) - len(en_cache)
+    collecte = a_collecter * maxi * PRIX_APIFY_RESULTAT + posts_precis * PRIX_APIFY_RESULTAT
+    commentaires = reels * cfg["commentaires"]["par_post"] * PRIX_APIFY_RESULTAT * 0.5  # la moitié environ déjà fournie par Instagram
+    decouverte = 0.0
+    if mode == "veille" and cfg["decouverte"].get("actif"):
+        memo = esp.racine / "decouverte.json"
+        try:
+            age = (datetime.now() - datetime.fromisoformat(json.loads(memo.read_text(encoding="utf-8"))["date"])).days if memo.exists() else 999
+        except (ValueError, KeyError):
+            age = 999
+        if age >= DECOUVERTE_TOUS_LES_JOURS:
+            nb_tags = len(cfg["decouverte"].get("hashtags_instagram") or []) + len(cfg["decouverte"].get("hashtags_tiktok") or [])
+            decouverte = nb_tags * cfg["decouverte"]["posts_par_hashtag"] * PRIX_APIFY_RESULTAT
+    claude = reels * PRIX_CLAUDE_REEL + 0.03
+    total = collecte + commentaires + decouverte + claude
+    minutes = (3 if a_collecter else 0) + (2 if decouverte else 0) + max(2, round(reels * 0.45))
+    return {
+        "cout_usd": round(total, 2), "minutes": minutes, "reels": reels,
+        "comptes": len(comptes), "comptes_en_cache": len(en_cache),
+        "detail": {"collecte": round(collecte, 2), "commentaires": round(commentaires, 2),
+                   "decouverte": round(decouverte, 2), "claude": round(claude, 2)},
+    }

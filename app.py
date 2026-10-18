@@ -16,6 +16,7 @@ Variables d'environnement (.env) :
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import secrets
 import threading
@@ -90,11 +91,20 @@ JOBS: dict[str, dict] = {}
 FILE = threading.Lock()
 
 
-def lance(uid: int, titre: str, fonction, *args, apres=None, **kwargs) -> str:
+JOBS_DIR = DATA / "jobs"
+
+
+def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | None = None, **kwargs) -> str:
+    """Lance une tâche. `persiste` (paramètres JSON d'une analyse) permet de la reprendre si le serveur redémarre."""
     jid = uuid.uuid4().hex[:10]
     job = {"id": jid, "uid": uid, "titre": titre, "statut": "en attente", "logs": [], "resultat": None, "erreur": None,
-           "debut": datetime.now().isoformat(timespec="seconds")}
+           "debut": datetime.now().isoformat(timespec="seconds"), "analyse_id": kwargs.get("aid")}
     JOBS[jid] = job
+    fichier = None
+    if persiste is not None:
+        JOBS_DIR.mkdir(parents=True, exist_ok=True)
+        fichier = JOBS_DIR / f"{jid}.json"
+        fichier.write_text(json.dumps({"uid": uid, "titre": titre, "params": persiste}, ensure_ascii=False), encoding="utf-8")
 
     def tourne():
         with FILE:
@@ -111,9 +121,40 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, **kwargs) -> str:
                 traceback.print_exc()
             finally:
                 LOG_HOOKS.remove(hook)
+                if fichier:
+                    fichier.unlink(missing_ok=True)
 
     threading.Thread(target=tourne, daemon=True).start()
     return jid
+
+
+def lance_analyse(uid: int, titre: str, params: dict) -> str:
+    """Analyse complète, persistée : relancée automatiquement après un redémarrage du serveur."""
+    params = {**params, "aid": params.get("aid") or f"{datetime.now():%Y%m%d-%H%M%S}-{params.get('mode', 'veille')}"}
+    return lance(uid, titre, moteur.executer, espace_client(uid), apres=_apres_analyse(uid), persiste=params, **params)
+
+
+def reprend_analyses():
+    """Au démarrage : relance les analyses interrompues (les collectes et adaptations déjà faites sont réutilisées)."""
+    if not JOBS_DIR.exists():
+        return
+    for f in sorted(JOBS_DIR.glob("*.json")):
+        try:
+            j = json.loads(f.read_text(encoding="utf-8"))
+            f.unlink()
+            if j.get("reprises", 0) >= 2:
+                continue  # évite une boucle si l'analyse fait elle-même planter le serveur
+            print(f"Reprise de l'analyse interrompue « {j['titre']} » (client {j['uid']})")
+            jid = lance_analyse(j["uid"], j["titre"], j["params"])
+            nf = JOBS_DIR / f"{jid}.json"
+            if nf.exists():
+                d = json.loads(nf.read_text(encoding="utf-8"))
+                d["reprises"] = j.get("reprises", 0) + 1
+                nf.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+            JOBS[jid]["logs"].append({"t": datetime.now().strftime("%H:%M:%S"),
+                                      "m": "Reprise automatique après redémarrage du serveur : les étapes déjà faites sont réutilisées."})
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
 
 
 def job_en_cours(uid: int):
@@ -261,9 +302,21 @@ def nouvelle():
         if c.get(k_in):
             cfg["analyse"][k_cfg] = conv(c[k_in])
     titre = "Veille de la semaine" if mode == "veille" else "Analyse de comptes"
-    jid = lance(u["id"], titre, moteur.executer, esp, cfg, mode=mode, saisie=saisie, nb_adapter=nb if mode == "copie" else None,
-                demo=en_demo(), max_adaptations=d["reste"]["adaptations"], apres=_apres_analyse(u["id"]))
+    jid = lance_analyse(u["id"], titre, {"cfg": cfg, "mode": mode, "saisie": saisie, "nb_adapter": nb if mode == "copie" else None,
+                                         "demo": en_demo(), "max_adaptations": d["reste"]["adaptations"]})
     return jsonify({"job": jid, "saisie": saisie})
+
+
+@app.post("/api/estimation")
+@connecte
+def estimation():
+    c = request.get_json(force=True)
+    mode = c.get("mode", "copie")
+    saisie = moteur.parse_saisie(c.get("texte", ""), c.get("plateforme", "Instagram")) if mode == "copie" else None
+    cfg = g.esp.lit_config()
+    if c.get("mois"):
+        cfg["analyse"]["mois"] = int(c["mois"])
+    return jsonify(moteur.estime(g.esp, cfg, mode, saisie, int(c.get("nb") or 10)))
 
 
 @app.post("/api/analyses/<aid>/adapter")
@@ -467,8 +520,8 @@ def planificateur():
                     if not _nb_comptes(cfg) or refus(u, analyses=1, adaptations=cfg["objectifs"]["reels_par_jour"] * cfg["objectifs"]["jours_planifies"]):
                         continue
                     ab.maj(u["id"], derniere_veille_auto=lundi)
-                    lance(u["id"], "Veille automatique du lundi", moteur.executer, esp, cfg, mode="veille", demo=en_demo(),
-                          max_adaptations=d["reste"]["adaptations"], apres=_apres_analyse(u["id"]))
+                    lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(),
+                                                                           "max_adaptations": d["reste"]["adaptations"]})
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(900)
@@ -483,6 +536,7 @@ def main():
     ap.add_argument("--sans-planificateur", action="store_true")
     args = ap.parse_args()
     DEMO_FORCE = args.demo
+    reprend_analyses()
     if not args.sans_planificateur:
         threading.Thread(target=planificateur, daemon=True).start()
     print(f"Données : {DATA}")

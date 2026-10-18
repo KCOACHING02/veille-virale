@@ -218,12 +218,17 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
             res["legende_reprise"] = p.legende
         return res
 
-    def adapte_tous(self, posts: list[Post]):
+    def adapte_tous(self, posts: list[Post], apres_chaque=None):
         log(f"Analyse et adaptation par Claude de {len(posts)} Reels…")
-        with cf.ThreadPoolExecutor(max_workers=4) as ex:
+        with cf.ThreadPoolExecutor(max_workers=6) as ex:
             futures = {ex.submit(self.adapte, p): p for p in posts}
             for i, f in enumerate(cf.as_completed(futures), 1):
                 futures[f].adaptation = f.result()
+                if apres_chaque:
+                    try:
+                        apres_chaque(futures[f])
+                    except Exception as e:  # noqa: BLE001
+                        log(f"  ⚠️  Sauvegarde intermédiaire impossible : {e}")
                 if i % 5 == 0 or i == len(posts):
                     log(f"  {i}/{len(posts)}")
         erreurs = [p for p in posts if p.adaptation.get("erreur")]

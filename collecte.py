@@ -14,12 +14,20 @@ APIFY_BASE = "https://api.apify.com/v2"
 
 def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> list[dict]:
     """Lance un actor Apify, attend la fin, renvoie les éléments du dataset."""
-    r = requests.post(f"{APIFY_BASE}/acts/{actor}/runs", params={"token": token}, json=payload, timeout=60)
-    if r.status_code >= 400:
-        raise RuntimeError(f"Apify {actor} : {r.status_code} {r.text[:300]}")
+    for essai in range(10):
+        r = requests.post(f"{APIFY_BASE}/acts/{actor}/runs", params={"token": token}, json=payload, timeout=60)
+        texte = r.text[:400].lower()
+        # Trop de runs simultanés ou mémoire du compte saturée : on patiente au lieu d'échouer
+        if r.status_code in (402, 429) and any(x in texte for x in ("memory", "concurren", "rate", "too many")) and essai < 9:
+            time.sleep(15)
+            continue
+        if r.status_code >= 400:
+            if "usage" in texte and ("limit" in texte or "exceed" in texte):
+                raise RuntimeError("Crédit Apify épuisé pour ce mois : passe au plan Starter sur apify.com (Billing) ou attends le renouvellement.")
+            raise RuntimeError(f"Apify {actor} : {r.status_code} {r.text[:300]}")
+        break
     run = r.json()["data"]
     run_id, dataset_id = run["id"], run["defaultDatasetId"]
-    log(f"  Apify {actor} lancé")
 
     limite = time.time() + timeout_min * 60
     while True:
@@ -43,7 +51,6 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
         if len(page) < 1000:
             break
         offset += 1000
-    log(f"  {len(items)} éléments récupérés")
     return items
 
 
@@ -107,7 +114,6 @@ def post_tiktok(it: dict) -> Post | None:
 def collecte_instagram(comptes: list[str], jours: int, max_par_compte: int, cfg: dict, token: str) -> list[Post]:
     if not comptes:
         return []
-    log(f"Instagram : {len(comptes)} compte(s), {jours} jours")
     items = apify_run(cfg["apify"]["actor_instagram"], {
         "directUrls": [f"https://www.instagram.com/{c.strip('@')}/" for c in comptes],
         "resultsType": "posts",
@@ -121,7 +127,6 @@ def collecte_instagram(comptes: list[str], jours: int, max_par_compte: int, cfg:
 def collecte_tiktok(comptes: list[str], jours: int, max_par_compte: int, cfg: dict, token: str) -> list[Post]:
     if not comptes:
         return []
-    log(f"TikTok : {len(comptes)} compte(s), {jours} jours")
     depuis = (datetime.now(timezone.utc) - timedelta(days=jours)).strftime("%Y-%m-%d")
     items = apify_run(cfg["apify"]["actor_tiktok"], {
         "profiles": [c.strip("@") for c in comptes],
@@ -136,15 +141,98 @@ def collecte_tiktok(comptes: list[str], jours: int, max_par_compte: int, cfg: di
     return [p for p in map(post_tiktok, items) if p]
 
 
+# ------------------------------------------------------------
+#  Collecte parallèle par compte, avec cache partagé de 24 h
+# ------------------------------------------------------------
+CACHE_HEURES = 24
+PARALLELE = 4   # runs Apify simultanés (le plan gratuit en autorise 5)
+
+
+def _cache_dir():
+    from espace import DATA
+    d = DATA / "cache"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _cache_fichier(plateforme: str, compte: str):
+    return _cache_dir() / f"{plateforme.lower()}_{compte.lower().strip('@')}.json"
+
+
+def cache_frais(plateforme: str, compte: str, jours: int, maxi: int) -> list[Post] | None:
+    """Publications d'un compte collectées il y a moins de 24 h (partagées entre tous les clients)."""
+    import json
+    f = _cache_fichier(plateforme, compte)
+    if not f.exists():
+        return None
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+        age = datetime.now() - datetime.fromisoformat(d["date"])
+        if age > timedelta(hours=CACHE_HEURES) or d.get("jours", 0) < jours or d.get("max", 0) < min(maxi, d.get("n", 0) + 1):
+            return None
+        return [Post(**{k: v for k, v in x.items() if k in Post.__dataclass_fields__}) for x in d["posts"]]
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
+def _met_en_cache(plateforme: str, compte: str, jours: int, maxi: int, posts: list[Post]):
+    import json
+    from dataclasses import asdict
+    garde = ("plateforme", "compte", "id", "url", "date", "format", "legende", "likes", "commentaires", "vues",
+             "partages", "enregistrements", "video_url", "cover_url", "duree_s", "commentaires_texte")
+    _cache_fichier(plateforme, compte).write_text(json.dumps({
+        "date": datetime.now().isoformat(timespec="seconds"), "jours": jours, "max": maxi, "n": len(posts),
+        "posts": [{k: v for k, v in asdict(p).items() if k in garde} for p in posts]}, ensure_ascii=False), encoding="utf-8")
+
+
+def collecte_comptes(comptes: list[tuple[str, str]], jours: int, maxi: int, cfg: dict, token: str) -> list[Post]:
+    """Collecte chaque compte dans son propre run Apify, en parallèle, et réutilise les collectes de moins de 24 h."""
+    import concurrent.futures as cf
+    comptes = list(dict.fromkeys((pl, c.strip("@")) for pl, c in comptes if c))
+    if not comptes:
+        return []
+    posts, a_collecter = [], []
+    for pl, c in comptes:
+        cache = cache_frais(pl, c, jours, maxi)
+        if cache is not None:
+            posts += cache
+        else:
+            a_collecter.append((pl, c))
+    if len(comptes) > len(a_collecter):
+        log(f"Collecte : {len(comptes) - len(a_collecter)} compte(s) déjà collecté(s) il y a moins de {CACHE_HEURES} h, réutilisé(s)")
+    if not a_collecter:
+        return posts
+    log(f"Collecte de {len(a_collecter)} compte(s) en parallèle sur Apify…")
+
+    def un(pl_c):
+        pl, c = pl_c
+        fn = collecte_instagram if pl == "Instagram" else collecte_tiktok
+        res = fn([c], jours, maxi, cfg, token)
+        _met_en_cache(pl, c, jours, maxi, res)
+        return res
+
+    erreurs, faits = [], 0
+    with cf.ThreadPoolExecutor(max_workers=PARALLELE) as ex:
+        futures = {ex.submit(un, x): x for x in a_collecter}
+        for f in cf.as_completed(futures):
+            pl, c = futures[f]
+            faits += 1
+            try:
+                res = f.result()
+                posts += res
+                log(f"  {faits}/{len(a_collecter)} — {pl} @{c} : {len(res)} publications")
+            except Exception as e:  # noqa: BLE001
+                erreurs.append(str(e))
+                log(f"  {faits}/{len(a_collecter)} — ⚠️  {pl} @{c} : {str(e)[:160]}")
+    if erreurs and len(erreurs) == len(a_collecter) and not posts:
+        raise RuntimeError(erreurs[0])
+    return posts
+
+
 def collecte_concurrents(cfg: dict, token: str) -> list[Post]:
     a, c = cfg["analyse"], cfg["comptes"]
-    jours = a["mois"] * 30
-    # Instagram et TikTok sont collectés en parallèle
-    import concurrent.futures as cf
-    with cf.ThreadPoolExecutor(max_workers=2) as ex:
-        ig = ex.submit(collecte_instagram, c.get("instagram") or [], jours, a["posts_max_par_compte"], cfg, token)
-        tt = ex.submit(collecte_tiktok, c.get("tiktok") or [], jours, a["posts_max_par_compte"], cfg, token)
-        return ig.result() + tt.result()
+    comptes = [("Instagram", x) for x in c.get("instagram") or []] + [("TikTok", x) for x in c.get("tiktok") or []]
+    return collecte_comptes(comptes, a["mois"] * 30, a["posts_max_par_compte"], cfg, token)
 
 
 # ------------------------------------------------------------

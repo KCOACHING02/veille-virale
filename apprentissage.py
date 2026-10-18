@@ -5,7 +5,7 @@ from __future__ import annotations
 import statistics
 from pathlib import Path
 
-from collecte import collecte_instagram, collecte_tiktok
+
 from modele import Post, log
 
 COLS_SUIVI = {"mecanique": "Mécanique", "vues": "Vues J+2", "mots_cles": "Commentaires mot-clé", "conv": "Conversations DM"}
@@ -23,11 +23,9 @@ def _num(v):
 # ------------------------------------------------------------
 def mon_compte(cfg: dict, token: str, ia) -> list[Post]:
     m, ap = cfg.get("mon_compte") or {}, cfg["apprentissage"]
-    posts = []
-    if m.get("instagram"):
-        posts += collecte_instagram([m["instagram"]], ap["jours"], 40, cfg, token)
-    if m.get("tiktok"):
-        posts += collecte_tiktok([m["tiktok"]], ap["jours"], 40, cfg, token)
+    from collecte import collecte_comptes
+    posts = collecte_comptes([(pl, m[k]) for pl, k in (("Instagram", "instagram"), ("TikTok", "tiktok")) if m.get(k)],
+                             ap["jours"], 40, cfg, token)
     posts = [p for p in posts if p.format in ("Reel", "Vidéo") and p.vues]
     if not posts:
         return []
