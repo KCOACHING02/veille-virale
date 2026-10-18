@@ -1,0 +1,101 @@
+# ============================================================
+#  VEILLE VIRALE — configuration
+#  Modifie ce fichier pour changer de niche ou de concurrents.
+# ============================================================
+
+# --- Ta niche : c'est ce qui guide l'adaptation ---
+niche:
+  nom: "Brille & Vibre"
+  description: >
+    Coaching nutrition et bien-être pour femmes actives de 30 à 50 ans :
+    perdre le ventre gonflé, arrêter le grignotage, retrouver de l'énergie
+    sans régime strict.
+  cible: "Femmes francophones 30-50 ans, actives, souvent mamans, fatiguées des régimes"
+  ton: "Chaleureux, direct, complice, jamais culpabilisant. Tutoiement."
+  langue: "français"
+  offre: "Accompagnement nutrition + ebook gratuit (mot-clé START en commentaire)"
+  interdits: >
+    Pas de promesse de résultat chiffré ou rapide, pas d'allégation santé
+    ou médicale, pas de « perds 5 kg en 7 jours ».
+
+# --- Objectifs ---
+objectifs:
+  reels_par_jour: 2           # rythme de publication
+  jours_planifies: 7          # 2 × 7 = 14 Reels par rapport
+  conversations_par_jour: 15  # objectif de conversations privées
+  mot_cle_cta: "START"        # mot-clé à commenter qui déclenche le DM automatique
+
+# --- Comptes concurrents à surveiller (sans @) ---
+comptes:
+  instagram:
+    - "exemple_compte_1"
+    - "exemple_compte_2"
+  tiktok:
+    - "exemple_compte_1"
+
+# --- TON compte (amélioration 3 : apprendre ce qui marche chez toi) ---
+mon_compte:
+  instagram: ""   # ex : "brilleetvibre"
+  tiktok: ""
+
+# --- Critères de sélection ---
+analyse:
+  mois: 3                     # Reels des 3 derniers mois
+  reels_uniquement: true
+  vues_min: 500000            # minimum 500 000 vues
+  taux_engagement_min: 0.03   # (likes + commentaires + partages + enregistrements) / vues ≥ 3 %
+  posts_max_par_compte: 120
+  completer_si_insuffisant: true
+
+# --- Amélioration 1 : regarder les vidéos ---
+video:
+  actif: true
+  images_par_video: 4         # 0,3 s / 1,5 s / 3 s (le hook) + 1 image de la suite
+  transcription: "local"      # "local" (gratuit, Whisper sur ta machine) | "openai" (rapide, clé OPENAI_API_KEY) | "aucun"
+  modele_whisper: "small"     # local : "base" (rapide) | "small" (bon compromis) | "medium" (précis, lent)
+  actor_tiktok_video: "maximedupre~tiktok-video-downloader"
+
+# --- Amélioration 2 : lire les commentaires ---
+commentaires:
+  actif: true
+  par_post: 50
+  synthese: true              # synthèse « voix du client » sur l'ensemble des commentaires
+  actor_tiktok: "clockworks~tiktok-comments-scraper"
+
+# --- Amélioration 3 : apprentissage ---
+apprentissage:
+  jours: 60                   # analyse de tes Reels des 60 derniers jours
+
+# --- Amélioration 4 : découvrir de nouveaux comptes ---
+decouverte:
+  actif: true
+  hashtags_instagram: ["ventregonfle", "reequilibragealimentaire", "nutritionfemme"]
+  hashtags_tiktok: ["ventregonfle", "nutrition", "perteDePoids"]
+  posts_par_hashtag: 100
+  min_reels_au_dessus_seuil: 2   # un compte est suggéré s'il a au moins 2 Reels ≥ vues_min
+  max_suggestions: 10
+  auto_ajout: 0                  # 0 = suggestions seulement ; N = ajoute automatiquement les N meilleurs à ta liste
+
+# --- Amélioration 5 : diversité et historique ---
+diversite:
+  max_par_mecanique: 3        # pas plus de 3 Reels d'une même mécanique par semaine
+  marge_candidats: 1.5        # on analyse 1,5× plus de Reels que nécessaire pour pouvoir choisir
+
+# --- Amélioration 6 : ta voix ---
+voix:
+  fichier: "ma_voix.md"       # colle-y 5 à 10 de tes meilleures légendes / scripts
+  legendes_auto: true         # ajoute automatiquement les légendes de tes Reels qui ont le mieux marché
+
+# --- Moteurs ---
+apify:
+  actor_instagram: "apify~instagram-scraper"
+  actor_tiktok: "clockworks~tiktok-scraper"
+
+claude:
+  modele: "claude-sonnet-5-5"
+  hooks_par_post: 3
+
+# --- Sorties ---
+sortie:
+  dossier: "rapports"
+  historique: "historique.json"

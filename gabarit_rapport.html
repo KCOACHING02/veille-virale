@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veille virale · {{ niche.nom }} · {{ date }}</title>
+<style>
+  :root{--bg:#f6f1ea;--card:#fffdf9;--ink:#2e2520;--muted:#7a6a5e;--accent:#8a5f43;--soft:#efe4d7;--line:#e3d6c6;--ok:#4f7a4a;--warn:#c08a3e;--warnbg:#f6e6cc;--bad:#a5534a}
+  @media (prefers-color-scheme:dark){:root{--bg:#1c1815;--card:#26201c;--ink:#f1e8de;--muted:#b3a291;--accent:#d3a27f;--soft:#332a24;--line:#3d332c;--ok:#8fbf87;--warn:#d9a65c;--warnbg:#3a2e1f;--bad:#d98b80}}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 16px 64px}
+  header h1{font:600 28px/1.2 Georgia,serif;margin:0 0 4px} header p{color:var(--muted);margin:0}
+  nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0} nav a{font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 12px;text-decoration:none;color:var(--ink)}
+  h2{font:600 21px Georgia,serif;margin:36px 0 12px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:22px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .kpi b{display:block;font-size:24px;color:var(--accent)} .kpi span{color:var(--muted);font-size:13px}
+  .warn{background:var(--warnbg);border-left:3px solid var(--warn);padding:10px 14px;border-radius:8px;font-size:14px;margin:8px 0}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--soft)}
+  .tablewrap{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  td.nw{white-space:nowrap;font-weight:600}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .cols ul{margin:6px 0 0;padding-left:18px} .cols li{margin-bottom:4px}
+  .chip{display:inline-block;background:var(--soft);border-radius:99px;padding:2px 10px;font-size:13px;margin:0 6px 6px 0}
+  .post{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;scroll-margin-top:12px}
+  .head{display:grid;grid-template-columns:120px 1fr;gap:16px}
+  .thumb{width:120px;aspect-ratio:9/16;object-fit:cover;border-radius:10px;background:var(--soft);display:block}
+  .thumb.vide{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center;padding:8px}
+  .top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+  .rang{font:600 20px Georgia,serif;color:var(--accent);margin-right:4px}
+  .tag{background:var(--soft);border-radius:99px;padding:2px 10px;font-size:12px}
+  .tag.mec{background:var(--accent);color:var(--card);font-weight:600}
+  .tag.assoupli{background:var(--warnbg);color:var(--warn)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+  .metrics div{background:var(--soft);border-radius:10px;padding:8px 10px}
+  .metrics b{display:block;font-size:16px} .metrics span{font-size:12px;color:var(--muted)}
+  .lien{font-size:13px;color:var(--muted)}
+  h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  .orig{border-left:3px solid var(--line);padding:6px 12px;color:var(--muted);font-size:14px;white-space:pre-wrap}
+  p.why{margin:0}
+  .hooks{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+  .hooks li{background:var(--soft);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+  .hooks li span{font-weight:600}
+  .bloc{background:var(--soft);border-radius:10px;padding:10px 80px 10px 12px;white-space:pre-wrap;position:relative}
+  .bloc button{position:absolute;top:8px;right:8px}
+  .dm{display:grid;gap:8px}
+  .dm .etape{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px}
+  button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;font-size:12px;padding:4px 10px;cursor:pointer;flex-shrink:0}
+  button.ok{color:var(--ok);border-color:var(--ok)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  details{margin-top:14px} summary{cursor:pointer;color:var(--muted);font-size:13px}
+  a{color:var(--accent)} .pert{font-size:13px;color:var(--muted);margin:12px 0 0}
+  .err{color:var(--bad)} .up{color:var(--ok);font-weight:600} .down{color:var(--bad);font-weight:600}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.head{grid-template-columns:84px 1fr}.thumb{width:84px}.hide-m{display:none}}
+</style>
+</head>
+<body><div class="wrap">
+<header>
+  <h1>Veille virale — {{ niche.nom }}</h1>
+  <p>{{ date }} · Reels des {{ analyse.mois }} derniers mois · critères : ≥ {{ nombre(analyse.vues_min) }} vues et ≥ {{ "%g"|format(analyse.taux_engagement_min*100) }} % d'engagement</p>
+  <nav>
+    <a href="#planning">Planning</a>
+    {% if voix_client %}<a href="#voix">Voix du client</a>{% endif %}
+    {% if appr.par_mecanique %}<a href="#toi">Ce qui marche chez toi</a>{% endif %}
+    <a href="#reels">Fiches Reels</a>
+    {% if decouvertes %}<a href="#comptes">Comptes à ajouter</a>{% endif %}
+  </nav>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><b>{{ stats.videos }}</b><span>Reels analysés · {{ stats.comptes }} comptes</span></div>
+  <div class="kpi"><b>{{ stats.criteres_ok }}</b><span>remplissent les critères (inédits)</span></div>
+  <div class="kpi"><b>{{ stats.videos_lues }}/{{ posts|length }}</b><span>vidéos regardées et transcrites</span></div>
+  <div class="kpi"><b>{{ stats.nb_commentaires }}</b><span>commentaires de l'audience lus</span></div>
+  <div class="kpi"><b>{{ objectifs.conversations_par_jour * objectifs.jours_planifies }}</b><span>conversations visées cette semaine (mot-clé {{ objectifs.mot_cle_cta }})</span></div>
+</div>
+{% if stats.criteres_ok < posts|length %}<p class="warn">Seulement {{ stats.criteres_ok }} Reels inédits atteignent les critères : les autres sont marqués « critères assouplis ».{% if decouvertes %} Regarde les <a href="#comptes">comptes à ajouter</a>.{% endif %}</p>{% endif %}
+{% if stats.exclus %}<p class="lien">{{ stats.exclus }} Reel(s) déjà utilisé(s) les semaines précédentes ont été écartés.</p>{% endif %}
+
+<h2 id="planning">Planning de la semaine</h2>
+<div class="tablewrap"><table>
+<thead><tr><th>Créneau</th><th>Mécanique</th><th>Hook</th><th class="hide-m">Inspiration</th></tr></thead><tbody>
+{% for p in posts %}{% set a = p.adaptation %}<tr><td class="nw"><a href="#p{{ loop.index }}">{{ p.creneau }}</a></td><td>{{ a.mecanique }}</td><td>{{ (a.hooks_adaptes or [''])[0] }}</td><td class="hide-m">@{{ p.compte }} · {{ nombre(p.vues) }} vues</td></tr>{% endfor %}
+</tbody></table></div>
+
+{% if voix_client %}
+<h2 id="voix">La voix du client idéal</h2>
+<p class="lien">Ce que l'audience écrit sous les Reels viraux de la niche. Réutilise ses mots dans tes hooks.</p>
+<div class="box">
+  <div class="cols">
+    <div><h3>Questions récurrentes</h3><ul>{% for x in voix_client.questions %}<li>{{ x }}</li>{% endfor %}</ul></div>
+    <div><h3>Douleurs</h3><ul>{% for x in voix_client.douleurs %}<li>{{ x }}</li>{% endfor %}</ul></div>
+    <div><h3>Objections</h3><ul>{% for x in voix_client.objections %}<li>{{ x }}</li>{% endfor %}</ul></div>
+  </div>
+  <h3>Ses expressions exactes</h3>
+  <div>{% for x in voix_client.expressions %}<span class="chip">« {{ x }} »</span>{% endfor %}</div>
+  {% if voix_client.idees_reels %}<h3>Idées de Reels qui répondent à ces demandes</h3>
+  <ul class="hooks">{% for i in voix_client.idees_reels %}<li><span>{{ i.hook }}<br><small style="font-weight:400;color:var(--muted)">{{ i.pourquoi }}</small></span><button data-copy>Copier</button></li>{% endfor %}</ul>{% endif %}
+</div>
+{% endif %}
+
+{% if appr.par_mecanique %}
+<h2 id="toi">Ce qui marche chez toi</h2>
+<p class="lien">D'après {{ appr.nb_reels }} Reels de ton compte{% if appr.nb_suivi %} et {{ appr.nb_suivi }} lignes de ton suivi Excel{% endif %}. Indice 1 = ta moyenne. Les mécaniques en vert sont favorisées dans le planning, celles en rouge défavorisées.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Mécanique</th><th>Reels</th><th>Vues vs moyenne</th><th>Commentaires vs moyenne</th><th>Conversations DM moy.</th><th>Indice</th></tr></thead><tbody>
+{% for l in appr.par_mecanique %}<tr><td class="{% if l.mecanique in appr.mecaniques_top %}up{% elif l.mecanique in appr.mecaniques_flop %}down{% endif %}">{{ l.mecanique }}</td><td>{{ l.n_reels + l.n_suivi }}</td><td>{% if l.vues_vs_moyenne is not none %}×{{ l.vues_vs_moyenne }}{% endif %}</td><td>{% if l.commentaires_vs_moyenne is not none %}×{{ l.commentaires_vs_moyenne }}{% endif %}</td><td>{{ l.conversations_moy if l.conversations_moy is not none else '' }}</td><td><b>{{ l.indice if l.indice is not none else '' }}</b></td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+
+<h2 id="reels">Fiches Reels</h2>
+{% for p in posts %}{% set a = p.adaptation %}
+<article class="post" id="p{{ loop.index }}">
+  <div class="head">
+    {% set b64 = thumbs.get(p.plateforme ~ ':' ~ p.id) %}{% if b64 %}<img class="thumb" src="data:image/jpeg;base64,{{ b64 }}" alt="Image du Reel original">{% else %}<div class="thumb vide">Image non disponible</div>{% endif %}
+    <div>
+      <div class="top">
+        <span class="rang">{{ p.creneau }}</span>
+        {% if a.mecanique %}<span class="tag mec">{{ a.mecanique }}</span>{% endif %}
+        {% if not p.criteres_ok %}<span class="tag assoupli">critères assouplis</span>{% endif %}
+        <span class="tag">{{ p.plateforme }} · @{{ p.compte }}</span>
+      </div>
+      <div class="lien"><a href="{{ p.url }}" target="_blank" rel="noopener">Voir l'original</a> · {{ p.date[:10] }}{% if p.duree_s %} · {{ p.duree_s|round|int }} s{% endif %}{% if p.transcription %} · audio transcrit{% endif %}{% if p.commentaires_texte %} · {{ p.commentaires_texte|length }} commentaires lus{% endif %}</div>
+      <div class="metrics">
+        <div><b>{{ nombre(p.vues) }}</b><span>vues</span></div>
+        <div><b>{{ pct(p.taux_engagement) }}</b><span>engagement</span></div>
+        <div><b>{{ pct(p.taux_commentaires) }}</b><span>commentaires / vues</span></div>
+        <div><b>×{{ p.score_viral }}</b><span>vs médiane du compte</span></div>
+      </div>
+    </div>
+  </div>
+
+  {% if a.erreur %}<p class="err">Adaptation impossible : {{ a.erreur }}</p>{% endif %}
+  {% if a.hook_original %}
+  <h3>Hook original</h3><div class="orig">{{ a.hook_original }}{% if a.texte_ecran %}<br><small>Texte à l'écran : {{ a.texte_ecran }}</small>{% endif %}</div>
+  <div class="grid2">
+    <div><h3>Pourquoi ça marche</h3><p class="why">{{ a.pourquoi_ca_marche }}</p></div>
+    <div><h3>Structure</h3><p class="why">{{ a.structure }}</p></div>
+  </div>
+  <div class="grid2">
+    <div><h3>Ce qu'on voit</h3><p class="why">{{ a.analyse_visuelle }}</p></div>
+    {% if a.ce_que_dit_l_audience %}<div><h3>Ce que dit l'audience</h3><p class="why">{{ a.ce_que_dit_l_audience }}</p></div>{% endif %}
+  </div>
+
+  <h3>Tes hooks</h3>
+  <ul class="hooks">{% for h in a.hooks_adaptes %}<li><span>{{ h }}</span><button data-copy>Copier</button></li>{% endfor %}</ul>
+  {% if a.texte_ecran_adapte %}<h3>Texte à l'écran</h3><div class="bloc"><button data-copy>Copier</button>{{ a.texte_ecran_adapte }}</div>{% endif %}
+
+  <h3>Script du Reel</h3>
+  <div class="bloc"><button data-copy>Copier</button>{{ a.script_reel }}</div>
+
+  <div class="grid2">
+    <div><h3>Format</h3><p class="why">{{ a.format_conseille }}</p></div>
+    <div><h3>3 premières secondes</h3><p class="why">{{ a.idee_visuelle }}</p></div>
+  </div>
+
+  <h3>CTA conversation</h3>
+  <div class="bloc"><button data-copy>Copier</button>{{ a.cta_conversation }}</div>
+
+  {% if a.sequence_dm %}<h3>Séquence DM</h3>
+  <div class="dm">{% for e in a.sequence_dm %}<div><div class="etape">{{ e.etape }}</div><div class="bloc"><button data-copy>Copier</button>{{ e.message }}</div></div>{% endfor %}</div>{% endif %}
+
+  <h3>Légende</h3>
+  <div class="bloc"><button data-copy>Copier</button>{{ a.legende_adaptee }}</div>
+  <p class="pert">Transposabilité à ta niche : {{ "●" * (a.pertinence or 0) }}{{ "○" * (5 - (a.pertinence or 0)) }}</p>
+  {% endif %}
+
+  {% if p.transcription or p.commentaires_texte %}
+  <details><summary>Transcription et commentaires de l'original</summary>
+    {% if p.transcription %}<h3>Transcription</h3><div class="orig">{{ p.transcription }}</div>{% endif %}
+    {% if p.commentaires_texte %}<h3>Commentaires les plus likés</h3><ul>{% for c in p.commentaires_texte[:10] %}<li>{{ c.texte }} <span class="lien">({{ c.likes }} ❤)</span></li>{% endfor %}</ul>{% endif %}
+  </details>
+  {% endif %}
+</article>
+{% endfor %}
+
+{% if decouvertes %}
+<h2 id="comptes">Comptes à ajouter à ta veille</h2>
+<p class="lien">Trouvés via les hashtags de ta niche : ils dépassent régulièrement {{ nombre(analyse.vues_min) }} vues. Ajoute ceux qui te parlent dans config.yaml.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Compte</th><th>Reels ≥ seuil</th><th>Vues max</th><th class="hide-m">Engagement</th><th>Exemple</th></tr></thead><tbody>
+{% for d in decouvertes %}<tr><td class="nw">{{ d.plateforme }} @{{ d.compte }}</td><td>{{ d.reels_au_dessus_seuil }}</td><td>{{ nombre(d.vues_max) }}</td><td class="hide-m">{{ pct(d.engagement_median) }}</td><td><a href="{{ d.exemple }}" target="_blank" rel="noopener">voir</a></td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+</div>
+<script>
+document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>{
+  const el=b.parentElement.cloneNode(true); el.querySelectorAll('button,small').forEach(x=>x.remove());
+  navigator.clipboard.writeText(el.innerText.trim()).then(()=>{b.textContent='Copié';b.classList.add('ok');setTimeout(()=>{b.textContent='Copier';b.classList.remove('ok')},1500)});
+}));
+</script>
+</body></html>

@@ -1,0 +1,40 @@
+# ============================================================
+#  Formules d'abonnement — prix et quotas À AJUSTER avant lancement
+#  stripe_price : identifiant du prix créé dans le tableau de bord Stripe (price_…)
+# ============================================================
+essai:
+  nom: "Essai gratuit"
+  prix_mensuel: 0
+  duree_jours: 7
+  analyses_par_mois: 3          # veilles + analyses de comptes
+  adaptations_par_mois: 35      # Reels adaptés par Claude (une veille en consomme ~14 à 21)
+  comptes_surveilles: 5
+  veille_auto: false
+  stripe_price: ""
+
+createur:
+  nom: "Créateur"
+  prix_mensuel: 39
+  analyses_par_mois: 8
+  adaptations_par_mois: 80
+  comptes_surveilles: 10
+  veille_auto: true
+  stripe_price: ""
+
+pro:
+  nom: "Pro"
+  prix_mensuel: 79
+  analyses_par_mois: 25
+  adaptations_par_mois: 200
+  comptes_surveilles: 30
+  veille_auto: true
+  stripe_price: ""
+
+agence:
+  nom: "Agence"
+  prix_mensuel: 199
+  analyses_par_mois: 80
+  adaptations_par_mois: 600
+  comptes_surveilles: 100
+  veille_auto: true
+  stripe_price: ""

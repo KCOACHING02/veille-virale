@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veille virale — connexion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F6F4F8;--surface:#fff;--sunk:#EDE9F1;--ink:#271B2D;--ink-2:#5E5166;--ink-3:#8E8296;--line:#E2DCE7;--glow:#FF4F79;--ok:#13936B;--warn:#B86E00;--warn-soft:#FDF0D9;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;--body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root{--paper:#17111B;--surface:#211A26;--sunk:#2B2231;--ink:#F3EEF6;--ink-2:#C2B7C9;--ink-3:#8F8398;--line:#352B3B;--glow:#FF5C84;--warn:#F0A63A;--warn-soft:#3A2A12}}
+*{box-sizing:border-box} body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font:15px/1.5 var(--body);display:grid;grid-template-columns:1.1fr 1fr}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+.scene{background:#271B2D;color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;position:relative}
+.marque{font:800 22px/1 var(--display);font-stretch:80%;display:flex;align-items:center;gap:10px}
+.marque i{width:12px;height:22px;border-radius:4px;background:var(--glow);display:inline-block;transform:skewX(-10deg)}
+.scene h1{font:800 clamp(38px,5vw,64px)/.98 var(--display);font-stretch:78%;letter-spacing:-.02em;margin:0 0 18px;max-width:12ch}
+.scene p{color:#D8CEDD;max-width:44ch;margin:0;font-size:16px}
+.pile{display:flex;gap:14px;margin:36px 0 0;transform:rotate(-4deg) translateX(10px)}
+.tel{width:118px;aspect-ratio:9/16;border-radius:18px;background:linear-gradient(160deg,#4A2F55,#2E1F35);position:relative;padding:10px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0;box-shadow:0 20px 40px -20px rgba(0,0,0,.6)}
+.tel:nth-child(2){transform:translateY(-22px);background:linear-gradient(160deg,#FF4F79,#B9305A)}
+.tel:nth-child(3){transform:translateY(8px);background:linear-gradient(160deg,#3D2A49,#22172A)}
+.tel b{font:800 30px/1 var(--display);font-stretch:75%}
+.tel small{font-size:11px;opacity:.85}
+.tel .ok{position:absolute;top:10px;left:10px;white-space:nowrap;font-size:10px;font-weight:600;background:#13936B;border-radius:99px;padding:2px 7px}
+.form{display:flex;align-items:center;justify-content:center;padding:32px 20px}
+.carte{width:min(400px,100%)}
+.carte h2{font:700 30px/1.1 var(--display);font-stretch:85%;margin:0 0 6px}
+.carte .sous{color:var(--ink-2);margin:0 0 24px}
+label{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
+input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;margin-bottom:16px}
+.btn{width:100%;border:0;border-radius:12px;padding:12px;background:var(--glow);color:#fff;font-weight:600;cursor:pointer;font-size:16px}
+.btn:disabled{opacity:.6}
+.bascule{margin-top:18px;text-align:center;color:var(--ink-2);font-size:14px}
+.bascule button{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0}
+.erreur{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:9px 12px;margin-bottom:14px;font-size:14px}
+.mentions{font-size:12.5px;color:var(--ink-3);margin-top:14px}
+@media (max-width:860px){body{grid-template-columns:1fr}.scene{padding:28px 20px}.pile{display:none}.scene h1{font-size:38px}}
+</style>
+</head>
+<body>
+<section class="scene">
+  <div class="marque"><i></i>Veille virale</div>
+  <div>
+    <h1>Les Reels qui cartonnent, réécrits pour ta niche.</h1>
+    <p>Repère les Reels à plus de 500 000 vues chez les comptes que tu admires, comprends pourquoi ils marchent et reçois chaque semaine tes 14 Reels adaptés, avec le script, la légende et les messages pour transformer les commentaires en conversations.</p>
+    <div class="pile" aria-hidden="true">
+      <div class="tel"><span class="ok">✓ Retenu</span><b>1,2 M</b><small>vues · 6,1 % d'engagement</small></div>
+      <div class="tel"><span class="ok">✓ Retenu</span><b>2,8 M</b><small>vues · 8,4 % d'engagement</small></div>
+      <div class="tel"><b>740 k</b><small>vues · 4,9 % d'engagement</small></div>
+    </div>
+  </div>
+  <span></span>
+</section>
+<section class="form">
+  <form class="carte" id="f">
+    <h2 id="t">Crée ton compte</h2>
+    <p class="sous" id="s">7 jours d'essai gratuit, sans carte bancaire.</p>
+    <div id="e"></div>
+    <div id="champ-prenom"><label for="prenom">Prénom</label><input id="prenom" autocomplete="given-name"></div>
+    <label for="email">E-mail</label><input id="email" type="email" autocomplete="email" required>
+    <label for="mdp">Mot de passe</label><input id="mdp" type="password" autocomplete="new-password" minlength="8" required>
+    <button class="btn" id="b">Commencer mon essai</button>
+    <p class="mentions" id="m">En créant un compte, tu acceptes les conditions générales d'utilisation.</p>
+    <div class="bascule" id="bas">Déjà un compte ? <button type="button" id="sw">Se connecter</button></div>
+  </form>
+</section>
+<script>
+let inscription = !location.hash.includes("connexion");
+const $ = s => document.querySelector(s);
+function maj() {
+  $("#t").textContent = inscription ? "Crée ton compte" : "Bon retour";
+  $("#s").textContent = inscription ? "7 jours d'essai gratuit, sans carte bancaire." : "Connecte-toi pour retrouver tes Reels.";
+  $("#champ-prenom").hidden = $("#m").hidden = !inscription;
+  $("#b").textContent = inscription ? "Commencer mon essai" : "Se connecter";
+  $("#mdp").autocomplete = inscription ? "new-password" : "current-password";
+  $("#bas").innerHTML = inscription ? 'Déjà un compte ? <button type="button" id="sw">Se connecter</button>' : 'Pas encore de compte ? <button type="button" id="sw">Créer un compte</button>';
+  $("#sw").onclick = () => { inscription = !inscription; $("#e").innerHTML = ""; maj(); };
+}
+maj();
+$("#f").onsubmit = async ev => {
+  ev.preventDefault(); $("#b").disabled = true;
+  const r = await fetch(inscription ? "/api/inscription" : "/api/connexion", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value})});
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) location.href = "/"; else { $("#e").innerHTML = `<p class="erreur">${(j.erreur || "Erreur").replace(/</g, "&lt;")}</p>`; $("#b").disabled = false; }
+};
+</script>
+</body>
+</html>

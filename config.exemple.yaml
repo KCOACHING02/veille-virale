@@ -1,0 +1,65 @@
+# Modèle de configuration d'un nouvel espace client (rempli ensuite par l'assistant)
+niche:
+  nom: ''
+  description: ''
+  cible: ''
+  douleurs: []
+  ton: Chaleureux, direct, tutoiement.
+  langue: français
+  offre: ''
+  interdits: Pas de promesse de résultat chiffré ou rapide, pas d'allégation santé
+    ou médicale.
+objectifs:
+  reels_par_jour: 2
+  jours_planifies: 7
+  conversations_par_jour: 15
+  mot_cle_cta: GUIDE
+comptes:
+  instagram: []
+  tiktok: []
+mon_compte:
+  instagram: ''
+  tiktok: ''
+analyse:
+  mois: 3
+  reels_uniquement: true
+  vues_min: 500000
+  taux_engagement_min: 0.03
+  posts_max_par_compte: 120
+  completer_si_insuffisant: true
+video:
+  actif: true
+  images_par_video: 4
+  transcription: local
+  modele_whisper: small
+  actor_tiktok_video: maximedupre~tiktok-video-downloader
+commentaires:
+  actif: true
+  par_post: 50
+  synthese: true
+  actor_tiktok: clockworks~tiktok-comments-scraper
+apprentissage:
+  jours: 60
+decouverte:
+  actif: true
+  hashtags_instagram: []
+  hashtags_tiktok: []
+  posts_par_hashtag: 100
+  min_reels_au_dessus_seuil: 2
+  max_suggestions: 10
+  auto_ajout: 0
+diversite:
+  max_par_mecanique: 3
+  marge_candidats: 1.5
+voix:
+  fichier: ma_voix.md
+  legendes_auto: true
+apify:
+  actor_instagram: apify~instagram-scraper
+  actor_tiktok: clockworks~tiktok-scraper
+claude:
+  modele: claude-sonnet-5-5
+  hooks_par_post: 3
+sortie:
+  dossier: rapports
+  historique: historique.json

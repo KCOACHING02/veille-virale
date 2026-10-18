@@ -1,0 +1,18 @@
+# Mise en ligne sur un serveur (ex. VPS OVH) avec HTTPS automatique.
+# 1. Remplace ton-domaine.fr dans Caddyfile  2. docker compose up -d
+services:
+  app:
+    build: .
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    restart: unless-stopped
+volumes:
+  caddy_data:

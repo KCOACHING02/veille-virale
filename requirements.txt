@@ -1,0 +1,10 @@
+anthropic>=0.40
+requests
+PyYAML
+Jinja2
+pandas
+openpyxl
+python-dotenv
+faster-whisper   # transcription locale (gratuite). Nécessite aussi ffmpeg installé sur la machine.
+flask>=3.0
+waitress

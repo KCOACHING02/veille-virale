@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Veille virale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F4F8; --surface:#FFFFFF; --sunk:#EDE9F1; --ink:#271B2D; --ink-2:#5E5166; --ink-3:#8E8296;
+  --line:#E2DCE7; --glow:#FF4F79; --glow-ink:#FFFFFF; --glow-soft:#FFE3EA; --ok:#13936B; --ok-soft:#DDF4EB;
+  --warn:#B86E00; --warn-soft:#FDF0D9; --shadow:0 1px 2px rgba(39,27,45,.06),0 8px 24px -12px rgba(39,27,45,.18);
+  --r-s:8px; --r-m:14px; --r-l:22px;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif; --body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#17111B; --surface:#211A26; --sunk:#2B2231; --ink:#F3EEF6; --ink-2:#C2B7C9; --ink-3:#8F8398;
+  --line:#352B3B; --glow:#FF5C84; --glow-soft:#3E1F2A; --ok:#3CC796; --ok-soft:#163328; --warn:#F0A63A; --warn-soft:#3A2A12;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
+a{color:inherit}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:-.01em;margin:0}
+
+/* ---------- Coque ---------- */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+.rail{position:sticky;top:0;height:100vh;padding:22px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;background:var(--paper)}
+.marque{font:800 22px/1 var(--display);font-stretch:80%;padding:0 10px 22px;display:flex;align-items:center;gap:10px}
+.marque i{width:12px;height:22px;border-radius:4px;background:var(--glow);display:inline-block;transform:skewX(-10deg)}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:0;background:none;text-align:left;cursor:pointer;color:var(--ink-2);font-weight:500}
+.nav svg{width:18px;height:18px;flex-shrink:0}
+.nav:hover{background:var(--sunk);color:var(--ink)}
+.nav[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.nav .n{margin-left:auto;font-size:12px;color:var(--ink-3)}
+.nav .court{display:none}
+.a-mobile-etape{display:none;color:var(--glow);font-weight:600;margin-bottom:8px}
+.rail .bas{margin-top:auto;font-size:12.5px;color:var(--ink-3);padding:10px}
+.etat-cles{display:flex;align-items:center;gap:6px}
+.pastille{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.pastille.off{background:var(--warn)}
+
+main{min-width:0;padding:20px 28px 80px}
+.barre{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.barre h1{font-size:28px;font-stretch:85%;margin-right:auto}
+.select{appearance:none;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238E8296' fill='none' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--line);border-radius:10px;padding:8px 32px 8px 12px;cursor:pointer;max-width:100%}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.prim{background:var(--glow);border-color:var(--glow);color:var(--glow-ink);font-weight:600}
+.btn.prim:hover{filter:brightness(1.05)}
+.btn.petit{padding:5px 10px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.bandeau{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:16px}
+.bandeau b{color:var(--ink)}
+
+/* ---------- Résumé ---------- */
+.resume{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;margin:4px 0 22px}
+.resume div{display:flex;flex-direction:column}
+.resume b{font:700 34px/1 var(--display);font-stretch:75%;font-variant-numeric:tabular-nums}
+.resume span{font-size:13px;color:var(--ink-2);margin-top:4px}
+.resume .cible b{color:var(--ok)}
+.criteres{font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;margin-left:auto}
+
+/* ---------- Filtres ---------- */
+.filtres{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px;position:sticky;top:0;z-index:5;background:var(--paper);padding:8px 0}
+.seg{display:inline-flex;background:var(--sunk);border-radius:11px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--ink-2);font-weight:500;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.seg button .c{color:var(--ink-3);font-weight:400;margin-left:4px}
+.recherche{flex:1;min-width:160px;max-width:260px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px}
+
+/* ---------- Galerie ---------- */
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
+.reel{background:var(--surface);border-radius:var(--r-l);overflow:hidden;cursor:pointer;border:1px solid var(--line);display:flex;flex-direction:column;text-align:left;padding:0;transition:transform .15s ease,box-shadow .15s ease}
+.reel:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.ecran{position:relative;aspect-ratio:9/14;background:var(--sunk);overflow:hidden}
+.ecran img{width:100%;height:100%;object-fit:cover;display:block}
+.ecran::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,10,30,.35) 0%,transparent 22%,transparent 50%,rgba(23,10,30,.82) 100%)}
+.ecran .haut{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:6px;z-index:1}
+.badge{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;background:rgba(255,255,255,.92);color:#271B2D;display:inline-flex;align-items:center;gap:5px;backdrop-filter:blur(6px)}
+.badge.ok{background:var(--ok);color:#fff}
+.badge.dem{background:var(--glow);color:#fff}
+.plat{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;flex-shrink:0}
+.plat svg{width:14px;height:14px;color:#271B2D}
+.ecran .bas{position:absolute;left:12px;right:12px;bottom:10px;z-index:1;color:#fff}
+.vues{font:800 34px/0.95 var(--display);font-stretch:75%;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.vues small{font:500 13px var(--body);opacity:.85;margin-left:4px;letter-spacing:0}
+.jauges{display:grid;gap:5px;margin-top:9px}
+.jauge{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:7px;font-size:11.5px}
+.jauge .t{opacity:.8}
+.jauge .rail-j{height:4px;border-radius:4px;background:rgba(255,255,255,.25);position:relative;overflow:hidden}
+.jauge .rail-j i{position:absolute;inset:0 auto 0 0;border-radius:4px;background:#fff}
+.jauge.atteint .rail-j i{background:#4BE3AE}
+.jauge .rail-j::after{content:"";position:absolute;top:-2px;bottom:-2px;left:50%;width:1.5px;background:rgba(255,255,255,.75)}
+.pied{padding:11px 13px 13px;display:flex;flex-direction:column;gap:6px;flex:1}
+.pied .compte{font-weight:600;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.pied .compte span{color:var(--ink-3);font-weight:400;font-size:12.5px;white-space:nowrap}
+.pied .hook{font-size:13.5px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pied .hook.adapte{color:var(--ink)}
+.pied .hook.adapte::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--glow);margin-right:6px;vertical-align:1px}
+.vide{border:1.5px dashed var(--line);border-radius:var(--r-l);padding:48px 24px;text-align:center;color:var(--ink-2);grid-column:1/-1}
+.vide h2{color:var(--ink);font-size:22px;margin-bottom:6px}
+.vide .btn{margin-top:14px}
+
+/* ---------- Tiroir ---------- */
+.voile{position:fixed;inset:0;background:rgba(23,10,30,.38);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.voile.ouvert{opacity:1;pointer-events:auto}
+.tiroir{position:fixed;top:0;right:0;bottom:0;width:min(680px,100%);background:var(--paper);z-index:21;transform:translateX(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1),visibility 0s .25s;visibility:hidden;display:flex;flex-direction:column}
+.tiroir.ouvert{transform:none;visibility:visible;transition:transform .25s cubic-bezier(.2,.8,.2,1);box-shadow:-20px 0 60px -30px rgba(0,0,0,.4)}
+.t-tete{display:grid;grid-template-columns:118px 1fr auto;gap:16px;padding:20px 22px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.t-tete img,.t-tete .ph{width:118px;aspect-ratio:9/14;object-fit:cover;border-radius:14px;background:var(--sunk)}
+.t-tete h2{font-size:22px;font-stretch:85%}
+.t-tete .meta{color:var(--ink-2);font-size:13.5px;margin:2px 0 10px}
+.chiffres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px}
+.chiffres div b{display:block;font:700 19px var(--display);font-variant-numeric:tabular-nums}
+.chiffres div span{font-size:12px;color:var(--ink-3)}
+.chiffres .ok b{color:var(--ok)} .chiffres .ko b{color:var(--warn)}
+.fermer{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--paper);cursor:pointer;display:grid;place-items:center}
+.onglets{display:flex;gap:4px;padding:10px 22px 0;background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto}
+.onglets button{border:0;background:none;padding:9px 12px;cursor:pointer;color:var(--ink-2);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+.onglets button[aria-selected="true"]{color:var(--ink);border-color:var(--glow)}
+.t-corps{overflow-y:auto;padding:20px 22px 40px;flex:1}
+.t-corps h3{font:600 15px var(--body);color:var(--ink-2);margin:20px 0 8px}
+.t-corps h3:first-child{margin-top:0}
+.t-corps p{margin:0}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:12px 14px;white-space:pre-wrap;position:relative}
+.carte.copiable{padding-right:82px}
+.copier{position:absolute;top:9px;right:9px}
+.hooks{display:grid;gap:8px}
+.hooks .carte{font:600 17px/1.35 var(--display);font-stretch:90%}
+.dm{display:grid;gap:12px;position:relative;padding-left:18px}
+.dm::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:var(--line)}
+.dm .etape{position:relative}
+.dm .etape::before{content:"";position:absolute;left:-17px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--glow);border:2px solid var(--paper)}
+.dm .etape small{display:block;color:var(--ink-3);font-weight:600;margin-bottom:4px}
+.deux{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.citation{border-left:3px solid var(--glow);padding:4px 0 4px 12px;font-size:15px}
+.liste{margin:0;padding-left:18px} .liste li{margin-bottom:5px}
+.com{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.com span{color:var(--ink-3);white-space:nowrap;margin-left:auto}
+.actions-t{display:flex;flex-wrap:wrap;gap:8px;padding:12px 22px;border-top:1px solid var(--line);background:var(--surface)}
+.adapter-cta{background:var(--glow-soft);border-radius:var(--r-m);padding:18px;text-align:center}
+.adapter-cta p{color:var(--ink-2);margin:4px 0 12px}
+.points{letter-spacing:2px;color:var(--glow)}
+
+/* ---------- Modale nouvelle analyse ---------- */
+.modale{position:fixed;inset:0;z-index:30;display:none;place-items:center;padding:16px}
+.modale.ouvert{display:grid}
+.modale .fond{position:absolute;inset:0;background:rgba(23,10,30,.45)}
+.feuille{position:relative;background:var(--paper);border-radius:var(--r-l);width:min(640px,100%);max-height:calc(100vh - 32px);overflow-y:auto;padding:24px;box-shadow:0 30px 80px -20px rgba(0,0,0,.45)}
+.feuille h2{font-size:26px;font-stretch:85%;margin-bottom:4px}
+.feuille .sous{color:var(--ink-2);margin:0 0 18px}
+.champ{display:grid;gap:6px;margin-bottom:16px}
+.champ label{font-weight:600;font-size:14px}
+.champ .aide{font-size:13px;color:var(--ink-3)}
+textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;resize:vertical;line-height:1.5}
+.reconnus{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}
+.puce{font-size:13px;border-radius:999px;padding:3px 10px;background:var(--surface);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center}
+.puce.post{border-color:var(--glow);color:var(--glow)}
+.puce.ko{border-style:dashed;color:var(--ink-3);text-decoration:line-through}
+.ligne{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ligne input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
+.coche{display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:16px}
+.pied-modale{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+.progression{display:grid;gap:14px}
+.etapes{display:flex;flex-wrap:wrap;gap:6px}
+.etapes span{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--sunk);color:var(--ink-3)}
+.etapes span.fait{background:var(--ok-soft);color:var(--ok)}
+.etapes span.cours{background:var(--glow-soft);color:var(--glow);font-weight:600}
+.journal{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;height:240px;overflow-y:auto;font-size:13px;color:var(--ink-2)}
+.journal div{padding:2px 0} .journal time{color:var(--ink-3);margin-right:8px;font-variant-numeric:tabular-nums}
+.erreur{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px}
+
+/* ---------- Planning ---------- */
+.semaine{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
+.jour h2{font-size:17px;font-stretch:85%;margin-bottom:8px}
+.creneau{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;cursor:pointer;margin-bottom:10px;text-align:left;padding:0;width:100%;display:block}
+.creneau:hover{box-shadow:var(--shadow)}
+.creneau img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--sunk)}
+.creneau div{padding:9px 10px}
+.creneau small{color:var(--ink-3);font-size:12px;display:block}
+.creneau p{margin:3px 0 0;font:600 14px/1.3 var(--display);font-stretch:92%}
+.mec{display:inline-block;font-size:11.5px;color:var(--glow);font-weight:600;margin-top:5px}
+
+/* ---------- Panneaux ---------- */
+.panneau{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:20px;margin-bottom:16px}
+.panneau h2{font-size:20px;font-stretch:88%;margin-bottom:12px}
+.colonnes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.colonnes h3{font:600 14px var(--body);color:var(--ink-2);margin-bottom:8px}
+.expr{display:flex;flex-wrap:wrap;gap:8px}
+.expr span{background:var(--glow-soft);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:14px}
+.idee{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.idee:last-child{border:0}
+.idee b{font:600 16px/1.35 var(--display);font-stretch:92%;display:block}
+.idee small{color:var(--ink-3)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--ink-3);font-weight:500;font-size:13px}
+td.num{font-variant-numeric:tabular-nums}
+.barre-ind{height:6px;border-radius:6px;background:var(--sunk);position:relative;min-width:80px}
+.barre-ind i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--ink-3)}
+.barre-ind.top i{background:var(--ok)} .barre-ind.flop i{background:var(--warn)}
+.comptes-l{display:grid;gap:8px}
+.compte-l{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--paper)}
+.compte-l .plat{background:var(--surface);border:1px solid var(--line)}
+.compte-l b{font-weight:600}
+.compte-l .btn{margin-left:auto}
+.ajout{display:flex;gap:8px;margin-top:12px}
+.ajout input{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;opacity:0;transition:.2s;z-index:50;font-size:14px;pointer-events:none}
+.toast.vu{opacity:1;transform:translateX(-50%)}
+.mini-job{display:flex;align-items:center;gap:10px;background:var(--glow-soft);border-radius:12px;padding:8px 12px;font-size:14px;cursor:pointer;border:0;width:100%;text-align:left}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--glow);border-right-color:transparent;animation:t .8s linear infinite;flex-shrink:0}
+@keyframes t{to{transform:rotate(1turn)}}
+[hidden]{display:none!important}
+
+/* ---------- Mobile ---------- */
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .rail{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;flex-direction:row;padding:6px 6px calc(6px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line);z-index:15;justify-content:space-around;background:var(--surface)}
+  .marque,.rail .bas,.nav .n{display:none}
+  .rail{overflow-x:auto;justify-content:flex-start;gap:2px}
+  .nav{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;flex:1 0 64px;align-items:center;white-space:nowrap}
+  .nav .long{display:none} .nav .court{display:inline}
+  .a-mobile-etape{display:block}
+  .nav[aria-current="page"]{box-shadow:none;background:var(--sunk)}
+  main{padding:14px 16px 96px}
+  .barre h1{font-size:24px;width:100%}
+  .grille{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .vues{font-size:26px}
+  .jauge{grid-template-columns:48px 1fr auto;font-size:10.5px}
+  .pied{padding:9px 10px 11px}
+  .semaine{grid-template-columns:1fr}
+  .deux,.ligne{grid-template-columns:1fr}
+  .t-tete{grid-template-columns:84px 1fr auto;padding:16px}
+  .t-tete img,.t-tete .ph{width:84px}
+  .resume{gap:18px} .resume b{font-size:28px}
+  .criteres{margin-left:0}
+  .recherche{max-width:none}
+}
+
+/* ---------- Assistant ---------- */
+.assistant{position:fixed;inset:0;z-index:40;background:var(--paper);display:none;grid-template-columns:300px 1fr;overflow:hidden}
+.assistant.ouvert{display:grid}
+.a-cote{background:#271B2D;color:#fff;padding:32px 26px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+.a-cote .marque{padding:0;color:#fff}
+.a-etapes{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:e}
+.a-etapes li{counter-increment:e;display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:10px;color:#B9ADC0;font-weight:500;cursor:default}
+.a-etapes li::before{content:counter(e);width:24px;height:24px;border-radius:50%;border:1.5px solid #6B5A74;display:grid;place-items:center;font-size:12px;flex-shrink:0}
+.a-etapes li.fait{color:#fff;cursor:pointer} .a-etapes li.fait::before{content:"✓";background:#13936B;border-color:#13936B;color:#fff}
+.a-etapes li.cours{background:rgba(255,255,255,.08);color:#fff} .a-etapes li.cours::before{background:var(--glow);border-color:var(--glow);color:#fff}
+.a-cote .note{margin-top:auto;font-size:13px;color:#B9ADC0}
+.a-main{overflow-y:auto;display:flex;flex-direction:column}
+.a-contenu{width:min(720px,100%);margin:0 auto;padding:48px 28px 28px;flex:1}
+.a-contenu h2{font:800 clamp(30px,4vw,44px)/1.02 var(--display);font-stretch:80%;letter-spacing:-.015em;margin-bottom:10px}
+.a-contenu .intro{color:var(--ink-2);font-size:16.5px;margin:0 0 28px;max-width:60ch}
+.a-pied{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:14px 28px}
+.a-pied div{width:min(720px,100%);margin:0 auto;display:flex;gap:10px;align-items:center}
+.a-pied .btn.prim{margin-left:auto;padding:10px 20px}
+.a-pied .passer{border:0;background:none;color:var(--ink-3);cursor:pointer;text-decoration:underline}
+.f{display:grid;gap:6px;margin-bottom:20px}
+.f>label,.f>.lab{font-weight:600}
+.f .aide{font-size:13.5px;color:var(--ink-3)}
+.f input[type=text],.f input[type=number],.f input:not([type]),.f textarea,.f select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px}
+.f textarea{min-height:96px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.choix{display:flex;flex-wrap:wrap;gap:8px}
+.choix button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:500;text-align:left}
+.choix button[aria-pressed="true"]{border-color:var(--glow);background:var(--glow-soft)}
+.choix button small{display:block;color:var(--ink-3);font-weight:400;font-size:12.5px}
+.phrase{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;font:600 19px/1.4 var(--display);font-stretch:92%}
+.phrase em{font-style:normal;color:var(--glow)}
+.analyse-compte{display:grid;gap:16px}
+.chiffres-compte{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.chiffres-compte div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.chiffres-compte b{display:block;font:700 24px/1.1 var(--display);font-stretch:80%}
+.chiffres-compte span{font-size:12.5px;color:var(--ink-3)}
+.top-reels{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.top-reels a{flex:0 0 96px;position:relative;border-radius:12px;overflow:hidden;aspect-ratio:9/14;background:var(--sunk);text-decoration:none}
+.top-reels img{width:100%;height:100%;object-fit:cover}
+.top-reels b{position:absolute;left:7px;bottom:6px;color:#fff;font:800 17px var(--display);font-stretch:78%;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.proposition{background:var(--surface);border:1.5px solid var(--glow);border-radius:16px;padding:18px}
+.proposition h3{font:700 18px var(--display);margin-bottom:10px}
+.proposition dl{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin:0 0 14px}
+.proposition dt{color:var(--ink-3);font-size:13.5px} .proposition dd{margin:0}
+.conseils{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.conseils ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.recap{display:grid;gap:10px}
+.recap div{display:grid;grid-template-columns:150px 1fr auto;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.recap span{color:var(--ink-3);font-size:13.5px}
+.interrupteur{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:16px;cursor:pointer}
+.interrupteur input{width:20px;height:20px;accent-color:var(--glow)}
+.encours{display:flex;gap:10px;align-items:center;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+/* ---------- Abonnement ---------- */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.plan{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-l);padding:20px;display:flex;flex-direction:column;gap:10px}
+.plan.actuel{border-color:var(--glow)}
+.plan h3{font:700 20px var(--display)}
+.plan .prix{font:800 38px/1 var(--display);font-stretch:78%} .plan .prix small{font:500 14px var(--body);color:var(--ink-3)}
+.plan ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:14px;flex:1}
+.conso{display:grid;gap:12px;max-width:520px}
+.conso .barre-ind{height:8px}
+.conso label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.utilisateur{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--ink-2)}
+.utilisateur button{border:0;background:none;color:var(--ink-3);cursor:pointer;text-decoration:underline;font-size:12.5px;padding:0}
+.reglages{display:grid;gap:10px}
+.reglage{display:grid;grid-template-columns:200px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.reglage span{color:var(--ink-2);font-size:14px;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:860px){
+  .assistant{grid-template-columns:1fr} .a-cote{display:none}
+  .a-contenu{padding:28px 18px} .a-pied{padding:12px 18px}
+  .duo,.conseils{grid-template-columns:1fr} .chiffres-compte{grid-template-columns:1fr 1fr}
+  .recap div,.reglage{grid-template-columns:1fr} .proposition dl{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Navigation">
+    <div class="marque"><i></i>Veille virale</div>
+    <button class="nav" data-vue="reels" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg>Reels<span class="n" id="n-reels"></span></button>
+    <button class="nav" data-vue="planning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Planning</button>
+    <button class="nav" data-vue="voix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H9l-5 4z"/></svg><span class="long">Voix du client</span><span class="court">Voix</span></button>
+    <button class="nav" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
+    <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="long">Paramètres</span><span class="court">Réglages</span></button>
+    <button class="nav" data-vue="comptes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 4a4 4 0 010 8M22 21c0-3-1.5-5-4-5.7"/></svg>Comptes</button>
+    <button class="nav" data-vue="abonnement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg><span class="long">Abonnement</span><span class="court">Formule</span></button>
+    <div class="bas">
+      <div class="utilisateur" id="utilisateur"></div>
+      <div id="job-rail"></div>
+      <div class="etat-cles" id="etat-cles"></div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="barre">
+      <h1 id="titre">Reels</h1>
+      <select class="select" id="choix-analyse" aria-label="Analyse affichée"></select>
+      <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Nouvelle analyse</button>
+    </div>
+    <div class="bandeau" id="bandeau-demo" hidden><b>Mode démo.</b> Les clés Apify et Claude ne sont pas configurées : les analyses utilisent des données fictives. Ajoute-les dans le fichier .env puis relance l'application.</div>
+    <div id="job-haut"></div>
+
+    <!-- REELS -->
+    <section data-section="reels">
+      <div class="resume" id="resume"></div>
+      <div class="filtres">
+        <div class="seg" id="f-statut" role="group" aria-label="Statut">
+          <button data-v="cdc" aria-pressed="true">Dans le cahier des charges<span class="c"></span></button>
+          <button data-v="adaptes" aria-pressed="false">Adaptés<span class="c"></span></button>
+          <button data-v="tous" aria-pressed="false">Tous<span class="c"></span></button>
+        </div>
+        <select class="select" id="f-plateforme" aria-label="Plateforme"><option value="">Instagram et TikTok</option><option>Instagram</option><option>TikTok</option></select>
+        <select class="select" id="f-compte" aria-label="Compte"></select>
+        <select class="select" id="f-tri" aria-label="Trier par">
+          <option value="conv">Trier : potentiel de conversation</option>
+          <option value="vues">Trier : vues</option>
+          <option value="eng">Trier : engagement</option>
+          <option value="viral">Trier : surperformance</option>
+          <option value="date">Trier : plus récents</option>
+        </select>
+        <input class="recherche" id="f-texte" type="search" placeholder="Chercher un mot, un hook…" aria-label="Chercher">
+      </div>
+      <div class="grille" id="grille"></div>
+    </section>
+
+    <!-- PLANNING -->
+    <section data-section="planning" hidden>
+      <div id="planning"></div>
+    </section>
+
+    <!-- VOIX -->
+    <section data-section="voix" hidden><div id="voix"></div></section>
+
+    <!-- RÉSULTATS -->
+    <section data-section="resultats" hidden><div id="resultats"></div></section>
+
+    <!-- PARAMÈTRES -->
+    <section data-section="parametres" hidden><div id="parametres"></div></section>
+
+    <!-- ABONNEMENT -->
+    <section data-section="abonnement" hidden><div id="abonnement"></div></section>
+
+    <!-- COMPTES -->
+    <section data-section="comptes" hidden><div id="comptes"></div></section>
+  </main>
+</div>
+
+<!-- Tiroir Reel -->
+<div class="voile" id="voile"></div>
+<aside class="tiroir" id="tiroir" aria-hidden="true" aria-label="Détail du Reel"></aside>
+
+<!-- Modale nouvelle analyse -->
+<div class="modale" id="modale" role="dialog" aria-modal="true" aria-labelledby="m-titre">
+  <div class="fond" data-fermer></div>
+  <div class="feuille" id="feuille"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<!-- Assistant de configuration -->
+<div class="assistant" id="assistant" role="dialog" aria-modal="true" aria-labelledby="a-titre">
+  <aside class="a-cote">
+    <div class="marque"><i></i>Veille virale</div>
+    <ol class="a-etapes" id="a-etapes"></ol>
+    <p class="note">Tout se modifie ensuite dans Paramètres.</p>
+  </aside>
+  <div class="a-main">
+    <div class="a-contenu" id="a-contenu"></div>
+    <div class="a-pied"><div id="a-pied"></div></div>
+  </div>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nb = n => n == null ? "–" : n >= 1e6 ? (n/1e6).toLocaleString("fr-FR",{maximumFractionDigits:1}) + " M" : n >= 1e3 ? Math.round(n/1e3).toLocaleString("fr-FR") + " k" : n.toLocaleString("fr-FR");
+const nbLong = n => n == null ? "–" : n.toLocaleString("fr-FR");
+const pc = x => x == null ? "–" : (x*100).toLocaleString("fr-FR",{maximumFractionDigits:1}) + " %";
+const api = async (url, opts = {}) => {
+  const r = await fetch(url, {headers: {"Content-Type": "application/json"}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined});
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { location.href = "/connexion#connexion"; throw new Error("Session expirée"); }
+  if (r.status === 402) { setTimeout(() => { fermeModale(); fermeTiroir(); va("abonnement"); }, 50); toast(j.erreur || "Limite de ta formule atteinte"); }
+  if (!r.ok) throw Object.assign(new Error(j.erreur || "Erreur " + r.status), {data: j});
+  return j;
+};
+const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("vu"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("vu"), 2200); };
+const ICONES = {
+  Instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>',
+  TikTok: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.3 2.2 1.7 3.8 4 4v3.1c-1.5 0-2.9-.4-4-1.2V15a6 6 0 11-6-6c.3 0 .7 0 1 .1v3.2a2.9 2.9 0 10 2 2.7V3h3z"/></svg>'
+};
+
+const S = { etat: null, analyse: null, vue: "reels", filtre: "cdc", jobId: null, ouvert: null };
+
+// ---------------------------------------------------------------- Données
+async function chargeEtat() {
+  S.etat = await api("/api/etat");
+  $("#bandeau-demo").hidden = !S.etat.demo;
+  $("#etat-cles").innerHTML = S.etat.demo
+    ? '<span class="pastille off"></span>Mode démo'
+    : '<span class="pastille"></span>Apify et Claude connectés';
+  if (S.etat.job && !S.jobId) suisJob(S.etat.job.id, false);
+  const u = S.etat.utilisateur, ab = S.etat.abonnement;
+  $("#utilisateur").innerHTML = `<span>${esc(u.prenom || u.email)}${ab ? ` — ${esc(ab.nom_plan)}` : ""}</span><button onclick="deconnexion()">Se déconnecter</button>`;
+  $("#bandeau-demo").innerHTML = S.etat.demo ? "<b>Mode démo.</b> Les analyses utilisent des données fictives (clés Apify et Claude non configurées sur le serveur)." : "";
+  if (ab && !ab.actif) { $("#bandeau-demo").hidden = false; $("#bandeau-demo").innerHTML = `<b>${ab.statut === "essai" ? "Ton essai gratuit est terminé." : "Ton abonnement n'est pas actif."}</b> <a href="#" onclick="va('abonnement');return false">Choisis une formule</a> pour lancer de nouvelles analyses.`; }
+}
+async function deconnexion() { await api("/api/deconnexion", {method: "POST"}); location.href = "/connexion#connexion"; }
+async function chargeListe(selection) {
+  const liste = await api("/api/analyses");
+  const sel = $("#choix-analyse");
+  sel.innerHTML = liste.length ? liste.map(a => `<option value="${a.id}">${esc(a.titre)} — ${new Date(a.id.slice(0,4)+"-"+a.id.slice(4,6)+"-"+a.id.slice(6,8)+"T"+a.id.slice(9,11)+":"+a.id.slice(11,13)).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}${a.demo ? " (démo)" : ""}</option>`).join("") : '<option value="">Aucune analyse</option>';
+  sel.hidden = !liste.length;
+  const id = selection || (liste[0] && liste[0].id);
+  if (id) { sel.value = id; await chargeAnalyse(id); } else { S.analyse = null; rendu(); }
+}
+async function chargeAnalyse(id) {
+  S.analyse = await api("/api/analyses/" + id);
+  remplitComptes();
+  rendu();
+}
+
+// ---------------------------------------------------------------- Navigation
+const TITRES = {reels: "Reels", planning: "Planning de la semaine", voix: "Voix du client", resultats: "Ce qui marche chez toi", comptes: "Comptes surveillés", parametres: "Paramètres", abonnement: "Abonnement"};
+function va(vue) {
+  S.vue = vue;
+  $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === vue ? "page" : "false"));
+  $$("[data-section]").forEach(s => s.hidden = s.dataset.section !== vue);
+  $("#titre").textContent = TITRES[vue];
+  rendu();
+}
+$$(".nav").forEach(b => b.onclick = () => va(b.dataset.vue));
+$("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
+
+function rendu() {
+  ({reels: renduReels, planning: renduPlanning, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
+}
+
+// ---------------------------------------------------------------- Reels
+function remplitComptes() {
+  const c = [...new Set((S.analyse?.posts || []).map(p => p.plateforme + ":" + p.compte))].sort();
+  $("#f-compte").innerHTML = '<option value="">Tous les comptes</option>' + c.map(x => `<option value="${esc(x)}">@${esc(x.split(":")[1])} (${x.startsWith("TikTok") ? "TikTok" : "Insta"})</option>`).join("");
+}
+const adapte = p => p.adaptation && p.adaptation.hooks_adaptes;
+function postsFiltres() {
+  const a = S.analyse; if (!a) return [];
+  const pl = $("#f-plateforme").value, cpt = $("#f-compte").value, q = $("#f-texte").value.trim().toLowerCase(), tri = $("#f-tri").value;
+  let ps = a.posts.filter(p => S.filtre === "tous" || (S.filtre === "cdc" ? (p.criteres_ok || p.demande) : adapte(p)));
+  if (pl) ps = ps.filter(p => p.plateforme === pl);
+  if (cpt) ps = ps.filter(p => p.plateforme + ":" + p.compte === cpt);
+  if (q) ps = ps.filter(p => (p.legende + " " + p.compte + " " + JSON.stringify(p.adaptation || {})).toLowerCase().includes(q));
+  const k = {vues: p => p.vues || 0, eng: p => p.taux_engagement || 0, viral: p => p.score_viral || 0, date: p => p.date || "",
+             conv: p => (p.taux_commentaires || 0) * 4 + (p.taux_engagement || 0)}[tri];
+  return [...ps].sort((x, y) => (y.demande - x.demande) || (k(y) > k(x) ? 1 : k(y) < k(x) ? -1 : 0));
+}
+function jauge(label, val, seuil, texte) {
+  const ratio = val == null ? 0 : Math.min(val / seuil / 2, 1);
+  return `<div class="jauge ${val >= seuil ? "atteint" : ""}"><span class="t">${label}</span><span class="rail-j"><i style="width:${ratio*100}%"></i></span><span>${texte}</span></div>`;
+}
+function carte(p) {
+  const c = S.analyse.criteres, ad = p.adaptation || {};
+  const hook = adapte(p) ? ad.hooks_adaptes[0] : (p.legende || "").split("\n")[0];
+  return `<button class="reel" data-cle="${esc(p.cle)}" aria-label="Ouvrir le Reel de @${esc(p.compte)}">
+    <div class="ecran">
+      ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+      <div class="haut">
+        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">✓ Cahier des charges</span>' : ""}</span>
+        <span class="plat" title="${p.plateforme}">${ICONES[p.plateforme]}</span>
+      </div>
+      <div class="bas">
+        <div class="vues">${nb(p.vues)}<small>vues</small></div>
+        <div class="jauges">
+          ${jauge("Vues", p.vues, c.vues_min, "×" + (p.vues && c.vues_min ? (p.vues / c.vues_min).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "–"))}
+          ${jauge("Engag.", p.taux_engagement, c.taux_engagement_min, pc(p.taux_engagement))}
+        </div>
+      </div>
+    </div>
+    <div class="pied">
+      <div class="compte">@${esc(p.compte)}<span>${p.date ? new Date(p.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}) : ""}</span></div>
+      <div class="hook ${adapte(p) ? "adapte" : ""}">${esc(hook) || "<i>Sans légende</i>"}</div>
+    </div>
+  </button>`;
+}
+function renduReels() {
+  const a = S.analyse, g = $("#grille");
+  if (!a) {
+    $("#resume").innerHTML = "";
+    g.innerHTML = `<div class="vide"><h2>Lance ta première analyse</h2><p>Colle des comptes Instagram ou TikTok à décortiquer, ou lance ta veille de la semaine.</p><button class="btn prim" onclick="ouvreNouvelle()">Nouvelle analyse</button></div>`;
+    $("#n-reels").textContent = ""; return;
+  }
+  const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
+  $("#resume").innerHTML = `
+    <div><b>${nbLong(s.videos)}</b><span>Reels analysés sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
+    <div class="cible"><b>${cdc}</b><span>dans le cahier des charges</span></div>
+    <div><b>${ad}</b><span>adaptés pour toi</span></div>
+    <div><b>${s.nb_commentaires}</b><span>commentaires lus</span></div>
+    <span class="criteres">≥ ${nbLong(a.criteres.vues_min)} vues et ≥ ${(a.criteres.taux_engagement_min*100).toLocaleString("fr-FR")} % d'engagement, ${a.criteres.mois} derniers mois</span>`;
+  const counts = {cdc, adaptes: ad, tous: a.posts.length};
+  $$("#f-statut button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === S.filtre); $(".c", b).textContent = counts[b.dataset.v]; });
+  $("#n-reels").textContent = cdc;
+  const ps = postsFiltres();
+  g.innerHTML = ps.length ? ps.map(carte).join("") : `<div class="vide"><h2>Aucun Reel ici</h2><p>${S.filtre === "cdc" ? "Aucun Reel de cette analyse n'atteint les critères. Regarde l'onglet « Tous » ou ajoute des comptes plus gros." : "Change les filtres pour en voir davantage."}</p></div>`;
+}
+$$("#f-statut button").forEach(b => b.onclick = () => { S.filtre = b.dataset.v; renduReels(); });
+["#f-plateforme", "#f-compte", "#f-tri"].forEach(s => $(s).onchange = renduReels);
+$("#f-texte").oninput = renduReels;
+document.addEventListener("click", e => { const r = e.target.closest("[data-cle]"); if (r) ouvreReel(r.dataset.cle); });
+
+// ---------------------------------------------------------------- Tiroir
+function copiable(texte, grand) {
+  return `<div class="carte copiable">${esc(texte)}<button class="btn petit copier" data-copie>Copier</button></div>`;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-copie]"); if (!b) return;
+  const el = b.parentElement.cloneNode(true); $$("button", el).forEach(x => x.remove());
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => { b.textContent = "Copié"; setTimeout(() => b.textContent = "Copier", 1400); });
+});
+function ouvreReel(cle, onglet) {
+  const p = S.analyse.posts.find(x => x.cle === cle); if (!p) return;
+  S.ouvert = cle;
+  const c = S.analyse.criteres, ad = p.adaptation || {}, t = $("#tiroir");
+  const onglets = adapte(p) ? ["Adaptation", "Séquence DM", "Analyse", "Audience"] : ["Original", "Audience"];
+  onglet = onglets.includes(onglet) ? onglet : onglets[0];
+  const date = p.date ? new Date(p.date).toLocaleDateString("fr-FR", {day: "numeric", month: "long"}) : "";
+  t.innerHTML = `
+    <div class="t-tete">
+      ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="">` : '<div class="ph"></div>'}
+      <div>
+        <h2>@${esc(p.compte)}</h2>
+        <div class="meta">${p.plateforme}, ${date}${p.duree_s ? ", " + Math.round(p.duree_s) + " s" : ""}${p.creneau ? ` — prévu ${esc(p.creneau.toLowerCase())}` : ""}</div>
+        <div class="chiffres">
+          <div class="${p.vues >= c.vues_min ? "ok" : "ko"}"><b>${nbLong(p.vues)}</b><span>vues (min. ${nb(c.vues_min)})</span></div>
+          <div class="${p.taux_engagement >= c.taux_engagement_min ? "ok" : "ko"}"><b>${pc(p.taux_engagement)}</b><span>engagement (min. ${pc(c.taux_engagement_min)})</span></div>
+          <div><b>${pc(p.taux_commentaires)}</b><span>commentaires par vue</span></div>
+          <div><b>${p.score_viral ? "×" + p.score_viral.toLocaleString("fr-FR") : "–"}</b><span>vs habitude du compte</span></div>
+        </div>
+      </div>
+      <button class="fermer" aria-label="Fermer" data-fermer-t>✕</button>
+    </div>
+    <div class="onglets" role="tablist">${onglets.map(o => `<button role="tab" aria-selected="${o === onglet}" data-onglet="${o}">${o}</button>`).join("")}</div>
+    <div class="t-corps">${corpsOnglet(p, onglet)}</div>
+    <div class="actions-t">
+      ${p.url ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Voir l'original</a>` : ""}
+      ${adapte(p) ? `<button class="btn" data-adapter="${esc(p.cle)}">Refaire l'adaptation</button>` : ""}
+    </div>`;
+  $$("[data-onglet]", t).forEach(b => b.onclick = () => ouvreReel(cle, b.dataset.onglet));
+  t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
+}
+function corpsOnglet(p, o) {
+  const ad = p.adaptation || {};
+  if (o === "Adaptation") return `
+    <h3>Tes hooks</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
+    ${ad.texte_ecran_adapte ? `<h3>Texte à l'écran</h3>${copiable(ad.texte_ecran_adapte)}` : ""}
+    <h3>Script du Reel</h3>${copiable(ad.script_reel)}
+    <div class="deux"><div><h3>Format</h3><p>${esc(ad.format_conseille)}</p></div><div><h3>3 premières secondes</h3><p>${esc(ad.idee_visuelle)}</p></div></div>
+    <h3>Légende</h3>${copiable(ad.legende_adaptee)}
+    <h3>Transposabilité à ta niche</h3><p><span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
+  if (o === "Séquence DM") return `
+    <h3>Appel à l'action</h3>${copiable(ad.cta_conversation)}
+    <h3>Messages privés</h3>
+    <div class="dm">${(ad.sequence_dm || []).map(e => `<div class="etape"><small>${esc(e.etape)}</small>${copiable(e.message)}</div>`).join("")}</div>`;
+  if (o === "Analyse") return `
+    <h3>Hook original</h3><div class="citation">${esc(ad.hook_original)}</div>
+    ${ad.texte_ecran ? `<h3>Texte à l'écran</h3><p>${esc(ad.texte_ecran)}</p>` : ""}
+    <div class="deux"><div><h3>Mécanique</h3><p><b>${esc(ad.mecanique)}</b></p></div><div><h3>Sujet</h3><p>${esc(ad.sujet)}</p></div></div>
+    <h3>Pourquoi ça marche</h3><p>${esc(ad.pourquoi_ca_marche)}</p>
+    <h3>Structure</h3><p>${esc(ad.structure)}</p>
+    <h3>Ce qu'on voit</h3><p>${esc(ad.analyse_visuelle)}</p>
+    ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
+  if (o === "Audience") return `
+    ${ad.ce_que_dit_l_audience ? `<h3>Ce que dit l'audience</h3><p>${esc(ad.ce_que_dit_l_audience)}</p>` : ""}
+    <h3>Commentaires les plus likés</h3>
+    ${(p.commentaires_texte || []).length ? p.commentaires_texte.slice(0, 25).map(c => `<div class="com"><p>${esc(c.texte)}</p><span>${c.likes} ♥</span></div>`).join("") : "<p>Les commentaires sont lus quand le Reel est adapté.</p>"}`;
+  return `
+    <div class="adapter-cta"><h2>Adapter ce Reel à ta niche</h2><p>Claude regarde la vidéo, lit les commentaires et écrit tes hooks, ton script, ta légende et ta séquence DM.</p>
+    <button class="btn prim" data-adapter="${esc(p.cle)}">Adapter ce Reel</button></div>
+    <h3>Légende originale</h3><div class="carte">${esc(p.legende) || "Sans légende"}</div>
+    ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
+}
+function fermeTiroir() { const t = $("#tiroir"); t.classList.remove("ouvert"); t.setAttribute("aria-hidden", "true"); $("#voile").classList.remove("ouvert"); S.ouvert = null; }
+$("#voile").onclick = fermeTiroir;
+document.addEventListener("click", e => { if (e.target.closest("[data-fermer-t]")) fermeTiroir(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { fermeTiroir(); fermeModale(); } });
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-adapter]"); if (!b) return;
+  try {
+    const r = await api(`/api/analyses/${S.analyse.id}/adapter`, {method: "POST", body: {cle: b.dataset.adapter}});
+    b.disabled = true; b.innerHTML = '<span class="spin"></span>Adaptation en cours…';
+    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); if (S.ouvert) ouvreReel(S.ouvert); toast("Reel adapté"); });
+  } catch (err) { toast(err.message); }
+});
+
+// ---------------------------------------------------------------- Planning
+const JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+function renduPlanning() {
+  const a = S.analyse, el = $("#planning");
+  if (!a || !a.planning?.length) {
+    el.innerHTML = `<div class="vide"><h2>Pas de planning pour cette analyse</h2><p>Le planning de 2 Reels par jour est construit par la veille de la semaine, à partir de tes comptes surveillés.</p><button class="btn prim" onclick="ouvreNouvelle('veille')">Lancer ma veille</button></div>`;
+    return;
+  }
+  const ps = a.planning.map(k => a.posts.find(p => p.cle === k)).filter(Boolean);
+  el.innerHTML = `<p style="color:var(--ink-2);margin:0 0 16px">Objectif : ${a.objectifs.conversations_par_jour} conversations par jour avec le mot-clé « ${esc(a.objectifs.mot_cle_cta)} ». ${a.fichiers ? `<a href="/rapports/${a.fichiers.xlsx}">Télécharger l'Excel de suivi</a>` : ""}</p>
+  <div class="semaine">${JOURS.map(j => `<div class="jour"><h2>${j}</h2>${ps.filter(p => p.creneau.startsWith(j)).map(p => `
+    <button class="creneau" data-cle="${esc(p.cle)}">
+      ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}
+      <div><small>${esc(p.creneau.replace(j, "").trim())}</small><p>${esc((p.adaptation?.hooks_adaptes || [""])[0])}</p><span class="mec">${esc(p.adaptation?.mecanique || "")}</span></div>
+    </button>`).join("")}</div>`).join("")}</div>`;
+}
+
+// ---------------------------------------------------------------- Voix du client
+function renduVoix() {
+  const v = S.analyse?.voix_client, el = $("#voix");
+  if (!v || !Object.keys(v).length) { el.innerHTML = `<div class="vide"><h2>Pas encore de voix du client</h2><p>Elle apparaît après une analyse avec au moins une quinzaine de commentaires lus.</p></div>`; return; }
+  const l = xs => `<ul class="liste">${(xs || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  el.innerHTML = `
+    <div class="panneau"><h2>Ses mots exacts</h2><p style="color:var(--ink-2);margin:-4px 0 12px">À réutiliser tels quels dans tes hooks et tes légendes.</p><div class="expr">${(v.expressions || []).map(x => `<span>« ${esc(x)} »</span>`).join("")}</div></div>
+    <div class="panneau"><div class="colonnes"><div><h3>Ce qu'elle demande</h3>${l(v.questions)}</div><div><h3>Ce qui la fait souffrir</h3>${l(v.douleurs)}</div><div><h3>Ce qui la freine</h3>${l(v.objections)}</div></div></div>
+    <div class="panneau"><h2>Reels à tourner pour lui répondre</h2>${(v.idees_reels || []).map(i => `<div class="idee"><div><b>${esc(i.hook)}</b><small>${esc(i.pourquoi)}</small></div><button class="btn petit" data-copie-txt="${esc(i.hook)}">Copier</button></div>`).join("")}</div>`;
+  $$("[data-copie-txt]", el).forEach(b => b.onclick = () => navigator.clipboard.writeText(b.dataset.copieTxt).then(() => toast("Hook copié")));
+}
+
+// ---------------------------------------------------------------- Résultats
+function renduResultats() {
+  const ap = S.analyse?.apprentissage, el = $("#resultats");
+  if (!ap || !ap.par_mecanique?.length) {
+    el.innerHTML = `<div class="vide"><h2>Rien à comparer pour l'instant</h2><p>Renseigne ton compte dans config.yaml (section mon_compte) et dépose tes Excel de suivi remplis dans le dossier suivi/. L'outil apprendra quelles mécaniques te rapportent le plus de conversations.</p></div>`; return;
+  }
+  const max = Math.max(...ap.par_mecanique.map(l => l.indice || 0), 1);
+  el.innerHTML = `<div class="panneau"><h2>Tes mécaniques, de la plus rentable à la moins rentable</h2>
+    <p style="color:var(--ink-2);margin:-4px 0 14px">D'après ${ap.nb_reels || 0} Reels de ton compte et ${ap.nb_suivi || 0} lignes de suivi. Indice 1 = ta moyenne ; les conversations comptent double. Les mécaniques en vert sont favorisées dans le planning.</p>
+    <div style="overflow-x:auto"><table><thead><tr><th>Mécanique</th><th>Reels</th><th>Vues</th><th>Commentaires</th><th>Conversations</th><th>Indice</th><th></th></tr></thead><tbody>
+    ${ap.par_mecanique.map(l => { const cl = ap.mecaniques_top.includes(l.mecanique) ? "top" : ap.mecaniques_flop.includes(l.mecanique) ? "flop" : "";
+      return `<tr><td><b>${esc(l.mecanique)}</b></td><td class="num">${l.n_reels + l.n_suivi}</td><td class="num">${l.vues_vs_moyenne != null ? "×" + l.vues_vs_moyenne : ""}</td><td class="num">${l.commentaires_vs_moyenne != null ? "×" + l.commentaires_vs_moyenne : ""}</td><td class="num">${l.conversations_moy ?? ""}</td><td class="num"><b>${l.indice ?? ""}</b></td><td><div class="barre-ind ${cl}"><i style="width:${(l.indice || 0) / max * 100}%"></i></div></td></tr>`; }).join("")}
+    </tbody></table></div></div>`;
+}
+
+// ---------------------------------------------------------------- Comptes
+async function renduComptes() {
+  const el = $("#comptes");
+  const c = await api("/api/comptes");
+  const dec = S.analyse?.decouvertes || [];
+  const ligne = (pl, n) => `<div class="compte-l"><span class="plat">${ICONES[pl]}</span><b>@${esc(n)}</b><button class="btn petit" data-retire="${pl}|${esc(n)}">Retirer</button></div>`;
+  el.innerHTML = `
+    <div class="panneau"><h2>Ta veille de la semaine surveille ces comptes</h2>
+      <div class="colonnes">
+        <div><h3>Instagram</h3><div class="comptes-l">${(c.instagram || []).map(n => ligne("Instagram", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
+        <div><h3>TikTok</h3><div class="comptes-l">${(c.tiktok || []).map(n => ligne("TikTok", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
+      </div>
+      <form class="ajout" id="form-ajout"><input id="ajout-txt" placeholder="@compte, tt:compte ou lien du profil" aria-label="Compte à ajouter"><select class="select" id="ajout-pl"><option>Instagram</option><option>TikTok</option></select><button class="btn prim">Ajouter</button></form>
+    </div>
+    ${dec.length ? `<div class="panneau"><h2>Comptes repérés dans ta niche</h2><p style="color:var(--ink-2);margin:-4px 0 12px">Ils dépassent régulièrement ${nbLong(S.analyse.criteres.vues_min)} vues sur les hashtags de ta niche.</p>
+      <div style="overflow-x:auto"><table><thead><tr><th>Compte</th><th>Reels au-dessus du seuil</th><th>Meilleur</th><th>Engagement</th><th></th></tr></thead><tbody>
+      ${dec.map(d => `<tr><td><b>@${esc(d.compte)}</b> <span style="color:var(--ink-3)">${d.plateforme}</span></td><td class="num">${d.reels_au_dessus_seuil}</td><td class="num"><a href="${esc(d.exemple)}" target="_blank" rel="noopener">${nb(d.vues_max)} vues</a></td><td class="num">${pc(d.engagement_median)}</td><td><button class="btn petit" data-ajoute="${d.plateforme}|${esc(d.compte)}">Ajouter</button></td></tr>`).join("")}
+      </tbody></table></div></div>` : ""}`;
+  $("#form-ajout").onsubmit = async e => { e.preventDefault(); const r = await api("/api/comptes", {method: "POST", body: {texte: $("#ajout-txt").value, plateforme: $("#ajout-pl").value}}); toast(r.ajoutes.length ? "Ajouté : " + r.ajoutes.join(", ") : "Rien à ajouter"); renduComptes(); };
+  $$("[data-retire]", el).forEach(b => b.onclick = async () => { const [pl, n] = b.dataset.retire.split("|"); await api("/api/comptes", {method: "DELETE", body: {plateforme: pl, compte: n}}); toast("@" + n + " retiré"); renduComptes(); });
+  $$("[data-ajoute]", el).forEach(b => b.onclick = async () => { const [pl, n] = b.dataset.ajoute.split("|"); await api("/api/comptes", {method: "POST", body: {texte: (pl === "TikTok" ? "tt:" : "ig:") + n}}); toast("@" + n + " ajouté à ta veille"); renduComptes(); });
+}
+
+// ---------------------------------------------------------------- Nouvelle analyse
+function analyseSaisie(txt, def) {
+  const items = [];
+  txt.split(/[\s,;]+/).filter(Boolean).forEach(brut => {
+    let t = brut.replace(/\/+$/, ""), m;
+    if (/instagram\.com/i.test(t)) {
+      if ((m = t.match(/instagram\.com\/(?:[^/]+\/)?(p|reels?|tv)\/([\w-]+)/i))) items.push({type: "post", pl: "Instagram", txt: "Reel " + m[2].slice(0, 8)});
+      else if ((m = t.match(/instagram\.com\/([\w.]+)/i))) items.push({type: "compte", pl: "Instagram", txt: "@" + m[1]});
+      else items.push({type: "ko", txt: brut});
+    } else if (/tiktok\.com/i.test(t)) {
+      if ((m = t.match(/tiktok\.com\/@([\w.]+)\/(?:video|photo)\/(\d+)/i))) items.push({type: "post", pl: "TikTok", txt: "Vidéo de @" + m[1]});
+      else if ((m = t.match(/tiktok\.com\/@([\w.]+)/i))) items.push({type: "compte", pl: "TikTok", txt: "@" + m[1]});
+      else items.push({type: "ko", txt: brut});
+    } else {
+      let pl = def;
+      if (t.includes(":")) { const [p, r] = t.split(/:(.*)/); pl = /^(tt|tk|tiktok)$/i.test(p) ? "TikTok" : /^(ig|insta|instagram)$/i.test(p) ? "Instagram" : def; t = r; }
+      t = t.replace(/^@/, "");
+      items.push(/^[\w.]{1,40}$/.test(t) ? {type: "compte", pl, txt: "@" + t} : {type: "ko", txt: brut});
+    }
+  });
+  return items;
+}
+function ouvreNouvelle(mode = "copie") {
+  const c = S.etat.criteres, o = S.etat.objectifs;
+  const nbWatch = (S.etat.comptes.instagram || []).length + (S.etat.comptes.tiktok || []).length;
+  $("#feuille").innerHTML = `
+    <h2 id="m-titre">Nouvelle analyse</h2>
+    <p class="sous">L'outil trouve les Reels qui remplissent ton cahier des charges, les regarde, lit leurs commentaires et les adapte à ta niche.</p>
+    <div class="seg" id="m-mode" role="group" aria-label="Type d'analyse" style="margin-bottom:18px">
+      <button type="button" data-v="copie" aria-pressed="${mode === "copie"}">Analyser et copier des comptes</button>
+      <button type="button" data-v="veille" aria-pressed="${mode === "veille"}">Lancer ma veille de la semaine</button>
+    </div>
+    <div id="m-copie" ${mode === "copie" ? "" : "hidden"}>
+      <div class="champ">
+        <label for="m-texte">Comptes ou Reels à analyser</label>
+        <textarea id="m-texte" placeholder="@compte_insta&#10;tt:compte_tiktok&#10;https://www.instagram.com/compte/&#10;https://www.instagram.com/reel/…   (un Reel précis)"></textarea>
+        <span class="aide">Un par ligne ou séparés par des virgules. Les noms sans préfixe sont considérés comme des comptes
+          <select class="select" id="m-pl" style="padding:2px 28px 2px 8px;font-size:13px"><option>Instagram</option><option>TikTok</option></select>.
+          Un lien de Reel est toujours analysé, même s'il ne remplit pas les critères.</span>
+        <div class="reconnus" id="m-reconnus"></div>
+      </div>
+      <label class="coche"><input type="checkbox" id="m-ajout"> Ajouter ces comptes à ma veille de la semaine</label>
+    </div>
+    <div id="m-veille" ${mode === "veille" ? "" : "hidden"}>
+      <p style="margin:0 0 16px">${nbWatch} compte${nbWatch > 1 ? "s" : ""} surveillé${nbWatch > 1 ? "s" : ""}. Résultat : un planning de ${o.reels_par_jour * o.jours_planifies} Reels (${o.reels_par_jour} par jour), adaptés et diversifiés.</p>
+    </div>
+    <div class="champ"><label>Cahier des charges</label>
+      <div class="ligne">
+        <label class="champ" style="margin:0"><span class="aide">Vues minimum</span><input id="m-vues" type="number" step="50000" min="0" value="${c.vues_min}"></label>
+        <label class="champ" style="margin:0"><span class="aide">Engagement minimum (%)</span><input id="m-eng" type="number" step="0.5" min="0" value="${c.taux_engagement_min * 100}"></label>
+        <label class="champ" style="margin:0"><span class="aide">Période (mois)</span><input id="m-mois" type="number" min="1" max="12" value="${c.mois}"></label>
+      </div>
+    </div>
+    <div class="champ" id="m-nb-champ" ${mode === "copie" ? "" : "hidden"}><label for="m-nb">Nombre de Reels à adapter</label><input id="m-nb" type="number" min="1" max="40" value="10" style="width:120px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px"><span class="aide">Les meilleurs Reels du cahier des charges. Tu pourras en adapter d'autres un par un depuis la galerie.</span></div>
+    <div id="m-erreur"></div>
+    <div class="pied-modale"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-lancer">Lancer l'analyse</button></div>`;
+  const majReconnus = () => {
+    const it = analyseSaisie($("#m-texte").value, $("#m-pl").value);
+    $("#m-reconnus").innerHTML = it.map(i => `<span class="puce ${i.type === "post" ? "post" : i.type === "ko" ? "ko" : ""}">${i.pl ? `<span class="plat" style="width:16px;height:16px;background:none">${ICONES[i.pl]}</span>` : ""}${esc(i.txt)}</span>`).join("");
+  };
+  $("#m-texte").oninput = majReconnus; $("#m-pl").onchange = majReconnus;
+  $$("#m-mode button").forEach(b => b.onclick = () => {
+    $$("#m-mode button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("#m-copie").hidden = $("#m-nb-champ").hidden = b.dataset.v !== "copie"; $("#m-veille").hidden = b.dataset.v !== "veille";
+  });
+  $("#m-lancer").onclick = lanceAnalyse;
+  $("#modale").classList.add("ouvert");
+  setTimeout(() => (mode === "copie" ? $("#m-texte") : $("#m-lancer")).focus(), 50);
+}
+function fermeModale() { $("#modale").classList.remove("ouvert"); }
+$("#ouvrir-nouvelle").onclick = () => S.jobId ? montreProgression() : ouvreNouvelle();
+document.addEventListener("click", e => { if (e.target.closest("[data-fermer]")) fermeModale(); });
+
+async function lanceAnalyse() {
+  const mode = $("#m-mode [aria-pressed=true]").dataset.v;
+  const corps = {mode, texte: $("#m-texte")?.value || "", plateforme: $("#m-pl")?.value, ajouter_a_veille: $("#m-ajout")?.checked,
+    vues_min: +$("#m-vues").value, taux_engagement_min: +$("#m-eng").value, mois: +$("#m-mois").value, nb: +$("#m-nb").value};
+  if (mode === "copie" && !analyseSaisie(corps.texte, corps.plateforme).some(i => i.type !== "ko")) {
+    $("#m-erreur").innerHTML = '<p class="erreur">Ajoute au moins un compte ou un lien de Reel.</p>'; return;
+  }
+  try {
+    const r = await api("/api/analyses", {method: "POST", body: corps});
+    suisJob(r.job, true);
+  } catch (e) { $("#m-erreur").innerHTML = `<p class="erreur">${esc(e.message)}</p>`; }
+}
+
+// ---------------------------------------------------------------- Suivi des tâches
+const ETAPES = [["Collecte", /Apify|collect|rechargés|DÉMO/i], ["Sélection", /candidats|à analyser/i], ["Vidéos", /vidéos|Transcription/i],
+                ["Commentaires", /Commentaires|commentaires utiles/i], ["Adaptation", /adaptation|Claude/i], ["Rapports", /terminée|✅/]];
+function suisJob(id, montrer, fini, surLog) {
+  S.jobId = id; S.jobFini = fini;
+  if (montrer) montreProgression();
+  clearInterval(S.poll);
+  const tick = async () => {
+    let j; try { j = await api("/api/jobs/" + id); } catch { return; }
+    S.job = j; majProgression();
+    if (surLog && j.logs.length) surLog(j.logs[j.logs.length - 1].m);
+    $("#job-rail").innerHTML = j.statut === "en cours" || j.statut === "en attente" ? `<button class="mini-job" onclick="montreProgression()"><span class="spin"></span>${esc(j.titre)}…</button>` : "";
+    if (j.statut === "terminé" || j.statut === "erreur") {
+      clearInterval(S.poll); S.jobId = null;
+      if (j.statut === "terminé") {
+        const f = S.jobFini; S.jobFini = null;
+        if (f) await f();
+        else { fermeModale(); await chargeEtat(); await chargeListe(j.resultat?.id); S.filtre = "cdc"; va("reels"); toast("Analyse terminée"); }
+      } else if (!$("#modale").classList.contains("ouvert")) { toast("Erreur : " + j.erreur); if (S.ouvert) ouvreReel(S.ouvert);
+        if ($("#assistant").classList.contains("ouvert")) renduAssistant(); }
+    }
+  };
+  tick(); S.poll = setInterval(tick, 1500);
+}
+function montreProgression() {
+  $("#feuille").innerHTML = `<h2 id="m-titre">Analyse en cours</h2><p class="sous">Tu peux fermer cette fenêtre : l'analyse continue, et la galerie se mettra à jour à la fin.</p>
+    <div class="progression"><div class="etapes" id="p-etapes"></div><div class="journal" id="p-journal" aria-live="polite"></div><div id="p-erreur"></div></div>
+    <div class="pied-modale"><button class="btn" data-fermer>Fermer</button></div>`;
+  $("#modale").classList.add("ouvert"); majProgression();
+}
+function majProgression() {
+  const j = S.job, jr = $("#p-journal"); if (!j || !jr) return;
+  const txt = j.logs.map(l => l.m).join("\n");
+  let derniere = -1; ETAPES.forEach(([, re], i) => { if (re.test(txt)) derniere = i; });
+  $("#p-etapes").innerHTML = ETAPES.map(([n], i) => `<span class="${i < derniere || j.statut === "terminé" ? "fait" : i === derniere ? "cours" : ""}">${n}</span>`).join("");
+  const enBas = jr.scrollTop + jr.clientHeight >= jr.scrollHeight - 20;
+  jr.innerHTML = j.logs.map(l => `<div><time>${l.t}</time>${esc(l.m)}</div>`).join("") || "<div>Démarrage…</div>";
+  if (enBas) jr.scrollTop = jr.scrollHeight;
+  $("#p-erreur").innerHTML = j.erreur ? `<p class="erreur">${esc(j.erreur)}</p>` : "";
+}
+
+
+// ================================================================ Assistant de configuration
+const W = {i: 0, p: null, edition: false};
+const ETAPES_A = [
+  {id: "compte", nom: "Ton compte"}, {id: "activite", nom: "Ton activité"}, {id: "client", nom: "Ton client idéal"},
+  {id: "objectifs", nom: "Tes objectifs"}, {id: "criteres", nom: "Ton cahier des charges"}, {id: "modeles", nom: "Les comptes à copier"},
+  {id: "voix", nom: "Ta voix"}, {id: "fin", nom: "C'est parti"}];
+const val = s => ($(s)?.value ?? "").trim();
+const lignes = t => (t || "").split(/\n|,/).map(x => x.trim()).filter(Boolean);
+
+async function ouvreAssistant(etape = 0, edition = false) {
+  W.p = await api("/api/profil"); W.i = typeof etape === "string" ? ETAPES_A.findIndex(e => e.id === etape) : etape; W.edition = edition;
+  $("#assistant").classList.add("ouvert"); renduAssistant();
+}
+function fermeAssistant() { $("#assistant").classList.remove("ouvert"); }
+function renduAssistant() {
+  const e = ETAPES_A[W.i];
+  $("#a-etapes").innerHTML = ETAPES_A.map((x, i) => `<li class="${i < W.i ? "fait" : i === W.i ? "cours" : ""}" data-i="${i}">${x.nom}</li>`).join("");
+  $$("#a-etapes li.fait").forEach(li => li.onclick = async () => { await enregistreEtape(); W.i = +li.dataset.i; renduAssistant(); });
+  $("#a-contenu").innerHTML = (W.edition ? "" : `<div class="a-mobile-etape">Étape ${W.i + 1} sur ${ETAPES_A.length}</div>`) + PAGES[e.id]();
+  const dernier = W.i === ETAPES_A.length - 1;
+  $("#a-pied").innerHTML = W.edition
+    ? `<button class="btn" id="a-annuler">Annuler</button><button class="btn prim" id="a-suivant">Enregistrer</button>`
+    : `${W.i ? '<button class="btn" id="a-retour">Retour</button>' : ""}${["compte", "voix"].includes(e.id) ? `<button class="passer" id="a-passer">${e.id === "compte" ? "Je n'ai pas encore de compte" : "Passer cette étape"}</button>` : ""}
+       ${dernier ? "" : '<button class="btn prim" id="a-suivant">Continuer</button>'}`;
+  $("#a-retour")?.addEventListener("click", async () => { await enregistreEtape(); W.i--; renduAssistant(); });
+  $("#a-passer")?.addEventListener("click", () => { W.i++; renduAssistant(); });
+  $("#a-annuler")?.addEventListener("click", fermeAssistant);
+  $("#a-suivant")?.addEventListener("click", async () => {
+    const err = verifie(e.id); if (err) return toast(err);
+    try { await enregistreEtape(); } catch (x) { return; }
+    if (W.edition) { fermeAssistant(); toast("Modifications enregistrées"); await chargeEtat(); rendu(); } else { W.i++; renduAssistant(); }
+  });
+  APRES[e.id]?.();
+  $(".a-main").scrollTop = 0;
+  setTimeout(() => $("#a-contenu input, #a-contenu textarea")?.focus(), 30);
+}
+function verifie(id) {
+  if (id === "activite" && !val("#w-desc")) return "Décris ton activité en une ou deux phrases.";
+  if (id === "client" && !val("#w-cible")) return "Décris ton client idéal.";
+  if (id === "objectifs" && !val("#w-mot")) return "Choisis un mot-clé à faire commenter.";
+  return null;
+}
+async function enregistreEtape() {
+  const id = ETAPES_A[W.i].id, p = W.p, corps = {};
+  if (id === "activite") { corps.niche = {nom: val("#w-nom"), description: val("#w-desc"), offre: val("#w-offre"), langue: val("#w-langue")}; }
+  if (id === "client") { corps.niche = {cible: val("#w-cible"), douleurs: lignes($("#w-douleurs").value), interdits: val("#w-interdits")}; }
+  if (id === "objectifs") { corps.objectifs = {reels_par_jour: +$("#w-rpj [aria-pressed=true]").dataset.v, conversations_par_jour: +val("#w-conv") || 10, mot_cle_cta: val("#w-mot").toUpperCase()}; }
+  if (id === "criteres") { corps.analyse = {vues_min: +$("#w-vues [aria-pressed=true]").dataset.v, taux_engagement_min: +$("#w-eng [aria-pressed=true]").dataset.v, mois: +$("#w-mois [aria-pressed=true]").dataset.v}; }
+  if (id === "modeles") {
+    const it = analyseSaisie($("#w-comptes").value, "Instagram").filter(i => i.type === "compte");
+    corps.comptes = {instagram: it.filter(i => i.pl === "Instagram").map(i => i.txt.slice(1)), tiktok: it.filter(i => i.pl === "TikTok").map(i => i.txt.slice(1))};
+    corps.hashtags = {instagram: lignes($("#w-hig").value), tiktok: lignes($("#w-htt").value)};
+  }
+  if (id === "voix") { corps.niche = {ton: val("#w-ton")}; corps.voix = $("#w-voix").value; }
+  if (!Object.keys(corps).length) return;
+  try { await api("/api/profil", {method: "PUT", body: corps}); }
+  catch (e) { toast(e.message); throw e; }
+  for (const k of ["niche", "objectifs", "analyse"]) if (corps[k]) Object.assign(p[k], corps[k]);
+  if (corps.comptes) p.comptes = corps.comptes;
+  if (corps.hashtags) p.hashtags = corps.hashtags;
+  if ("voix" in corps) p.voix = corps.voix;
+}
+const choix = (id, options, actuel) => `<div class="choix" id="${id}" role="group">${options.map(([v, t, s]) => `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(actuel)}">${t}${s ? `<small>${s}</small>` : ""}</button>`).join("")}</div>`;
+function activeChoix() { $$("#a-contenu .choix").forEach(g => $$("button", g).forEach(b => b.onclick = () => { $$("button", g).forEach(x => x.setAttribute("aria-pressed", x === b)); APRES[ETAPES_A[W.i].id]?.(true); })); }
+
+function blocAnalyseCompte(prof) {
+  if (!prof) return "";
+  const c = prof.chiffres || {}, pr = prof.proposition || {};
+  return `<div class="analyse-compte">
+    <div class="chiffres-compte">
+      <div><b>${c.reels ?? "–"}</b><span>Reels analysés</span></div>
+      <div><b>${nb(c.vues_mediane)}</b><span>vues habituelles</span></div>
+      <div><b>${pc(c.engagement_median)}</b><span>d'engagement</span></div>
+      <div><b>${nb(c.vues_max)}</b><span>ton record</span></div>
+    </div>
+    ${(prof.top || []).length ? `<div class="top-reels">${prof.top.map(t => `<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(t.legende)}">${t.miniature ? `<img src="/media/${encodeURIComponent(t.miniature)}" alt="">` : ""}<b>${nb(t.vues)}</b></a>`).join("")}</div>` : ""}
+    ${pr.description_niche ? `<div class="proposition"><h3>Ce que Claude comprend de ton compte</h3>
+      <dl><dt>Ton activité</dt><dd>${esc(pr.description_niche)}</dd><dt>Ton client idéal</dt><dd>${esc(pr.cible)}</dd><dt>Ton ton</dt><dd>${esc(pr.ton)}</dd>${pr.offre ? `<dt>Ton offre</dt><dd>${esc(pr.offre)}</dd>` : ""}</dl>
+      <div class="conseils"><div><b>Ce qui marche</b><ul>${(pr.points_forts || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div><div><b>À améliorer</b><ul>${(pr.a_ameliorer || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
+      <p style="margin:14px 0 0"><button class="btn prim" id="w-utiliser">Utiliser ces informations pour la suite</button></p></div>` : ""}
+  </div>`;
+}
+const PAGES = {
+  compte: () => `<h2 id="a-titre">Commençons par ton compte</h2>
+    <p class="intro">Claude lit tes derniers Reels pour comprendre ton positionnement, ce qui marche déjà chez toi et ton ton. Les étapes suivantes seront pré-remplies.</p>
+    <div class="duo"><div class="f"><label for="w-ig">Ton compte Instagram</label><input id="w-ig" placeholder="@toncompte" value="${esc(W.p.mon_compte.instagram || "")}"></div>
+    <div class="f"><label for="w-tt">Ton compte TikTok</label><input id="w-tt" placeholder="@toncompte (facultatif)" value="${esc(W.p.mon_compte.tiktok || "")}"></div></div>
+    <p><button class="btn" id="w-analyser">${W.p.profil_compte ? "Relancer l'analyse de mon compte" : "Analyser mon compte"}</button></p>
+    <div id="w-res">${blocAnalyseCompte(W.p.profil_compte)}</div>`,
+  activite: () => { const n = W.p.niche; return `<h2 id="a-titre">Ton activité</h2>
+    <p class="intro">C'est ce qui permet à Claude de transposer les Reels des autres à ton univers.</p>
+    <div class="f"><label for="w-nom">Nom de ta marque</label><input id="w-nom" value="${esc(n.nom)}" placeholder="Ex. Brille & Vibre"></div>
+    <div class="f"><label for="w-desc">Ce que tu fais, pour qui, et quel résultat tu apportes</label><textarea id="w-desc" placeholder="Ex. J'aide les femmes actives de 30 à 50 ans à dégonfler et à retrouver de l'énergie, sans régime strict.">${esc(n.description)}</textarea></div>
+    <div class="f"><label for="w-offre">Ce vers quoi tu emmènes les gens</label><input id="w-offre" value="${esc(n.offre)}" placeholder="Ex. Ebook gratuit, puis accompagnement de 3 mois"><span class="aide">C'est ce que proposeront tes messages privés.</span></div>
+    <div class="f"><label for="w-langue">Langue de tes contenus</label><select id="w-langue">${["français", "anglais", "espagnol", "arabe", "darija", "allemand", "italien", "portugais"].map(l => `<option ${n.langue === l ? "selected" : ""}>${l}</option>`).join("")}</select></div>`; },
+  client: () => { const n = W.p.niche; return `<h2 id="a-titre">Ton client idéal</h2>
+    <p class="intro">Les hooks et les messages s'adressent à cette personne, avec ses mots à elle.</p>
+    <div class="f"><label for="w-cible">Qui est-ce ?</label><input id="w-cible" value="${esc(n.cible)}" placeholder="Ex. Femme de 35 ans, maman, cadre, fatiguée des régimes"></div>
+    <div class="f"><label for="w-douleurs">Ce qu'elle vit au quotidien</label><textarea id="w-douleurs" placeholder="Un problème par ligne">${esc((n.douleurs || []).join("\n"))}</textarea><span class="aide">Un problème par ligne. Les commentaires lus pendant les analyses viendront compléter cette liste.</span></div>
+    <div class="f"><label for="w-interdits">Ce que tu ne veux jamais dire</label><textarea id="w-interdits" style="min-height:70px">${esc(n.interdits)}</textarea><span class="aide">Promesses, sujets ou mots que Claude doit éviter.</span></div>`; },
+  objectifs: () => { const o = W.p.objectifs; return `<h2 id="a-titre">Tes objectifs</h2>
+    <p class="intro">Le planning et les appels à l'action sont construits autour de ces chiffres.</p>
+    <div class="f"><span class="lab">Combien de Reels veux-tu publier par jour ?</span>${choix("w-rpj", [[1, "1 par jour", "7 par semaine"], [2, "2 par jour", "14 par semaine, recommandé"], [3, "3 par jour", "21 par semaine"]], o.reels_par_jour)}</div>
+    <div class="duo"><div class="f"><label for="w-conv">Conversations privées visées par jour</label><input id="w-conv" type="number" min="1" value="${o.conversations_par_jour}"></div>
+    <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">Il déclenche ton message automatique.</span></div></div>
+    <div class="phrase" id="w-phrase"></div>`; },
+  criteres: () => { const a = W.p.analyse; return `<h2 id="a-titre">Ton cahier des charges</h2>
+    <p class="intro">Seuls les Reels qui remplissent ces critères sont retenus comme modèles. Plus c'est exigeant, plus il faut surveiller de gros comptes.</p>
+    <div class="f"><span class="lab">Vues minimum</span>${choix("w-vues", [[100000, "100 000", "petites niches"], [250000, "250 000"], [500000, "500 000", "recommandé"], [1000000, "1 million", "très gros comptes"]], a.vues_min)}</div>
+    <div class="f"><span class="lab">Taux d'engagement minimum</span>${choix("w-eng", [[0.02, "2 %"], [0.03, "3 %", "recommandé"], [0.05, "5 %", "très engageant"]], a.taux_engagement_min)}<span class="aide">(likes + commentaires + partages + enregistrements) ÷ vues</span></div>
+    <div class="f"><span class="lab">Période analysée</span>${choix("w-mois", [[1, "1 mois", "tendances fraîches"], [3, "3 mois", "recommandé"], [6, "6 mois", "plus de choix"]], a.mois)}</div>
+    <div class="phrase" id="w-phrase"></div>`; },
+  modeles: () => { const c = W.p.comptes; return `<h2 id="a-titre">Les comptes à copier</h2>
+    <p class="intro">Les comptes dont tu veux reproduire les meilleurs Reels. Ils peuvent être hors de ta niche exacte : on reprend leur mécanique, pas leur sujet.</p>
+    <div class="f"><label for="w-comptes">Comptes surveillés chaque semaine</label>
+      <textarea id="w-comptes" placeholder="@compte_insta&#10;tt:compte_tiktok&#10;https://www.instagram.com/compte/">${esc([...(c.instagram || []).map(x => "@" + x), ...(c.tiktok || []).map(x => "tt:" + x)].join("\n"))}</textarea>
+      <div class="reconnus" id="w-reconnus"></div>
+      <span class="aide" id="w-limite"></span></div>
+    <div class="f"><span class="lab">Hashtags de ta niche</span><span class="aide">Ils servent à te suggérer chaque semaine de nouveaux comptes qui dépassent ton seuil de vues.</span>
+      <div class="duo"><textarea id="w-hig" placeholder="Instagram, un par ligne" style="min-height:80px">${esc((W.p.hashtags.instagram || []).join("\n"))}</textarea><textarea id="w-htt" placeholder="TikTok, un par ligne" style="min-height:80px">${esc((W.p.hashtags.tiktok || []).join("\n"))}</textarea></div>
+      <p style="margin:4px 0 0"><button class="btn petit" id="w-suggerer">Suggérer des hashtags</button></p></div>`; },
+  voix: () => { const leg = W.p.profil_compte?.apprentissage?.meilleures_legendes || []; return `<h2 id="a-titre">Ta voix</h2>
+    <p class="intro">Pour que les scripts et les légendes sonnent comme toi, et pas comme une IA.</p>
+    <div class="f"><label for="w-ton">Ton ton en quelques mots</label><input id="w-ton" value="${esc(W.p.niche.ton)}" placeholder="Ex. Chaleureux, direct, tutoiement, un peu d'humour"></div>
+    <div class="f"><label for="w-voix">Quelques-uns de tes textes</label><textarea id="w-voix" style="min-height:200px" placeholder="Colle 5 à 10 légendes, scripts ou messages qui te ressemblent, séparés par une ligne ---">${esc(W.p.voix)}</textarea>
+      ${leg.length ? `<p style="margin:4px 0 0"><button class="btn petit" id="w-legendes">Ajouter les légendes de mes ${leg.length} meilleurs Reels</button></p>` : ""}</div>`; },
+  fin: () => { const p = W.p, n = p.niche, o = p.objectifs, a = p.analyse, nbC = (p.comptes.instagram || []).length + (p.comptes.tiktok || []).length;
+    const ligne = (t, v, etape) => `<div><span>${t}</span><p style="margin:0">${v}</p><button class="btn petit" data-aller="${etape}">Modifier</button></div>`;
+    return `<h2 id="a-titre">Tout est prêt</h2>
+    <p class="intro">Voici ce que l'outil va faire pour toi. Lance ta première analyse : elle prend 10 à 20 minutes, tu peux fermer la page en attendant.</p>
+    <div class="recap">
+      ${ligne("Ton activité", esc(n.nom || n.description || "–"), "activite")}
+      ${ligne("Ton client idéal", esc(n.cible || "–"), "client")}
+      ${ligne("Ton rythme", `${o.reels_par_jour} Reel${o.reels_par_jour > 1 ? "s" : ""} par jour, ${o.conversations_par_jour} conversations visées, mot-clé « ${esc(o.mot_cle_cta)} »`, "objectifs")}
+      ${ligne("Cahier des charges", `≥ ${nbLong(a.vues_min)} vues, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} % d'engagement, ${a.mois} derniers mois`, "criteres")}
+      ${ligne("Comptes à copier", nbC ? `${nbC} compte${nbC > 1 ? "s" : ""}` : "<b>Aucun : ajoute au moins un compte</b>", "modeles")}
+    </div>
+    ${S.etat?.abonnement?.veille_auto !== undefined ? `<label class="interrupteur"><input type="checkbox" id="w-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">Ton planning de la semaine est prêt à ton réveil.${S.etat.abonnement.plan === "essai" ? " Inclus dans les formules payantes." : ""}</span></span></label>` : ""}
+    <p style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn prim" id="w-lancer" ${nbC ? "" : "disabled"}>Lancer ma première analyse</button><button class="btn" id="w-plus-tard">Je lancerai plus tard</button></p>`; },
+};
+const APRES = {
+  compte: () => {
+    $("#w-analyser").onclick = async () => {
+      const ig = val("#w-ig"), tt = val("#w-tt"); if (!ig && !tt) return toast("Indique au moins un compte.");
+      try {
+        const r = await api("/api/assistant/mon-compte", {method: "POST", body: {instagram: ig, tiktok: tt}});
+        $("#w-analyser").disabled = true;
+        $("#w-res").innerHTML = '<div class="encours"><span class="spin"></span><span id="w-etape">Lecture de tes Reels…</span></div>';
+        suisJob(r.job, false, async () => { W.p = await api("/api/profil"); W.p.mon_compte = {instagram: ig, tiktok: tt}; renduAssistant(); }, l => { const e = $("#w-etape"); if (e) e.textContent = l; });
+      } catch (e) { toast(e.message); }
+    };
+    $("#w-utiliser")?.addEventListener("click", async () => {
+      const pr = W.p.profil_compte.proposition;
+      const corps = {niche: {nom: pr.nom_marque || W.p.niche.nom, description: pr.description_niche, cible: pr.cible, douleurs: pr.douleurs, ton: pr.ton, offre: pr.offre || W.p.niche.offre},
+                     hashtags: {instagram: pr.hashtags || [], tiktok: pr.hashtags || []}};
+      await api("/api/profil", {method: "PUT", body: corps}); Object.assign(W.p.niche, corps.niche); W.p.hashtags = corps.hashtags;
+      toast("Informations reprises"); W.i++; renduAssistant();
+    });
+  },
+  objectifs: () => {
+    activeChoix(); const r = +$("#w-rpj [aria-pressed=true]").dataset.v;
+    $("#w-phrase").innerHTML = `Chaque semaine : <em>${r * 7} Reels</em> adaptés, chacun terminé par « Commente <em>${esc(val("#w-mot").toUpperCase() || "…")}</em> et je t'envoie… », pour viser <em>${(+val("#w-conv") || 0) * 7} conversations</em>.`;
+    $("#w-mot").oninput = $("#w-conv").oninput = () => APRES.objectifs(); },
+  criteres: () => { activeChoix(); const v = +$("#w-vues [aria-pressed=true]")?.dataset.v, e = +$("#w-eng [aria-pressed=true]")?.dataset.v, m = +$("#w-mois [aria-pressed=true]")?.dataset.v;
+    $("#w-phrase").innerHTML = `On garde les Reels des <em>${m} derniers mois</em> qui ont fait au moins <em>${nbLong(v)} vues</em> et <em>${(e * 100).toLocaleString("fr-FR")} %</em> d'engagement.`; },
+  modeles: () => {
+    const lim = W.p.limite_comptes;
+    const maj = () => { const it = analyseSaisie($("#w-comptes").value, "Instagram"); const n = it.filter(i => i.type === "compte").length;
+      $("#w-reconnus").innerHTML = it.map(i => `<span class="puce ${i.type === "ko" || i.type === "post" ? "ko" : ""}">${i.pl ? `<span class="plat" style="width:16px;height:16px;background:none">${ICONES[i.pl]}</span>` : ""}${esc(i.txt)}</span>`).join("");
+      $("#w-limite").innerHTML = `${n} / ${lim} comptes inclus dans ta formule.${n > lim ? " <b>Retire des comptes ou change de formule.</b>" : ""} Les liens de Reels précis s'analysent depuis « Nouvelle analyse ».`; };
+    $("#w-comptes").oninput = maj; maj();
+    $("#w-suggerer").onclick = async () => { const b = $("#w-suggerer"); b.disabled = true; b.innerHTML = '<span class="spin"></span>Recherche…';
+      try { const h = await api("/api/assistant/hashtags", {method: "POST", body: {niche: W.p.niche}});
+        $("#w-hig").value = [...new Set([...lignes($("#w-hig").value), ...(h.instagram || [])])].join("\n");
+        $("#w-htt").value = [...new Set([...lignes($("#w-htt").value), ...(h.tiktok || [])])].join("\n"); } catch (e) { toast(e.message); }
+      b.disabled = false; b.textContent = "Suggérer des hashtags"; };
+  },
+  voix: () => { $("#w-legendes")?.addEventListener("click", () => { const t = $("#w-voix"); t.value = [t.value.trim(), ...W.p.profil_compte.apprentissage.meilleures_legendes].filter(Boolean).join("\n\n---\n\n"); $("#w-legendes").remove(); }); },
+  fin: () => {
+    $$("[data-aller]").forEach(b => b.onclick = () => { W.i = ETAPES_A.findIndex(e => e.id === b.dataset.aller); renduAssistant(); });
+    const termine = async () => { await api("/api/profil", {method: "PUT", body: {onboarding_termine: true, veille_auto: $("#w-auto") ? $("#w-auto").checked : undefined}}); };
+    $("#w-plus-tard").onclick = async () => { await termine(); fermeAssistant(); await chargeEtat(); va("reels"); };
+    $("#w-lancer").onclick = async () => { await termine(); fermeAssistant(); await chargeEtat();
+      try { const r = await api("/api/analyses", {method: "POST", body: {mode: "veille"}}); suisJob(r.job, true); } catch (e) { toast(e.message); } };
+  },
+};
+
+// ================================================================ Paramètres
+async function renduParametres() {
+  const p = await api("/api/profil"), n = p.niche, o = p.objectifs, a = p.analyse, nbC = (p.comptes.instagram || []).length + (p.comptes.tiktok || []).length;
+  const r = (t, v, e) => `<div class="reglage"><b>${t}</b><span>${v}</span><button class="btn petit" data-param="${e}">Modifier</button></div>`;
+  $("#parametres").innerHTML = `<div class="reglages">
+    ${r("Ton compte", [p.mon_compte.instagram && "@" + esc(p.mon_compte.instagram), p.mon_compte.tiktok && "TikTok @" + esc(p.mon_compte.tiktok)].filter(Boolean).join(", ") || "Non renseigné", "compte")}
+    ${r("Ton activité", esc(n.nom || n.description || "Non renseignée"), "activite")}
+    ${r("Ton client idéal", esc(n.cible || "Non renseigné"), "client")}
+    ${r("Tes objectifs", `${o.reels_par_jour} Reel(s) par jour, ${o.conversations_par_jour} conversations, mot-clé « ${esc(o.mot_cle_cta)} »`, "objectifs")}
+    ${r("Cahier des charges", `≥ ${nbLong(a.vues_min)} vues, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} %, ${a.mois} mois`, "criteres")}
+    ${r("Comptes à copier", `${nbC} compte(s), ${(p.hashtags.instagram || []).length + (p.hashtags.tiktok || []).length} hashtags`, "modeles")}
+    ${r("Ta voix", esc(n.ton || "Non renseignée"), "voix")}
+    </div>
+    <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || S.etat.abonnement.plan !== "essai" ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
+    <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire l'assistant de configuration</button></p>`;
+  $$("[data-param]").forEach(b => b.onclick = () => ouvreAssistant(b.dataset.param, true));
+  $("#p-auto").onchange = async e => { await api("/api/profil", {method: "PUT", body: {veille_auto: e.target.checked}}); await chargeEtat(); toast(e.target.checked ? "Veille automatique activée" : "Veille automatique désactivée"); };
+}
+
+// ================================================================ Abonnement
+async function renduAbonnement() {
+  const a = await api("/api/abonnement"), d = a.droits;
+  const barre = (t, u, q) => `<div><label><span>${t}</span><span>${u} / ${q}</span></label><div class="barre-ind ${u / q > .85 ? "flop" : "top"}"><i style="width:${Math.min(u / q, 1) * 100}%"></i></div></div>`;
+  const fin = d.fin_essai ? new Date(d.fin_essai).toLocaleDateString("fr-FR", {day: "numeric", month: "long"}) : "";
+  $("#abonnement").innerHTML = `
+    <div class="panneau"><h2>${esc(d.nom_plan)}${d.statut === "essai" ? (d.actif ? ` — jusqu'au ${fin}` : " — terminé") : d.statut === "actif" ? "" : " — " + esc(d.statut)}</h2>
+      <div class="conso">${barre("Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${barre("Reels adaptés ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois)}
+      <p style="margin:0;color:var(--ink-2);font-size:14px">Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés. ${d.veille_auto ? "Veille automatique du lundi incluse." : ""}</p></div>
+      ${a.portail ? '<p style="margin:14px 0 0"><button class="btn" id="ab-portail">Gérer mon abonnement et mes factures</button></p>' : ""}</div>
+    <div class="plans">${a.plans.map(p => `<div class="plan ${p.id === d.plan && d.statut === "actif" ? "actuel" : ""}">
+      <h3>${esc(p.nom)}</h3><div class="prix">${p.prix_mensuel} €<small> / mois</small></div>
+      <ul><li>${p.adaptations_par_mois} Reels adaptés par mois</li><li>${p.analyses_par_mois} analyses par mois</li><li>${p.comptes_surveilles} comptes surveillés</li>${p.veille_auto ? "<li>Veille automatique chaque lundi</li>" : ""}</ul>
+      ${p.id === d.plan && d.statut === "actif" ? '<button class="btn" disabled>Ta formule</button>' : `<button class="btn prim" data-plan="${p.id}">Choisir ${esc(p.nom)}</button>`}</div>`).join("")}</div>
+    ${!a.stripe ? `<p style="color:var(--ink-3);font-size:13.5px;margin-top:14px">${a.demo ? "Paiement non configuré : en démo, le changement de formule est immédiat." : "Le paiement en ligne n'est pas encore activé."}</p>` : ""}`;
+  $$("[data-plan]").forEach(b => b.onclick = async () => { try { const r = await api("/api/abonnement/choisir", {method: "POST", body: {plan: b.dataset.plan}});
+    if (r.url) location.href = r.url; else { toast("Formule activée"); await chargeEtat(); renduAbonnement(); } } catch (e) { toast(e.message); } });
+  $("#ab-portail")?.addEventListener("click", async () => { try { location.href = (await api("/api/abonnement/portail", {method: "POST"})).url; } catch (e) { toast(e.message); } });
+}
+
+// ---------------------------------------------------------------- Démarrage
+(async () => {
+  await chargeEtat(); await chargeListe(); va("reels");
+  const q = new URLSearchParams(location.search);
+  if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); history.replaceState(null, "", "/"); va("abonnement"); }
+  if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
+})();
+</script>
+</body>
+</html>

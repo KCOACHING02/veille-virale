@@ -1,0 +1,4 @@
+Dépose ici tes fichiers Excel de planning une fois remplis
+(colonnes Vues J+2, Commentaires mot-clé, Conversations DM, Clients).
+L'outil les lit à chaque exécution pour apprendre quelles mécaniques
+te rapportent le plus de conversations.
