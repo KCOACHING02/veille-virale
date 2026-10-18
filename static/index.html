@@ -321,6 +321,32 @@ td.num{font-variant-numeric:tabular-nums}
   .recap div,.reglage{grid-template-columns:1fr} .proposition dl{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Radar d'analyse ---------- */
+.radar-zone{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:6px 0 4px}
+.radar{position:relative;width:min(240px,62vw);aspect-ratio:1;border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle,transparent 0 23%,rgba(255,79,121,.22) 23.4% 23.9%,transparent 24.3% 47%,rgba(255,79,121,.22) 47.4% 47.9%,transparent 48.3% 72%,rgba(255,79,121,.18) 72.4% 72.9%,transparent 73.3%),#21162A;
+  box-shadow:0 0 0 1px rgba(255,79,121,.25),0 20px 50px -20px rgba(255,79,121,.45),inset 0 0 40px rgba(0,0,0,.6)}
+.radar::before,.radar::after{content:"";position:absolute;background:rgba(255,79,121,.16)}
+.radar::before{left:50%;top:0;bottom:0;width:1px}
+.radar::after{top:50%;left:0;right:0;height:1px}
+.radar .balayage{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,79,121,0) 0deg,rgba(255,79,121,0) 290deg,rgba(255,79,121,.55) 358deg,rgba(255,170,190,.95) 360deg);animation:tourne 2.4s linear infinite}
+.radar .point{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:#FF8FAA;box-shadow:0 0 10px 2px rgba(255,79,121,.8);animation:apparait .6s ease-out both,pulse 2.4s ease-in-out infinite}
+.radar .centre{position:absolute;inset:0;display:grid;place-items:center;z-index:2;pointer-events:none}
+.radar .centre b{font:800 46px/1 var(--display);font-stretch:75%;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.radar .centre b small{font-size:20px;opacity:.75}
+.radar.fini .balayage{animation:none;background:radial-gradient(circle,rgba(19,147,107,.35),transparent 70%)}
+.radar.fini{box-shadow:0 0 0 1px rgba(60,199,150,.45),0 20px 50px -20px rgba(60,199,150,.5)}
+.radar.arret .balayage{animation:none;opacity:.15}
+.radar-phrase{font:700 21px/1.25 var(--display);font-stretch:88%;margin:0;max-width:30ch}
+.radar-sous{color:var(--ink-2);margin:-8px 0 0;font-size:14.5px}
+.avance{width:100%;max-width:360px;height:6px;border-radius:6px;background:var(--sunk);overflow:hidden}
+.avance i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#FF4F79,#FF8FAA);transition:width .6s ease}
+.detail-lien{border:0;background:none;color:var(--ink-3);font-size:13px;text-decoration:underline;cursor:pointer;padding:0}
+@keyframes tourne{to{transform:rotate(1turn)}}
+@keyframes apparait{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.radar .balayage{animation:none;opacity:.5}.radar .point{animation:none}}
 </style>
 </head>
 <body>
@@ -866,8 +892,6 @@ async function lanceAnalyse() {
 }
 
 // ---------------------------------------------------------------- Suivi des tâches
-const ETAPES = [["Collecte", /Apify|collect|rechargés|DÉMO/i], ["Sélection", /candidats|à analyser/i], ["Vidéos", /vidéos|Transcription/i],
-                ["Commentaires", /Commentaires|commentaires utiles/i], ["Adaptation", /adaptation|Claude/i], ["Rapports", /terminée|✅/]];
 function suisJob(id, montrer, fini, surLog) {
   S.jobId = id; S.jobFini = fini;
   if (montrer) montreProgression();
@@ -898,8 +922,8 @@ function suisJob(id, montrer, fini, surLog) {
         else if (S.analyse?.id === j.analyse_id || !S.analyse) { S.analyse = await api("/api/analyses/" + j.analyse_id); remplitComptes(); if (!S.ouvert) rendu(); }
       } catch {}
     }
-    if (surLog && j.logs.length) surLog(j.logs[j.logs.length - 1].m);
-    $("#job-rail").innerHTML = j.statut === "en cours" || j.statut === "en attente" ? `<button class="mini-job" onclick="montreProgression()"><span class="spin"></span>${esc(j.titre)}…</button>` : "";
+    if (surLog && j.logs.length) surLog(etatAnalyse(j).phrase);
+    $("#job-rail").innerHTML = j.statut === "en cours" || j.statut === "en attente" ? `<button class="mini-job" onclick="montreProgression()"><span class="spin"></span>${esc(etatAnalyse(j).phrase.replace(/…$/, ""))} — ${etatAnalyse(j).pct} %</button>` : "";
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.poll); S.jobId = null;
       if (j.statut === "terminé") {
@@ -912,17 +936,67 @@ function suisJob(id, montrer, fini, surLog) {
   };
   tick(); S.poll = setInterval(tick, 1500);
 }
+// Lecture du journal technique → une phrase simple et un pourcentage pour l'utilisateur
+function etatAnalyse(j) {
+  let pct = 3, phrase = "Je prépare l'analyse…", phase = "", enAdaptation = false, nbRepere = 0;
+  for (const {m} of (j?.logs || [])) {
+    let r;
+    if (/Reprise automatique/i.test(m)) { phrase = "Petite coupure du serveur : je reprends là où j'en étais…"; }
+    else if (/Collecte de \d+ compte|Instagram :|TikTok :|DÉMO/i.test(m)) { phase = "collecte"; phrase = "Je parcours les comptes que tu surveilles…"; pct = Math.max(pct, 6); }
+    else if ((r = m.match(/^\s*(\d+)\/(\d+) — /)) && phase === "collecte") { pct = Math.max(pct, 6 + 22 * r[1] / r[2]); }
+    else if (/publications collectées|déjà collecté/i.test(m)) { pct = Math.max(pct, 28); }
+    else if ((r = m.match(/(\d+) Reels à analyser/))) { phase = "selection"; nbRepere = +r[1]; phrase = "Je repère les Reels qui ont vraiment cartonné…"; pct = Math.max(pct, 32); }
+    else if (/vidéos|Transcription|images clés/i.test(m)) { phase = "videos"; phrase = "Je regarde les vidéos et j'écoute leurs hooks…"; pct = Math.max(pct, 40); }
+    else if (/Commentaires/i.test(m)) { phrase = "Je lis ce que dit leur audience…"; pct = Math.max(pct, 48); }
+    else if (/Ton compte|Lecture de tes Reels|Lecture de ta bio/i.test(m)) { phrase = "J'étudie ce qui marche déjà sur ton compte…"; pct = Math.max(pct, 52); }
+    else if (/adaptation par Claude/i.test(m)) { phase = "adaptation"; enAdaptation = true; phrase = "J'écris tes hooks, tes scripts et tes messages…"; pct = Math.max(pct, 56); }
+    else if ((r = m.match(/^\s*(\d+)\/(\d+)$/)) && enAdaptation) { pct = Math.max(pct, 56 + 38 * r[1] / r[2]); phrase = `J'écris tes adaptations : ${r[1]} sur ${r[2]}…`; }
+    else if (/voix du client/i.test(m)) { phrase = "Je résume ce que veut ton client idéal…"; pct = Math.max(pct, 95); }
+    else if (/Découverte/i.test(m)) { phrase = "Je cherche de nouveaux comptes à surveiller…"; pct = Math.max(pct, 96); }
+    else if (/Mise à jour de \d+ publication/i.test(m)) { phrase = "Je récupère les chiffres de tes Reels…"; pct = Math.max(pct, 40); }
+    else if (/Claude analyse ton positionnement/i.test(m)) { phrase = "Claude analyse ton positionnement…"; pct = Math.max(pct, 60); }
+  }
+  if (j?.statut === "terminé") { pct = 100; phrase = "C'est prêt !"; }
+  return {pct: Math.round(Math.min(pct, 100)), phrase, nbRepere};
+}
+function radarPoints(n) {
+  // Positions pseudo-aléatoires mais stables : les points ne « sautent » pas à chaque rafraîchissement
+  let s = 7, out = "";
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < n; i++) {
+    const ang = rnd() * Math.PI * 2, r = 14 + rnd() * 30;
+    out += `<span class="point" style="left:${50 + Math.cos(ang) * r}%;top:${50 + Math.sin(ang) * r}%;animation-delay:0s,${(rnd() * 2.4).toFixed(2)}s"></span>`;
+  }
+  return out;
+}
 function montreProgression() {
-  $("#feuille").innerHTML = `<h2 id="m-titre">Analyse en cours</h2><p class="sous">Tu peux fermer cette fenêtre : l'analyse continue, et la galerie se mettra à jour à la fin.</p>
-    <div class="progression"><div class="etapes" id="p-etapes"></div><div class="journal" id="p-journal" aria-live="polite"></div><div id="p-erreur"></div></div>
+  $("#feuille").innerHTML = `<div class="radar-zone">
+      <div class="radar" id="p-radar"><div class="balayage"></div><div id="p-points"></div><div class="centre"><b id="p-pct">0<small> %</small></b></div></div>
+      <p class="radar-phrase" id="p-phrase" aria-live="polite">Je prépare l'analyse…</p>
+      <p class="radar-sous" id="p-sous">Tu peux fermer cette fenêtre : je continue et la galerie se remplit au fur et à mesure.</p>
+      <div class="avance"><i id="p-barre" style="width:0"></i></div>
+      <div id="p-erreur" style="width:100%"></div>
+      <button class="detail-lien" id="p-detail-btn" type="button">Voir le détail</button>
+      <div class="journal" id="p-journal" hidden style="width:100%;text-align:left"></div>
+    </div>
     <div class="pied-modale"><button class="btn" data-fermer>Fermer</button></div>`;
+  $("#p-detail-btn").onclick = () => { const jr = $("#p-journal"); jr.hidden = !jr.hidden; $("#p-detail-btn").textContent = jr.hidden ? "Voir le détail" : "Masquer le détail"; jr.scrollTop = jr.scrollHeight; };
   $("#modale").classList.add("ouvert"); majProgression();
 }
 function majProgression() {
-  const j = S.job, jr = $("#p-journal"); if (!j || !jr) return;
-  const txt = j.logs.map(l => l.m).join("\n");
-  let derniere = -1; ETAPES.forEach(([, re], i) => { if (re.test(txt)) derniere = i; });
-  $("#p-etapes").innerHTML = ETAPES.map(([n], i) => `<span class="${i < derniere || j.statut === "terminé" ? "fait" : i === derniere ? "cours" : ""}">${n}</span>`).join("");
+  const j = S.job;
+  const rail = $("#job-rail .mini-job");
+  if (j && rail && (j.statut === "en cours" || j.statut === "en attente")) rail.innerHTML = `<span class="spin"></span>${esc(etatAnalyse(j).phrase.replace(/…$/, ""))} — ${etatAnalyse(j).pct} %`;
+  const jr = $("#p-journal"); if (!j || !jr) return;
+  const e = etatAnalyse(j);
+  $("#p-pct").innerHTML = `${e.pct}<small> %</small>`;
+  $("#p-barre").style.width = e.pct + "%";
+  $("#p-phrase").textContent = j.erreur ? "L'analyse s'est arrêtée." : e.phrase;
+  const nbPoints = Math.min(14, Math.floor(e.pct / 7));
+  if ($("#p-points").childElementCount !== nbPoints) $("#p-points").innerHTML = radarPoints(nbPoints);
+  $("#p-radar").classList.toggle("fini", j.statut === "terminé");
+  $("#p-radar").classList.toggle("arret", !!j.erreur);
+  if (j.statut === "terminé") $("#p-sous").textContent = "Tes Reels t'attendent dans la galerie.";
   const enBas = jr.scrollTop + jr.clientHeight >= jr.scrollHeight - 20;
   jr.innerHTML = j.logs.map(l => `<div><time>${l.t}</time>${esc(l.m)}</div>`).join("") || "<div>Démarrage…</div>";
   if (enBas) jr.scrollTop = jr.scrollHeight;
