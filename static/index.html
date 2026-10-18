@@ -6,6 +6,7 @@
 <title>Veille virale</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/static/boutique.css?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -647,7 +648,14 @@ a.btn{text-decoration:none}
 .bt-police b{display:block;font-size:24px;line-height:1.15;font-weight:400;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bt-police small{font-size:11.5px;color:var(--ink-3)}
 .bt-police[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
-.bt-btn-ex{width:100%;padding:8px 6px;font-size:12px;font-weight:600;text-align:center}
+.bt-btn-ex{display:flex;align-items:center;justify-content:center;width:calc(100% - 22px);min-height:32px;padding:4px 8px;font-size:12px;font-weight:600;text-align:center}
+.bt-saut{position:sticky;top:0;z-index:6;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;background:var(--paper);padding:6px 0 10px;margin-top:-6px}
+.bt-saut button{flex-shrink:0;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-2)}
+.bt-saut button:hover{color:var(--ink);border-color:var(--ink-3)}
+.bt-sec{scroll-margin-top:52px}
+.bt-puces{display:flex;flex-wrap:wrap;gap:6px}
+.bt-puces button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 13px;font-size:13.5px;cursor:pointer;color:var(--ink-2)}
+.bt-puces button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 .bt-rangee{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .bt-interr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;font-size:14.5px;cursor:pointer}
 .bt-interr input{appearance:none;width:40px;height:24px;border-radius:99px;background:var(--line);position:relative;margin:0;cursor:pointer;transition:background .2s;flex-shrink:0}
@@ -753,7 +761,7 @@ a.btn{text-decoration:none}
 .bt-promo p{margin:2px 0 0;font-size:14px;color:#5E5166}
 @media (prefers-color-scheme:dark){.bt-promo{background:linear-gradient(120deg,#3E1F2A,#2A2342);color:var(--ink)}.bt-promo p{color:var(--ink-2)}}
 @media (max-width:1100px){
-  .bt-grille{grid-template-columns:1fr}
+  .bt-grille{grid-template-columns:minmax(0,1fr)}
   .bt-droite{display:none}
   .bt-flottant{display:inline-flex;position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:20;background:#1C1420;color:#fff;border:0;border-radius:99px;padding:12px 20px;font-weight:600;gap:8px;align-items:center;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);cursor:pointer}
 }
@@ -2808,7 +2816,17 @@ const SCHEMAS_ENTETE = {
   cote: '<circle cx="16" cy="16" r="9"/><rect x="29" y="11" width="24" height="5" rx="2"/><rect x="29" y="19" width="16" height="3" rx="1.5" opacity=".6"/><rect x="8" y="34" width="44" height="7" rx="3" opacity=".5"/><rect x="8" y="45" width="44" height="7" rx="3" opacity=".5"/><rect x="8" y="56" width="44" height="7" rx="3" opacity=".5"/>',
   magazine: '<rect x="0" y="0" width="60" height="44" opacity=".55"/><rect x="8" y="32" width="40" height="7" rx="2" fill="#fff"/><rect x="12" y="52" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="63" width="36" height="7" rx="3" opacity=".5"/>',
 };
-const FORMES_CSS_ED = {rond: "border-radius:50%", arrondi: "border-radius:28%", arche: "border-radius:99px 99px 8px 8px;height:52px;width:40px", fleur: "-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat",
+const SCHEMAS_VUES = {
+  grille: '<rect x="6" y="8" width="22" height="22" rx="3"/><rect x="32" y="8" width="22" height="22" rx="3"/><rect x="6" y="36" width="22" height="22" rx="3"/><rect x="32" y="36" width="22" height="22" rx="3"/>',
+  liste: '<rect x="6" y="8" width="14" height="14" rx="3"/><rect x="24" y="11" width="30" height="4" rx="2" opacity=".5"/><rect x="6" y="28" width="14" height="14" rx="3"/><rect x="24" y="31" width="30" height="4" rx="2" opacity=".5"/><rect x="6" y="48" width="14" height="14" rx="3"/><rect x="24" y="51" width="30" height="4" rx="2" opacity=".5"/>',
+  vitrine: '<rect x="6" y="6" width="48" height="28" rx="3"/><rect x="6" y="38" width="34" height="4" rx="2" opacity=".5"/><rect x="6" y="48" width="48" height="22" rx="3" opacity=".7"/>',
+  carrousel: '<rect x="12" y="10" width="36" height="46" rx="4"/><rect x="0" y="16" width="8" height="34" rx="3" opacity=".45"/><rect x="52" y="16" width="8" height="34" rx="3" opacity=".45"/><circle cx="24" cy="64" r="2"/><circle cx="30" cy="64" r="2" opacity=".4"/><circle cx="36" cy="64" r="2" opacity=".4"/>',
+  bento: '<rect x="6" y="6" width="48" height="26" rx="3"/><rect x="6" y="36" width="22" height="22" rx="3" opacity=".7"/><rect x="32" y="36" width="22" height="22" rx="3" opacity=".7"/>',
+  polaroid: '<g transform="rotate(-6 17 26)"><rect x="6" y="12" width="22" height="28" fill="#fff" stroke="#ccc"/><rect x="9" y="15" width="16" height="16"/></g><g transform="rotate(6 43 40)"><rect x="32" y="26" width="22" height="28" fill="#fff" stroke="#ccc"/><rect x="35" y="29" width="16" height="16"/></g>',
+  zigzag: '<rect x="6" y="6" width="22" height="18" rx="2"/><rect x="32" y="12" width="22" height="4" rx="2" opacity=".5"/><rect x="32" y="30" width="22" height="18" rx="2"/><rect x="6" y="36" width="22" height="4" rx="2" opacity=".5"/><rect x="6" y="54" width="22" height="16" rx="2"/><rect x="32" y="60" width="22" height="4" rx="2" opacity=".5"/>',
+  mini: '<rect x="6" y="10" width="48" height="10" rx="5" opacity=".7"/><rect x="6" y="25" width="48" height="10" rx="5" opacity=".7"/><rect x="6" y="40" width="48" height="10" rx="5" opacity=".7"/><rect x="6" y="55" width="48" height="10" rx="5" opacity=".7"/>',
+};
+const FORMES_CSS_ED = {hexagone: "", losange: "", coeur: "", polaroid: "border-width:4px;border-bottom-width:12px", anneau: "box-shadow:0 0 0 3px #fff,0 0 0 5px var(--a)",rond: "border-radius:50%", arrondi: "border-radius:28%", arche: "border-radius:99px 99px 8px 8px;height:52px;width:40px", fleur: "-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat",
   goutte: "border-radius:62% 38% 55% 45% / 48% 60% 40% 52%", etoile: "clip-path:polygon(50% 0,61% 13%,78% 7%,80% 24%,96% 30%,88% 45%,100% 58%,84% 66%,86% 84%,69% 84%,60% 100%,50% 88%,40% 100%,31% 84%,14% 84%,16% 66%,0 58%,12% 45%,4% 30%,20% 24%,22% 7%,39% 13%)"};
 function styleBoutonEx(style, d) {
   const b = d.bouton_fond.slice(0, 7), t = d.bouton_texte.slice(0, 7), o = d.bouton_ombre.slice(0, 7), r = Math.min(d.rayon, 99) + "px";
@@ -2822,7 +2840,10 @@ function surprendsMoi() {
   let d = themeApplique(BQ.page.design, t.id);
   const titres = o.polices.map(p => p.nom), textes = o.polices_texte;
   d = {...d, entete: h(Object.keys(o.entetes)), photo_forme: h(Object.keys(o.formes)), police_titre: h(titres), police_texte: h(textes),
-    bouton_style: h(Object.keys(o.boutons)), rayon: h([0, 8, 14, 22, 999]), animation: h(["pulse", "secousse", "brillance"]), theme: "perso"};
+    bouton_style: h(Object.keys(o.boutons)), bouton_forme: h(Object.keys(o.formes_bouton)), survol: h(Object.keys(o.survols)),
+    image_forme: h(Object.keys(o.formes_image)), prix_style: h(Object.keys(o.styles_prix)), carte_cadre: h(Object.keys(o.cadres_carte)),
+    produits_vue: h(Object.keys(o.vues_produits)), decor: Math.random() < .5 ? "aucun" : h(Object.keys(o.decors)),
+    rayon: h([0, 8, 14, 22, 999]), animation: h(["pulse", "secousse", "brillance"]), theme: "perso"};
   if (d.fond_type === "motif" || Math.random() < .3) { d.fond_type = "motif"; d.motif = h(Object.keys(o.motifs)); }
   if ((BQ.palettes || []).length && Math.random() < .5) d = {...d, ...paletteDesign(h(BQ.palettes))};
   BQ.page.design = d; modifieBoutique(true); toast("Nouveau look : " + t.nom + " remixé");
@@ -2834,34 +2855,50 @@ function ongletDesign(z) {
   const couleur = (k, lab) => `<label class="bt-couleur">${lab}<input type="color" data-d="${k}" value="${d[k].slice(0, 7)}"></label>`;
   const curseur = (k, min, max, unite) => `<div class="bt-curseur"><input type="range" data-d="${k}" min="${min}" max="${max}" value="${Math.min(d[k], max)}" aria-label="${k}"><span data-aff="${k}">${d[k] >= 999 ? "∞" : d[k]}${unite}</span></div>`;
   const photo = BQ.page.photo ? `background:url('${urlImg(BQ.page.photo)}') center/cover` : `background:${d.accent.slice(0, 7)}`;
+  const c7 = k => d[k].slice(0, 7);
+  const vars = `--b:${d.bouton_fond};--bt:${c7("bouton_texte")};--bo:${c7("bouton_ombre")};--a:${c7("accent")};--r:${d.rayon >= 999 ? 999 : d.rayon}px;--f1:${c7("fond1")};--t:${c7("texte")};--k:${d.bloc_fond};--kt:${c7("bloc_texte")};--rk:${Math.min(d.rayon, 26)}px`;
+  const clip = f => o.formes_decoupees.includes(f) ? " bf-clip" : "";
+  const exBtn = (style, forme) => `<span class="bt-btn-ex lb bs-${style} bf-${forme}${clip(forme)}">Mon lien</span>`;
+  const optP = (k, v, vis, lab) => `<button class="bt-opt" data-dset="${k}" data-v="${v}" aria-pressed="${String(d[k]) === String(v)}"><span class="vis" style="${vars};background:${d.fond_type === "degrade" || d.fond_type === "anime" ? `linear-gradient(160deg,${c7("fond1")},${c7("fond2")})` : c7("fond1")}">${vis}</span>${lab}</button>`;
+  const puces = (k, dict) => `<div class="bt-puces">${Object.entries(dict).map(([v, l]) => `<button data-dset="${k}" data-v="${v}" aria-pressed="${d[k] === v}">${l}</button>`).join("")}</div>`;
+  const prodImg = BQ.page.produits.find(p => p.image)?.image;
+  const imgP = prodImg ? `background:url('${urlImg(prodImg)}') center/cover` : `background:${c7("accent")}`;
+  const PRIX_EX = {texte: `color:${c7("accent")};font-weight:700`, pastille: `background:${c7("accent")};color:#fff;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;transform:rotate(12deg);font-weight:700`,
+    etiquette: `background:${c7("accent")};color:#fff;padding:3px 10px 3px 15px;clip-path:polygon(9px 0,100% 0,100% 100%,9px 100%,0 50%);font-weight:700`,
+    bouton: `background:${d.bouton_fond};color:${c7("bouton_texte")};padding:3px 10px;border-radius:99px;font-weight:700`,
+    surligne: `color:${c7("bloc_texte")};background:linear-gradient(transparent 55%,${c7("accent")}99 55%);font-weight:700`};
+  const CADRE_EX = {ombre: "box-shadow:0 6px 14px -6px rgba(0,0,0,.35)", contour: `border:1.5px solid ${c7("bloc_texte")}44`, decale: `border:2px solid ${c7("bouton_ombre")};box-shadow:3px 3px 0 ${c7("bouton_ombre")}`,
+    verre: "background:rgba(255,255,255,.45)!important;border:1px solid rgba(255,255,255,.7)", flottant: "box-shadow:0 14px 18px -10px rgba(0,0,0,.55)", sans: "background:transparent!important"};
+  const DECOR_EX = {aucun: "∅", etincelles: "✦ ✧", bulles: "◯", confettis: "🎉", coeurs: "♥ ♥", formes: "◇ ○"};
   z.innerHTML = `
-    <section class="bt-sec"><h3>Thèmes <button class="btn petit" id="bt-surprise" style="margin-left:auto">🎲 Surprends-moi</button></h3><p class="aide">Un look complet en un clic. Tout reste modifiable en dessous.</p>
+    <nav class="bt-saut">${[["th", "Thèmes"], ["en", "En-tête"], ["ph", "Photo"], ["fo", "Fond"], ["co", "Couleurs"], ["ty", "Typo"], ["bo", "Boutons"], ["pr", "Produits"], ["de", "Décor"]].map(([i, l]) => `<button data-saut="bt-s-${i}">${l}</button>`).join("")}</nav>
+    <section class="bt-sec" id="bt-s-th"><h3>Thèmes <button class="btn petit" id="bt-surprise" style="margin-left:auto">🎲 Surprends-moi</button></h3><p class="aide">Un look complet en un clic. Tout reste modifiable en dessous.</p>
       <div class="seg" style="margin-bottom:12px;max-width:100%;overflow-x:auto">${o.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
       <div class="bt-themes" id="bt-themes"></div>
       ${BQ.palettes || BQ.page.photo ? `<p class="bt-sous-titre">✨ Couleurs tirées de ta photo</p><div class="bt-palettes" id="bt-palettes">${(BQ.palettes || []).map((p, i) => paletteHTML(p, i)).join("") || '<span class="aide">Calcul…</span>'}</div>` : ""}
     </section>
-    <section class="bt-sec"><h3>En-tête</h3><p class="aide">La disposition du haut de ta page.</p>
+    <section class="bt-sec" id="bt-s-en"><h3>En-tête</h3><p class="aide">La disposition du haut de ta page.</p>
       <div class="bt-choix">${Object.entries(o.entetes).map(([k, l]) => opt("entete", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${d.accent.slice(0, 7)}">${SCHEMAS_ENTETE[k]}</svg>`, l)).join("")}</div>
     </section>
-    <section class="bt-sec"><h3>Photo de profil</h3>
+    <section class="bt-sec" id="bt-s-ph"><h3>Photo de profil</h3>
       <p class="bt-sous-titre" style="margin-top:0">Forme</p>
-      <div class="bt-choix">${Object.entries(o.formes).map(([k, l]) => opt("photo_forme", k, `<i style="display:block;width:46px;height:46px;${photo};${FORMES_CSS_ED[k]}"></i>`, l)).join("")}</div>
+      <div class="bt-choix">${Object.entries(o.formes).map(([k, l]) => opt("photo_forme", k, `<i class="ph-${k}" style="display:block;width:46px;height:46px;--a:${d.accent.slice(0, 7)};--f1:${d.fond1.slice(0, 7)};${photo};${FORMES_CSS_ED[k] || ""}"></i>`, l)).join("")}</div>
       <p class="bt-sous-titre">Taille</p>${curseur("photo_taille", 64, 200, " px")}
       <label class="bt-interr"><span>Contour coloré</span><input type="checkbox" data-d="photo_contour" ${d.photo_contour ? "checked" : ""}></label>
     </section>
-    <section class="bt-sec"><h3>Fond</h3>
+    <section class="bt-sec" id="bt-s-fo"><h3>Fond</h3>
       <div class="bt-choix">${Object.entries(o.fonds).map(([k, l]) => opt("fond_type", k, apercuFond(k, d), l)).join("")}</div>
       ${d.fond_type === "motif" ? `<p class="bt-sous-titre">Motif</p><div class="bt-rangee">${Object.entries(o.motifs).map(([k, l]) => `<button class="btn petit" data-dset="motif" data-v="${k}" aria-pressed="${d.motif === k}" style="${d.motif === k ? "border-color:var(--ink);font-weight:700" : ""}">${l}</button>`).join("")}</div>` : ""}
       ${d.fond_type === "image" ? `<p class="bt-sous-titre">Image de fond</p><label class="bt-depot">${d.fond_image ? `<img src="${urlImg(d.fond_image)}" alt="">` : "🖼️"}<span>${d.fond_image ? "Changer l'image" : "Choisis une image (paysage, texture, ta photo…)"}</span><input type="file" accept="image/*" data-envoi="fond_image"></label>
         <p class="bt-sous-titre">Voile pour garder le texte lisible</p>${curseur("fond_voile", 0, 80, " %")}` : ""}
       <div class="bt-couleurs" style="margin-top:10px">${couleur("fond1", d.fond_type === "uni" || d.fond_type === "image" ? "Couleur du fond" : "Couleur 1")}${["degrade", "motif", "anime"].includes(d.fond_type) ? couleur("fond2", d.fond_type === "motif" ? "Couleur du motif" : "Couleur 2") : ""}</div>
     </section>
-    <section class="bt-sec"><h3>Couleurs</h3>
+    <section class="bt-sec" id="bt-s-co"><h3>Couleurs</h3>
       <p class="bt-sous-titre" style="margin-top:0">En-tête</p><div class="bt-couleurs">${couleur("texte", "Texte et icônes")}${couleur("accent", "Couleur d'accent")}</div>
       <p class="bt-sous-titre">Boutons de liens</p><div class="bt-couleurs">${couleur("bouton_fond", "Fond")}${couleur("bouton_texte", "Texte")}${couleur("bouton_ombre", "Ombre ou bordure")}</div>
       <p class="bt-sous-titre">Cartes (produits, formulaire)</p><div class="bt-couleurs">${couleur("bloc_fond", "Fond")}${couleur("bloc_texte", "Texte")}</div>
     </section>
-    <section class="bt-sec"><h3>Typographie</h3>
+    <section class="bt-sec" id="bt-s-ty"><h3>Typographie</h3>
       <p class="bt-sous-titre" style="margin-top:0">Titres</p>
       <div class="bt-polices">${o.polices.map(p => `<button class="bt-police" data-dset="police_titre" data-v="${esc(p.nom)}" aria-pressed="${d.police_titre === p.nom}"><b style="font-family:'${esc(p.nom)}'">Aa Bb</b><small>${esc(p.nom)}</small></button>`).join("")}</div>
       <p class="bt-sous-titre">Taille du nom</p>
@@ -2869,16 +2906,31 @@ function ongletDesign(z) {
       <p class="bt-sous-titre">Texte</p>
       <div class="bt-polices" style="max-height:none">${o.polices_texte.map(n => `<button class="bt-police" data-dset="police_texte" data-v="${esc(n)}" aria-pressed="${d.police_texte === n}"><b style="font-family:'${esc(n)}';font-size:17px">Bonjour !</b><small>${esc(n)}</small></button>`).join("")}</div>
     </section>
-    <section class="bt-sec"><h3>Boutons</h3>
-      <div class="bt-choix larges">${Object.entries(o.boutons).map(([k, l]) => opt("bouton_style", k, `<span class="bt-btn-ex" style="${styleBoutonEx(k, d)};margin:0 10px">Mon lien</span>`, l)).join("")}</div>
+    <section class="bt-sec" id="bt-s-bo"><h3>Boutons</h3><p class="aide">Combine librement un style et une forme : ${Object.keys(o.boutons).length * Object.keys(o.formes_bouton).length} boutons possibles.</p>
+      <p class="bt-sous-titre" style="margin-top:0">Style</p>
+      <div class="bt-choix larges">${Object.entries(o.boutons).map(([k, l]) => optP("bouton_style", k, exBtn(k, d.bouton_forme), l)).join("")}</div>
+      <p class="bt-sous-titre">Forme</p>
+      <div class="bt-choix larges">${Object.entries(o.formes_bouton).map(([k, l]) => optP("bouton_forme", k, exBtn(d.bouton_style, k), l)).join("")}</div>
       <p class="bt-sous-titre">Arrondi des coins</p>${curseur("rayon", 0, 40, " px")}
-      <button class="btn petit" data-dset="rayon" data-v="999">Bords ronds (pilule)</button>
-      <p class="bt-sous-titre">Animation du lien mis en avant</p>
-      <div class="seg">${Object.entries(o.animations).map(([k, l]) => `<button data-dset="animation" data-v="${k}" aria-pressed="${d.animation === k}">${l}</button>`).join("")}</div>
+      <button class="btn petit" data-dset="rayon" data-v="999">Bords ronds au maximum</button>
+      <p class="bt-sous-titre">Taille</p>${puces("bouton_taille", o.tailles_bouton)}
+      <p class="bt-sous-titre">Texte</p>${puces("alignement", o.alignements)}
+      <p class="bt-sous-titre">Effet au survol</p>${puces("survol", o.survols)}
+      <p class="bt-sous-titre">Animation du lien mis en avant</p>${puces("animation", o.animations)}
       <label class="bt-interr" style="margin-top:8px"><span>Apparition en douceur des blocs</span><input type="checkbox" data-d="apparition" ${d.apparition ? "checked" : ""}></label>
     </section>
-    <section class="bt-sec"><h3>Affichage des produits</h3>
-      <div class="seg">${Object.entries(o.vues_produits).map(([k, l]) => `<button data-dset="produits_vue" data-v="${k}" aria-pressed="${d.produits_vue === k}">${l}</button>`).join("")}</div>
+    <section class="bt-sec" id="bt-s-pr"><h3>Produits</h3><p class="aide">La présentation de ta boutique.</p>
+      <p class="bt-sous-titre" style="margin-top:0">Disposition</p>
+      <div class="bt-choix">${Object.entries(o.vues_produits).map(([k, l]) => opt("produits_vue", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${c7("accent")}">${SCHEMAS_VUES[k]}</svg>`, l)).join("")}</div>
+      <p class="bt-sous-titre">Forme des images</p>
+      <div class="bt-choix">${Object.entries(o.formes_image).map(([k, l]) => optP("image_forme", k, `<i class="pi-${k}" style="display:block;width:44px;height:44px;border-radius:9px;${imgP}"></i>`, l)).join("")}</div>
+      <p class="bt-sous-titre">Prix</p>
+      <div class="bt-choix">${Object.entries(o.styles_prix).map(([k, l]) => optP("prix_style", k, `<span style="font-size:12px;${PRIX_EX[k]}">19 €</span>`, l)).join("")}</div>
+      <p class="bt-sous-titre">Cadre des cartes</p>
+      <div class="bt-choix">${Object.entries(o.cadres_carte).map(([k, l]) => optP("carte_cadre", k, `<i style="display:block;width:52px;height:40px;border-radius:8px;background:${d.bloc_fond};${CADRE_EX[k]}"></i>`, l)).join("")}</div>
+    </section>
+    <section class="bt-sec" id="bt-s-de"><h3>Décor</h3><p class="aide">Une touche animée en arrière-plan, discrète.</p>
+      <div class="bt-choix">${Object.entries(o.decors).map(([k, l]) => optP("decor", k, `<span style="font-size:22px;color:${c7("accent")};letter-spacing:4px;${k === "bulles" ? "filter:blur(1.5px)" : ""}">${DECOR_EX[k]}</span>`, l)).join("")}</div>
     </section>`;
   remplitThemes($("#bt-themes"), amb, d.theme, null);
   lieChamps(z);
@@ -2886,10 +2938,11 @@ function ongletDesign(z) {
   $("#bt-themes").onclick = e => { const b = e.target.closest("[data-theme]"); if (!b) return;
     BQ.page.design = themeApplique(BQ.page.design, b.dataset.theme); modifieBoutique(true); };
   $("#bt-surprise").onclick = surprendsMoi;
+  z.querySelectorAll("[data-saut]").forEach(b => b.onclick = () => document.getElementById(b.dataset.saut)?.scrollIntoView({behavior: "smooth", block: "start"}));
   z.querySelectorAll("[data-dset]").forEach(b => b.onclick = () => {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
     if (typeof def === "number") v = +v;
-    d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre"].includes(k)) d.theme = "perso";
+    d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor"].includes(k)) d.theme = "perso";
     if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
     modifieBoutique(true);
   });

@@ -46,6 +46,7 @@ from espace import CODE, DATA, espace_client
 from modele import FIL, LOG_HOOKS
 
 app = Flask(__name__, static_folder=str(CODE / "static"), static_url_path="/static")
+app.json.sort_keys = False  # garde l'ordre voulu des options (thèmes, formes…)
 DEMO_FORCE = False
 
 
@@ -1195,6 +1196,9 @@ def _options_boutique() -> dict:
             "ambiances": bq.AMBIANCES, "polices": [{"nom": k, "categorie": v[2]} for k, v in bq.POLICES.items()],
             "polices_texte": bq.POLICES_TEXTE, "entetes": bq.ENTETES, "formes": bq.FORMES, "fonds": bq.FONDS, "motifs": bq.MOTIFS,
             "boutons": bq.BOUTONS, "animations": bq.ANIMATIONS, "vues_produits": bq.VUES_PRODUITS,
+            "formes_bouton": bq.FORMES_BOUTON, "formes_decoupees": sorted(bq.FORMES_DECOUPEES), "survols": bq.SURVOLS,
+            "tailles_bouton": bq.TAILLES_BOUTON, "alignements": bq.ALIGNEMENTS, "decors": bq.DECORS, "formes_image": bq.FORMES_IMAGE,
+            "styles_prix": bq.STYLES_PRIX, "cadres_carte": bq.CADRES_CARTE,
             "reseaux": {k: v[0] for k, v in bq.RESEAUX.items()}, "defaut": bq.DESIGN_DEFAUT}
 
 

@@ -31,6 +31,7 @@ import abonnements as ab
 from espace import DATA
 
 E = html.escape
+CSS_COMMUN = (Path(__file__).resolve().parent / "static" / "boutique.css").read_text(encoding="utf-8")
 VERROUS: dict[int, threading.Lock] = {}
 _v = threading.Lock()
 
@@ -178,12 +179,28 @@ LOCALES = {
 }
 
 ENTETES = {"minimal": "Minimal", "banniere": "Bannière", "portrait": "Portrait", "arche": "Arche", "cote": "Côte à côte", "magazine": "Magazine"}
-FORMES = {"rond": "Rond", "arrondi": "Arrondi", "arche": "Arche", "fleur": "Fleur", "goutte": "Galet", "etoile": "Étoile"}
+FORMES = {"rond": "Rond", "arrondi": "Arrondi", "arche": "Arche", "fleur": "Fleur", "goutte": "Galet", "etoile": "Étoile",
+          "hexagone": "Hexagone", "losange": "Losange", "coeur": "Cœur", "polaroid": "Polaroïd", "anneau": "Anneaux"}
 FONDS = {"uni": "Uni", "degrade": "Dégradé", "image": "Image", "motif": "Motif", "anime": "Animé"}
-MOTIFS = {"points": "Points", "grille": "Grille", "vagues": "Vagues", "grain": "Grain", "damier": "Damier", "rayures": "Rayures"}
-BOUTONS = {"plein": "Plein", "contour": "Contour", "decale": "Ombre décalée", "doux": "Ombre douce", "verre": "Verre", "souligne": "Souligné"}
+MOTIFS = {"points": "Points", "grille": "Grille", "vagues": "Vagues", "grain": "Grain", "damier": "Damier", "rayures": "Rayures",
+          "vichy": "Vichy", "zigzag": "Zigzag", "etoiles": "Étoiles", "losanges": "Losanges"}
+BOUTONS = {"plein": "Plein", "contour": "Contour", "decale": "Ombre décalée", "doux": "Ombre douce", "verre": "Verre", "degrade": "Dégradé",
+           "neon": "Néon", "relief": "Relief 3D", "double": "Double trait", "pointille": "Pointillés", "cadre": "Cadre décalé", "pastel": "Pastel",
+           "holo": "Holographique", "papier": "Papier", "surligneur": "Surligneur", "souligne": "Souligné"}
+FORMES_BOUTON = {"arrondi": "Arrondi", "pilule": "Pilule", "carre": "Carré", "feuille": "Feuille", "galet": "Galet", "croquis": "Dessiné main",
+                 "capsule": "Capsule", "coin": "Coins opposés", "bulle": "Bulle", "parallelo": "Penché", "biseau": "Biseauté",
+                 "etiquette": "Étiquette", "fleche": "Flèche", "ticket": "Ticket", "festons": "Festons", "onde": "Rideau", "pixel": "Pixel"}
+FORMES_DECOUPEES = {"biseau", "etiquette", "fleche", "ticket", "festons", "onde", "pixel"}
+SURVOLS = {"soulever": "Soulever", "grossir": "Grossir", "incliner": "Basculer 3D", "enfoncer": "Enfoncer", "rebond": "Rebond", "tourner": "Pencher", "aucun": "Aucun"}
+TAILLES_BOUTON = {"compact": "Compact", "normal": "Normal", "grand": "Généreux"}
+ALIGNEMENTS = {"centre": "Centré", "gauche": "À gauche"}
+DECORS = {"aucun": "Aucun", "etincelles": "Étincelles", "bulles": "Bulles floues", "confettis": "Confettis", "coeurs": "Cœurs", "formes": "Formes géométriques"}
+FORMES_IMAGE = {"carre": "Arrondi", "arche": "Arche", "rond": "Rond", "galet": "Galet", "biseau": "Biseauté", "fenetre": "Fenêtre", "polaroid": "Polaroïd", "fleur": "Fleur"}
+STYLES_PRIX = {"texte": "Texte", "pastille": "Pastille", "etiquette": "Étiquette", "bouton": "Bouton", "surligne": "Surligné"}
+CADRES_CARTE = {"ombre": "Ombre", "contour": "Contour", "decale": "Décalé", "verre": "Verre", "flottant": "Flottant", "sans": "Sans cadre"}
 ANIMATIONS = {"aucune": "Aucune", "pulse": "Pulsation", "secousse": "Secousse", "brillance": "Reflet"}
-VUES_PRODUITS = {"liste": "Liste", "grille": "Grille", "vitrine": "Vitrine"}
+VUES_PRODUITS = {"grille": "Grille", "liste": "Liste", "vitrine": "Vitrine", "carrousel": "Carrousel", "bento": "Bento", "polaroid": "Polaroïds",
+                 "zigzag": "Zigzag", "mini": "Compacte"}
 TAILLES_TITRE = {"s": 26, "m": 32, "l": 40, "xl": 52}
 
 DESIGN_DEFAUT = {
@@ -193,6 +210,8 @@ DESIGN_DEFAUT = {
     "bloc_fond": "#FFFFFF", "bloc_texte": "#2A211C", "accent": "#B4693E",
     "police_titre": "Libre Baskerville", "police_texte": "Poppins", "taille_titre": "l",
     "bouton_style": "plein", "rayon": 16, "animation": "pulse", "apparition": True, "produits_vue": "grille",
+    "bouton_forme": "arrondi", "survol": "soulever", "bouton_taille": "normal", "alignement": "centre", "decor": "aucun",
+    "image_forme": "carre", "prix_style": "texte", "carte_cadre": "ombre",
 }
 
 # Thèmes prêts à l'emploi, regroupés par ambiance (comme les « looks » de Beacons, en plus poussé)
@@ -254,7 +273,50 @@ THEMES = {
                  bouton_texte="#FFFFFF", bouton_ombre="#000000", bloc_fond="#FFFFFF14", bloc_texte="#FFFFFF", accent="#C6F432",
                  police_titre="Syne", police_texte="Inter", bouton_style="verre", rayon=28, photo_forme="rond"),
 }
-AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux"]
+# Formes et finitions propres à chaque thème
+_FINITIONS = {
+    "sable": dict(bouton_forme="arrondi", survol="soulever", image_forme="carre", carte_cadre="ombre"),
+    "encre": dict(bouton_forme="carre", survol="enfoncer", image_forme="fenetre", carte_cadre="contour", prix_style="surligne", produits_vue="vitrine"),
+    "papier": dict(bouton_forme="pilule", survol="soulever", image_forme="arche", carte_cadre="sans"),
+    "minuit": dict(bouton_forme="capsule", survol="incliner", image_forme="carre", carte_cadre="flottant", produits_vue="bento"),
+    "bonbon": dict(bouton_forme="galet", survol="rebond", image_forme="galet", carte_cadre="decale", prix_style="pastille", decor="coeurs"),
+    "neon": dict(bouton_style="neon", bouton_forme="biseau", survol="grossir", image_forme="biseau", carte_cadre="contour", decor="etincelles", prix_style="etiquette"),
+    "pop": dict(bouton_forme="arrondi", survol="enfoncer", image_forme="rond", carte_cadre="decale", prix_style="pastille", decor="confettis"),
+    "couchant": dict(bouton_forme="pilule", survol="soulever", image_forme="arche", carte_cadre="verre", decor="bulles", produits_vue="carrousel"),
+    "terracotta": dict(bouton_forme="feuille", survol="soulever", image_forme="arche", carte_cadre="ombre", prix_style="bouton"),
+    "sauge": dict(bouton_style="papier", bouton_forme="croquis", survol="tourner", image_forme="galet", carte_cadre="sans", produits_vue="zigzag"),
+    "lin": dict(bouton_forme="carre", survol="aucun", alignement="gauche", image_forme="carre", carte_cadre="sans", produits_vue="liste"),
+    "cacao": dict(bouton_forme="capsule", survol="soulever", image_forme="fenetre", carte_cadre="flottant"),
+    "affiche": dict(bouton_forme="carre", survol="tourner", bouton_taille="grand", image_forme="carre", carte_cadre="contour", prix_style="etiquette", produits_vue="vitrine"),
+    "brutal": dict(bouton_forme="carre", survol="enfoncer", image_forme="carre", carte_cadre="decale", prix_style="surligne", decor="formes", produits_vue="bento"),
+    "aurore": dict(bouton_forme="pilule", survol="grossir", image_forme="rond", carte_cadre="verre", decor="bulles"),
+    "chrome": dict(bouton_forme="pilule", survol="incliner", image_forme="carre", carte_cadre="verre", decor="etincelles", produits_vue="carrousel"),
+}
+for _cle, _fin in _FINITIONS.items():
+    THEMES[_cle]["design"].update(_fin)
+THEMES.update({
+    "ticket": _t("Ticket rétro", "Créatif", entete="minimal", fond_type="motif", motif="rayures", fond1="#F6ECD9", fond2="#EFDFC2", texte="#2E2A24",
+                 bouton_fond="#D9483B", bouton_texte="#FFF6E5", bouton_ombre="#8F2A21", bloc_fond="#FFF9EE", bloc_texte="#2E2A24", accent="#D9483B",
+                 police_titre="Abril Fatface", police_texte="DM Sans", bouton_style="plein", bouton_forme="ticket", rayon=10, photo_forme="polaroid",
+                 survol="tourner", image_forme="polaroid", prix_style="etiquette", carte_cadre="contour", produits_vue="polaroid"),
+    "y2k": _t("Y2K", "Créatif", entete="minimal", fond_type="anime", fond1="#FFB8E6", fond2="#B8E1FF", texte="#3B1A5A", bouton_fond="#FFFFFF",
+              bouton_texte="#3B1A5A", bouton_ombre="#9B6BFF", bloc_fond="#FFFFFFB3", bloc_texte="#3B1A5A", accent="#9B6BFF",
+              police_titre="Righteous", police_texte="Nunito", bouton_style="holo", bouton_forme="bulle", rayon=20, photo_forme="coeur",
+              survol="rebond", image_forme="fleur", prix_style="pastille", carte_cadre="verre", decor="etincelles", produits_vue="grille"),
+    "arcade": _t("Arcade", "Créatif", entete="cote", fond_type="motif", motif="grille", fond1="#1A1033", fond2="#2A1B4D", texte="#F8F1FF",
+                 bouton_fond="#FF4FA3", bouton_texte="#1A1033", bouton_ombre="#00E5FF", bloc_fond="#24164A", bloc_texte="#F8F1FF", accent="#00E5FF",
+                 police_titre="Space Grotesk", police_texte="Space Mono", bouton_style="decale", bouton_forme="pixel", rayon=0, photo_forme="hexagone",
+                 survol="enfoncer", image_forme="biseau", prix_style="bouton", carte_cadre="decale", decor="formes", produits_vue="mini"),
+    "boheme": _t("Bohème", "Créatif", entete="arche", fond_type="motif", motif="grain", fond1="#EFE3D3", fond2="#E4D3BD", texte="#4A3426",
+                 bouton_fond="#F8F0E4", bouton_texte="#4A3426", bouton_ombre="#B08868", bloc_fond="#F8F0E4", bloc_texte="#4A3426", accent="#B5643C",
+                 police_titre="Caveat", police_texte="Lora", bouton_style="papier", bouton_forme="croquis", rayon=18, photo_forme="arche",
+                 survol="tourner", image_forme="arche", prix_style="surligne", carte_cadre="sans", produits_vue="zigzag"),
+    "luxe": _t("Luxe", "Classique", entete="minimal", fond_type="uni", fond1="#0F0F0F", texte="#EADBC0", bouton_fond="#0F0F0F",
+               bouton_texte="#EADBC0", bouton_ombre="#000000", bloc_fond="#171615", bloc_texte="#EADBC0", accent="#C9A86A",
+               police_titre="Cormorant Garamond", police_texte="Inter", bouton_style="double", bouton_forme="carre", rayon=0, photo_forme="anneau",
+               survol="aucun", image_forme="fenetre", prix_style="texte", carte_cadre="contour", produits_vue="vitrine"),
+})
+AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif"]
 
 COULEUR = re.compile(r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
 
@@ -278,7 +340,9 @@ def design_propre(d: dict) -> dict:
                 r[k] = v
         else:
             choix = {"entete": ENTETES, "photo_forme": FORMES, "fond_type": FONDS, "motif": MOTIFS, "bouton_style": BOUTONS,
-                     "animation": ANIMATIONS, "produits_vue": VUES_PRODUITS, "taille_titre": TAILLES_TITRE, "theme": {**THEMES, "perso": 1},
+                     "animation": ANIMATIONS, "produits_vue": VUES_PRODUITS, "bouton_forme": FORMES_BOUTON, "survol": SURVOLS,
+                     "bouton_taille": TAILLES_BOUTON, "alignement": ALIGNEMENTS, "decor": DECORS, "image_forme": FORMES_IMAGE,
+                     "prix_style": STYLES_PRIX, "carte_cadre": CADRES_CARTE, "taille_titre": TAILLES_TITRE, "theme": {**THEMES, "perso": 1},
                      "police_titre": POLICES, "police_texte": POLICES}.get(k)
             if choix is not None and v in choix:
                 r[k] = v
@@ -454,6 +518,7 @@ FORMES_CSS = {
     "arche": "border-radius:999px 999px 18px 18px;aspect-ratio:3/4!important;height:auto!important",
     "fleur": "-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat;border-radius:0",
     "goutte": "border-radius:62% 38% 55% 45% / 48% 60% 40% 52%",
+    "hexagone": "", "losange": "", "coeur": "", "polaroid": "", "anneau": "",
     "etoile": "clip-path:polygon(50% 0,61% 13%,78% 7%,80% 24%,96% 30%,88% 45%,100% 58%,84% 66%,86% 84%,69% 84%,60% 100%,50% 88%,40% 100%,31% 84%,14% 84%,16% 66%,0 58%,12% 45%,4% 30%,20% 24%,22% 7%,39% 13%);border-radius:0",
 }
 
@@ -477,25 +542,27 @@ def _css(d: dict) -> str:
         "grain": "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         "damier": f"background-image:conic-gradient({c2} 25%,transparent 0 50%,{c2} 0 75%,transparent 0);background-size:40px 40px",
         "rayures": f"background-image:repeating-linear-gradient(45deg,{c2} 0 10px,transparent 10px 22px)",
+        "vichy": f"background-image:linear-gradient(90deg,color-mix(in srgb,{c2} 55%,transparent) 50%,transparent 0),linear-gradient(color-mix(in srgb,{c2} 55%,transparent) 50%,transparent 0);background-size:30px 30px",
+        "zigzag": f"background:linear-gradient(135deg,{c2} 25%,transparent 25%) -15px 0/30px 30px,linear-gradient(225deg,{c2} 25%,transparent 25%) -15px 0/30px 30px,linear-gradient(315deg,{c2} 25%,transparent 25%) 0 0/30px 30px,linear-gradient(45deg,{c2} 25%,transparent 25%) 0 0/30px 30px",
+        "etoiles": "background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath fill='" + c2.replace("#", "%23")[:7] + "' d='M15 4l2.4 7.2H25l-6.1 4.5 2.3 7.3L15 18.5 8.8 23l2.3-7.3L5 11.2h7.6zM45 34l1.6 4.8h5l-4 3 1.5 4.8-4.1-3-4.1 3 1.5-4.8-4-3h5z'/%3E%3C/svg%3E\")",
+        "losanges": f"background-image:linear-gradient(45deg,{c2} 25%,transparent 25% 75%,{c2} 75%),linear-gradient(-45deg,{c2} 25%,transparent 25% 75%,{c2} 75%);background-size:34px 34px;opacity:.55",
     }[d["motif"]] if d["fond_type"] == "motif" else ""
     bt = d["bouton_style"]
-    bouton = {
-        "plein": f"background:var(--b);color:var(--bt);border:0;box-shadow:0 2px 0 var(--bo)",
-        "contour": "background:transparent;color:var(--bt);border:2px solid var(--bt)",
-        "decale": "background:var(--b);color:var(--bt);border:2px solid var(--bo);box-shadow:4px 4px 0 var(--bo)",
-        "doux": "background:var(--b);color:var(--bt);border:0;box-shadow:0 10px 24px -10px var(--bo)",
-        "verre": "background:var(--b);color:var(--bt);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)",
-        "souligne": "background:transparent;color:var(--t);border:0;border-bottom:1.5px solid var(--t);border-radius:0!important",
-    }[bt]
-    if bt == "verre" and d["bouton_fond"].upper() in ("#FFFFFF", "#FFF"):
-        bouton = bouton.replace("var(--b)", "rgba(255,255,255,.88)")
-    survol = {"decale": "transform:translate(2px,2px);box-shadow:2px 2px 0 var(--bo)", "souligne": "opacity:.7"}.get(bt, "transform:translateY(-2px)")
     taille = TAILLES_TITRE[d["taille_titre"]]
     tf = POLICES[d["police_titre"]][0]
     tx = POLICES[d["police_texte"]][0]
     capitales = d["police_titre"] in ("Bebas Neue", "Anton")
-    return f"""
-:root{{--f1:{d['fond1']};--f2:{d['fond2']};--t:{d['texte']};--b:{d['bouton_fond']};--bt:{d['bouton_texte']};--bo:{d['bouton_ombre']};
+    sur_accent = "#1A1A1A" if _clair(d["accent"][:7]) else "#FFFFFF"
+    cadre = {
+        "ombre": "box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -18px rgba(0,0,0,.35)",
+        "contour": "border:1.5px solid color-mix(in srgb,var(--kt) 24%,transparent)",
+        "decale": "border:2px solid var(--bo);box-shadow:4px 4px 0 var(--bo)",
+        "verre": "background:color-mix(in srgb,var(--k) 60%,transparent);border:1px solid rgba(255,255,255,.35);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)",
+        "flottant": "box-shadow:0 28px 40px -24px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.06)",
+        "sans": "background:transparent;padding-left:0!important;padding-right:0!important",
+    }[d["carte_cadre"]]
+    return CSS_COMMUN + f"""
+:root{{--ac:{sur_accent};--f1:{d['fond1']};--f2:{d['fond2']};--t:{d['texte']};--b:{d['bouton_fond']};--bt:{d['bouton_texte']};--bo:{d['bouton_ombre']};
 --k:{d['bloc_fond']};--kt:{d['bloc_texte']};--a:{d['accent']};--r:{r};--rk:{min(rayon, 26)}px;--ph:{d['photo_taille']}px;
 --fleur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 112 112'%3E%3Cpath d='M50 0C62 0 66 14 75 18s25-2 29 10-8 20-8 22 12 10 8 22-20 6-29 18-13 18-25 18-16-14-25-18-25 2-29-10 8-20 8-22-12-10-8-22 20-6 29-18S38 0 50 0z'/%3E%3C/svg%3E");--tf:'{tf}',Georgia,serif;--tx:'{tx}',system-ui,-apple-system,'Segoe UI',sans-serif;--tt:{taille}px}}
 *{{box-sizing:border-box}}html{{-webkit-text-size-adjust:100%}}
@@ -533,41 +600,94 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 .e-magazine .photo{{display:none}}
 /* Blocs */
 .blocs{{display:flex;flex-direction:column;gap:12px}}
-.lien{{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 18px;border-radius:var(--r);text-decoration:none;font-weight:600;
-  text-align:center;justify-content:center;position:relative;transition:transform .15s,box-shadow .15s;{bouton};overflow:hidden}}
-.lien:hover{{{survol}}}
+.lien{{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 18px;text-decoration:none;font-weight:600;text-align:center;justify-content:center}}
+.tb-compact .lien{{min-height:48px;font-size:14.5px;padding:8px 16px}}.tb-grand .lien{{min-height:72px;font-size:17px}}
+.al-gauche .lien{{justify-content:flex-start;text-align:left}}.al-gauche .lien span{{padding:0 6px}}.al-gauche .lien:has(.vig) span,.al-gauche .lien:has(.emo) span{{padding-left:44px}}
+.lien .reflet{{display:none}}
+.anim-brillance .lien.avant .reflet{{display:block;position:absolute;inset:0;border-radius:var(--r);overflow:hidden;pointer-events:none}}
+.anim-brillance .lien.avant .reflet::after{{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-120%);animation:reflet 3.2s ease-in-out infinite}}
 .lien .vig{{position:absolute;left:7px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:calc(var(--rk) * .7);object-fit:cover}}
 .lien .emo{{position:absolute;left:18px;font-size:22px}}
 .lien span{{padding:0 40px}}
 .lien.avant{{min-height:66px;font-size:16.5px}}
 .anim-pulse .lien.avant{{animation:pulse 2.2s ease-in-out infinite}}
 .anim-secousse .lien.avant{{animation:secousse 3.5s ease-in-out infinite}}
-.anim-brillance .lien.avant::after{{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-120%);animation:reflet 3.2s ease-in-out infinite}}
 @keyframes pulse{{50%{{transform:scale(1.03)}}}}
 @keyframes secousse{{0%,86%,100%{{transform:rotate(0)}}88%{{transform:rotate(-2deg)}}92%{{transform:rotate(2deg)}}96%{{transform:rotate(-1deg)}}}}
 @keyframes reflet{{60%,100%{{transform:translateX(120%)}}}}
-.carte{{background:var(--k);color:var(--kt);border-radius:var(--rk);padding:16px;{'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' if len(d['bloc_fond']) == 9 else ''}{'border:2px solid var(--bo);box-shadow:4px 4px 0 var(--bo);' if bt == 'decale' else 'box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -18px rgba(0,0,0,.35);'}}}
+.carte{{background:var(--k);color:var(--kt);border-radius:var(--rk);padding:16px;{cadre}}}
 .sec{{font:400 calc(var(--tt) * .62)/1.15 var(--tf);margin:14px 0 0;text-align:center;{'text-transform:uppercase;' if capitales else ''}}}
 .txt{{text-align:center;white-space:pre-line;opacity:.9;margin:0}}
 .video{{aspect-ratio:16/9;width:100%;border:0;border-radius:var(--rk);display:block}}
 /* Produits */
 .produits{{display:grid;gap:12px}}
-.produits.grille{{grid-template-columns:1fr 1fr}}
-.prod{{display:flex;gap:12px;align-items:center;text-decoration:none;padding:10px;transition:transform .15s}}
-.prod:hover{{transform:translateY(-2px)}}
-.prod img,.prod .pas-img{{width:86px;height:86px;object-fit:cover;border-radius:calc(var(--rk) * .7);flex-shrink:0;background:var(--a)}}
+.prod{{display:flex;gap:12px;align-items:center;text-decoration:none;padding:10px;transition:transform .2s}}
+.prod:hover{{transform:translateY(-3px)}}
+.pimg{{position:relative;flex-shrink:0;display:block}}
+.pimg img,.pimg .pas-img{{display:block;width:86px;height:86px;object-fit:cover;background:var(--a);border-radius:calc(var(--rk) * .7)}}
 .prod b{{display:block;font-size:15.5px;line-height:1.3}}.prod small{{display:block;opacity:.75;font-size:13px;margin-top:2px}}
-.prod .px{{display:inline-block;margin-top:6px;font-weight:700;color:var(--a);font-size:14.5px}}
-.prod .px s{{opacity:.5;font-weight:500;margin-left:6px;color:var(--kt)}}
-.grille .prod,.vitrine .prod{{flex-direction:column;align-items:stretch;padding:8px 8px 12px}}
-.grille .prod img,.grille .prod .pas-img{{width:100%;height:auto;aspect-ratio:1}}
-.grille .prod div,.vitrine .prod div{{padding:0 4px}}
-.vitrine .prod img,.vitrine .prod .pas-img{{width:100%;height:auto;aspect-ratio:16/10}}
-.vitrine .prod b{{font:400 calc(var(--tt) * .6)/1.15 var(--tf)}}
+.ptxt{{min-width:0}}
+.px{{display:inline-block;margin-top:6px;font-weight:700;color:var(--a);font-size:14.5px}}
+.px s{{opacity:.55;font-weight:500;margin-left:6px;color:inherit}}
+.pp-etiquette{{background:var(--a);color:var(--ac);padding:3px 12px 3px 18px;clip-path:polygon(11px 0,100% 0,100% 100%,11px 100%,0 50%);font-size:13.5px}}
+.pp-bouton{{background:var(--b);color:var(--bt);padding:4px 12px;border-radius:999px;font-size:13.5px}}
+.pp-surligne{{color:inherit;background:linear-gradient(transparent 55%,color-mix(in srgb,var(--a) 55%,transparent) 55% 92%,transparent 92%);padding:0 2px}}
+.pp-pastille{{position:absolute;top:-9px;right:-9px;margin:0;width:62px;height:62px;border-radius:50%;background:var(--a);color:var(--ac);display:grid;place-content:center;text-align:center;
+  font-size:13px;line-height:1.05;transform:rotate(12deg);box-shadow:0 5px 12px -5px rgba(0,0,0,.45);z-index:2;padding:4px}}
+.pp-pastille s{{display:block;font-size:10.5px;margin:0}}
+.v-liste .pp-pastille{{width:44px;height:44px;font-size:10.5px;top:-7px;right:-7px}}.v-liste .pp-pastille s{{display:none}}
+.v-grille,.v-bento,.v-polaroid{{grid-template-columns:1fr 1fr}}
+.v-grille .prod,.v-vitrine .prod,.v-carrousel .prod,.v-bento .prod,.v-polaroid .prod{{flex-direction:column;align-items:stretch;padding:8px 8px 12px}}
+.v-grille .ptxt,.v-vitrine .ptxt,.v-carrousel .ptxt,.v-bento .ptxt,.v-polaroid .ptxt{{padding:0 4px}}
+.v-grille .pimg img,.v-grille .pas-img,.v-bento .pimg img,.v-bento .pas-img,.v-polaroid .pimg img,.v-polaroid .pas-img{{width:100%;height:auto;aspect-ratio:1}}
+.v-vitrine .pimg img,.v-vitrine .pas-img{{width:100%;height:auto;aspect-ratio:16/10}}
+.v-vitrine .prod b{{font:400 calc(var(--tt) * .6)/1.15 var(--tf)}}
+.v-carrousel{{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -18px;padding:6px 18px 14px;scrollbar-width:none}}
+.v-carrousel::-webkit-scrollbar{{display:none}}
+.v-carrousel .prod{{flex:0 0 70%;scroll-snap-align:center}}
+.v-carrousel .pimg img,.v-carrousel .pas-img{{width:100%;height:auto;aspect-ratio:4/5}}
+.v-bento .prod:first-child{{grid-column:1/-1}}
+.v-bento .prod:first-child .pimg img,.v-bento .prod:first-child .pas-img{{aspect-ratio:16/9}}
+.v-bento .prod:first-child b{{font:400 calc(var(--tt) * .58)/1.15 var(--tf)}}
+.v-polaroid{{gap:20px 14px;padding:4px 6px 8px}}
+.v-polaroid .prod{{background:#fff!important;color:#222!important;border-radius:3px!important;padding:8px 8px 14px!important;border:0!important;box-shadow:0 10px 20px -10px rgba(0,0,0,.45)!important;transform:rotate(-2deg)}}
+.v-polaroid .prod:nth-child(even){{transform:rotate(2.2deg);margin-top:12px}}
+.v-polaroid .prod:hover{{transform:rotate(0) scale(1.03)}}
+.v-polaroid .pimg img,.v-polaroid .pas-img{{border-radius:0!important;clip-path:none!important;-webkit-mask:none!important;mask:none!important;border:0!important;box-shadow:none!important;transform:none!important}}
+.v-polaroid .prod b{{font-family:var(--tf);font-size:16px}}
+.v-zigzag .prod{{padding:0!important;overflow:hidden;align-items:stretch;min-height:150px}}
+.v-zigzag .prod:nth-child(even){{flex-direction:row-reverse}}
+.v-zigzag .pimg{{width:44%}}
+.v-zigzag .pimg img,.v-zigzag .pas-img{{width:100%;height:100%;border-radius:0!important;clip-path:none!important;-webkit-mask:none!important;mask:none!important;border:0!important;box-shadow:none!important;transform:none!important;outline:0!important}}
+.v-zigzag .ptxt{{padding:16px 14px;align-self:center;flex:1}}
+.v-zigzag .prod b{{font:400 calc(var(--tt) * .55)/1.15 var(--tf)}}
+.v-mini{{gap:8px}}
+.v-mini .prod{{padding:6px 12px 6px 6px}}
+.v-mini .pimg img,.v-mini .pas-img{{width:48px;height:48px}}
+.v-mini .prod small{{display:none}}
+.v-mini .ptxt{{flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px}}
+.v-mini .px{{margin:0;white-space:nowrap}}.v-mini .px s{{display:none}}
+/* Décor */
+.decor{{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}}
+.page{{z-index:1}}
+.decor i{{position:absolute;display:block}}
+.d-etincelles i{{width:calc(16px * var(--s));height:calc(16px * var(--s));background:var(--a);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:scint 3.4s ease-in-out infinite}}
+.d-etincelles i:nth-child(3n){{background:var(--b)}}
+.d-bulles i{{width:calc(150px * var(--s));height:calc(150px * var(--s));border-radius:50%;background:var(--a);opacity:.2;filter:blur(24px);animation:flotte 16s ease-in-out infinite}}
+.d-bulles i:nth-child(even){{background:var(--b)}}
+.d-confettis i{{top:-20px!important;width:7px;height:13px;background:var(--a);border-radius:2px;opacity:.8;animation:tombe calc(9s + var(--s) * 4s) linear infinite}}
+.d-confettis i:nth-child(3n){{background:var(--b)}}.d-confettis i:nth-child(3n+1){{background:var(--f2);height:7px;border-radius:50%}}
+.d-coeurs i{{width:calc(20px * var(--s));height:calc(18px * var(--s));background:var(--a);-webkit-mask:var(--coeur) center/contain no-repeat;mask:var(--coeur) center/contain no-repeat;opacity:.45;animation:flotte 12s ease-in-out infinite}}
+.d-formes i{{width:calc(46px * var(--s));height:calc(46px * var(--s));border:2px solid var(--a);opacity:.35;border-radius:50%;animation:tourne 30s linear infinite}}
+.d-formes i:nth-child(3n){{border-radius:0}}.d-formes i:nth-child(3n+1){{border:0;background:linear-gradient(var(--a) 0 0) center/100% 2px no-repeat,linear-gradient(var(--a) 0 0) center/2px 100% no-repeat}}
+@keyframes scint{{0%,100%{{transform:scale(.25);opacity:.15}}50%{{transform:scale(1) rotate(45deg);opacity:.95}}}}
+@keyframes flotte{{50%{{transform:translate(24px,-34px)}}}}
+@keyframes tombe{{to{{transform:translateY(115vh) rotate(600deg)}}}}
+@keyframes tourne{{to{{transform:rotate(1turn)}}}}
 .capture h2{{font:400 calc(var(--tt) * .58)/1.15 var(--tf);margin:0 0 4px}}.capture p{{margin:0 0 12px;opacity:.85;font-size:14.5px}}
 .champ{{display:flex;gap:8px;flex-wrap:wrap}}
 .champ input{{flex:1 1 180px;min-width:0;border:1.5px solid color-mix(in srgb,var(--kt) 25%,transparent);background:transparent;color:var(--kt);border-radius:var(--r);padding:12px 14px;font:inherit}}
-.bouton{{border-radius:var(--r);padding:12px 18px;font:600 15px var(--tx);cursor:pointer;{bouton}}}
+.bouton{{padding:12px 18px;font:600 15px var(--tx);cursor:pointer}}
 .capture .ok{{font-weight:600;margin:0}}
 .kit-lien{{display:flex;justify-content:space-between;align-items:center;text-decoration:none}}
 .kit-lien b{{font:400 calc(var(--tt) * .55)/1.15 var(--tf)}}
@@ -604,8 +724,9 @@ def _tete(page: dict, pseudo: str) -> str:
     nom = E(page.get("nom") or "")
     photo = page.get("photo")
     initiale = E((page.get("nom") or "?").strip()[:1].upper())
-    img_photo = (f'<img class="photo forme-{d["photo_forme"]}" src="{_img(pseudo, photo)}" alt="">' if photo
-                 else f'<div class="photo vide forme-{d["photo_forme"]}">{initiale}</div>')
+    fp = d["photo_forme"]
+    img_photo = (f'<img class="photo forme-{fp} ph-{fp}" src="{_img(pseudo, photo)}" alt="">' if photo
+                 else f'<div class="photo vide forme-{fp} ph-{fp}">{initiale}</div>')
     reseaux = "".join(
         f'<a href="{E(u)}" target="_blank" rel="noopener" aria-label="{E(RESEAUX[k][0])}"><svg viewBox="0 0 24 24">{ICONES[k]}</svg></a>'
         for k, v in (page.get("reseaux") or {}).items() if (u := lien_reseau(k, v)))
@@ -629,12 +750,18 @@ def _youtube(u: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _carte_produit(p: dict, pseudo: str) -> str:
-    img = f'<img src="{_img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<span class="pas-img"></span>'
+def _carte_produit(p: dict, pseudo: str, d: dict, vue: str) -> str:
+    forme = f'pi-{d.get("image_forme", "carre")}'
+    img = f'<img class="{forme}" src="{_img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span class="pas-img {forme}"></span>'
     barre = f'<s>{E(prix_txt(p["prix_barre"], p.get("devise", "eur")))}</s>' if p.get("prix_barre") and p["prix_barre"] > p.get("prix", 0) else ""
     st = f'<small>{E(p["sous_titre"])}</small>' if p.get("sous_titre") else ""
-    return (f'<a class="prod carte" href="/@{pseudo}/p/{p["id"]}">{img}<div><b>{E(p.get("titre") or "")}</b>{st}'
-            f'<span class="px">{E(prix_txt(p.get("prix", 0), p.get("devise", "eur")))}{barre}</span></div></a>')
+    style_prix = d.get("prix_style", "texte")
+    if style_prix == "pastille" and vue in ("mini", "zigzag"):
+        style_prix = "bouton"
+    px = f'<span class="px pp-{style_prix}">{E(prix_txt(p.get("prix", 0), p.get("devise", "eur")))}{barre}</span>'
+    dans_image, sous_titre = (px, "") if style_prix == "pastille" else ("", px)
+    return (f'<a class="prod carte" href="/@{pseudo}/p/{p["id"]}"><span class="pimg">{img}{dans_image}</span>'
+            f'<div class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{sous_titre}</div></a>')
 
 
 def _bloc(b: dict, page: dict, pseudo: str) -> str:
@@ -647,7 +774,7 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
             return ""
         vig = f'<img class="vig" src="{_img(pseudo, b["image"])}" alt="">' if b.get("image") else (f'<i class="emo">{E(b["emoji"])}</i>' if b.get("emoji") else "")
         return (f'<a class="lien{" avant" if b.get("en_avant") else ""}" href="/@{pseudo}/l/{b["id"]}" data-url="{E(u)}" target="_blank" rel="noopener">'
-                f'{vig}<span>{E(b.get("titre") or u)}</span></a>')
+                f'{vig}<span>{E(b.get("titre") or u)}</span><i class="reflet"></i></a>')
     if t == "titre":
         return f'<h2 class="sec">{E(b.get("texte") or "")}</h2>'
     if t == "texte":
@@ -658,13 +785,14 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
                 f'allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe>') if vid else ""
     if t == "produit":
         p = prods.get(b.get("produit"))
-        return _carte_produit(p, pseudo).replace('class="prod carte"', 'class="prod carte seul"') if p else ""
+        return f'<div class="produits v-vitrine">{_carte_produit(p, pseudo, d, "vitrine")}</div>' if p else ""
     if t == "produits":
         liste = [prods[i] for i in (b.get("ids") or [p["id"] for p in page["produits"]]) if i in prods]
         if not liste:
             return ""
         titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
-        return f'{titre}<div class="produits {d["produits_vue"]}">{"".join(_carte_produit(p, pseudo) for p in liste)}</div>'
+        v = d["produits_vue"]
+        return f'{titre}<div class="produits v-{v}">{"".join(_carte_produit(p, pseudo, d, v) for p in liste)}</div>'
     if t == "capture":
         txt = f'<p>{E(b["texte"])}</p>' if b.get("texte") else ""
         btn = E(b.get("bouton") or "Je m’inscris")
@@ -701,7 +829,13 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     d = page["design"]
     faces, lien = _polices_css(d)
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
-    classes = f'e-{d["entete"]} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""}'
+    classes = (f'e-{d["entete"]} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} tb-{d["bouton_taille"]} al-{d["alignement"]}')
+    cb = classes_bouton(d)
+    corps = corps.replace('class="lien', f'class="{cb} lien').replace('class="bouton"', f'class="bouton {cb}"')
+    decor = ""
+    if d.get("decor", "aucun") != "aucun":
+        decor = f'<div class="decor d-{d["decor"]}" aria-hidden="true">' + "".join(
+            f'<i style="left:{x}%;top:{y}%;--s:{t};animation-delay:-{r}s"></i>' for x, y, t, r in POSITIONS_DECOR) + "</div>"
     og = f'<meta property="og:title" content="{E(titre)}"><meta property="og:description" content="{E(description)}"><meta property="og:type" content="website">'
     if image_og:
         og += f'<meta property="og:image" content="{E(image_og)}"><meta name="twitter:card" content="summary_large_image">'
@@ -710,7 +844,16 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{E(titre)}</title><meta name="description" content="{E(description)}">{og}<meta name="theme-color" content="{d['fond1'][:7]}">
 {lien}<style>{faces}{_css(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
-<body class="{classes}">{fond_img}<div class="fond"></div><main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}</body></html>"""
+<body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}</body></html>"""
+
+
+POSITIONS_DECOR = [(6, 8, 1, 0), (88, 5, .7, 1.2), (72, 22, 1.3, 2.4), (14, 34, .8, .7), (93, 41, 1, 3.1), (4, 58, 1.2, 1.8),
+                   (80, 63, .6, .4), (24, 76, 1, 2.9), (62, 84, 1.4, 1.5), (90, 92, .8, 3.6), (40, 12, .6, 4.2), (50, 50, .9, 5)]
+
+
+def classes_bouton(d: dict) -> str:
+    f = d.get("bouton_forme", "arrondi")
+    return f'lb bs-{d["bouton_style"]} bf-{f}{" bf-clip" if f in FORMES_DECOUPEES else ""} bh-{d.get("survol", "soulever")}'
 
 
 def badge() -> str:

@@ -1,0 +1,91 @@
+/* Boutique : boutons (style bs-, forme bf-, survol bh-), images de produits (pi-) et photo de profil (ph-).
+   Partagé par la page publique (inclus dans son CSS) et par les aperçus de l'éditeur.
+   Variables : --b fond du bouton, --bt texte, --bo ombre, --a accent, --r arrondi, --f1 fond de page, --t texte de page. */
+.lb{position:relative;isolation:isolate;color:var(--bt);background:none;border:0;transition:transform .18s ease}
+.lb::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--b);border-radius:var(--r);pointer-events:none}
+
+/* ---- Styles */
+.bs-plein{filter:drop-shadow(0 2px 0 var(--bo))}
+.bs-contour::before{background:transparent;border:2px solid var(--bt)}
+.bs-decale::before{border:2px solid var(--bo)}
+.bs-decale{filter:drop-shadow(4px 4px 0 var(--bo))}
+.bs-doux{filter:drop-shadow(0 9px 10px color-mix(in srgb,var(--bo) 55%,transparent))}
+.bs-verre::before{background:color-mix(in srgb,var(--b) 62%,transparent);border:1px solid rgba(255,255,255,.45);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.bs-souligne{color:var(--t)}
+.bs-souligne::before{background:transparent;border-bottom:1.5px solid var(--t);border-radius:0!important;clip-path:none!important;-webkit-mask:none!important;mask:none!important;transform:none!important}
+.bs-degrade::before{background:linear-gradient(110deg,var(--b),var(--a))}
+.bs-neon{filter:drop-shadow(0 0 3px var(--a)) drop-shadow(0 0 12px color-mix(in srgb,var(--a) 70%,transparent))}
+.bs-neon::before{background:color-mix(in srgb,var(--b) 85%,transparent);border:1.5px solid var(--a)}
+.bs-relief{filter:drop-shadow(0 5px 0 var(--bo))}
+.bs-relief:active{transform:translateY(4px)!important;filter:drop-shadow(0 1px 0 var(--bo))}
+.bs-double::before{background:transparent;border:2px solid var(--bt);box-shadow:inset 0 0 0 3px transparent,inset 0 0 0 4.5px var(--bt)}
+.bs-pointille::before{background:color-mix(in srgb,var(--b) 30%,transparent);border:2px dashed var(--bt)}
+.bs-surligneur{color:var(--t)}
+.bs-surligneur::before{background:linear-gradient(transparent 52%,color-mix(in srgb,var(--a) 65%,transparent) 52% 86%,transparent 86%);border-radius:0!important;clip-path:none!important;-webkit-mask:none!important;mask:none!important}
+.bs-holo{color:#2A1D3A}
+.bs-holo::before{background:linear-gradient(115deg,#FFD1F7,#C4F1FF,#D8FFCF,#FFF3B0,#FFD1F7);background-size:300% 100%;animation:bq-holo 7s linear infinite;box-shadow:inset 0 0 0 1px rgba(255,255,255,.7)}
+.bs-papier::before{background-color:var(--b);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .14 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.bs-papier{filter:drop-shadow(0 2px 2px rgba(0,0,0,.18));transform:rotate(-.7deg)}
+.bs-papier:nth-child(even){transform:rotate(.7deg)}
+.bs-cadre::before{background:transparent;border:2px solid var(--bt)}
+.bs-cadre::after{content:"";position:absolute;inset:0;z-index:-2;border:2px solid var(--a);border-radius:var(--r);transform:translate(5px,5px);pointer-events:none}
+.bf-clip.bs-cadre::after{display:none}
+.bf-pilule.bs-cadre::after{border-radius:999px}.bf-carre.bs-cadre::after{border-radius:0}
+.bs-pastel::before{background:color-mix(in srgb,var(--b) 35%,#fff);border:1px solid color-mix(in srgb,var(--b) 60%,#fff)}
+.bs-pastel{color:color-mix(in srgb,var(--bt) 80%,#000)}
+@keyframes bq-holo{to{background-position:300% 0}}
+
+/* ---- Formes */
+.bf-pilule::before{border-radius:999px}
+.bf-carre::before{border-radius:0}
+.bf-feuille::before{border-radius:28px 4px 28px 4px}
+.bf-galet::before{border-radius:40px 18px 34px 22px/22px 34px 18px 40px}
+.bf-croquis::before{border-radius:255px 15px 225px 15px/15px 225px 15px 255px}
+.bf-bulle::before{border-radius:18px}
+.bf-bulle::after{content:"";position:absolute;z-index:-1;left:26px;bottom:-8px;width:18px;height:18px;background:var(--b);transform:rotate(45deg);border-radius:0 0 4px 0}
+.bs-contour.bf-bulle::after,.bs-cadre.bf-bulle::after,.bs-double.bf-bulle::after,.bs-souligne.bf-bulle::after,.bs-surligneur.bf-bulle::after{display:none}
+.bf-parallelo::before{transform:skewX(-14deg);border-radius:4px}
+.bf-biseau::before{border-radius:0;clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px)}
+.bf-etiquette::before{border-radius:0;clip-path:polygon(0 0,calc(100% - 24px) 0,100% 50%,calc(100% - 24px) 100%,0 100%)}
+.bf-fleche::before{border-radius:0;clip-path:polygon(20px 0,calc(100% - 20px) 0,100% 50%,calc(100% - 20px) 100%,20px 100%,0 50%)}
+.bf-ticket::before{border-radius:var(--r);-webkit-mask:radial-gradient(circle 11px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 11px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat;mask:radial-gradient(circle 11px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 11px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat}
+.bf-festons::before{border-radius:0;-webkit-mask:radial-gradient(7px at 50% 0,#0000 95%,#000) 50% 0/14px 51% repeat-x,radial-gradient(7px at 50% 100%,#0000 95%,#000) 50% 100%/14px 51% repeat-x;mask:radial-gradient(7px at 50% 0,#0000 95%,#000) 50% 0/14px 51% repeat-x,radial-gradient(7px at 50% 100%,#0000 95%,#000) 50% 100%/14px 51% repeat-x}
+.bf-pixel::before{border-radius:0;clip-path:polygon(0 8px,4px 8px,4px 4px,8px 4px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px))}
+.bf-onde::before{border-radius:var(--r) var(--r) 0 0;-webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 8px) no-repeat,radial-gradient(9px at 50% 0,#000 96%,#0000) 50% 100%/18px 9px repeat-x;mask:linear-gradient(#000 0 0) top/100% calc(100% - 8px) no-repeat,radial-gradient(9px at 50% 0,#000 96%,#0000) 50% 100%/18px 9px repeat-x}
+.bf-coin::before{border-radius:var(--r) 0 var(--r) 0}
+.bf-capsule::before{border-radius:999px 14px 999px 14px}
+/* Formes découpées : les bordures deviennent un contour qui suit la découpe */
+.bf-clip.bs-contour::before,.bf-clip.bs-double::before,.bf-clip.bs-pointille::before,.bf-clip.bs-cadre::before,.bf-clip.bs-decale::before,.bf-clip.bs-neon::before{border:0;box-shadow:none}
+.bf-clip.bs-contour::before,.bf-clip.bs-double::before,.bf-clip.bs-pointille::before,.bf-clip.bs-cadre::before{background:var(--f1)}
+.bf-clip.bs-contour,.bf-clip.bs-double,.bf-clip.bs-pointille{filter:drop-shadow(2px 0 0 var(--bt)) drop-shadow(-2px 0 0 var(--bt)) drop-shadow(0 2px 0 var(--bt)) drop-shadow(0 -2px 0 var(--bt))}
+.bf-clip.bs-cadre{filter:drop-shadow(2px 0 0 var(--bt)) drop-shadow(-2px 0 0 var(--bt)) drop-shadow(0 2px 0 var(--bt)) drop-shadow(0 -2px 0 var(--bt)) drop-shadow(5px 5px 0 var(--a))}
+.bf-clip.bs-decale{filter:drop-shadow(2px 0 0 var(--bo)) drop-shadow(-2px 0 0 var(--bo)) drop-shadow(0 2px 0 var(--bo)) drop-shadow(0 -2px 0 var(--bo)) drop-shadow(4px 4px 0 var(--bo))}
+
+/* ---- Survol */
+.bh-soulever:hover{transform:translateY(-3px)}
+.bh-grossir:hover{transform:scale(1.035)}
+.bh-incliner:hover{transform:perspective(500px) rotateX(10deg) scale(1.02)}
+.bh-enfoncer:hover{transform:translate(3px,3px)}
+.bh-rebond:hover{animation:bq-rebond .5s}
+.bh-tourner:hover{transform:rotate(-1.5deg) scale(1.02)}
+@keyframes bq-rebond{30%{transform:scale(1.06,.94)}55%{transform:scale(.97,1.04)}80%{transform:scale(1.02,.99)}}
+
+/* ---- Images de produits */
+.pi-carre{border-radius:calc(var(--rk,14px) * .7)}
+.pi-arche{border-radius:999px 999px 8px 8px!important}
+.pi-rond{border-radius:50%!important}
+.pi-galet{border-radius:62% 38% 55% 45%/48% 60% 40% 52%!important}
+.pi-biseau{border-radius:0!important;clip-path:polygon(12% 0,88% 0,100% 12%,100% 88%,88% 100%,12% 100%,0 88%,0 12%)}
+.pi-fenetre{border-radius:999px 999px 0 0!important;outline:3px solid var(--a);outline-offset:3px}
+.pi-polaroid{border-radius:2px!important;border:7px solid #fff!important;border-bottom-width:22px!important;box-shadow:0 6px 14px -6px rgba(0,0,0,.35);transform:rotate(-2deg)}
+.pi-fleur{border-radius:0!important;-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat}
+
+/* ---- Photo de profil (formes ajoutées) */
+.ph-hexagone{clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);border-radius:0!important}
+.ph-losange{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:0!important}
+.ph-coeur{border-radius:0!important;-webkit-mask:var(--coeur) center/100% 100% no-repeat;mask:var(--coeur) center/100% 100% no-repeat}
+.ph-polaroid{border-radius:2px!important;border:8px solid #fff;border-bottom-width:26px;box-shadow:0 10px 24px -10px rgba(0,0,0,.45);transform:rotate(-3deg)}
+.ph-anneau{border-radius:50%!important;box-shadow:0 0 0 4px var(--f1),0 0 0 7px var(--a),0 0 0 12px var(--f1),0 0 0 14px color-mix(in srgb,var(--a) 50%,transparent)}
+:root{--coeur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92'%3E%3Cpath d='M50 92 8 50C-4 38-2 16 13 7c12-7 27-4 37 8C60 3 75 0 87 7c15 9 17 31 5 43z'/%3E%3C/svg%3E");
+  --fleur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 112 112'%3E%3Cpath d='M50 0C62 0 66 14 75 18s25-2 29 10-8 20-8 22 12 10 8 22-20 6-29 18-13 18-25 18-16-14-25-18-25 2-29-10 8-20 8-22-12-10-8-22 20-6 29-18S38 0 50 0z'/%3E%3C/svg%3E")}
+@media (prefers-reduced-motion:reduce){.bs-holo::before,.bh-rebond:hover{animation:none}}
