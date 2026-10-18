@@ -114,8 +114,9 @@ OUTIL_CARROUSEL = {
                 "description": "Les slides dans l'ordre. La 1re porte le hook, la dernière le CTA mot-clé.",
                 "items": {"type": "object", "properties": {
                     "titre": {"type": "string", "description": "Texte principal de la slide, très lisible : 3 à 10 mots."},
-                    "texte": {"type": "string", "description": "Précision optionnelle sous le titre : 0 à 25 mots. Vide sur la 1re slide."}},
-                    "required": ["titre", "texte"]},
+                    "texte": {"type": "string", "description": "Précision optionnelle sous le titre : 0 à 25 mots. Vide sur la 1re slide."},
+                    "photo": {"type": "string", "description": "La photo à mettre en fond de cette slide, décrite concrètement pour que la personne la prenne elle-même (ex. « toi de profil devant ton miroir, lumière du matin »). Vide si la slide est sur fond uni."}},
+                    "required": ["titre", "texte", "photo"]},
             },
             "legende": {"type": "string", "description": "Légende prête à publier, avec le CTA et 3 à 6 hashtags à la fin."},
             "script": {"type": "string", "description": "Uniquement pour un Reel : script à dire face caméra ou en voix off, [0-3 s] hook / [corps] / [fin] CTA, 20 à 45 secondes."},
@@ -258,11 +259,26 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
             res["legende_reprise"] = p.legende
         return res
 
-    def carrousel(self, ad: dict, nb: int = 7, style: str = "", reel: bool = False) -> dict:
-        """Transforme une adaptation (hook, script, CTA) en textes de slides (+ script pour un Reel), dans le style demandé."""
-        quoi = (f"Reel : {nb} plans texte (diaporama, une phrase forte par plan) ET le script à dire (champ script)" if reel
-                else f"carrousel Instagram de {nb} slides")
-        texte = f"""Transforme ce Reel adapté en {quoi}.
+    def carrousel(self, ad: dict, nb: int | None = None, style: str = "", reel: bool = False, source: dict | None = None) -> dict:
+        """
+        Transforme le Reel modèle et son adaptation en textes de slides (+ script pour un Reel), dans le style demandé.
+        La structure du modèle est reproduite : une slide par temps fort, et pour chaque slide la photo à prévoir.
+        """
+        src = source or {}
+        combien = f"{nb} " if nb else "5 à 9 "
+        quoi = (f"Reel : {combien}plans texte (diaporama, une phrase forte par plan) ET le script à dire (champ script)" if reel
+                else f"carrousel Instagram de {combien}slides")
+        modele = f"""LE MODÈLE À REPRODUIRE (@{src.get('compte') or '?'}, {src.get('format') or 'Reel'}, {round(src['duree_s']) if src.get('duree_s') else '?'} s) :
+Hook original : {src.get('hook_original') or ''}
+Texte à l'écran : {src.get('texte_ecran') or ''}
+Structure : {src.get('structure') or ''}
+Ce qu'on voit : {src.get('analyse_visuelle') or ''}
+Transcription : \"\"\"{src.get('transcription') or '(non disponible)'}\"\"\"
+Légende : \"\"\"{src.get('legende') or ''}\"\"\"
+""" if src else ""
+        texte = f"""{modele}
+Transforme ce modèle et son adaptation en {quoi}. Reprends SA structure : une slide par temps fort du modèle, dans le même ordre, avec le même type de progression (même nombre d'étapes s'il en a). Choisis le nombre de slides qui colle au modèle.
+Pour chaque slide, dis quelle photo la personne doit prendre elle-même (champ photo), en t'inspirant de ce qu'on voit dans le modèle. Ne demande une photo que là où elle apporte quelque chose ; laisse vide pour une slide sur fond uni.
 
 Hook viral : {ad.get('hook_viral') or ''}
 Hooks adaptés : {' / '.join(ad.get('hooks_adaptes') or [])}

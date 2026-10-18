@@ -48,11 +48,22 @@ STYLES = {
 # Typographies : (police du titre, axe de graisse si police variable, police du texte, majuscules, facteur de taille, nom pour libass)
 TYPOS = {
     "moderne": ("Poppins-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.0, "Poppins"),
+    "geometrique": ("Montserrat-ExtraBold.ttf", None, "Poppins-Regular.ttf", False, 0.98, "Montserrat"),
+    "minimal": ("SpaceGrotesk-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.02, "Space Grotesk"),
+    "douce": ("Quicksand-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.04, "Quicksand"),
     "impact": ("Anton-Regular.ttf", None, "Poppins-Medium.ttf", True, 1.12, "Anton"),
+    "affiche": ("BebasNeue-Regular.ttf", None, "Poppins-Medium.ttf", True, 1.22, "Bebas Neue"),
+    "brut": ("ArchivoBlack-Regular.ttf", None, "Poppins-Regular.ttf", False, 0.94, "Archivo Black"),
     "elegant": ("DMSerifDisplay-Regular.ttf", None, "Poppins-Regular.ttf", False, 1.04, "DM Serif Display"),
-    "manuscrit": ("Caveat.ttf", 700, "Poppins-Regular.ttf", False, 1.3, "Caveat"),
+    "classique": ("PlayfairDisplay-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.02, "Playfair Display"),
+    "retro": ("AbrilFatface-Regular.ttf", None, "Poppins-Regular.ttf", False, 1.0, "Abril Fatface"),
+    "manuscrit": ("Caveat-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.3, "Caveat"),
+    "signature": ("Pacifico-Regular.ttf", None, "Poppins-Regular.ttf", False, 1.08, "Pacifico"),
 }
-NOMS_TYPOS = {"moderne": "Moderne", "impact": "Impact", "elegant": "Élégant", "manuscrit": "Manuscrit"}
+INTERLIGNES = {"signature": 1.55, "manuscrit": 1.1, "affiche": 1.05}  # polices aux jambages très hauts ou très bas
+NOMS_TYPOS = {"moderne": "Moderne", "geometrique": "Géométrique", "minimal": "Minimal", "douce": "Douce", "impact": "Impact",
+              "affiche": "Affiche", "brut": "Brut", "elegant": "Élégant", "classique": "Classique", "retro": "Rétro",
+              "manuscrit": "Manuscrit", "signature": "Signature"}
 DUREE_MAX_REEL = 180
 SLIDE_DIAPORAMA_S = 3.0
 
@@ -99,6 +110,42 @@ def supprime(esp: Espace, sid: str):
     shutil.rmtree(dossier(esp, sid), ignore_errors=True)
 
 
+def _coupe(t: str, n: int) -> str:
+    t = (t or "").strip()
+    return t if len(t) <= n else t[:n].rsplit(" ", 1)[0].rstrip(" ,;:") + "…"
+
+
+def _phrases(script: str) -> list[str]:
+    """Phrases du corps du script (sans les repères [0-3 s], [corps], [fin])."""
+    corps = re.sub(r"\[[^\]]*\]", "\n", script or "")
+    morceaux = re.split(r"(?<=[.!?…])\s+|\n+", corps)
+    return [m.strip(" -–•") for m in morceaux if len(m.strip(" -–•")) > 3]
+
+
+def prerempli(ad: dict, cfg: dict) -> list[dict]:
+    """
+    Slides pré-remplies tout de suite à partir de l'adaptation (hook viral, corps du script, CTA),
+    pour ne jamais présenter un carrousel vide ; Claude les réécrit ensuite dans le style choisi.
+    """
+    hook = ad.get("hook_viral") or (ad.get("hooks_adaptes") or [""])[0]
+    phrases = [p for p in _phrases(ad.get("script_reel")) if p.lower().rstrip(" .?!…") not in hook.lower()]
+    phrases = [p for p in phrases if "comment" not in p.lower()[:12]][:5]  # le CTA a sa propre slide
+    slides = [{"titre": hook, "texte": "", "photo": ad.get("idee_visuelle") or ""}]
+    slides += [{"titre": _coupe(p, 70), "texte": "", "photo": ""} for p in phrases]
+    cta = ad.get("cta_conversation") or f"Commente {cfg['objectifs']['mot_cle_cta']}"
+    slides.append({"titre": _coupe(cta, 60), "texte": "", "photo": ""})
+    return slides
+
+
+def _source(post: dict) -> dict:
+    """Ce que l'on sait du Reel modèle, pour en reproduire la structure."""
+    ad = post.get("adaptation") or {}
+    return {"format": post.get("format"), "url": post.get("url"), "compte": post.get("compte"), "duree_s": post.get("duree_s"),
+            "legende": (post.get("legende") or "")[:1500], "transcription": (post.get("transcription") or "")[:2500],
+            "structure": ad.get("structure") or "", "analyse_visuelle": ad.get("analyse_visuelle") or "",
+            "texte_ecran": ad.get("texte_ecran") or "", "hook_original": ad.get("hook_original") or ""}
+
+
 def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, style: str = "ma_voix") -> dict:
     """Nouveau projet à partir d'un Reel adapté (les textes des slides sont écrits ensuite par Claude)."""
     ad = post.get("adaptation") or {}
@@ -110,11 +157,12 @@ def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, s
     sid = datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     projet = {
         "id": sid, "cree": datetime.now().isoformat(timespec="minutes"), "type": typ if typ in ("carrousel", "reel") else "carrousel",
-        "titre": hook[:90] or "Sans titre", "analyse_id": analyse_id, "cle": post.get("cle"), "compte": post.get("compte"),
+        "titre": _coupe(hook, 90) or "Sans titre", "analyse_id": analyse_id, "cle": post.get("cle"), "compte": post.get("compte"),
         "miniature": post.get("miniature"), "statut": "brouillon", "erreur": None,
         "hook": hook, "texte_ecran": ad.get("texte_ecran_adapte") or "", "script": ad.get("script_reel") or "",
         "cta": ad.get("cta_conversation") or "", "dm": ad.get("sequence_dm") or [], "legende": legende,
-        "slides": [], "images": [], "video": None, "theme": "sombre", "sous_titres": True,
+        "slides": prerempli(ad, cfg), "images": [], "video": None, "theme": "sombre", "sous_titres": True,
+        "source": _source(post), "nb_photos": None,
         "style": "ma_voix", "typo": "moderne",
         "pseudo": (cfg.get("mon_compte") or {}).get("instagram") or "",
         "fichiers": [], "zip": None, "adaptation": ad,
@@ -142,19 +190,32 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
     reel = p["type"] == "reel"
     log(f"J'écris tes textes, style « {nom_style} »…")
     if demo:
-        res = {"slides": [{"titre": p["hook"] or "[démo] Ton hook", "texte": ""},
-                          *({"titre": f"[démo · {nom_style}] Idée n°{i}", "texte": "[démo] Une phrase courte qui développe l'idée, dans ton ton."} for i in range(1, 6)),
-                          {"titre": f"Commente {cfg['objectifs']['mot_cle_cta']}", "texte": "[démo] et je t'envoie le guide en privé"}],
+        res = {"slides": [{"titre": p["hook"] or "[démo] Ton hook", "texte": "", "photo": "[démo] Toi en gros plan, l'air surpris, lumière naturelle"},
+                          *({"titre": f"[démo · {nom_style}] Étape {i} du Reel modèle", "texte": "[démo] Une phrase courte qui développe l'idée, dans ton ton.",
+                             "photo": "[démo] Ton bol du matin vu de dessus" if i in (2, 4) else ""} for i in range(1, 6)),
+                          {"titre": f"Commente {cfg['objectifs']['mot_cle_cta']}", "texte": "[démo] et je t'envoie le guide en privé", "photo": ""}],
                "legende": f"[démo · {nom_style}] " + ((p.get("adaptation") or {}).get("legende_adaptee") or ""),
                "script": f"[0-3 s] {p['hook']}\n[corps] [démo · {nom_style}] trois phrases dans ce style\n[fin] Commente {cfg['objectifs']['mot_cle_cta']}" if reel else ""}
     else:
         from apprentissage import voix
         from ia import IA
-        res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {}, nb=6 if reel else 7, style=consigne, reel=reel)
+        res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {}, style=consigne, reel=reel,
+                                                             source=p.get("source") or {})
         if res.get("erreur"):
             raise RuntimeError(res["erreur"])
+    slides = res.get("slides")
+    if isinstance(slides, str):  # certains modèles renvoient le tableau sous forme de texte JSON
+        try:
+            slides = json.loads(slides)
+        except ValueError:
+            slides = None
+    slides = [x for x in (slides or []) if isinstance(x, dict) and (x.get("titre") or "").strip()]
+    if not slides:
+        raise RuntimeError("Claude n'a pas proposé de slides : tes textes pré-remplis sont gardés, réessaie « Réécrire dans ce style ».")
     p = charge(esp, sid)  # relu : l'utilisateur a pu importer des fichiers pendant ce temps
-    p["slides"] = [{"titre": s.get("titre", "").strip(), "texte": s.get("texte", "").strip()} for s in res.get("slides") or []][:10]
+    p["slides"] = [{"titre": x.get("titre", "").strip(), "texte": (x.get("texte") or "").strip(), "photo": (x.get("photo") or "").strip()}
+                   for x in slides][:10]
+    p["nb_photos"] = sum(1 for x in p["slides"] if x["photo"])
     if res.get("legende"):
         p["legende"] = res["legende"]
     if reel and res.get("script"):
@@ -222,7 +283,11 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         if k in champs:
             p[k] = champs[k]
     if isinstance(champs.get("slides"), list):
-        p["slides"] = [{"titre": str(s.get("titre", ""))[:200], "texte": str(s.get("texte", ""))[:400]} for s in champs["slides"]][:10]
+        anciennes = p.get("slides") or []
+        p["slides"] = [{"titre": str(s.get("titre", ""))[:200], "texte": str(s.get("texte", ""))[:400],
+                        "photo": str(s.get("photo", anciennes[i].get("photo", "") if i < len(anciennes) else ""))[:300]}
+                       for i, s in enumerate(champs["slides"])][:10]
+        p["nb_photos"] = sum(1 for x in p["slides"] if x.get("photo"))
     if isinstance(champs.get("images"), list):  # nouvel ordre des images
         p["images"] = [i for i in champs["images"] if i in p["images"]] + [i for i in p["images"] if i not in champs["images"]]
     if p["theme"] not in THEMES:
@@ -332,8 +397,8 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
     # Zone de texte : bas de l'image sur photo, centrée sur fond uni
     h_titre_max = int(h * (0.42 if premiere else 0.30))
     maxi = int((104 if premiere else (82 if sur_photo else 96)) * facteur)
-    pol_t, lignes_t, ht, taille_t = _ajuste(d, titre, police_titre, largeur, h_titre_max, maxi, int(46 * facteur),
-                                            1.12 if majuscules else 1.18)
+    interligne = INTERLIGNES.get(typo, 1.12 if majuscules else 1.18)
+    pol_t, lignes_t, ht, taille_t = _ajuste(d, titre, police_titre, largeur, h_titre_max, maxi, int(46 * facteur), interligne)
     pol_x, lignes_x, hx, taille_x = (None, [], 0, 0)
     if texte:
         pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, f_texte, largeur, int(h * 0.26), 46, 30, 1.32)
@@ -344,7 +409,7 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
     d.rounded_rectangle([marge, y - 34, marge + 86, y - 22], radius=6, fill=accent)
     for ligne in lignes_t:
         d.text((marge, y), ligne, font=pol_t, fill=couleur)
-        y += int(taille_t * (1.12 if majuscules else 1.18))
+        y += int(taille_t * interligne)
     y += ecart
     for ligne in lignes_x:
         d.text((marge, y), ligne, font=pol_x, fill=couleur2)
@@ -510,12 +575,12 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
     """Reel sans vidéo : chaque slide (texte + image) devient un plan de 3 s, en 9:16."""
     log("Je prépare les plans de ton Reel…")
     slides = p["slides"] or [{"titre": p.get("hook") or "", "texte": ""}]
-    images = [d / "sources" / i for i in p["images"]]
+    images = attribue(slides, [d / "sources" / i for i in p["images"]]) if p["images"] else [None] * len(slides)
     plans = d / "plans"
     shutil.rmtree(plans, ignore_errors=True)
     plans.mkdir()
     for i, s in enumerate(slides):
-        img = images[i % len(images)] if images else None
+        img = images[i]
         slide(s, i, len(slides), img, p.get("theme", "sombre"), p.get("pseudo", ""), VERTICAL, reel=True,
               typo=p.get("typo", "moderne")).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
     liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {SLIDE_DIAPORAMA_S}\n" for i in range(len(slides)))
@@ -548,11 +613,11 @@ def genere(esp: Espace, sid: str, demo: bool = False) -> dict:
                 raise ValueError("Ajoute au moins une slide.")
             n = len(p["slides"])
             log(f"Je dessine tes {n} slides…")
-            images = [d / "sources" / i for i in p["images"]]
+            images = attribue(p["slides"], [d / "sources" / i for i in p["images"]])
             fichiers = []
             for i, s in enumerate(p["slides"]):
                 nom = f"slide_{i + 1:02d}.jpg"
-                img = images[i] if i < len(images) else None
+                img = images[i]
                 slide(s, i, n, img, p.get("theme", "sombre"), p.get("pseudo", ""), typo=p.get("typo", "moderne")).save(
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
@@ -574,6 +639,19 @@ def genere(esp: Espace, sid: str, demo: bool = False) -> dict:
         p.update(statut="erreur", erreur=str(e)[:300])
         sauve(esp, p)
         raise
+
+
+def attribue(slides: list[dict], images: list) -> list:
+    """
+    Image de chaque slide. Les photos vont d'abord, dans l'ordre, aux slides pour lesquelles une photo est prévue ;
+    les photos en trop complètent les slides suivantes. Sans indication, une photo par slide dans l'ordre.
+    """
+    res = [None] * len(slides)
+    prevues = [i for i, x in enumerate(slides) if x.get("photo")] or list(range(len(slides)))
+    ordre = prevues + [i for i in range(len(slides)) if i not in prevues]
+    for i, img in zip(ordre, images):
+        res[i] = img
+    return res
 
 
 def _txt_dm(p: dict) -> str:

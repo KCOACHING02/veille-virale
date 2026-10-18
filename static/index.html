@@ -280,8 +280,16 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 /* ---------- Studio ---------- */
 @font-face{font-family:"VV Anton";src:url(/static/fonts/Anton-Regular.ttf);font-display:swap}
 @font-face{font-family:"VV DM Serif Display";src:url(/static/fonts/DMSerifDisplay-Regular.ttf);font-display:swap}
-@font-face{font-family:"VV Caveat";src:url(/static/fonts/Caveat.ttf);font-weight:400 700;font-display:swap}
-@font-face{font-family:"VV Poppins";src:url(/static/fonts/Poppins-Bold.ttf);font-weight:700;font-display:swap}
+@font-face{font-family:"VV Caveat";src:url(/static/fonts/Caveat-Bold.ttf);font-display:swap}
+@font-face{font-family:"VV Poppins";src:url(/static/fonts/Poppins-Bold.ttf);font-display:swap}
+@font-face{font-family:"VV Montserrat";src:url(/static/fonts/Montserrat-ExtraBold.ttf);font-display:swap}
+@font-face{font-family:"VV Space Grotesk";src:url(/static/fonts/SpaceGrotesk-Bold.ttf);font-display:swap}
+@font-face{font-family:"VV Quicksand";src:url(/static/fonts/Quicksand-Bold.ttf);font-display:swap}
+@font-face{font-family:"VV Bebas Neue";src:url(/static/fonts/BebasNeue-Regular.ttf);font-display:swap}
+@font-face{font-family:"VV Archivo Black";src:url(/static/fonts/ArchivoBlack-Regular.ttf);font-display:swap}
+@font-face{font-family:"VV Playfair Display";src:url(/static/fonts/PlayfairDisplay-Bold.ttf);font-display:swap}
+@font-face{font-family:"VV Abril Fatface";src:url(/static/fonts/AbrilFatface-Regular.ttf);font-display:swap}
+@font-face{font-family:"VV Pacifico";src:url(/static/fonts/Pacifico-Regular.ttf);font-display:swap}
 .st-puces{display:flex;gap:8px;flex-wrap:wrap}
 .st-puces button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;cursor:pointer;text-align:left;display:grid;gap:1px;min-width:0}
 .st-puces button b{font-size:14px;font-weight:600}
@@ -340,6 +348,16 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-slide>img,.st-slide>.st-fond{width:56px;height:70px;border-radius:8px;object-fit:cover}
 .st-slide::before{content:counter(sl);position:absolute;left:4px;top:4px;background:rgba(39,27,45,.75);color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:0 6px;z-index:1}
 .st-slide div{display:grid;gap:6px}
+.st-photo-aide{font-size:12.5px;color:var(--ink-2);background:var(--sunk);border-radius:8px;padding:5px 9px}
+.st-fond.attend{display:grid;place-items:center;font-size:20px;opacity:.85}
+.st-besoin{background:var(--glow-soft);border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.st-besoin-tete{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.st-besoin-tete span{font-size:13px;font-weight:600;color:var(--ink-2)} .st-besoin-tete span.ok{color:var(--ok)}
+.st-besoin ol{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.st-besoin li{font-size:13.5px;color:var(--ink);display:grid;gap:1px;padding-left:22px;position:relative}
+.st-besoin li::before{content:"";position:absolute;left:0;top:3px;width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink-3)}
+.st-besoin li.fait::before{background:var(--ok);border-color:var(--ok)}
+.st-besoin li span{font-size:12px;color:var(--ink-3);font-weight:600}
 .st-slide [data-k=titre]{font-weight:600}
 .st-slide textarea{min-height:56px;padding:8px 12px;border-radius:10px;font-size:14px}
 .st-moins{border:0;background:none;color:var(--ink-3);font-size:20px;cursor:pointer;padding:4px 6px;line-height:1}
@@ -1210,8 +1228,25 @@ async function ouvreProjet(sid) {
   S.projetId = sid; S.projet = await api("/api/studio/" + sid); S.optionsStudio = {...(S.optionsStudio || {}), ...S.projet.options};
   if (S.vue !== "studio") va("studio"); else renduProjet();
 }
+// Même règle que studio.attribue côté serveur : les photos vont d'abord aux slides qui en demandent une
+function attribueJS(slides, images) {
+  const res = slides.map(() => null);
+  let prevues = slides.map((x, i) => x.photo ? i : -1).filter(i => i >= 0);
+  if (!prevues.length) prevues = slides.map((_, i) => i);
+  const ordre = [...prevues, ...slides.map((_, i) => i).filter(i => !prevues.includes(i))];
+  images.forEach((img, k) => { if (k < ordre.length) res[ordre[k]] = img; });
+  return res;
+}
+function besoinPhotos(p) {
+  if (p.type !== "carrousel" && p.video) return "";
+  const besoins = p.slides.map((x, i) => ({i, photo: x.photo})).filter(x => x.photo);
+  if (!besoins.length) return "";
+  const n = besoins.length, faites = Math.min(p.images.length, n);
+  return `<div class="st-besoin"><div class="st-besoin-tete"><b>📷 Il te faut ${n} photo${n > 1 ? "s" : ""} pour reproduire ce modèle</b><span class="${faites >= n ? "ok" : ""}">${faites} / ${n} ajoutée${faites > 1 ? "s" : ""}</span></div>
+    <ol>${besoins.map((b, k) => `<li class="${k < p.images.length ? "fait" : ""}"><span>Photo ${k + 1} · slide ${b.i + 1}</span>${esc(b.photo)}</li>`).join("")}</ol></div>`;
+}
 function slidesDuDom() {
-  return $$(".st-slide").map(x => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value}));
+  return $$(".st-slide").map((x, i) => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value, photo: S.projet?.slides?.[i]?.photo || ""}));
 }
 function sauveProjet(immediat) {
   clearTimeout(S.minuteurStudio);
@@ -1259,7 +1294,8 @@ function renduProjet() {
       <div>
         <div class="st-bloc">
           <h3>1. Tes ${p.type === "reel" ? "photos ou ta vidéo" : "photos"}</h3>
-          <p class="aide">${p.type === "carrousel" ? "Une photo par slide, dans l'ordre. Les slides sans photo sont sur fond uni." : "Ta vidéo (face caméra, voix off…) : je la recadre et j'ajoute le hook et les sous-titres. Pas de vidéo ? Ajoute des photos : je monte un diaporama avec les textes."}</p>
+          ${ecrit ? "" : besoinPhotos(p)}
+          <p class="aide">${p.type === "carrousel" ? (p.nb_photos ? "Ajoute-les dans cet ordre : chacune va sur sa slide. Les autres slides sont sur fond uni." : "Une photo par slide, dans l'ordre. Les slides sans photo sont sur fond uni.") : "Ta vidéo (face caméra, voix off…) : je la recadre et j'ajoute le hook et les sous-titres. Pas de vidéo ? Ajoute des photos : je monte un diaporama avec les textes."}</p>
           <label class="depot" id="st-depot"><input type="file" id="st-fichiers" multiple accept="${p.type === "reel" ? "image/*,video/*" : "image/*"}" hidden>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
             <span><b>Choisis tes fichiers</b> ou dépose-les ici</span><small>JPEG, PNG, HEIC${p.type === "reel" ? " · MP4, MOV jusqu'à 300 Mo et 3 min" : ""} · 10 photos max</small>
@@ -1280,17 +1316,18 @@ function renduProjet() {
             <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>` : ""}
           ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Claude écrit tes slides…</p>` : `
             ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
-            <ol class="st-slides">${p.slides.map((x, i) => `<li class="st-slide">
-              ${p.images[i] ? `<img src="${src(p.images[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}"></span>`}
+            <ol class="st-slides">${(() => { const att = attribueJS(p.slides, p.images); return p.slides.map((x, i) => `<li class="st-slide">
+              ${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}">${x.photo ? "📷" : ""}</span>`}
               <div><input class="st-input" data-k="titre" value="${esc(x.titre)}" aria-label="Titre de la slide ${i + 1}" placeholder="${i ? "Titre de la slide" : "Le hook"}">
-              <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea></div>
-              <button class="st-moins" data-moins="${i}" aria-label="Supprimer la slide ${i + 1}">×</button></li>`).join("")}</ol>
+              <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea>
+              ${x.photo ? `<span class="st-photo-aide">📷 ${esc(x.photo)}</span>` : ""}</div>
+              <button class="st-moins" data-moins="${i}" aria-label="Supprimer la slide ${i + 1}">×</button></li>`).join(""); })()}</ol>
             <div class="st-outils"><button class="btn petit" id="st-ajout" ${p.slides.length >= 10 ? "disabled" : ""}>+ Ajouter une slide</button></div>`) : ""}
         </div>
         <div class="st-bloc">
           <h3>3. Le look</h3>
           <p class="aide">Typographie</p>
-          <div class="st-puces st-typos" role="group" aria-label="Typographie">${(S.optionsStudio?.typos || []).map(x => `<button type="button" data-typo="${x.id}" aria-pressed="${(p.typo || "moderne") === x.id}"><span class="apercu" style="font-family:'VV ${esc(x.police)}';${x.id === "impact" ? "text-transform:uppercase;font-weight:400" : x.id === "elegant" ? "font-weight:400" : ""}">Aa</span><small>${esc(x.nom)}</small></button>`).join("")}</div>
+          <div class="st-puces st-typos" role="group" aria-label="Typographie">${(S.optionsStudio?.typos || []).map(x => `<button type="button" data-typo="${x.id}" aria-pressed="${(p.typo || "moderne") === x.id}"><span class="apercu" style="font-family:'VV ${esc(x.police)}';font-weight:400;${["impact", "affiche"].includes(x.id) ? "text-transform:uppercase" : ""}">Aa</span><small>${esc(x.nom)}</small></button>`).join("")}</div>
           <p class="aide" style="margin-top:14px">Couleurs</p>
           <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(NOMS_THEMES).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${p.theme === k}"><span class="st-fond ${k}"></span>${n}</button>`).join("")}</div>
           <div class="champ" style="margin-top:14px"><label for="st-pseudo">Ton @ affiché sur les visuels</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte (laisser vide pour ne rien afficher)"></div>
