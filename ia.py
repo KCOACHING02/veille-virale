@@ -241,11 +241,17 @@ OUTIL_HASHTAGS = {
 }
 
 
-def propose_profil(cfg: dict, posts: list[Post], resume_chiffres: str) -> dict:
+def propose_profil(cfg: dict, posts: list[Post], resume_chiffres: str, bio: dict | None = None) -> dict:
     ia = IA.__new__(IA)
     import anthropic
     ia.client, ia.cfg, ia.modele, ia.systeme = anthropic.Anthropic(), cfg, cfg["claude"]["modele"], ""
-    texte = (f"Voici les Reels récents d'un compte ({resume_chiffres}). Déduis-en son profil de marque, en "
+    profils = []
+    for plat, b in (bio or {}).items():
+        profils.append(f"PROFIL {plat.upper()}\nNom affiché : {b.get('nom') or '-'}\nBio : {b.get('bio') or '-'}\n"
+                       f"Lien en bio : {b.get('lien') or '-'}\nAbonnés : {b.get('abonnes') or '-'}\nCatégorie : {b.get('categorie') or '-'}")
+    entete = ("\n\n".join(profils) + "\n\nLa bio est la source la plus fiable pour le nom de marque, la promesse, la cible "
+              "et l'offre (lien en bio, ressource gratuite, appel à l'action). Les légendes servent surtout pour le ton, la voix et les douleurs de la cible.\n\n") if profils else ""
+    texte = (entete + f"Voici les Reels récents du compte ({resume_chiffres}). Déduis-en son profil de marque, en "
              f"{cfg['niche'].get('langue', 'français')}.\n\n" + "\n\n".join(
                  f"[{p.vues or 0} vues, {p.commentaires or 0} commentaires, mécanique : {(p.adaptation or {}).get('mecanique', '?')}]\n{p.legende[:900]}"
                  for p in posts[:40]))

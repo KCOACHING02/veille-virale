@@ -384,6 +384,7 @@ def analyse_mon_compte(esp: Espace, cfg: dict, instagram: str = "", tiktok: str 
                 setattr(p, k, (getattr(p, k) or 0) // 8)
         d.miniatures(posts, Path(tempfile.mkdtemp()), esp.media)
         prop = d.profil()
+        bio = d.bio(instagram or tiktok)
     else:
         token = os.getenv("APIFY_TOKEN")
         from apprentissage import mon_compte
@@ -394,6 +395,9 @@ def analyse_mon_compte(esp: Espace, cfg: dict, instagram: str = "", tiktok: str 
         if not posts:
             raise RuntimeError("Aucun Reel trouvé sur ce compte (vérifie qu'il est public et qu'il a publié ces 60 derniers jours).")
         miniatures(sorted(posts, key=lambda p: p.vues or 0, reverse=True)[:12], esp.media)
+        from collecte import profil_reseaux
+        log("Lecture de ta bio…")
+        bio = profil_reseaux(cfg, token, cfg["mon_compte"]["instagram"], cfg["mon_compte"]["tiktok"])
         log("Claude analyse ton positionnement…")
         prop = None
     vues = [p.vues for p in posts if p.vues]
@@ -403,11 +407,11 @@ def analyse_mon_compte(esp: Espace, cfg: dict, instagram: str = "", tiktok: str 
                 "engagement_median": round(st.median(er), 4) if er else None, "commentaires_par_vue": round(st.median(com), 5) if com else None}
     if prop is None:
         prop = propose_profil(cfg, sorted(posts, key=lambda p: p.vues or 0, reverse=True),
-                              f"{chiffres['reels']} Reels, médiane {chiffres['vues_mediane']} vues")
+                              f"{chiffres['reels']} Reels, médiane {chiffres['vues_mediane']} vues", bio)
     appr = synthese(posts, [])
     top = sorted(posts, key=lambda p: p.vues or 0, reverse=True)[:6]
     profil = {
-        "date": datetime.now().isoformat(timespec="minutes"), "instagram": instagram, "tiktok": tiktok, "chiffres": chiffres,
+        "date": datetime.now().isoformat(timespec="minutes"), "instagram": instagram, "tiktok": tiktok, "chiffres": chiffres, "bio": bio,
         "top": [{"cle": cle(p), "miniature": p.miniature, "vues": p.vues, "legende": p.legende[:160], "url": p.url,
                  "mecanique": (p.adaptation or {}).get("mecanique")} for p in top],
         "proposition": prop if not prop.get("erreur") else {},

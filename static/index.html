@@ -900,7 +900,10 @@ function activeChoix() { $$("#a-contenu .choix").forEach(g => $$("button", g).fo
 function blocAnalyseCompte(prof) {
   if (!prof) return "";
   const c = prof.chiffres || {}, pr = prof.proposition || {};
+  const bios = Object.entries(prof.bio || {}).filter(([, b]) => b && (b.bio || b.nom));
   return `<div class="analyse-compte">
+    ${bios.map(([pl, b]) => `<div class="carte" style="white-space:normal"><b>${esc(b.nom || "")}</b>${b.abonnes != null ? ` <span style="color:var(--ink-3)">— ${nb(b.abonnes)} abonnés sur ${pl === "tiktok" ? "TikTok" : "Instagram"}</span>` : ""}
+      ${b.bio ? `<p style="margin:6px 0 0;white-space:pre-wrap;color:var(--ink-2)">${esc(b.bio)}</p>` : ""}${b.lien ? `<p style="margin:6px 0 0;font-size:13.5px"><a href="${esc(b.lien)}" target="_blank" rel="noopener">${esc(b.lien)}</a></p>` : ""}</div>`).join("")}
     <div class="chiffres-compte">
       <div><b>${c.reels ?? "–"}</b><span>Reels analysés</span></div>
       <div><b>${nb(c.vues_mediane)}</b><span>vues habituelles</span></div>
@@ -921,16 +924,24 @@ const PAGES = {
     <div class="f"><label for="w-tt">Ton compte TikTok</label><input id="w-tt" placeholder="@toncompte (facultatif)" value="${esc(W.p.mon_compte.tiktok || "")}"></div></div>
     <p><button class="btn" id="w-analyser">${W.p.profil_compte ? "Relancer l'analyse de mon compte" : "Analyser mon compte"}</button></p>
     <div id="w-res">${blocAnalyseCompte(W.p.profil_compte)}</div>`,
-  activite: () => { const n = W.p.niche; return `<h2 id="a-titre">Ton activité</h2>
-    <p class="intro">C'est ce qui permet à Claude de transposer les Reels des autres à ton univers.</p>
-    <div class="f"><label for="w-nom">Nom de ta marque</label><input id="w-nom" value="${esc(n.nom)}" placeholder="Ex. Brille & Vibre"></div>
-    <div class="f"><label for="w-desc">Ce que tu fais, pour qui, et quel résultat tu apportes</label><textarea id="w-desc" placeholder="Ex. J'aide les femmes actives de 30 à 50 ans à dégonfler et à retrouver de l'énergie, sans régime strict.">${esc(n.description)}</textarea></div>
-    <div class="f"><label for="w-offre">Ce vers quoi tu emmènes les gens</label><input id="w-offre" value="${esc(n.offre)}" placeholder="Ex. Ebook gratuit, puis accompagnement de 3 mois"><span class="aide">C'est ce que proposeront tes messages privés.</span></div>
+  activite: () => { const n = W.p.niche, pr = W.p.profil_compte?.proposition || {};
+    const nom = n.nom || pr.nom_marque || "", desc = n.description || pr.description_niche || "", offre = n.offre || pr.offre || "";
+    const pre = (!n.nom && pr.nom_marque) || (!n.description && pr.description_niche) || (!n.offre && pr.offre);
+    return `<h2 id="a-titre">Ton activité</h2>
+    <p class="intro">${pre ? "Pré-rempli à partir de ta bio et de tes Reels : vérifie et ajuste." : "C'est ce qui permet à Claude de transposer les Reels des autres à ton univers."}</p>
+    ${pr.description_niche ? `<p style="margin:-12px 0 20px"><button class="btn petit" id="w-remplir">Remplir depuis mon compte</button> <span class="aide">remplace les champs par ce que Claude a lu sur ton profil</span></p>` : ""}
+    <div class="f"><label for="w-nom">Nom de ta marque</label><input id="w-nom" value="${esc(nom)}" placeholder="Ex. Brille & Vibre"></div>
+    <div class="f"><label for="w-desc">Ce que tu fais, pour qui, et quel résultat tu apportes</label><textarea id="w-desc" placeholder="Ex. J'aide les femmes actives de 30 à 50 ans à dégonfler et à retrouver de l'énergie, sans régime strict.">${esc(desc)}</textarea></div>
+    <div class="f"><label for="w-offre">Ce vers quoi tu emmènes les gens</label><input id="w-offre" value="${esc(offre)}" placeholder="Ex. Ebook gratuit, puis accompagnement de 3 mois"><span class="aide">C'est ce que proposeront tes messages privés.</span></div>
     <div class="f"><label for="w-langue">Langue de tes contenus</label><select id="w-langue">${["français", "anglais", "espagnol", "arabe", "darija", "allemand", "italien", "portugais"].map(l => `<option ${n.langue === l ? "selected" : ""}>${l}</option>`).join("")}</select></div>`; },
-  client: () => { const n = W.p.niche; return `<h2 id="a-titre">Ton client idéal</h2>
-    <p class="intro">Les hooks et les messages s'adressent à cette personne, avec ses mots à elle.</p>
-    <div class="f"><label for="w-cible">Qui est-ce ?</label><input id="w-cible" value="${esc(n.cible)}" placeholder="Ex. Femme de 35 ans, maman, cadre, fatiguée des régimes"></div>
-    <div class="f"><label for="w-douleurs">Ce qu'elle vit au quotidien</label><textarea id="w-douleurs" placeholder="Un problème par ligne">${esc((n.douleurs || []).join("\n"))}</textarea><span class="aide">Un problème par ligne. Les commentaires lus pendant les analyses viendront compléter cette liste.</span></div>
+  client: () => { const n = W.p.niche, pr = W.p.profil_compte?.proposition || {};
+    const cible = n.cible || pr.cible || "", douleurs = (n.douleurs || []).length ? n.douleurs : (pr.douleurs || []);
+    const pre = (!n.cible && pr.cible) || (!(n.douleurs || []).length && (pr.douleurs || []).length);
+    return `<h2 id="a-titre">Ton client idéal</h2>
+    <p class="intro">${pre ? "Pré-rempli à partir de ta bio et de tes Reels : vérifie et ajuste." : "Les hooks et les messages s'adressent à cette personne, avec ses mots à elle."}</p>
+    ${pr.cible ? `<p style="margin:-12px 0 20px"><button class="btn petit" id="w-remplir">Remplir depuis mon compte</button> <span class="aide">remplace les champs par ce que Claude a lu sur ton profil</span></p>` : ""}
+    <div class="f"><label for="w-cible">Qui est-ce ?</label><input id="w-cible" value="${esc(cible)}" placeholder="Ex. Femme de 35 ans, maman, cadre, fatiguée des régimes"></div>
+    <div class="f"><label for="w-douleurs">Ce qu'elle vit au quotidien</label><textarea id="w-douleurs" placeholder="Un problème par ligne">${esc(douleurs.join("\n"))}</textarea><span class="aide">Un problème par ligne. Les commentaires lus pendant les analyses viendront compléter cette liste.</span></div>
     <div class="f"><label for="w-interdits">Ce que tu ne veux jamais dire</label><textarea id="w-interdits" style="min-height:70px">${esc(n.interdits)}</textarea><span class="aide">Promesses, sujets ou mots que Claude doit éviter.</span></div>`; },
   objectifs: () => { const o = W.p.objectifs; return `<h2 id="a-titre">Tes objectifs</h2>
     <p class="intro">Le planning et les appels à l'action sont construits autour de ces chiffres.</p>
@@ -986,6 +997,12 @@ const PAGES = {
     <p style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn prim" id="w-lancer" ${nbC ? "" : "disabled"}>Lancer ma première analyse</button><button class="btn" id="w-plus-tard">Je lancerai plus tard</button></p>`; },
 };
 const APRES = {
+  activite: () => { $("#w-remplir")?.addEventListener("click", () => { const pr = W.p.profil_compte.proposition;
+    if (pr.nom_marque) $("#w-nom").value = pr.nom_marque; if (pr.description_niche) $("#w-desc").value = pr.description_niche; if (pr.offre) $("#w-offre").value = pr.offre;
+    toast("Rempli depuis ton compte"); }); },
+  client: () => { $("#w-remplir")?.addEventListener("click", () => { const pr = W.p.profil_compte.proposition;
+    if (pr.cible) $("#w-cible").value = pr.cible; if ((pr.douleurs || []).length) $("#w-douleurs").value = pr.douleurs.join("\n");
+    toast("Rempli depuis ton compte"); }); },
   compte: () => {
     $("#w-analyser").onclick = async () => {
       const ig = val("#w-ig"), tt = val("#w-tt"); if (!ig && !tt) return toast("Indique au moins un compte.");

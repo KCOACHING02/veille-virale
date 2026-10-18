@@ -171,3 +171,9 @@ def profil() -> dict:
         "points_forts": ["[démo] Tes Reels « erreur commune » font 2× plus de commentaires"],
         "a_ameliorer": ["[démo] Hook trop lent : la promesse arrive après 4 secondes", "[démo] Pas de CTA mot-clé"],
     }
+
+
+def bio(compte: str) -> dict:
+    return {"instagram": {"nom": "[démo] Karine | Business digital faceless", "abonnes": 12400, "publications": 186, "categorie": "Créateur de contenu",
+                          "bio": "[démo] J'aide les débutantes à lancer leur business en ligne depuis leur téléphone 📱\nSans se montrer, sans prise de tête\n⬇️ Ton ebook gratuit pour démarrer",
+                          "lien": "https://stan.store/demo"}}

@@ -191,3 +191,37 @@ def collecte_posts(liens: list[tuple[str, str]], cfg: dict, token: str) -> list[
     for p in posts:
         p.demande = True
     return posts
+
+
+# ------------------------------------------------------------
+#  Profil (bio, nom, lien, abonnés) d'un compte
+# ------------------------------------------------------------
+def profil_reseaux(cfg: dict, token: str, instagram: str = "", tiktok: str = "") -> dict:
+    """Bio et informations publiques du profil. Ne bloque jamais l'analyse en cas d'échec."""
+    res = {}
+    if instagram:
+        try:
+            items = apify_run(cfg["apify"]["actor_instagram"], {
+                "directUrls": [f"https://www.instagram.com/{instagram.strip('@')}/"], "resultsType": "details", "resultsLimit": 1,
+            }, token)
+            it = next((x for x in items if x.get("username") or x.get("biography") is not None), {})
+            if it:
+                res["instagram"] = {
+                    "nom": it.get("fullName") or "", "bio": it.get("biography") or "", "lien": it.get("externalUrl") or "",
+                    "abonnes": entier(it.get("followersCount")), "publications": entier(it.get("postsCount")),
+                    "categorie": it.get("businessCategoryName") or "",
+                }
+        except Exception as e:  # noqa: BLE001
+            log(f"  ⚠️  Bio Instagram indisponible : {e}")
+    if tiktok:
+        try:
+            items = apify_run(cfg["apify"]["actor_tiktok"], {
+                "profiles": [tiktok.strip("@")], "resultsPerPage": 1, "shouldDownloadVideos": False, "shouldDownloadCovers": False,
+            }, token)
+            a = next((x.get("authorMeta") for x in items if x.get("authorMeta")), {}) or {}
+            if a:
+                res["tiktok"] = {"nom": a.get("nickName") or "", "bio": a.get("signature") or "",
+                                 "lien": a.get("bioLink") or "", "abonnes": entier(a.get("fans"))}
+        except Exception as e:  # noqa: BLE001
+            log(f"  ⚠️  Bio TikTok indisponible : {e}")
+    return res
