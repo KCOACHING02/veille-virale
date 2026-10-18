@@ -144,7 +144,28 @@ def synthese(mes_posts: list[Post], suivi: list[dict]) -> dict:
 #  4. Voix de marque
 # ------------------------------------------------------------
 def voix(cfg: dict, racine: Path, legendes_auto: list[str]) -> str:
+    """
+    Tout ce qu'on sait de la façon d'écrire de l'utilisateur : le portrait de sa voix tiré de l'analyse de son compte
+    (constats, expressions qu'il emploie vraiment), ses textes de référence, et les légendes de ses Reels qui ont le mieux marché.
+    """
+    import json
     morceaux = []
+    prof = {}
+    if (racine / "mon_compte.json").exists():
+        try:
+            prof = json.loads((racine / "mon_compte.json").read_text(encoding="utf-8"))
+        except ValueError:
+            prof = {}
+    pr = prof.get("proposition") or {}
+    if pr.get("guide_voix") or pr.get("expressions_signature"):
+        bloc = ["PORTRAIT DE SA FAÇON D'ÉCRIRE (observé sur son propre compte) — écris comme elle/lui :"]
+        bloc += [f"- {x}" for x in pr.get("guide_voix") or []]
+        if pr.get("expressions_signature"):
+            bloc.append("Expressions qu'elle/il emploie vraiment (à réutiliser avec naturel, sans en abuser) : "
+                        + " ; ".join(pr["expressions_signature"]))
+        morceaux.append("\n".join(bloc))
+    if not legendes_auto:
+        legendes_auto = ((prof.get("apprentissage") or {}).get("meilleures_legendes") or [])[:6]
     f = racine / cfg["voix"]["fichier"]
     if f.exists():
         contenu = "\n".join(l for l in f.read_text(encoding="utf-8").splitlines() if not l.startswith("<!--")).strip()

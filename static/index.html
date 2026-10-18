@@ -229,6 +229,20 @@ td.num{font-variant-numeric:tabular-nums}
 [hidden]{display:none!important}
 
 /* ---------- Studio ---------- */
+@font-face{font-family:"VV Anton";src:url(/static/fonts/Anton-Regular.ttf);font-display:swap}
+@font-face{font-family:"VV DM Serif Display";src:url(/static/fonts/DMSerifDisplay-Regular.ttf);font-display:swap}
+@font-face{font-family:"VV Caveat";src:url(/static/fonts/Caveat.ttf);font-weight:400 700;font-display:swap}
+@font-face{font-family:"VV Poppins";src:url(/static/fonts/Poppins-Bold.ttf);font-weight:700;font-display:swap}
+.st-puces{display:flex;gap:8px;flex-wrap:wrap}
+.st-puces button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 12px;cursor:pointer;text-align:left;display:grid;gap:1px;min-width:0}
+.st-puces button b{font-size:14px;font-weight:600}
+.st-puces button small{font-size:12px;color:var(--ink-3)}
+.st-puces button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft)}
+.st-typos button{min-width:112px}
+.st-typos .apercu{font-size:24px;line-height:1.1;color:var(--ink);font-weight:700}
+.st-astuce{font-size:13px;color:var(--ink-3);margin:8px 0 0}
+.st-astuce a{color:var(--glow)}
+.st-sep{border:0;border-top:1px solid var(--line);margin:16px 0}
 .formats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 .formats button{border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r-m);padding:18px;text-align:left;cursor:pointer;display:grid;gap:6px}
 .formats button:hover{border-color:var(--glow)}
@@ -987,19 +1001,28 @@ async function lanceAnalyse() {
 
 // ---------------------------------------------------------------- Studio
 const NOMS_THEMES = {sombre: "Nuit", clair: "Clair", rose: "Rose"};
-function choisirFormat(cle) {
+const pucesStyles = (opts, actif) => `<div class="st-puces" role="group" aria-label="Style d'écriture">${opts.styles.map(x => `<button type="button" data-style="${x.id}" aria-pressed="${x.id === actif}"><b>${esc(x.nom)}</b><small>${esc(x.aide)}</small></button>`).join("")}</div>`;
+const astuceVoix = opts => opts.voix_connue ? "" : `<p class="st-astuce">« Ma voix » sera plus fidèle quand l'outil aura lu ton compte : <a href="#" onclick="fermeModale();va('parametres');return false">indique ton compte dans Paramètres</a>.</p>`;
+async function choisirFormat(cle) {
+  S.optionsStudio = S.optionsStudio || await api("/api/studio");
+  const opts = S.optionsStudio;
+  let style = "ma_voix";
   $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:26px;font-stretch:85%">Que veux-tu créer ?</h2>
     <p style="color:var(--ink-2);margin:6px 0 18px">Claude écrit les textes à partir de ce Reel. Tu ajoutes tes photos ou ta vidéo, et tu récupères un package prêt à publier.</p>
     <div class="formats">
       <button data-format="carrousel"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span><b>Carrousel</b><span>Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350.</span></button>
       <button data-format="reel"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>
     </div>
-    <div class="pied-modale"><button class="btn" data-fermer>Annuler</button></div>`;
+    <h3 style="font-size:16px;margin:0 0 4px">Style d'écriture</h3>
+    <p style="color:var(--ink-2);margin:0 0 10px;font-size:14px">Le hook viral reste tel quel. Le reste est écrit dans ta voix, avec la construction choisie. Tu pourras en changer ensuite.</p>
+    ${pucesStyles(opts, style)}${astuceVoix(opts)}
+    <div class="pied-modale" style="margin-top:18px"><button class="btn" data-fermer>Annuler</button></div>`;
   $("#modale").classList.add("ouvert");
+  $$("#feuille [data-style]").forEach(b => b.onclick = () => { style = b.dataset.style; $$("#feuille [data-style]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
   $$("[data-format]").forEach(b => b.onclick = async () => {
     $$("[data-format]").forEach(x => x.disabled = true);
     try {
-      const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: b.dataset.format}});
+      const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: b.dataset.format, style}});
       fermeModale(); fermeTiroir();
       S.projetId = r.projet.id; S.projet = r.projet; S.tacheStudio = {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"};
       va("studio"); suisTacheStudio(r.job);
@@ -1010,6 +1033,7 @@ async function renduStudio() {
   const el = $("#studio");
   if (S.projetId) return renduProjet();
   const r = await api("/api/studio");
+  S.optionsStudio = r;
   if (S.vue !== "studio" || S.projetId) return;
   const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} ce mois-ci sur ${r.quota}`} · retoucher et refaire une création ne compte pas.</p>`;
   if (!r.projets.length) {
@@ -1040,7 +1064,7 @@ async function renduStudio() {
   });
 }
 async function ouvreProjet(sid) {
-  S.projetId = sid; S.projet = await api("/api/studio/" + sid);
+  S.projetId = sid; S.projet = await api("/api/studio/" + sid); S.optionsStudio = {...(S.optionsStudio || {}), ...S.projet.options};
   if (S.vue !== "studio") va("studio"); else renduProjet();
 }
 function slidesDuDom() {
@@ -1053,6 +1077,7 @@ function sauveProjet(immediat) {
     const corps = {legende: $("#st-legende").value, pseudo: $("#st-pseudo").value.trim().replace(/^@/, "")};
     if ($(".st-slide") || p.type === "carrousel") corps.slides = slidesDuDom();
     if ($("#st-hook")) corps.hook = $("#st-hook").value;
+    if ($("#st-script")) corps.script = $("#st-script").value;
     if ($("#st-sous")) corps.sous_titres = $("#st-sous").checked;
     try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: corps}); $("#st-enregistre").textContent = "Enregistré"; } catch (e) { toast(e.message); }
   };
@@ -1103,8 +1128,13 @@ function renduProjet() {
         </div>
         <div class="st-bloc">
           <h3>2. Les textes</h3>
+          <p class="aide">Style d'écriture — toujours dans ta voix, seule la construction change.</p>
+          ${pucesStyles(S.optionsStudio || {styles: []}, p.style || "ma_voix")}${astuceVoix(S.optionsStudio || {voix_connue: true})}
+          <div class="st-outils"><button class="btn petit prim" id="st-ecrire" ${ecrit ? "disabled" : ""}>Réécrire dans ce style</button></div>
+          <hr class="st-sep">
           ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
-            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (ce que tu dis dans la vidéo)</label>` : ""}` : ""}
+            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (ce que tu dis dans la vidéo)</label>` : ""}
+            <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>` : ""}
           ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Claude écrit tes slides…</p>` : `
             ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
             <ol class="st-slides">${p.slides.map((x, i) => `<li class="st-slide">
@@ -1112,10 +1142,13 @@ function renduProjet() {
               <div><input class="st-input" data-k="titre" value="${esc(x.titre)}" aria-label="Titre de la slide ${i + 1}" placeholder="${i ? "Titre de la slide" : "Le hook"}">
               <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea></div>
               <button class="st-moins" data-moins="${i}" aria-label="Supprimer la slide ${i + 1}">×</button></li>`).join("")}</ol>
-            <div class="st-outils"><button class="btn petit" id="st-ajout" ${p.slides.length >= 10 ? "disabled" : ""}>+ Ajouter une slide</button><button class="btn petit" id="st-ecrire">Réécrire avec Claude</button></div>`) : ""}
+            <div class="st-outils"><button class="btn petit" id="st-ajout" ${p.slides.length >= 10 ? "disabled" : ""}>+ Ajouter une slide</button></div>`) : ""}
         </div>
         <div class="st-bloc">
-          <h3>3. Le style</h3>
+          <h3>3. Le look</h3>
+          <p class="aide">Typographie</p>
+          <div class="st-puces st-typos" role="group" aria-label="Typographie">${(S.optionsStudio?.typos || []).map(x => `<button type="button" data-typo="${x.id}" aria-pressed="${(p.typo || "moderne") === x.id}"><span class="apercu" style="font-family:'VV ${esc(x.police)}';${x.id === "impact" ? "text-transform:uppercase;font-weight:400" : x.id === "elegant" ? "font-weight:400" : ""}">Aa</span><small>${esc(x.nom)}</small></button>`).join("")}</div>
+          <p class="aide" style="margin-top:14px">Couleurs</p>
           <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(NOMS_THEMES).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${p.theme === k}"><span class="st-fond ${k}"></span>${n}</button>`).join("")}</div>
           <div class="champ" style="margin-top:14px"><label for="st-pseudo">Ton @ affiché sur les visuels</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte (laisser vide pour ne rien afficher)"></div>
         </div>
@@ -1137,12 +1170,18 @@ function renduProjet() {
   $("#st-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); };
   $$("[data-type]", el).forEach(b => b.onclick = async () => { if (b.dataset.type === p.type) return; await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {type: b.dataset.type}}); renduProjet(); });
   $$("[data-theme]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {theme: b.dataset.theme}}); renduProjet(); });
+  $$("[data-typo]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {typo: b.dataset.typo}}); renduProjet(); });
+  $$("[data-style]", el).forEach(b => b.onclick = async () => {
+    $$("[data-style]", el).forEach(x => x.setAttribute("aria-pressed", x === b));
+    S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {style: b.dataset.style}});
+  });
+  $("#st-script")?.addEventListener("input", () => sauveProjet());
   $$(".st-input, #st-legende, .st-slide textarea", el).forEach(i => i.addEventListener("input", () => sauveProjet()));
   $("#st-sous")?.addEventListener("change", () => sauveProjet());
   $("#st-ajout")?.addEventListener("click", async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: [...S.projet.slides, {titre: "", texte: ""}]}}); renduProjet(); $$(".st-slide [data-k=titre]").pop()?.focus(); });
   $$("[data-moins]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); const sl = S.projet.slides.filter((_, i) => i !== +b.dataset.moins); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: sl}}); renduProjet(); });
   $("#st-ecrire")?.addEventListener("click", async () => {
-    if (p.slides.length && !confirm("Remplacer tes textes actuels par une nouvelle proposition de Claude ?")) return;
+    if (p.slides.length && !confirm("Remplacer tes textes actuels (slides, légende" + (p.type === "reel" ? ", script" : "") + ") par une nouvelle version dans ce style ?")) return;
     try { const r = await api(`/api/studio/${p.id}/ecrire`, {method: "POST"}); S.tacheStudio = {id: r.job, sid: p.id, titre: "Écriture des slides", phrase: "Claude écrit tes slides…"}; renduProjet(); suisTacheStudio(r.job); } catch (e) { toast(e.message); }
   });
   $$("[data-retire]", el).forEach(b => b.onclick = async () => { S.projet = await api(`/api/studio/${p.id}/fichiers/${encodeURIComponent(b.dataset.retire)}`, {method: "DELETE"}); renduProjet(); });

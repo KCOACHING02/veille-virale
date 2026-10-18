@@ -663,7 +663,14 @@ def _projet(sid):
 @app.get("/api/studio")
 @connecte
 def studio_liste():
-    return jsonify({"projets": studio.liste(g.esp), "reste": droits(g.u)["reste"]["studio"], "quota": droits(g.u)["quotas"]["studio_par_mois"]})
+    return jsonify({"projets": studio.liste(g.esp), "reste": droits(g.u)["reste"]["studio"], "quota": droits(g.u)["quotas"]["studio_par_mois"],
+                    **_options_studio()})
+
+
+def _options_studio():
+    return {"styles": [{"id": k, "nom": v[0], "aide": v[1]} for k, v in studio.STYLES.items()],
+            "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5]} for k, v in studio.TYPOS.items()],
+            "voix_connue": studio.voix_connue(g.esp)}
 
 
 @app.post("/api/studio")
@@ -682,7 +689,7 @@ def studio_cree():
     if not (post.get("adaptation") and not post["adaptation"].get("erreur")):
         return jsonify({"erreur": "Adapte d'abord ce Reel."}), 400
     cfg = g.esp.lit_config()
-    p = studio.cree(g.esp, cfg, post, c.get("type", "carrousel"), c["analyse_id"])
+    p = studio.cree(g.esp, cfg, post, c.get("type", "carrousel"), c["analyse_id"], c.get("style") or "ma_voix")
     jid = lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
     return jsonify({"projet": p, "job": jid})
 
@@ -692,7 +699,7 @@ def studio_cree():
 def studio_projet(sid):
     p = _projet(sid)
     p.pop("adaptation", None)
-    return jsonify(p)
+    return jsonify({**p, "options": _options_studio()})
 
 
 @app.put("/api/studio/<sid>")

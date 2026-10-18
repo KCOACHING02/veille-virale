@@ -117,7 +117,8 @@ OUTIL_CARROUSEL = {
                     "texte": {"type": "string", "description": "Précision optionnelle sous le titre : 0 à 25 mots. Vide sur la 1re slide."}},
                     "required": ["titre", "texte"]},
             },
-            "legende": {"type": "string", "description": "Légende du carrousel prête à publier, avec le CTA et 3 à 6 hashtags à la fin."},
+            "legende": {"type": "string", "description": "Légende prête à publier, avec le CTA et 3 à 6 hashtags à la fin."},
+            "script": {"type": "string", "description": "Uniquement pour un Reel : script à dire face caméra ou en voix off, [0-3 s] hook / [corps] / [fin] CTA, 20 à 45 secondes."},
         },
         "required": ["slides", "legende"],
     },
@@ -220,7 +221,7 @@ Règles :
 7. Note de pertinence honnête."""
         blocs = [{"type": "text", "text": texte}]
         if voix.strip():
-            blocs.append({"type": "text", "text": "VOIX DE LA MARQUE — exemples réels de ses textes. Imite ce ton, ce vocabulaire, cette longueur de phrases, cette ponctuation et cet usage des emojis. Ne réutilise pas ces phrases telles quelles.\n\n" + voix.strip()})
+            blocs.append({"type": "text", "text": "VOIX DE LA MARQUE — exemples réels de ses textes. Imite ce ton, ce vocabulaire, cette longueur de phrases, cette ponctuation et cet usage des emojis. Ne recopie pas ses légendes telles quelles ; ses expressions signature, elles, peuvent revenir naturellement.\n\n" + voix.strip()})
         if apprentissages.strip():
             blocs.append({"type": "text", "text": "CE QUI MARCHE SUR LE COMPTE DE LA MARQUE (données réelles) — privilégie ces mécaniques et formats dans tes adaptations :\n\n" + apprentissages.strip()})
         blocs[-1]["cache_control"] = {"type": "ephemeral"}  # mis en cache : moins cher sur les 20 appels
@@ -257,9 +258,11 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
             res["legende_reprise"] = p.legende
         return res
 
-    def carrousel(self, ad: dict, nb: int = 7) -> dict:
-        """Transforme une adaptation (hook, script, CTA) en textes de carrousel."""
-        texte = f"""Transforme ce Reel adapté en carrousel Instagram de {nb} slides.
+    def carrousel(self, ad: dict, nb: int = 7, style: str = "", reel: bool = False) -> dict:
+        """Transforme une adaptation (hook, script, CTA) en textes de slides (+ script pour un Reel), dans le style demandé."""
+        quoi = (f"Reel : {nb} plans texte (diaporama, une phrase forte par plan) ET le script à dire (champ script)" if reel
+                else f"carrousel Instagram de {nb} slides")
+        texte = f"""Transforme ce Reel adapté en {quoi}.
 
 Hook viral : {ad.get('hook_viral') or ''}
 Hooks adaptés : {' / '.join(ad.get('hooks_adaptes') or [])}
@@ -274,6 +277,9 @@ Règles :
 - Slides suivantes : une seule idée par slide, phrases courtes, concrètes, dans le ton de la marque. Chaque slide donne envie de passer à la suivante.
 - Dernière slide : le CTA qui fait commenter le mot-clé « {self.cfg['objectifs']['mot_cle_cta']} ».
 - Rien qui sonne publicité ou texte d'IA, pas de liste de bénéfices creux, pas d'emoji dans les titres.
+
+STYLE D'ÉCRITURE DEMANDÉ : {style or "sa voix habituelle, exactement comme sur son compte"}
+Le style change la construction (récit, rythme, angle). Il ne change JAMAIS sa voix : garde son vocabulaire, son tutoiement ou vouvoiement, sa ponctuation, son usage des emojis dans la légende et ses expressions signature.
 Remplis l'outil enregistrer_carrousel."""
         return self._appel(OUTIL_CARROUSEL, texte, max_tokens=2000)
 

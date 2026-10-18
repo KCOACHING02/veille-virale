@@ -31,6 +31,28 @@ THEMES = {
     "clair": {"fond": (246, 244, 248), "texte": (39, 27, 45), "accent": (255, 79, 121), "doux": (94, 81, 102)},
     "rose": {"fond": (255, 79, 121), "texte": (255, 255, 255), "accent": (39, 27, 45), "doux": (255, 227, 234)},
 }
+# Styles d'écriture proposés (le texte reste dans la voix de l'utilisateur ; seule la construction change)
+STYLES = {
+    "ma_voix": ("Ma voix", "Comme sur ton compte", ""),
+    "histoire": ("Storytelling", "Un vécu raconté à la 1re personne",
+                 "storytelling : une histoire vécue racontée à la première personne (situation, déclic, ce qui a changé), avec du concret et un peu d'émotion"),
+    "direct": ("Direct", "Phrases courtes qui claquent",
+               "direct et percutant : phrases très courtes, affirmations franches, zéro détour, rythme rapide"),
+    "pedago": ("Pédagogique", "Des étapes concrètes",
+               "pédagogique : étapes numérotées ou conseils concrets et actionnables, un exemple précis à chaque fois"),
+    "confidence": ("Confidence", "Intime, comme à une amie",
+                   "confidence : ton intime et complice, comme un message à une amie, on avoue ses doutes et ses erreurs"),
+    "mythe": ("Idée reçue", "Casser une croyance",
+              "idée reçue démontée : on cite ce que tout le monde croit, on explique pourquoi c'est faux, puis ce qui marche vraiment"),
+}
+# Typographies : (police du titre, axe de graisse si police variable, police du texte, majuscules, facteur de taille, nom pour libass)
+TYPOS = {
+    "moderne": ("Poppins-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.0, "Poppins"),
+    "impact": ("Anton-Regular.ttf", None, "Poppins-Medium.ttf", True, 1.12, "Anton"),
+    "elegant": ("DMSerifDisplay-Regular.ttf", None, "Poppins-Regular.ttf", False, 1.04, "DM Serif Display"),
+    "manuscrit": ("Caveat.ttf", 700, "Poppins-Regular.ttf", False, 1.3, "Caveat"),
+}
+NOMS_TYPOS = {"moderne": "Moderne", "impact": "Impact", "elegant": "Élégant", "manuscrit": "Manuscrit"}
 DUREE_MAX_REEL = 180
 SLIDE_DIAPORAMA_S = 3.0
 
@@ -77,7 +99,7 @@ def supprime(esp: Espace, sid: str):
     shutil.rmtree(dossier(esp, sid), ignore_errors=True)
 
 
-def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None) -> dict:
+def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, style: str = "ma_voix") -> dict:
     """Nouveau projet à partir d'un Reel adapté (les textes des slides sont écrits ensuite par Claude)."""
     ad = post.get("adaptation") or {}
     hook = ad.get("hook_viral") or (ad.get("hooks_adaptes") or [""])[0]
@@ -93,32 +115,50 @@ def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None) -
         "hook": hook, "texte_ecran": ad.get("texte_ecran_adapte") or "", "script": ad.get("script_reel") or "",
         "cta": ad.get("cta_conversation") or "", "dm": ad.get("sequence_dm") or [], "legende": legende,
         "slides": [], "images": [], "video": None, "theme": "sombre", "sous_titres": True,
+        "style": "ma_voix", "typo": "moderne",
         "pseudo": (cfg.get("mon_compte") or {}).get("instagram") or "",
         "fichiers": [], "zip": None, "adaptation": ad,
     }
+    projet["style"] = style if style in STYLES else "ma_voix"
     sauve(esp, projet)
     return projet
+
+
+def voix_connue(esp: Espace) -> bool:
+    """Vrai si l'outil connaît la façon d'écrire de l'utilisateur (compte analysé ou textes de référence)."""
+    try:
+        prof = json.loads(esp.profil_compte.read_text(encoding="utf-8")) if esp.profil_compte.exists() else {}
+    except ValueError:
+        prof = {}
+    ref = esp.voix.read_text(encoding="utf-8").strip() if esp.voix.exists() else ""
+    return bool((prof.get("proposition") or {}).get("guide_voix") or (prof.get("apprentissage") or {}).get("meilleures_legendes")
+                or (ref and "COLLE ICI" not in ref))
 
 
 def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
     """Tâche de fond : Claude écrit les textes des slides à partir de l'adaptation."""
     p = charge(esp, sid)
-    log("J'écris les textes de tes slides…")
+    nom_style, _, consigne = STYLES.get(p.get("style") or "ma_voix", STYLES["ma_voix"])
+    reel = p["type"] == "reel"
+    log(f"J'écris tes textes, style « {nom_style} »…")
     if demo:
         res = {"slides": [{"titre": p["hook"] or "[démo] Ton hook", "texte": ""},
-                          *({"titre": f"[démo] Idée n°{i}", "texte": "[démo] Une phrase courte qui développe l'idée, dans ton ton."} for i in range(1, 6)),
+                          *({"titre": f"[démo · {nom_style}] Idée n°{i}", "texte": "[démo] Une phrase courte qui développe l'idée, dans ton ton."} for i in range(1, 6)),
                           {"titre": f"Commente {cfg['objectifs']['mot_cle_cta']}", "texte": "[démo] et je t'envoie le guide en privé"}],
-               "legende": p["legende"]}
+               "legende": f"[démo · {nom_style}] " + ((p.get("adaptation") or {}).get("legende_adaptee") or ""),
+               "script": f"[0-3 s] {p['hook']}\n[corps] [démo · {nom_style}] trois phrases dans ce style\n[fin] Commente {cfg['objectifs']['mot_cle_cta']}" if reel else ""}
     else:
         from apprentissage import voix
         from ia import IA
-        res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {})
+        res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {}, nb=6 if reel else 7, style=consigne, reel=reel)
         if res.get("erreur"):
             raise RuntimeError(res["erreur"])
     p = charge(esp, sid)  # relu : l'utilisateur a pu importer des fichiers pendant ce temps
     p["slides"] = [{"titre": s.get("titre", "").strip(), "texte": s.get("texte", "").strip()} for s in res.get("slides") or []][:10]
-    if p["type"] == "carrousel" and res.get("legende"):
+    if res.get("legende"):
         p["legende"] = res["legende"]
+    if reel and res.get("script"):
+        p["script"] = res["script"]
     sauve(esp, p)
     log(f"✅ {len(p['slides'])} slides écrites")
     return {"id": sid}
@@ -178,7 +218,7 @@ def retire_fichier(esp: Espace, sid: str, nom: str) -> dict:
 
 def modifie(esp: Espace, sid: str, champs: dict) -> dict:
     p = charge(esp, sid)
-    for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre"):
+    for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre", "script", "style", "typo"):
         if k in champs:
             p[k] = champs[k]
     if isinstance(champs.get("slides"), list):
@@ -187,6 +227,10 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         p["images"] = [i for i in champs["images"] if i in p["images"]] + [i for i in p["images"] if i not in champs["images"]]
     if p["theme"] not in THEMES:
         p["theme"] = "sombre"
+    if p.get("style") not in STYLES:
+        p["style"] = "ma_voix"
+    if p.get("typo") not in TYPOS:
+        p["typo"] = "moderne"
     sauve(esp, p)
     return p
 
@@ -203,8 +247,16 @@ def propre(t: str) -> str:
 
 
 def _police(graisse: str, taille: int):
+    """graisse : « Bold », « Regular », « Medium » (Poppins) ou un nom de fichier (.ttf), éventuellement « fichier@700 » (police variable)."""
     from PIL import ImageFont
-    return ImageFont.truetype(str(POLICES / f"Poppins-{graisse}.ttf"), taille)
+    fichier, _, poids = graisse.partition("@")
+    pol = ImageFont.truetype(str(POLICES / (fichier if fichier.endswith(".ttf") else f"Poppins-{fichier}.ttf")), taille)
+    if poids:
+        try:
+            pol.set_variation_by_axes([int(poids)])
+        except Exception:  # noqa: BLE001
+            pass
+    return pol
 
 
 def _lignes(dessin, texte: str, police, largeur: int) -> list[str]:
@@ -253,13 +305,18 @@ def _degrade(taille, debut: float, alpha_max: int = 215):
     return noir
 
 
-def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: str, taille=CARROUSEL, reel: bool = False):
+def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: str, taille=CARROUSEL, reel: bool = False,
+          typo: str = "moderne"):
     """Dessine une slide. Avec image : texte en bas sur un dégradé. Sans image : fond uni du thème."""
     from PIL import Image, ImageDraw
     th = THEMES.get(theme, THEMES["sombre"])
     l, h = taille
     marge = int(l * 0.085)
+    f_titre, poids, f_texte, majuscules, facteur, _ = TYPOS.get(typo, TYPOS["moderne"])
+    police_titre = f_titre + (f"@{poids}" if poids else "")
     titre, texte = propre(slide_.get("titre", "")), propre(slide_.get("texte", ""))
+    if majuscules:
+        titre = titre.upper()
     premiere, derniere = i == 0, i == n - 1
     if image and image.exists():
         fond = _couvre(Image.open(image).convert("RGB"), taille).convert("RGBA")
@@ -274,10 +331,12 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
     largeur = l - 2 * marge
     # Zone de texte : bas de l'image sur photo, centrée sur fond uni
     h_titre_max = int(h * (0.42 if premiere else 0.30))
-    pol_t, lignes_t, ht, taille_t = _ajuste(d, titre, "Bold", largeur, h_titre_max, 104 if premiere else (82 if sur_photo else 96), 46)
+    maxi = int((104 if premiere else (82 if sur_photo else 96)) * facteur)
+    pol_t, lignes_t, ht, taille_t = _ajuste(d, titre, police_titre, largeur, h_titre_max, maxi, int(46 * facteur),
+                                            1.12 if majuscules else 1.18)
     pol_x, lignes_x, hx, taille_x = (None, [], 0, 0)
     if texte:
-        pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, "Regular", largeur, int(h * 0.26), 46, 30, 1.32)
+        pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, f_texte, largeur, int(h * 0.26), 46, 30, 1.32)
     ecart = int(taille_t * 0.55) if texte else 0
     bloc = ht + ecart + hx + int(h * 0.025)
     y = (h - int(h * 0.12) - bloc) if sur_photo else (h - bloc) // 2
@@ -285,7 +344,7 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
     d.rounded_rectangle([marge, y - 34, marge + 86, y - 22], radius=6, fill=accent)
     for ligne in lignes_t:
         d.text((marge, y), ligne, font=pol_t, fill=couleur)
-        y += int(taille_t * 1.18)
+        y += int(taille_t * (1.12 if majuscules else 1.18))
     y += ecart
     for ligne in lignes_x:
         d.text((marge, y), ligne, font=pol_x, fill=couleur2)
@@ -377,7 +436,10 @@ def sous_titres(fichier: Path, dossier_: Path) -> list[tuple[float, float, str]]
     return res
 
 
-def fichier_ass(hook: str, duree_hook: float, blocs: list, chemin: Path):
+def fichier_ass(hook: str, duree_hook: float, blocs: list, chemin: Path, typo: str = "moderne"):
+    _, _, _, majuscules, facteur, famille = TYPOS.get(typo, TYPOS["moderne"])
+    if majuscules:
+        hook = hook.upper()
     entete = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -387,12 +449,12 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Hook,Poppins,74,&H002D1B27,&H000000FF,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,20,0,8,110,110,250,1
-Style: Sous,Poppins,82,&H00FFFFFF,&H000000FF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,7,3,2,90,90,560,1
+Style: Hook,{famille},{taille_hook},&H002D1B27,&H000000FF,&H00FFFFFF,&H00FFFFFF,-1,0,0,0,100,100,0,0,3,20,0,8,110,110,250,1
+Style: Sous,{famille},{taille_sous},&H00FFFFFF,&H000000FF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,7,3,2,90,90,560,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
+""".replace("{famille}", famille).replace("{taille_hook}", str(int(74 * facteur))).replace("{taille_sous}", str(int(82 * facteur)))
     lignes = []
     if hook:
         lignes.append(f"Dialogue: 1,{_t(0)},{_t(duree_hook)},Hook,,0,0,0,,{{\\fad(0,250)}}{_ass_txt(hook)}")
@@ -422,7 +484,7 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
             log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée : pas de sous-titres")
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Sous-titres impossibles ({str(e)[:120]}) : le Reel est monté sans")
-    fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass")
+    fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", p.get("typo", "moderne"))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
     if w / h > 0.75:  # vidéo horizontale ou carrée : fond flou + vidéo entière au centre
@@ -437,7 +499,8 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
     from PIL import Image
     _ffmpeg(["-ss", "0.6", "-i", str(sortie / "reel.mp4"), "-frames:v", "1", "-q:v", "3", str(d / "cadre.jpg")], d, 120)
     if (d / "cadre.jpg").exists():
-        couv = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, d / "cadre.jpg", p.get("theme", "sombre"), "", VERTICAL, reel=True)
+        couv = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, d / "cadre.jpg", p.get("theme", "sombre"), "", VERTICAL, reel=True,
+                     typo=p.get("typo", "moderne"))
         couv.save(sortie / "couverture.jpg", "JPEG", quality=90)
         (d / "cadre.jpg").unlink(missing_ok=True)
     return ["reel.mp4", "couverture.jpg"] if (sortie / "couverture.jpg").exists() else ["reel.mp4"]
@@ -453,7 +516,8 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
     plans.mkdir()
     for i, s in enumerate(slides):
         img = images[i % len(images)] if images else None
-        slide(s, i, len(slides), img, p.get("theme", "sombre"), p.get("pseudo", ""), VERTICAL, reel=True).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
+        slide(s, i, len(slides), img, p.get("theme", "sombre"), p.get("pseudo", ""), VERTICAL, reel=True,
+              typo=p.get("typo", "moderne")).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
     liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {SLIDE_DIAPORAMA_S}\n" for i in range(len(slides)))
     liste_ += f"file 'plans/{len(slides) - 1:02d}.jpg'\n"
     (d / "plans.txt").write_text(liste_, encoding="utf-8")
@@ -489,7 +553,8 @@ def genere(esp: Espace, sid: str, demo: bool = False) -> dict:
             for i, s in enumerate(p["slides"]):
                 nom = f"slide_{i + 1:02d}.jpg"
                 img = images[i] if i < len(images) else None
-                slide(s, i, n, img, p.get("theme", "sombre"), p.get("pseudo", "")).save(sortie / nom, "JPEG", quality=92)
+                slide(s, i, n, img, p.get("theme", "sombre"), p.get("pseudo", ""), typo=p.get("typo", "moderne")).save(
+                    sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
         elif p.get("video"):
             fichiers = monte_reel(p, d, sortie)

@@ -1,3 +1,6 @@
-Police Poppins — Indian Type Foundry (Jonny Pinhorn, Ninad Kale).
-Distribuée sous licence SIL Open Font License 1.1 : https://openfontlicense.org
-Utilisée pour les textes incrustés des carrousels et des Reels du studio.
+Polices utilisées pour les textes incrustés des carrousels et des Reels du studio.
+Toutes sont distribuées sous licence SIL Open Font License 1.1 (https://openfontlicense.org) :
+- Poppins — Indian Type Foundry
+- Anton — The Anton Project Authors (Vernon Adams)
+- DM Serif Display — Colophon Foundry, Frank Grießhammer
+- Caveat — Impallari Type
