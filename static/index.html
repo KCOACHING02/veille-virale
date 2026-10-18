@@ -581,6 +581,192 @@ a.btn{text-decoration:none}
 @keyframes apparait{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes pulse{50%{opacity:.45}}
 @media (prefers-reduced-motion:reduce){.radar .balayage{animation:none;opacity:.5}.radar .point{animation:none}}
+
+/* ---------- Boutique (lien en bio) ---------- */
+:root{--fleur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 112 112'%3E%3Cpath d='M50 0C62 0 66 14 75 18s25-2 29 10-8 20-8 22 12 10 8 22-20 6-29 18-13 18-25 18-16-14-25-18-25 2-29-10 8-20 8-22-12-10-8-22 20-6 29-18S38 0 50 0z'/%3E%3C/svg%3E")}
+.bt-haut{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.bt-url{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 14px;min-width:0;max-width:100%}
+.bt-url a{font-weight:600;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bt-url a:hover{text-decoration:underline}
+.bt-publie{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px}
+.bt-publie input{appearance:none;width:34px;height:20px;border-radius:99px;background:var(--line);position:relative;margin:0;cursor:pointer;transition:background .2s}
+.bt-publie input::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.bt-publie input:checked{background:var(--ok)}
+.bt-publie input:checked::after{transform:translateX(14px)}
+.bt-statut{font-size:13px;color:var(--ink-3);margin-left:auto}
+.bt-onglets{margin-bottom:16px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.bt-onglets button{white-space:nowrap}
+.bt-grille{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:26px;align-items:start}
+.bt-droite{position:sticky;top:16px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.bt-tel{width:340px;height:min(720px,calc(100vh - 90px));border-radius:46px;border:11px solid #1C1420;background:#1C1420;overflow:hidden;box-shadow:0 30px 60px -30px rgba(39,27,45,.6),0 0 0 1px var(--line);position:relative}
+.bt-tel::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:90px;height:24px;border-radius:99px;background:#1C1420;z-index:2}
+.bt-tel iframe,.bt-plein iframe{width:100%;height:100%;border:0;background:#fff;display:block}
+.bt-ap-nav{display:flex;gap:4px}
+.bt-flottant{display:none}
+.bt-plein{position:fixed;inset:0;z-index:40;background:rgba(23,10,30,.6);display:none;padding:14px 14px calc(70px + env(safe-area-inset-bottom))}
+.bt-plein.ouvert{display:block}
+.bt-plein .cadre{height:100%;max-width:420px;margin:0 auto;border-radius:28px;overflow:hidden;background:#fff}
+.bt-plein .fermer{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:41}
+.bt-sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px;margin-bottom:14px}
+.bt-sec>h3{font-size:18px;font-stretch:90%;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.bt-sec>.aide{font-size:13.5px;color:var(--ink-3);margin:0 0 14px}
+.bt-sec .champ input,.bt-sec .champ select,.bt-feuille .champ input,.bt-feuille .champ select,.bt-assist .champ input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
+.bt-sec textarea{min-height:84px}
+.bt-choix{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.bt-choix.larges{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.bt-opt{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 8px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-2);transition:border-color .15s,transform .15s}
+.bt-opt:hover{border-color:var(--ink-3)}
+.bt-opt[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.bt-opt .vis{width:100%;height:64px;border-radius:9px;background:var(--sunk);display:grid;place-items:center;overflow:hidden;position:relative}
+.bt-opt svg{display:block}
+.bt-themes{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory}
+.bt-th{flex:0 0 150px;scroll-snap-align:start;border:0;background:none;padding:0;cursor:pointer;text-align:center;font-weight:600;font-size:13.5px;color:var(--ink-2)}
+.bt-th .mini{width:150px;height:290px;border-radius:22px;overflow:hidden;border:5px solid #1C1420;position:relative;margin-bottom:6px;background:var(--sunk);transition:transform .15s}
+.bt-th:hover .mini{transform:translateY(-3px)}
+.bt-th[aria-pressed="true"] .mini{outline:3px solid var(--glow);outline-offset:3px}
+.bt-th[aria-pressed="true"]{color:var(--ink)}
+.bt-th iframe{width:375px;height:760px;border:0;transform:scale(.373);transform-origin:0 0;pointer-events:none;position:absolute;left:0;top:0}
+.bt-assist .bt-themes{flex-wrap:wrap;overflow:visible;justify-content:center}
+.bt-palettes{display:flex;gap:10px;flex-wrap:wrap}
+.bt-pal{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 12px 8px 8px;display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;font-size:13.5px}
+.bt-pal:hover{border-color:var(--ink-3)}
+.bt-pal i{display:flex;border-radius:9px;overflow:hidden;height:34px}
+.bt-pal i b{width:16px}
+.bt-couleurs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 20px}
+.bt-couleur{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;font-size:14px;color:var(--ink-2);cursor:pointer}
+.bt-couleur input{appearance:none;-webkit-appearance:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);padding:0;background:none;cursor:pointer;flex-shrink:0}
+.bt-couleur input::-webkit-color-swatch-wrapper{padding:0}
+.bt-couleur input::-webkit-color-swatch{border:0;border-radius:50%}
+.bt-couleur input::-moz-color-swatch{border:0;border-radius:50%}
+.bt-sous-titre{font:600 13px var(--body);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 6px}
+.bt-curseur{display:grid;grid-template-columns:1fr 74px;gap:12px;align-items:center;margin:6px 0 10px}
+.bt-curseur input[type=range]{width:100%;accent-color:var(--ink)}
+.bt-curseur span{border:1px solid var(--line);border-radius:10px;padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums;font-size:14px}
+.bt-polices{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;max-height:300px;overflow-y:auto;padding:2px}
+.bt-police{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 8px;cursor:pointer;text-align:center}
+.bt-police b{display:block;font-size:24px;line-height:1.15;font-weight:400;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-police small{font-size:11.5px;color:var(--ink-3)}
+.bt-police[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.bt-btn-ex{width:100%;padding:8px 6px;font-size:12px;font-weight:600;text-align:center}
+.bt-rangee{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bt-interr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;font-size:14.5px;cursor:pointer}
+.bt-interr input{appearance:none;width:40px;height:24px;border-radius:99px;background:var(--line);position:relative;margin:0;cursor:pointer;transition:background .2s;flex-shrink:0}
+.bt-interr input::after{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.bt-interr input:checked{background:var(--ink)}
+.bt-interr input:checked::after{transform:translateX(16px)}
+/* Profil et réseaux */
+.bt-profil{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+.bt-photo{width:88px;height:88px;border-radius:50%;background:var(--sunk) center/cover;border:2px dashed var(--line);display:grid;place-items:center;cursor:pointer;color:var(--ink-3);font-size:12px;text-align:center;position:relative;overflow:hidden}
+.bt-photo.pleine{border-style:solid;border-color:transparent}
+.bt-photo input,.bt-depot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.bt-depot{position:relative;border:1.5px dashed var(--line);border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:14px;color:var(--ink-2);background:var(--paper)}
+.bt-depot:hover{border-color:var(--ink-3)}
+.bt-depot img{width:54px;height:54px;object-fit:cover;border-radius:9px}
+.bt-reseaux{display:grid;gap:8px}
+.bt-res{display:grid;grid-template-columns:34px 1fr 34px;gap:8px;align-items:center}
+.bt-res svg{width:20px;height:20px;fill:var(--ink-2);justify-self:center}
+.bt-res input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
+.bt-ajout-res{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.bt-ajout-res button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 10px 5px 8px;cursor:pointer;font-size:13px}
+.bt-ajout-res svg{width:15px;height:15px;fill:var(--ink-2)}
+.icone-btn{border:0;background:none;width:34px;height:34px;border-radius:9px;cursor:pointer;color:var(--ink-3);display:grid;place-items:center;font-size:16px}
+.icone-btn:hover{background:var(--sunk);color:var(--ink)}
+.icone-btn svg{width:18px;height:18px}
+/* Blocs */
+.bt-blocs{display:grid;gap:8px}
+.bt-bloc{border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.bt-bloc.cache{opacity:.55}
+.bt-bloc-tete{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px}
+.bt-bloc-tete .ic{width:32px;height:32px;border-radius:9px;background:var(--sunk);display:grid;place-items:center;flex-shrink:0;font-size:16px}
+.bt-bloc-tete .res{flex:1;min-width:0;border:0;background:none;text-align:left;cursor:pointer;padding:4px 6px}
+.bt-bloc-tete .res b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-bloc-tete .res small{display:block;color:var(--ink-3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-bloc-corps{padding:4px 14px 14px;border-top:1px solid var(--line)}
+.bt-bloc-corps .champ{margin:12px 0 0}
+.bt-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.bt-type{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:14px;cursor:pointer;text-align:left;display:grid;gap:4px}
+.bt-type:hover{border-color:var(--ink)}
+.bt-type .ic{font-size:22px}
+.bt-type b{font-size:15px}
+.bt-type small{color:var(--ink-3);font-size:13px;line-height:1.35}
+/* Produits */
+.bt-prods{display:grid;gap:10px}
+.bt-prod{display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px;cursor:pointer;text-align:left}
+.bt-prod:hover{border-color:var(--ink-3)}
+.bt-prod .vig{width:72px;height:72px;border-radius:10px;background:var(--sunk) center/cover;display:grid;place-items:center;font-size:26px}
+.bt-prod b{display:block;font-size:15px}
+.bt-prod .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.bt-prod .meta span{font-size:12px;border-radius:99px;padding:2px 8px;background:var(--sunk);color:var(--ink-2)}
+.bt-prod .meta span.prix{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.bt-stripe{border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
+.bt-stripe.ok{background:var(--ok-soft);color:var(--ok)}
+.bt-stripe.info{background:var(--warn-soft);color:var(--warn)}
+.bt-stripe p{margin:0;flex:1;min-width:200px;color:var(--ink)}
+.bt-feuille .duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bt-image-prod{width:130px;height:130px;border-radius:14px;background:var(--sunk) center/cover;border:1.5px dashed var(--line);display:grid;place-items:center;position:relative;cursor:pointer;color:var(--ink-3);font-size:12.5px;text-align:center;padding:8px}
+.bt-image-prod.pleine{border-style:solid;border-color:transparent;color:transparent}
+.bt-image-prod input{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* Statistiques */
+.bt-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.bt-kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.bt-kpi b{display:block;font:800 26px/1.1 var(--display);font-stretch:85%}
+.bt-kpi span{font-size:12.5px;color:var(--ink-3)}
+.bt-barres{display:flex;align-items:flex-end;gap:3px;height:110px;padding-top:8px}
+.bt-barres i{flex:1;background:var(--glow);border-radius:4px 4px 0 0;min-height:2px;opacity:.85;position:relative}
+.bt-barres i:hover{opacity:1}
+.bt-ligne{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.bt-ligne:last-child{border:0}
+.bt-ligne span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Kit média */
+.bt-kit-chiffres{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:6px}
+.bt-kit-chiffres div{background:var(--sunk);border-radius:12px;padding:10px 12px}
+.bt-kit-chiffres b{display:block;font:800 20px/1.1 var(--display)}
+.bt-kit-chiffres span{font-size:12px;color:var(--ink-3)}
+.bt-paires{display:grid;gap:8px}
+.bt-paire{display:grid;grid-template-columns:1fr 120px 34px;gap:8px}
+.bt-paire input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
+/* Parcours de création */
+.bt-assist{max-width:760px;margin:0 auto}
+.bt-assist .panneau{padding:28px}
+.bt-prog{display:flex;gap:6px;margin-bottom:16px}
+.bt-prog i{height:5px;flex:1;border-radius:9px;background:var(--sunk)}
+.bt-prog i.fait{background:var(--glow)}
+.bt-assist h2{font-size:28px;font-stretch:85%;margin:0 0 6px}
+.bt-assist .sous{color:var(--ink-2);margin:0 0 20px}
+.bt-adresse{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.bt-adresse span{padding:10px 0 10px 12px;color:var(--ink-3);white-space:nowrap;font-size:14px}
+.bt-adresse input{border:0!important;padding-left:2px!important;font-weight:600;min-width:0}
+.bt-dispo{font-size:13px;min-height:18px}
+.bt-dispo.ok{color:var(--ok)}.bt-dispo.ko{color:var(--warn)}
+.bt-pied{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:22px;flex-wrap:wrap}
+.bt-liens-rapides{display:grid;gap:8px;margin-bottom:12px}
+.bt-liens-rapides div{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+.bt-liens-rapides input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
+.bt-bravo{text-align:center}
+.bt-bravo .gros{font-size:54px;line-height:1;margin-bottom:8px}
+.bt-bravo .bt-url{justify-content:center;margin:16px auto;width:fit-content}
+.bt-etapes-ig{text-align:left;background:var(--sunk);border-radius:14px;padding:14px 18px 14px 36px;margin:18px auto;max-width:460px;font-size:14.5px}
+.bt-etapes-ig li{margin:4px 0}
+.bt-promo{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;background:linear-gradient(120deg,#FFE3EA,#EDE4FF);border-radius:var(--r-l);padding:18px 20px;margin-bottom:18px;color:#271B2D}
+.bt-promo .ic{font-size:34px}
+.bt-promo b{font:700 18px var(--display);display:block}
+.bt-promo p{margin:2px 0 0;font-size:14px;color:#5E5166}
+@media (prefers-color-scheme:dark){.bt-promo{background:linear-gradient(120deg,#3E1F2A,#2A2342);color:var(--ink)}.bt-promo p{color:var(--ink-2)}}
+@media (max-width:1100px){
+  .bt-grille{grid-template-columns:1fr}
+  .bt-droite{display:none}
+  .bt-flottant{display:inline-flex;position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:20;background:#1C1420;color:#fff;border:0;border-radius:99px;padding:12px 20px;font-weight:600;gap:8px;align-items:center;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);cursor:pointer}
+}
+@media (max-width:860px){
+  .bt-flottant{bottom:calc(76px + env(safe-area-inset-bottom))}
+  .bt-assist .panneau{padding:20px 16px}
+  .bt-liens-rapides div,.bt-feuille .duo{grid-template-columns:1fr}
+  .bt-promo{grid-template-columns:auto 1fr}.bt-promo .btn{grid-column:1/-1;justify-content:center}
+  .bt-statut{margin-left:0;width:100%}
+  .bt-th{flex-basis:128px}.bt-th .mini{width:128px;height:248px}.bt-th iframe{transform:scale(.315)}
+  .bt-paire{grid-template-columns:1fr 92px 34px}
+}
+@keyframes aurore-ed{50%{background-position:100% 50%}}
 </style>
 </head>
 <body>
@@ -590,6 +776,7 @@ a.btn{text-decoration:none}
     <button class="nav" data-vue="accueil" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>Accueil</button>
     <button class="nav" data-vue="reels" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg><span class="long">Mes Reels</span><span class="court">Reels</span><span class="n" id="n-reels"></span></button>
     <button class="nav" data-vue="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Studio</button>
+    <button class="nav" data-vue="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 2 3s2-1.3 2-3c0 1.7 1.3 3 3 3s3-1.3 3-3M9.5 20v-5h5v5"/></svg><span class="long">Ma boutique</span><span class="court">Boutique</span></button>
     <button class="nav" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
     <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
     <div class="bas">
@@ -649,6 +836,7 @@ a.btn{text-decoration:none}
     <section data-section="studio" hidden><div id="studio"></div></section>
 
     <!-- RÉSULTATS -->
+    <section data-section="boutique" hidden><div id="boutique"></div></section>
     <section data-section="resultats" hidden><div id="resultats"></div></section>
 
     <!-- PARAMÈTRES -->
@@ -738,7 +926,7 @@ async function chargeAnalyse(id) {
 }
 
 // ---------------------------------------------------------------- Navigation
-const TITRES = {accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
+const TITRES = {boutique: "Ma boutique", accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
 // Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
 const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]],
                  parametres: [["parametres", "Mon profil"], ["comptes", "Comptes surveillés"], ["abonnement", "Abonnement"]]};
@@ -770,7 +958,7 @@ $$(".nav").forEach(b => b.onclick = () => va(b.dataset.vue));
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
 
 function rendu() {
-  ({accueil: renduAccueil, reels: renduReels, planning: renduPlanning, studio: renduStudio, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
+  ({accueil: renduAccueil, reels: renduReels, planning: renduPlanning, studio: renduStudio, boutique: renduBoutique, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
 }
 
 // ---------------------------------------------------------------- Accueil
@@ -835,6 +1023,7 @@ async function renduAccueil() {
     <div class="crea-recentes">${recents.map(p => { const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
       const src = img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
       return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section>`;
+  if (!S.etat.boutique) html += `<section class="bt-promo"><span class="ic">🛍️</span><div><b>Crée ta boutique en lien dans la bio</b><p>Tes liens, tes produits numériques, tes e-mails et ton kit média sur une seule page. 2 minutes, sans rien installer.</p></div><button class="btn prim" onclick="va('boutique')">Créer ma boutique</button></section>`;
   const ab = S.etat.abonnement;
   if (ab?.statut === "essai" && ab.actif && ab.fin_essai) {
     const j = Math.max(0, Math.ceil((new Date(ab.fin_essai) - Date.now()) / 864e5));
@@ -2170,11 +2359,709 @@ async function renduAbonnement() {
   $("#ab-portail")?.addEventListener("click", async () => { try { location.href = (await api("/api/abonnement/portail", {method: "POST"})).url; } catch (e) { toast(e.message); } });
 }
 
+
+// ---------------------------------------------------------------- Boutique (lien en bio)
+const BQ = {etat: null, page: null, onglet: "contenu", ambiance: null, vueAp: "page", ouvertBloc: null, assist: null, html: ""};
+const ICONES_RES = {
+  instagram: '<rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2"/>',
+  tiktok: '<path d="M16.5 3c.3 2.2 1.7 3.8 4 4v3.1c-1.5 0-2.9-.4-4-1.2V15a6 6 0 11-6-6c.3 0 .7 0 1 .1v3.2a2.9 2.9 0 10 2 2.7V3h3z"/>',
+  youtube: '<path d="M22 8.2a3 3 0 00-2.1-2.1C18 5.6 12 5.6 12 5.6s-6 0-7.9.5A3 3 0 002 8.2 31 31 0 001.6 12 31 31 0 002 15.8a3 3 0 002.1 2.1c1.9.5 7.9.5 7.9.5s6 0 7.9-.5a3 3 0 002.1-2.1 31 31 0 00.4-3.8 31 31 0 00-.4-3.8zM10 15V9l5.2 3z"/>',
+  x: '<path d="M17.8 3h3.1l-6.8 7.8 8 10.2h-6.3l-4.9-6.4L5.3 21H2.2l7.3-8.3L1.9 3h6.4l4.4 5.9zm-1.1 16.2h1.7L7.4 4.7H5.6z"/>',
+  threads: '<path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 2a7 7 0 016.6 4.7l-1.9.6A5 5 0 0012 7a5 5 0 100 10c1.7 0 3-.8 3-2s-1-1.8-2.4-1.8c-1.2 0-2 .5-2 1.2H8.6C8.6 12.5 10 11.2 12.6 11.2c2.6 0 4.4 1.4 4.4 3.8S14.9 19 12 19a7 7 0 010-14z"/>',
+  facebook: '<path d="M14 8V6.3c0-.8.2-1.3 1.4-1.3H17V2h-2.6C11.3 2 10.2 3.6 10.2 6.1V8H8v3h2.2v11H14V11h2.7l.4-3z"/>',
+  linkedin: '<path d="M4.98 3.5a2.5 2.5 0 11-.01 5 2.5 2.5 0 01.01-5zM3 9.5h4V21H3zM9.5 9.5h3.8v1.6h.1c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 6V21h-4v-5.2c0-1.2 0-2.8-1.7-2.8s-2 1.3-2 2.7V21h-4z"/>',
+  pinterest: '<path d="M12 2a10 10 0 00-3.6 19.3c-.1-.8-.2-2 0-2.9l1.2-5s-.3-.6-.3-1.5c0-1.4.8-2.4 1.8-2.4.9 0 1.3.6 1.3 1.4 0 .9-.6 2.2-.8 3.4-.2 1 .5 1.9 1.6 1.9 1.9 0 3.3-2 3.3-4.9 0-2.6-1.8-4.4-4.5-4.4-3 0-4.8 2.3-4.8 4.6 0 .9.4 1.9.8 2.4l.1.4-.3 1.2c0 .2-.2.3-.4.2-1.4-.7-2.2-2.7-2.2-4.3 0-3.5 2.5-6.7 7.3-6.7 3.8 0 6.8 2.7 6.8 6.4 0 3.8-2.4 6.9-5.8 6.9-1.1 0-2.2-.6-2.5-1.3l-.7 2.6c-.2 1-.9 2.2-1.4 2.9A10 10 0 1012 2z"/>',
+  snapchat: '<path d="M12 2.5c2.8 0 5 2.1 5 5.2v2.1c.5.2 1.2-.2 1.6-.1.6.1.8.8.2 1.2-.6.4-1.9.6-1.9 1.3 0 1.2 2 3.6 4.1 4 .4.1.5.6.1.8-.9.5-2 .5-2.3.9-.2.4-.1 1.1-.6 1.2-.8.2-1.7-.3-2.9.3-1.1.6-1.8 1.8-3.3 1.8s-2.2-1.2-3.3-1.8c-1.2-.6-2.1-.1-2.9-.3-.5-.1-.4-.8-.6-1.2-.3-.4-1.4-.4-2.3-.9-.4-.2-.3-.7.1-.8 2.1-.4 4.1-2.8 4.1-4 0-.7-1.3-.9-1.9-1.3-.6-.4-.4-1.1.2-1.2.4-.1 1.1.3 1.6.1V7.7c0-3.1 2.2-5.2 5-5.2z"/>',
+  whatsapp: '<path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2z"/>',
+  email: '<path d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm9 7.2L4 7v.1l8 5.2 8-5.2V7z"/>',
+  site: '<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4zM4.3 14a8 8 0 010-4h3.4a16.5 16.5 0 000 4zm7.7 6c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4zm2.3-6H9.7a14.7 14.7 0 010-4h4.6a14.7 14.7 0 010 4zm2 0a16.5 16.5 0 000-4h3.4a8 8 0 010 4z"/>',
+};
+const AIDE_RES = {instagram: "ton_pseudo", tiktok: "ton_pseudo", youtube: "ta_chaine", x: "ton_pseudo", threads: "ton_pseudo", facebook: "ta_page",
+  linkedin: "ton-profil", pinterest: "ton_pseudo", snapchat: "ton_pseudo", whatsapp: "+33 6 12 34 56 78", email: "toi@exemple.fr", site: "www.ton-site.fr"};
+const TYPES_BLOCS = {
+  lien: ["🔗", "Lien", "Vers ton site, un rendez-vous, une vidéo, un code promo…"],
+  produits: ["🛍️", "Ma boutique", "Tous tes produits, en grille, liste ou vitrine"],
+  produit: ["⭐", "Un produit en avant", "Une seule offre mise en valeur"],
+  capture: ["💌", "Récolter des e-mails", "Formulaire d'inscription, avec un cadeau en option"],
+  kit: ["📊", "Kit média", "Tes chiffres pour les marques"],
+  video: ["▶️", "Vidéo YouTube", "Lecture directement sur ta page"],
+  titre: ["🔠", "Titre de section", "Pour organiser ta page"],
+  texte: ["✍️", "Texte", "Un mot d'accueil, une citation…"],
+};
+const euros = c => !c ? "Gratuit" : (c / 100).toLocaleString("fr-FR", {minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2}) + " €";
+const idCourt = () => Math.random().toString(16).slice(2, 10);
+const svgRes = k => `<svg viewBox="0 0 24 24">${ICONES_RES[k] || ""}</svg>`;
+
+async function chargeBoutique(stripe) {
+  BQ.etat = await api("/api/boutique" + (stripe ? "?stripe=1" : ""));
+  BQ.page = BQ.etat.page ? structuredClone(BQ.etat.page) : null;
+}
+async function renduBoutique() {
+  const el = $("#boutique");
+  if (!BQ.etat) {
+    el.innerHTML = '<p class="vide" style="padding:30px 0">Chargement de ta boutique…</p>';
+    try { await chargeBoutique(); } catch (e) { el.innerHTML = `<p class="vide">${esc(e.message)}</p>`; return; }
+  }
+  chargePolicesEditeur();
+  if (!BQ.page || BQ.assist) return renduAssistantBoutique(el);
+  renduEditeur(el);
+}
+
+// Toutes les polices proposées, pour afficher les échantillons dans l'éditeur
+function chargePolicesEditeur() {
+  if (BQ.policesOk || !BQ.etat) return; BQ.policesOk = true;
+  const locales = {"Poppins": "Poppins-Bold.ttf", "Montserrat": "Montserrat-ExtraBold.ttf", "Space Grotesk": "SpaceGrotesk-Bold.ttf", "Quicksand": "Quicksand-Bold.ttf",
+    "Anton": "Anton-Regular.ttf", "Bebas Neue": "BebasNeue-Regular.ttf", "Archivo Black": "ArchivoBlack-Regular.ttf", "DM Serif Display": "DMSerifDisplay-Regular.ttf",
+    "Playfair Display": "PlayfairDisplay-Bold.ttf", "Abril Fatface": "AbrilFatface-Regular.ttf", "Caveat": "Caveat-Bold.ttf", "Pacifico": "Pacifico-Regular.ttf"};
+  const st = document.createElement("style");
+  st.textContent = Object.entries(locales).map(([f, n]) => `@font-face{font-family:'${f}';src:url('/static/fonts/${n}');font-display:swap}`).join("");
+  document.head.appendChild(st);
+  const g = BQ.etat.options.polices.map(p => p.nom).filter(n => !locales[n]).map(n => "family=" + n.replace(/ /g, "+")).join("&");
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?" + g + "&display=swap"; document.head.appendChild(l);
+}
+
+// ---- Envoi d'image (photo, couverture, visuels)
+async function envoieImageBoutique(fichier, role) {
+  const fd = new FormData(); fd.append("fichier", fichier); fd.append("role", role || "");
+  const r = await fetch("/api/boutique/image", {method: "POST", body: fd});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.erreur || "Envoi impossible");
+  return j;
+}
+const urlImg = nom => nom ? `/@${BQ.etat.pseudo}/i/${nom}` : "";
+
+// ---------------------------------------------------------------- Parcours en 3 étapes (débutantes)
+function renduAssistantBoutique(el) {
+  const sug = BQ.etat.suggestion || {};
+  const A = BQ.assist ||= {etape: 1, pseudo: sug.pseudo || "", nom: sug.nom || "", bio: sug.bio || "", photo: "", palettes: null, theme: "sable", palette: null,
+    liens: [{titre: "", url: ""}, {titre: "", url: ""}], capture: true, kit: !!BQ.etat.kit_chiffres};
+  const prog = `<div class="bt-prog">${[1, 2, 3].map(i => `<i class="${i <= A.etape ? "fait" : ""}"></i>`).join("")}</div>`;
+  const hote = location.host;
+  if (A.etape === 1) {
+    el.innerHTML = `<div class="bt-assist"><div class="panneau">${prog}
+      <h2>Ta boutique en lien dans la bio</h2>
+      <p class="sous">Une seule page pour tout : tes liens, tes produits, tes e-mails, ton kit média. Trois étapes, deux minutes.</p>
+      <div class="bt-profil">
+        <label class="bt-photo ${A.photo ? "pleine" : ""}" style="${A.photoUrl ? `background-image:url('${A.photoUrl}')` : ""}" id="as-photo">
+          ${A.photo ? "" : "Ajoute<br>ta photo"}<input type="file" accept="image/*" aria-label="Ta photo"></label>
+        <div>
+          <div class="champ"><label for="as-nom">Ton nom ou ta marque</label><input id="as-nom" value="${esc(A.nom)}" maxlength="60" placeholder="Brille & Vibre"></div>
+        </div>
+      </div>
+      <div class="champ"><label for="as-bio">Ta phrase de présentation</label><textarea id="as-bio" maxlength="280" style="min-height:76px" placeholder="J'aide les femmes actives à…">${esc(A.bio)}</textarea></div>
+      <div class="champ"><label for="as-pseudo">L'adresse de ta page</label>
+        <div class="bt-adresse"><span>${esc(hote)}/@</span><input id="as-pseudo" value="${esc(A.pseudo)}" maxlength="30" autocapitalize="off" spellcheck="false" placeholder="ton-nom"></div>
+        <div class="bt-dispo" id="as-dispo"></div></div>
+      <div class="bt-pied"><span></span><button class="btn prim" id="as-suite">Continuer →</button></div>
+    </div></div>`;
+    const verifie = async () => {
+      const v = $("#as-pseudo").value; if (!v) { $("#as-dispo").textContent = ""; return; }
+      const r = await api("/api/boutique/pseudo?p=" + encodeURIComponent(v));
+      A.pseudo = r.pseudo; A.pseudoOk = !r.erreur;
+      $("#as-dispo").className = "bt-dispo " + (r.erreur ? "ko" : "ok");
+      $("#as-dispo").textContent = r.erreur || `✓ ${hote}/@${r.pseudo} est disponible`;
+    };
+    let t; $("#as-pseudo").oninput = () => { clearTimeout(t); t = setTimeout(verifie, 350); };
+    if (A.pseudo) verifie();
+    $("#as-nom").oninput = e => A.nom = e.target.value; $("#as-bio").oninput = e => A.bio = e.target.value;
+    $("#as-photo input").onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      $("#as-photo").innerHTML = '<span class="spin"></span>';
+      try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); }
+      catch (er) { toast(er.message); }
+      renduAssistantBoutique(el);
+    };
+    $("#as-suite").onclick = async () => {
+      if (!A.nom.trim()) return toast("Indique ton nom ou celui de ta marque");
+      await verifie(); if (!A.pseudoOk) return toast("Choisis une adresse disponible");
+      const b = $("#as-suite"); b.disabled = true;
+      try {
+        BQ.etat = {...BQ.etat, ...await api("/api/boutique", {method: "POST", body: {pseudo: A.pseudo, nom: A.nom, bio: A.bio, photo: A.photo}})};
+        BQ.page = structuredClone(BQ.etat.page); S.etat.boutique = BQ.etat.pseudo;
+        A.etape = 2; renduAssistantBoutique(el);
+      } catch (er) { toast(er.message); b.disabled = false; }
+    };
+    return;
+  }
+  if (A.etape === 2) {
+    const amb = BQ.ambiance ||= "Classique";
+    el.innerHTML = `<div class="bt-assist"><div class="panneau">${prog}
+      <h2>Choisis ton style</h2>
+      <p class="sous">Tu pourras tout personnaliser ensuite : couleurs, polices, boutons, fond, formes…</p>
+      ${A.palettes ? `<p class="bt-sous-titre" style="margin-top:0">✨ Les couleurs de ta photo</p><div class="bt-palettes" style="margin-bottom:18px">${A.palettes.map((p, i) => paletteHTML(p, i, A.palette === i)).join("")}</div>` : ""}
+      <div class="seg" style="margin-bottom:14px">${BQ.etat.options.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
+      <div class="bt-themes" id="as-themes"></div>
+      <div class="bt-pied"><button class="btn" id="as-retour">← Retour</button><button class="btn prim" id="as-suite">Continuer →</button></div>
+    </div></div>`;
+    remplitThemes($("#as-themes"), amb, A.theme, A.palette != null ? A.palettes[A.palette] : null);
+    $$("[data-amb]").forEach(b => b.onclick = () => { BQ.ambiance = b.dataset.amb; renduAssistantBoutique(el); });
+    $("#as-themes").onclick = e => { const b = e.target.closest("[data-theme]"); if (!b) return; A.theme = b.dataset.theme;
+      $$("#as-themes [data-theme]").forEach(x => x.setAttribute("aria-pressed", x === b)); };
+    $$("[data-pal]").forEach(b => b.onclick = () => { A.palette = A.palette === +b.dataset.pal ? null : +b.dataset.pal; renduAssistantBoutique(el); });
+    $("#as-retour").onclick = () => { A.etape = 1; renduAssistantBoutique(el); };
+    $("#as-suite").onclick = async () => {
+      let d = themeApplique(BQ.page.design, A.theme);
+      if (A.palette != null) d = {...d, ...paletteDesign(A.palettes[A.palette]), theme: "perso"};
+      BQ.page.design = d;
+      try { await api("/api/boutique", {method: "PUT", body: {design: d}}); } catch (er) { return toast(er.message); }
+      A.etape = 3; renduAssistantBoutique(el);
+    };
+    return;
+  }
+  if (A.etape === 3) {
+    el.innerHTML = `<div class="bt-assist"><div class="panneau">${prog}
+      <h2>Tes premiers liens</h2>
+      <p class="sous">Ton site, ta prise de rendez-vous, ta formation… Laisse vide si tu n'en as pas : tu ajouteras tes produits juste après.</p>
+      <div class="bt-liens-rapides" id="as-liens">${A.liens.map((l, i) => `<div><input data-i="${i}" data-k="titre" value="${esc(l.titre)}" placeholder="Texte du bouton (ex. Réserve ton appel)" aria-label="Texte du bouton ${i + 1}"><input data-i="${i}" data-k="url" value="${esc(l.url)}" placeholder="Adresse (ex. calendly.com/toi)" aria-label="Adresse du lien ${i + 1}" inputmode="url" autocapitalize="off"></div>`).join("")}</div>
+      <button class="btn petit" id="as-plus">+ Un autre lien</button>
+      <div style="margin-top:18px">
+        <label class="bt-interr"><span><b>Récolter des e-mails</b><br><small style="color:var(--ink-3)">Un formulaire « Reste en contact » : tes inscrits sont rangés dans ta boutique.</small></span><input type="checkbox" id="as-capture" ${A.capture ? "checked" : ""}></label>
+        <label class="bt-interr"><span><b>Mon kit média</b><br><small style="color:var(--ink-3)">${BQ.etat.kit_chiffres ? "Tes chiffres pour les marques, calculés à partir de l'analyse de ton compte." : "Une page avec tes chiffres pour les marques (à compléter)."}</small></span><input type="checkbox" id="as-kit" ${A.kit ? "checked" : ""}></label>
+      </div>
+      <div class="bt-pied"><button class="btn" id="as-retour">← Retour</button><button class="btn prim" id="as-publier">Publier ma boutique 🎉</button></div>
+    </div></div>`;
+    $("#as-liens").oninput = e => { const x = e.target; if (x.dataset.i) A.liens[x.dataset.i][x.dataset.k] = x.value; };
+    $("#as-plus").onclick = () => { if (A.liens.length < 6) A.liens.push({titre: "", url: ""}); renduAssistantBoutique(el); };
+    $("#as-capture").onchange = e => A.capture = e.target.checked; $("#as-kit").onchange = e => A.kit = e.target.checked;
+    $("#as-retour").onclick = () => { A.etape = 2; renduAssistantBoutique(el); };
+    $("#as-publier").onclick = async () => {
+      const blocs = A.liens.filter(l => l.url.trim()).map((l, i) => ({id: idCourt(), type: "lien", titre: l.titre.trim() || l.url.trim(), url: l.url.trim(), en_avant: i === 0}));
+      blocs.push({id: idCourt(), type: "produits", titre: "Ma boutique"});
+      if (A.capture) blocs.push({id: idCourt(), type: "capture", titre: "Reste en contact", texte: "Mes meilleurs conseils, directement dans ta boîte mail.", bouton: "Je m'inscris"});
+      if (A.kit) blocs.push({id: idCourt(), type: "kit", titre: "Kit média", texte: "Mes chiffres et collaborations"});
+      try {
+        await api("/api/boutique", {method: "PUT", body: {blocs, publie: true}});
+        await chargeBoutique(); A.etape = 4; renduAssistantBoutique(el);
+      } catch (er) { toast(er.message); }
+    };
+    return;
+  }
+  // Étape 4 : bravo
+  const url = BQ.etat.url;
+  el.innerHTML = `<div class="bt-assist"><div class="panneau bt-bravo">
+    <div class="gros">🎉</div><h2>Ta boutique est en ligne !</h2>
+    <p class="sous" style="margin:0">Voici ton lien. Mets-le dans ta bio : tout le monde peut le voir dès maintenant.</p>
+    <div class="bt-url"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit prim" data-copier="${esc(url)}">Copier</button></div>
+    <ol class="bt-etapes-ig"><li>Ouvre Instagram, puis <b>Modifier le profil</b>.</li><li>Touche <b>Liens</b> → <b>Ajouter un lien externe</b>.</li><li>Colle ton lien et enregistre. C'est tout !</li></ol>
+    <div class="bt-rangee" style="justify-content:center">
+      <button class="btn prim" data-aller="produits">Ajouter un produit</button>
+      <button class="btn" data-aller="design">Personnaliser le design</button>
+      <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Voir ma page ↗</a>
+    </div></div></div>`;
+  $$("[data-aller]").forEach(b => b.onclick = () => { BQ.assist = null; BQ.onglet = b.dataset.aller; renduBoutique(); });
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-copier]"); if (!b) return;
+  navigator.clipboard?.writeText(b.dataset.copier).then(() => toast("Lien copié"), () => toast(b.dataset.copier));
+});
+
+// ---- Thèmes et palettes
+function themeApplique(design, id) {
+  const t = BQ.etat.options.themes.find(x => x.id === id); if (!t) return design;
+  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue"];
+  const base = Object.fromEntries(Object.entries(BQ.etat.options.defaut).filter(([k]) => !garde.includes(k)));
+  return {...design, ...base, fond2: t.design.fond2 || t.design.fond1, photo_contour: false, ...t.design, theme: id};
+}
+const paletteDesign = p => Object.fromEntries(Object.entries(p).filter(([k]) => k !== "nom"));
+const paletteHTML = (p, i, actif) => `<button class="bt-pal" data-pal="${i}" aria-pressed="${!!actif}" style="${actif ? "border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)" : ""}"><i>${[p.fond1, p.fond2, p.bouton_fond, p.texte, p.accent].map(c => `<b style="background:${c.slice(0, 7)}"></b>`).join("")}</i>${esc(p.nom)}</button>`;
+function contenuApercu(extra = {}) {
+  const p = BQ.page; return {nom: p.nom, bio: p.bio, photo: p.photo, couverture: p.couverture, reseaux: p.reseaux, blocs: p.blocs, produits: p.produits, design: p.design, kit: p.kit, ...extra};
+}
+async function htmlApercu(corps) {
+  const r = await fetch("/api/boutique/apercu", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(corps)});
+  return r.ok ? r.text() : "<p style='font-family:sans-serif;padding:20px'>Aperçu indisponible</p>";
+}
+function remplitThemes(zone, ambiance, actif, palette) {
+  const themes = BQ.etat.options.themes.filter(t => t.ambiance === ambiance);
+  zone.innerHTML = themes.map(t => `<button class="bt-th" data-theme="${t.id}" aria-pressed="${t.id === actif}"><div class="mini"><iframe tabindex="-1" title="${esc(t.nom)}" loading="lazy"></iframe></div>${esc(t.nom)}</button>`).join("");
+  themes.forEach(async t => {
+    let d = themeApplique(BQ.page.design, t.id); if (palette) d = {...d, ...paletteDesign(palette)};
+    const h = await htmlApercu(contenuApercu({design: {...d, apparition: false}}));
+    const f = zone.querySelector(`[data-theme="${t.id}"] iframe`); if (f) f.srcdoc = h;
+  });
+}
+
+// ---------------------------------------------------------------- Éditeur
+const ONGLETS_BQ = [["contenu", "Contenu"], ["design", "Design"], ["produits", "Produits"], ["kit", "Kit média"], ["stats", "Statistiques"]];
+function renduEditeur(el) {
+  const p = BQ.page, url = BQ.etat.url;
+  el.innerHTML = `
+    <div class="bt-haut">
+      <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button></div>
+      <label class="bt-publie"><input type="checkbox" id="bt-publie" ${p.publie ? "checked" : ""}><span>${p.publie ? "En ligne" : "Brouillon"}</span></label>
+      <span class="bt-statut" id="bt-statut"></span>
+    </div>
+    <div class="seg bt-onglets" role="tablist">${ONGLETS_BQ.map(([k, t]) => `<button role="tab" aria-pressed="${k === BQ.onglet}" data-onglet="${k}">${t}</button>`).join("")}</div>
+    <div class="bt-grille"><div id="bt-panneau"></div>
+      <aside class="bt-droite"><div class="bt-tel"><iframe id="bt-ap" title="Aperçu de ta page"></iframe></div>
+        <div class="seg bt-ap-nav" id="bt-ap-nav"></div></aside></div>
+    <button class="bt-flottant" id="bt-voir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button>
+    <div class="bt-plein" id="bt-plein"><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap">Fermer l'aperçu</button></div>`;
+  $$("[data-onglet]").forEach(b => b.onclick = () => { BQ.onglet = b.dataset.onglet; $$("[data-onglet]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page"; renduOnglet(); apercu(); });
+  $("#bt-publie").onchange = e => { p.publie = e.target.checked; e.target.nextElementSibling.textContent = p.publie ? "En ligne" : "Brouillon";
+    $(".bt-url .pastille").classList.toggle("off", !p.publie); sauveBoutique(true); toast(p.publie ? "Ta page est en ligne" : "Ta page est masquée"); };
+  $("#bt-voir").onclick = () => { $("#bt-ap2").srcdoc = BQ.html; $("#bt-plein").classList.add("ouvert"); };
+  $("#bt-fermer-ap").onclick = () => $("#bt-plein").classList.remove("ouvert");
+  BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page";
+  renduOnglet(); apercu(true);
+}
+function navApercu() {
+  const n = $("#bt-ap-nav"); if (!n) return;
+  const vues = [["page", "Ma page"]];
+  if (BQ.page.kit?.actif !== false) vues.push(["kit", "Kit média"]);
+  const prod = BQ.vueAp.startsWith("p:") ? BQ.vueAp : null;
+  if (prod) vues.push([prod, "Produit"]);
+  n.innerHTML = vues.map(([v, t]) => `<button aria-pressed="${v === BQ.vueAp}" data-vueap="${v}">${t}</button>`).join("");
+  n.querySelectorAll("[data-vueap]").forEach(b => b.onclick = () => { BQ.vueAp = b.dataset.vueap; apercu(true); });
+}
+function apercu(immediat) {
+  clearTimeout(BQ.tAp);
+  BQ.tAp = setTimeout(async () => {
+    // l'apparition animée ne se rejoue pas à chaque frappe : seulement quand on vient de l'activer
+    const h = await htmlApercu(contenuApercu({vue: BQ.vueAp, design: {...BQ.page.design, apparition: BQ.rejouer ? BQ.page.design.apparition : false}}));
+    BQ.rejouer = false; BQ.html = h;
+    for (const id of ["bt-ap", "bt-ap2"]) {
+      const f = $("#" + id); if (!f || (id === "bt-ap2" && !$("#bt-plein")?.classList.contains("ouvert"))) continue;
+      let y = 0; try { y = f.contentWindow.scrollY; } catch {}
+      f.onload = () => { try { f.contentWindow.scrollTo(0, y); } catch {} };
+      f.srcdoc = h;
+    }
+    navApercu();
+  }, immediat ? 0 : 220);
+}
+function modifieBoutique(rendu) {
+  apercu(); sauveBoutique();
+  if (rendu) renduOnglet();
+}
+function sauveBoutique(immediat) {
+  clearTimeout(BQ.tSauve);
+  const st = $("#bt-statut"); if (st) st.textContent = "Modifications en cours…";
+  return new Promise(res => {
+    BQ.tSauve = setTimeout(async () => {
+      try {
+        const r = await api("/api/boutique", {method: "PUT", body: {...contenuApercu(), publie: BQ.page.publie}});
+        // le serveur complète les produits (fichier attaché) et normalise les valeurs
+        BQ.page.produits = r.produits; BQ.page.blocs = r.blocs;
+        if ($("#bt-statut")) $("#bt-statut").textContent = "✓ Enregistré";
+      } catch (e) { if ($("#bt-statut")) $("#bt-statut").textContent = "⚠️ " + e.message; }
+      res();
+    }, immediat ? 0 : 700);
+  });
+}
+
+function renduOnglet() {
+  const z = $("#bt-panneau"); if (!z) return;
+  const y = window.scrollY;
+  ({contenu: ongletContenu, design: ongletDesign, produits: ongletProduits, kit: ongletKit, stats: ongletStats})[BQ.onglet](z);
+  window.scrollTo(0, y);
+}
+
+// ---- Onglet Contenu
+function ongletContenu(z) {
+  const p = BQ.page, res = p.reseaux || {};
+  const libres = Object.keys(BQ.etat.options.reseaux).filter(k => !(k in res));
+  z.innerHTML = `
+    <section class="bt-sec"><h3>Profil</h3><p class="aide">Ce que l'on voit en haut de ta page.</p>
+      <div class="bt-profil">
+        <label class="bt-photo ${p.photo ? "pleine" : ""}" style="${p.photo ? `background-image:url('${urlImg(p.photo)}')` : ""}" title="Changer la photo">${p.photo ? "" : "Ajoute<br>ta photo"}<input type="file" accept="image/*" data-envoi="photo" aria-label="Photo de profil"></label>
+        <div>
+          <div class="champ"><label for="bt-nom">Nom</label><input id="bt-nom" data-p="nom" value="${esc(p.nom)}" maxlength="60"></div>
+        </div>
+      </div>
+      <div class="champ"><label for="bt-bio">Bio</label><textarea id="bt-bio" data-p="bio" maxlength="280">${esc(p.bio)}</textarea></div>
+      ${["banniere", "portrait", "magazine"].includes(p.design.entete) ? `<div class="champ"><label>Image de couverture</label>
+        <label class="bt-depot">${p.couverture ? `<img src="${urlImg(p.couverture)}" alt="">` : "🖼️"}<span>${p.couverture ? "Changer l'image de couverture" : "Ajoute une image de couverture (sinon ta photo est utilisée)"}</span><input type="file" accept="image/*" data-envoi="couverture"></label>
+        ${p.couverture ? `<button class="lien" data-retire="couverture" style="justify-self:start">Retirer la couverture</button>` : ""}</div>` : ""}
+    </section>
+    <section class="bt-sec"><h3>Réseaux sociaux</h3><p class="aide">Les icônes sous ton nom.</p>
+      <div class="bt-reseaux">${Object.entries(res).map(([k, v]) => `<div class="bt-res">${svgRes(k)}<input data-r="${k}" value="${esc(v)}" placeholder="${esc(AIDE_RES[k] || "")}" aria-label="${esc(BQ.etat.options.reseaux[k])}"><button class="icone-btn" data-retire-res="${k}" aria-label="Retirer ${esc(BQ.etat.options.reseaux[k])}">✕</button></div>`).join("") || '<p class="aide" style="margin:0">Aucun réseau pour l\'instant.</p>'}</div>
+      ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
+    </section>
+    <section class="bt-sec"><h3>Ta page</h3><p class="aide">Les blocs, dans l'ordre où ils s'affichent. Touche un bloc pour le modifier.</p>
+      <div class="bt-blocs">${p.blocs.map((b, i) => blocHTML(b, i)).join("") || '<p class="aide">Ta page est vide : ajoute ton premier bloc.</p>'}</div>
+      <button class="btn prim" id="bt-ajout-bloc" style="margin-top:12px;width:100%;justify-content:center">+ Ajouter un bloc</button>
+    </section>`;
+  lieChamps(z);
+  z.querySelectorAll("[data-ajout-res]").forEach(b => b.onclick = () => { p.reseaux = {...res, [b.dataset.ajoutRes]: ""}; renduOnglet(); z.querySelector(`[data-r="${b.dataset.ajoutRes}"]`)?.focus(); });
+  z.querySelectorAll("[data-retire-res]").forEach(b => b.onclick = () => { delete p.reseaux[b.dataset.retireRes]; modifieBoutique(true); });
+  z.querySelectorAll("[data-retire]").forEach(b => b.onclick = () => { p[b.dataset.retire] = ""; modifieBoutique(true); });
+  $("#bt-ajout-bloc").onclick = choisirTypeBloc;
+  z.querySelectorAll("[data-bloc-action]").forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const i = +b.dataset.i, a = b.dataset.blocAction, L = p.blocs;
+    if (a === "ouvrir") BQ.ouvertBloc = BQ.ouvertBloc === L[i].id ? null : L[i].id;
+    if (a === "haut" && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
+    if (a === "bas" && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+    if (a === "voir") L[i].visible = L[i].visible === false;
+    if (a === "suppr") { if (!confirm("Supprimer ce bloc ?")) return; L.splice(i, 1); }
+    if (a === "ouvrir") renduOnglet(); else modifieBoutique(true);
+  });
+}
+function resumeBloc(b) {
+  const prods = BQ.page.produits;
+  return ({lien: b.titre || b.url || "Nouveau lien", titre: b.texte || "Titre", texte: (b.texte || "Texte").slice(0, 60), video: b.url || "Colle le lien YouTube",
+    produit: prods.find(x => x.id === b.produit)?.titre || "Choisis le produit", produits: b.titre || "Ma boutique",
+    capture: b.titre || "Reste en contact", kit: b.titre || "Kit média"})[b.type];
+}
+function blocHTML(b, i) {
+  const [ic, nom] = TYPES_BLOCS[b.type] || ["•", b.type], ouvert = BQ.ouvertBloc === b.id, n = BQ.page.blocs.length;
+  return `<div class="bt-bloc ${b.visible === false ? "cache" : ""}">
+    <div class="bt-bloc-tete"><span class="ic">${ic}</span>
+      <button class="res" data-bloc-action="ouvrir" data-i="${i}" aria-expanded="${ouvert}"><b>${esc(resumeBloc(b))}${b.en_avant ? " ✨" : ""}</b><small>${nom}${b.type === "lien" && b.url ? " · " + esc(b.url) : ""}</small></button>
+      <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === 0 ? "disabled" : ""}>↑</button>
+      <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === n - 1 ? "disabled" : ""}>↓</button>
+      <button class="icone-btn" data-bloc-action="voir" data-i="${i}" aria-label="${b.visible === false ? "Afficher" : "Masquer"}" title="${b.visible === false ? "Masqué" : "Visible"}">${b.visible === false
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 6.1A10 10 0 0112 6c7 0 11 6 11 6a17 17 0 01-3.2 3.8M6.6 6.6C3.4 8.5 1 12 1 12s4 7 11 7a10 10 0 005.4-1.6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>'}</button>
+      <button class="icone-btn" data-bloc-action="suppr" data-i="${i}" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </div>${ouvert ? `<div class="bt-bloc-corps">${corpsBloc(b, i)}</div>` : ""}</div>`;
+}
+function champB(i, k, label, val, attrs = "") { return `<div class="champ"><label>${label}</label><input data-b="${i}" data-bk="${k}" value="${esc(val || "")}" ${attrs}></div>`; }
+function corpsBloc(b, i) {
+  const prods = BQ.page.produits;
+  const optsProd = (sel, gratuits) => `<option value="">${gratuits ? "Aucun cadeau" : "Choisis…"}</option>` + prods.filter(p => !gratuits || !p.prix).map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.titre || "Sans titre")}</option>`).join("");
+  switch (b.type) {
+    case "lien": return champB(i, "titre", "Texte du bouton", b.titre, 'maxlength="120"') + champB(i, "url", "Adresse", b.url, 'inputmode="url" autocapitalize="off" placeholder="ton-site.fr"')
+      + `<div class="champ"><label>Petite image ou emoji (facultatif)</label><div class="bt-rangee">
+          <label class="bt-depot" style="flex:1">${b.image ? `<img src="${urlImg(b.image)}" alt="">` : "🖼️"}<span>${b.image ? "Changer" : "Vignette"}</span><input type="file" accept="image/*" data-envoi-bloc="${i}"></label>
+          <input data-b="${i}" data-bk="emoji" value="${esc(b.emoji || "")}" maxlength="4" placeholder="😊" style="width:64px;text-align:center;font-size:20px;border:1px solid var(--line);border-radius:10px;padding:8px" aria-label="Emoji">
+          ${b.image ? `<button class="lien" data-retire-img="${i}">Retirer l'image</button>` : ""}</div></div>
+        <label class="bt-interr"><span>Mettre en avant (plus grand, animé)</span><input type="checkbox" data-b="${i}" data-bk="en_avant" ${b.en_avant ? "checked" : ""}></label>`;
+    case "titre": return champB(i, "texte", "Titre", b.texte, 'maxlength="120"');
+    case "texte": return `<div class="champ"><label>Texte</label><textarea data-b="${i}" data-bk="texte" maxlength="1200">${esc(b.texte || "")}</textarea></div>`;
+    case "video": return champB(i, "url", "Lien de la vidéo YouTube", b.url, 'placeholder="https://youtu.be/…" inputmode="url"');
+    case "produit": return `<div class="champ"><label>Produit mis en avant</label><select data-b="${i}" data-bk="produit">${optsProd(b.produit)}</select></div>` + (prods.length ? "" : '<p class="aide">Crée d\'abord un produit dans l\'onglet Produits.</p>');
+    case "produits": return champB(i, "titre", "Titre au-dessus des produits (facultatif)", b.titre, 'maxlength="120"') + '<p class="aide" style="margin:8px 0 0">Tous tes produits visibles s\'affichent ici. L\'affichage (grille, liste, vitrine) se choisit dans Design.</p>';
+    case "capture": return champB(i, "titre", "Titre", b.titre) + `<div class="champ"><label>Texte</label><textarea data-b="${i}" data-bk="texte" maxlength="400" style="min-height:64px">${esc(b.texte || "")}</textarea></div>`
+      + champB(i, "bouton", "Texte du bouton", b.bouton, 'maxlength="60" placeholder="Je m\'inscris"')
+      + `<div class="champ"><label>Cadeau envoyé à l'inscription (produit gratuit)</label><select data-b="${i}" data-bk="produit">${optsProd(b.produit, true)}</select><span class="aide">Ton guide gratuit est livré tout de suite et par e-mail.</span></div>`
+      + champB(i, "merci", "Message après l'inscription", b.merci, 'maxlength="200" placeholder="C\'est noté, merci !"');
+    case "kit": return champB(i, "titre", "Titre", b.titre) + champB(i, "texte", "Sous-titre", b.texte);
+  }
+  return "";
+}
+function choisirTypeBloc() {
+  $("#feuille").innerHTML = `<h2 id="m-titre">Ajouter un bloc</h2><p class="sous">Que veux-tu montrer sur ta page ?</p>
+    <div class="bt-types">${Object.entries(TYPES_BLOCS).map(([k, [ic, nom, d]]) => `<button class="bt-type" data-type-bloc="${k}"><span class="ic">${ic}</span><b>${nom}</b><small>${d}</small></button>`).join("")}</div>
+    <div class="pied-modale" style="margin-top:16px"><button class="btn" data-fermer>Annuler</button></div>`;
+  $("#modale").classList.add("ouvert");
+  $$("[data-type-bloc]").forEach(b => b.onclick = () => {
+    const t = b.dataset.typeBloc, nb = {id: idCourt(), type: t, visible: true};
+    if (t === "capture") Object.assign(nb, {titre: "Reste en contact", texte: "Mes meilleurs conseils, directement dans ta boîte mail.", bouton: "Je m'inscris"});
+    if (t === "produits") nb.titre = "Ma boutique";
+    if (t === "kit") Object.assign(nb, {titre: "Kit média", texte: "Mes chiffres et collaborations"});
+    if (t === "produit") nb.produit = BQ.page.produits[0]?.id || "";
+    BQ.page.blocs.push(nb); BQ.ouvertBloc = nb.id;
+    fermeModale(); modifieBoutique(true);
+    setTimeout(() => $(`.bt-bloc:last-child input, .bt-bloc:last-child textarea`)?.focus(), 80);
+  });
+}
+
+// Champs liés à la page (data-p), aux réseaux (data-r), aux blocs (data-b/data-bk), au design (data-d), au kit (data-k)
+function lieChamps(z) {
+  const p = BQ.page;
+  z.oninput = z.onchange = e => {
+    const x = e.target;
+    if (e.type === "input" && (x.type === "checkbox" || x.tagName === "SELECT" || x.type === "file")) return;
+    if (x.dataset.p) p[x.dataset.p] = x.value;
+    else if (x.dataset.r) p.reseaux[x.dataset.r] = x.value;
+    else if (x.dataset.b) {
+      const b = p.blocs[+x.dataset.b]; b[x.dataset.bk] = x.type === "checkbox" ? x.checked : x.value;
+      const r = x.closest(".bt-bloc")?.querySelector(".res b"); if (r) r.textContent = resumeBloc(b) + (b.en_avant ? " ✨" : "");
+    } else if (x.dataset.d) {
+      const k = x.dataset.d, def = BQ.etat.options.defaut[k];
+      let v = x.type === "checkbox" ? x.checked : (typeof def === "number" ? +x.value : x.value);
+      if (x.type === "color") { const ancien = p.design[k] || ""; v = x.value.toUpperCase() + (ancien.length === 9 ? ancien.slice(7) : ""); }
+      if (k === "apparition") BQ.rejouer = true;
+      p.design[k] = v; if (!["photo_taille", "rayon", "fond_voile", "apparition", "animation"].includes(k)) p.design.theme = "perso";
+      const aff = z.querySelector(`[data-aff="${k}"]`); if (aff) aff.textContent = v + (k === "fond_voile" ? " %" : " px");
+    } else if (x.dataset.k) {
+      const k = x.dataset.k; p.kit[k] = x.type === "checkbox" ? x.checked : x.value;
+    } else if (x.dataset.kl) {
+      const [liste, i, champ] = x.dataset.kl.split(":"); p.kit[liste][+i][champ] = x.value;
+    } else return;
+    modifieBoutique();
+  };
+  z.querySelectorAll("input[type=file][data-envoi]").forEach(inp => inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return; const role = inp.dataset.envoi;
+    try {
+      const r = await envoieImageBoutique(f, role);
+      if (role === "fond_image") { p.design.fond_image = r.nom; p.design.fond_type = "image"; } else p[role] = r.nom;
+      if (r.palettes) BQ.palettes = r.palettes;
+      modifieBoutique(true); toast(role === "photo" && r.palettes ? "Photo ajoutée · de nouvelles couleurs t'attendent dans Design" : "Image ajoutée");
+    } catch (e) { toast(e.message); }
+  });
+  z.querySelectorAll("input[type=file][data-envoi-bloc]").forEach(inp => inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    try { const r = await envoieImageBoutique(f, "vignette"); p.blocs[+inp.dataset.envoiBloc].image = r.nom; modifieBoutique(true); } catch (e) { toast(e.message); }
+  });
+  z.querySelectorAll("[data-retire-img]").forEach(b => b.onclick = () => { delete p.blocs[+b.dataset.retireImg].image; modifieBoutique(true); });
+}
+
+// ---- Onglet Design
+const SCHEMAS_ENTETE = {
+  minimal: '<circle cx="30" cy="22" r="10"/><rect x="16" y="38" width="28" height="5" rx="2"/><rect x="12" y="50" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="61" width="36" height="7" rx="3" opacity=".5"/>',
+  banniere: '<rect x="0" y="0" width="60" height="22" opacity=".45"/><circle cx="30" cy="22" r="9"/><rect x="16" y="36" width="28" height="5" rx="2"/><rect x="12" y="50" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="61" width="36" height="7" rx="3" opacity=".5"/>',
+  portrait: '<path d="M0 0h60v38c-20 8-40 8-60 0z" opacity=".55"/><rect x="16" y="42" width="28" height="5" rx="2"/><rect x="12" y="53" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="64" width="36" height="7" rx="3" opacity=".5"/>',
+  arche: '<path d="M18 34V18a12 12 0 0124 0v16z"/><rect x="16" y="40" width="28" height="5" rx="2"/><rect x="12" y="52" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="63" width="36" height="7" rx="3" opacity=".5"/>',
+  cote: '<circle cx="16" cy="16" r="9"/><rect x="29" y="11" width="24" height="5" rx="2"/><rect x="29" y="19" width="16" height="3" rx="1.5" opacity=".6"/><rect x="8" y="34" width="44" height="7" rx="3" opacity=".5"/><rect x="8" y="45" width="44" height="7" rx="3" opacity=".5"/><rect x="8" y="56" width="44" height="7" rx="3" opacity=".5"/>',
+  magazine: '<rect x="0" y="0" width="60" height="44" opacity=".55"/><rect x="8" y="32" width="40" height="7" rx="2" fill="#fff"/><rect x="12" y="52" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="63" width="36" height="7" rx="3" opacity=".5"/>',
+};
+const FORMES_CSS_ED = {rond: "border-radius:50%", arrondi: "border-radius:28%", arche: "border-radius:99px 99px 8px 8px;height:52px;width:40px", fleur: "-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat",
+  goutte: "border-radius:62% 38% 55% 45% / 48% 60% 40% 52%", etoile: "clip-path:polygon(50% 0,61% 13%,78% 7%,80% 24%,96% 30%,88% 45%,100% 58%,84% 66%,86% 84%,69% 84%,60% 100%,50% 88%,40% 100%,31% 84%,14% 84%,16% 66%,0 58%,12% 45%,4% 30%,20% 24%,22% 7%,39% 13%)"};
+function styleBoutonEx(style, d) {
+  const b = d.bouton_fond.slice(0, 7), t = d.bouton_texte.slice(0, 7), o = d.bouton_ombre.slice(0, 7), r = Math.min(d.rayon, 99) + "px";
+  return {plein: `background:${b};color:${t};border:0;box-shadow:0 2px 0 ${o}`, contour: `background:transparent;color:${t === "#FFFFFF" ? d.texte.slice(0, 7) : t};border:2px solid currentColor`,
+    decale: `background:${b};color:${t};border:2px solid ${o};box-shadow:3px 3px 0 ${o}`, doux: `background:${b};color:${t};border:0;box-shadow:0 8px 16px -8px ${o}`,
+    verre: `background:${b}aa;color:${t};border:1px solid rgba(255,255,255,.5)`, souligne: `background:transparent;color:${d.texte.slice(0, 7)};border:0;border-bottom:1.5px solid currentColor;border-radius:0`}[style] + `;border-radius:${style === "souligne" ? 0 : r}`;
+}
+function surprendsMoi() {
+  const o = BQ.etat.options, h = a => a[Math.floor(Math.random() * a.length)];
+  const t = h(o.themes);
+  let d = themeApplique(BQ.page.design, t.id);
+  const titres = o.polices.map(p => p.nom), textes = o.polices_texte;
+  d = {...d, entete: h(Object.keys(o.entetes)), photo_forme: h(Object.keys(o.formes)), police_titre: h(titres), police_texte: h(textes),
+    bouton_style: h(Object.keys(o.boutons)), rayon: h([0, 8, 14, 22, 999]), animation: h(["pulse", "secousse", "brillance"]), theme: "perso"};
+  if (d.fond_type === "motif" || Math.random() < .3) { d.fond_type = "motif"; d.motif = h(Object.keys(o.motifs)); }
+  if ((BQ.palettes || []).length && Math.random() < .5) d = {...d, ...paletteDesign(h(BQ.palettes))};
+  BQ.page.design = d; modifieBoutique(true); toast("Nouveau look : " + t.nom + " remixé");
+}
+function ongletDesign(z) {
+  const d = BQ.page.design, o = BQ.etat.options;
+  const amb = BQ.ambiance ||= (o.themes.find(t => t.id === d.theme)?.ambiance || "Classique");
+  const opt = (k, v, vis, lab) => `<button class="bt-opt" data-dset="${k}" data-v="${v}" aria-pressed="${String(d[k]) === String(v)}"><span class="vis">${vis}</span>${lab}</button>`;
+  const couleur = (k, lab) => `<label class="bt-couleur">${lab}<input type="color" data-d="${k}" value="${d[k].slice(0, 7)}"></label>`;
+  const curseur = (k, min, max, unite) => `<div class="bt-curseur"><input type="range" data-d="${k}" min="${min}" max="${max}" value="${Math.min(d[k], max)}" aria-label="${k}"><span data-aff="${k}">${d[k] >= 999 ? "∞" : d[k]}${unite}</span></div>`;
+  const photo = BQ.page.photo ? `background:url('${urlImg(BQ.page.photo)}') center/cover` : `background:${d.accent.slice(0, 7)}`;
+  z.innerHTML = `
+    <section class="bt-sec"><h3>Thèmes <button class="btn petit" id="bt-surprise" style="margin-left:auto">🎲 Surprends-moi</button></h3><p class="aide">Un look complet en un clic. Tout reste modifiable en dessous.</p>
+      <div class="seg" style="margin-bottom:12px;max-width:100%;overflow-x:auto">${o.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
+      <div class="bt-themes" id="bt-themes"></div>
+      ${BQ.palettes || BQ.page.photo ? `<p class="bt-sous-titre">✨ Couleurs tirées de ta photo</p><div class="bt-palettes" id="bt-palettes">${(BQ.palettes || []).map((p, i) => paletteHTML(p, i)).join("") || '<span class="aide">Calcul…</span>'}</div>` : ""}
+    </section>
+    <section class="bt-sec"><h3>En-tête</h3><p class="aide">La disposition du haut de ta page.</p>
+      <div class="bt-choix">${Object.entries(o.entetes).map(([k, l]) => opt("entete", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${d.accent.slice(0, 7)}">${SCHEMAS_ENTETE[k]}</svg>`, l)).join("")}</div>
+    </section>
+    <section class="bt-sec"><h3>Photo de profil</h3>
+      <p class="bt-sous-titre" style="margin-top:0">Forme</p>
+      <div class="bt-choix">${Object.entries(o.formes).map(([k, l]) => opt("photo_forme", k, `<i style="display:block;width:46px;height:46px;${photo};${FORMES_CSS_ED[k]}"></i>`, l)).join("")}</div>
+      <p class="bt-sous-titre">Taille</p>${curseur("photo_taille", 64, 200, " px")}
+      <label class="bt-interr"><span>Contour coloré</span><input type="checkbox" data-d="photo_contour" ${d.photo_contour ? "checked" : ""}></label>
+    </section>
+    <section class="bt-sec"><h3>Fond</h3>
+      <div class="bt-choix">${Object.entries(o.fonds).map(([k, l]) => opt("fond_type", k, apercuFond(k, d), l)).join("")}</div>
+      ${d.fond_type === "motif" ? `<p class="bt-sous-titre">Motif</p><div class="bt-rangee">${Object.entries(o.motifs).map(([k, l]) => `<button class="btn petit" data-dset="motif" data-v="${k}" aria-pressed="${d.motif === k}" style="${d.motif === k ? "border-color:var(--ink);font-weight:700" : ""}">${l}</button>`).join("")}</div>` : ""}
+      ${d.fond_type === "image" ? `<p class="bt-sous-titre">Image de fond</p><label class="bt-depot">${d.fond_image ? `<img src="${urlImg(d.fond_image)}" alt="">` : "🖼️"}<span>${d.fond_image ? "Changer l'image" : "Choisis une image (paysage, texture, ta photo…)"}</span><input type="file" accept="image/*" data-envoi="fond_image"></label>
+        <p class="bt-sous-titre">Voile pour garder le texte lisible</p>${curseur("fond_voile", 0, 80, " %")}` : ""}
+      <div class="bt-couleurs" style="margin-top:10px">${couleur("fond1", d.fond_type === "uni" || d.fond_type === "image" ? "Couleur du fond" : "Couleur 1")}${["degrade", "motif", "anime"].includes(d.fond_type) ? couleur("fond2", d.fond_type === "motif" ? "Couleur du motif" : "Couleur 2") : ""}</div>
+    </section>
+    <section class="bt-sec"><h3>Couleurs</h3>
+      <p class="bt-sous-titre" style="margin-top:0">En-tête</p><div class="bt-couleurs">${couleur("texte", "Texte et icônes")}${couleur("accent", "Couleur d'accent")}</div>
+      <p class="bt-sous-titre">Boutons de liens</p><div class="bt-couleurs">${couleur("bouton_fond", "Fond")}${couleur("bouton_texte", "Texte")}${couleur("bouton_ombre", "Ombre ou bordure")}</div>
+      <p class="bt-sous-titre">Cartes (produits, formulaire)</p><div class="bt-couleurs">${couleur("bloc_fond", "Fond")}${couleur("bloc_texte", "Texte")}</div>
+    </section>
+    <section class="bt-sec"><h3>Typographie</h3>
+      <p class="bt-sous-titre" style="margin-top:0">Titres</p>
+      <div class="bt-polices">${o.polices.map(p => `<button class="bt-police" data-dset="police_titre" data-v="${esc(p.nom)}" aria-pressed="${d.police_titre === p.nom}"><b style="font-family:'${esc(p.nom)}'">Aa Bb</b><small>${esc(p.nom)}</small></button>`).join("")}</div>
+      <p class="bt-sous-titre">Taille du nom</p>
+      <div class="seg">${[["s", "Petit"], ["m", "Moyen"], ["l", "Grand"], ["xl", "Très grand"]].map(([k, l]) => `<button data-dset="taille_titre" data-v="${k}" aria-pressed="${d.taille_titre === k}">${l}</button>`).join("")}</div>
+      <p class="bt-sous-titre">Texte</p>
+      <div class="bt-polices" style="max-height:none">${o.polices_texte.map(n => `<button class="bt-police" data-dset="police_texte" data-v="${esc(n)}" aria-pressed="${d.police_texte === n}"><b style="font-family:'${esc(n)}';font-size:17px">Bonjour !</b><small>${esc(n)}</small></button>`).join("")}</div>
+    </section>
+    <section class="bt-sec"><h3>Boutons</h3>
+      <div class="bt-choix larges">${Object.entries(o.boutons).map(([k, l]) => opt("bouton_style", k, `<span class="bt-btn-ex" style="${styleBoutonEx(k, d)};margin:0 10px">Mon lien</span>`, l)).join("")}</div>
+      <p class="bt-sous-titre">Arrondi des coins</p>${curseur("rayon", 0, 40, " px")}
+      <button class="btn petit" data-dset="rayon" data-v="999">Bords ronds (pilule)</button>
+      <p class="bt-sous-titre">Animation du lien mis en avant</p>
+      <div class="seg">${Object.entries(o.animations).map(([k, l]) => `<button data-dset="animation" data-v="${k}" aria-pressed="${d.animation === k}">${l}</button>`).join("")}</div>
+      <label class="bt-interr" style="margin-top:8px"><span>Apparition en douceur des blocs</span><input type="checkbox" data-d="apparition" ${d.apparition ? "checked" : ""}></label>
+    </section>
+    <section class="bt-sec"><h3>Affichage des produits</h3>
+      <div class="seg">${Object.entries(o.vues_produits).map(([k, l]) => `<button data-dset="produits_vue" data-v="${k}" aria-pressed="${d.produits_vue === k}">${l}</button>`).join("")}</div>
+    </section>`;
+  remplitThemes($("#bt-themes"), amb, d.theme, null);
+  lieChamps(z);
+  z.querySelectorAll("[data-amb]").forEach(b => b.onclick = () => { BQ.ambiance = b.dataset.amb; renduOnglet(); });
+  $("#bt-themes").onclick = e => { const b = e.target.closest("[data-theme]"); if (!b) return;
+    BQ.page.design = themeApplique(BQ.page.design, b.dataset.theme); modifieBoutique(true); };
+  $("#bt-surprise").onclick = surprendsMoi;
+  z.querySelectorAll("[data-dset]").forEach(b => b.onclick = () => {
+    const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
+    if (typeof def === "number") v = +v;
+    d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre"].includes(k)) d.theme = "perso";
+    if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
+    modifieBoutique(true);
+  });
+  z.querySelectorAll("[data-pal]").forEach(b => b.onclick = () => { BQ.page.design = {...BQ.page.design, ...paletteDesign(BQ.palettes[+b.dataset.pal]), theme: "perso"}; modifieBoutique(true); });
+  if (!BQ.palettes && BQ.page.photo && !BQ.palettesEnCours) {
+    BQ.palettesEnCours = true;
+    api("/api/boutique/palettes").then(r => { BQ.palettes = r.palettes; if (BQ.onglet === "design") renduOnglet(); }).catch(() => {});
+  }
+}
+function apercuFond(k, d) {
+  const f1 = d.fond1.slice(0, 7), f2 = d.fond2.slice(0, 7);
+  const s = {uni: `background:${f1}`, degrade: `background:linear-gradient(160deg,${f1},${f2})`, image: d.fond_image ? `background:url('${urlImg(d.fond_image)}') center/cover` : `background:${f1}`,
+    motif: `background:${f1} radial-gradient(${f2} 1.5px,transparent 1.7px) 0 0/10px 10px`, anime: `background:linear-gradient(120deg,${f1},${f2},${d.accent.slice(0, 7)});background-size:200% 200%;animation:aurore-ed 4s ease infinite`}[k];
+  return `<i style="position:absolute;inset:0;${s}">${k === "image" && !d.fond_image ? '<span style="position:absolute;inset:0;display:grid;place-items:center;font-size:20px">🖼️</span>' : ""}</i>`;
+}
+
+// ---- Onglet Produits
+function ongletProduits(z) {
+  const p = BQ.page, pay = BQ.etat.paiement, st = p.stripe || {};
+  const payants = p.produits.some(x => x.prix);
+  let bandeau = "";
+  if (pay.demo) bandeau = `<div class="bt-stripe info"><p><b>Mode démo :</b> les achats sont simulés (aucun paiement). Tout le reste fonctionne pour de vrai.</p></div>`;
+  else if (!pay.plateforme) bandeau = `<div class="bt-stripe info"><p><b>Le paiement en ligne arrive bientôt.</b> En attendant, les produits gratuits et les liens externes (Systeme.io, Gumroad…) fonctionnent déjà.</p></div>`;
+  else if (st.pret) bandeau = `<div class="bt-stripe ok"><p>✓ <b>Stripe est relié.</b> L'argent de tes ventes arrive directement sur ton compte.</p></div>`;
+  else bandeau = `<div class="bt-stripe info"><p><b>${st.relie ? "Termine ton inscription Stripe" : "Relie ton compte Stripe"}</b> pour encaisser tes ventes. L'argent arrive directement chez toi${pay.commission ? ` (commission Veille virale : ${pay.commission} %)` : ""}.${payants ? "" : " Pas besoin si tu ne proposes que des produits gratuits."}</p><button class="btn prim" id="bt-stripe">${st.relie ? "Continuer sur Stripe" : "Relier Stripe"}</button></div>`;
+  const type = x => x.fichier ? "📄 Téléchargement" : x.lien ? "🔗 Lien externe" : "⚠️ Rien à livrer";
+  z.innerHTML = `${bandeau}
+    <button class="btn prim" id="bt-nouveau-prod" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px">+ Nouveau produit</button>
+    <div class="bt-prods">${p.produits.map((x, i) => `<button class="bt-prod" data-prod="${i}">
+      <span class="vig" style="${x.image ? `background-image:url('${urlImg(x.image)}')` : ""}">${x.image ? "" : "🎁"}</span>
+      <span><b>${esc(x.titre || "Sans titre")}</b><span class="meta"><span class="prix">${euros(x.prix)}</span><span>${type(x)}</span>${x.visible === false ? "<span>Masqué</span>" : ""}</span></span>
+      <span aria-hidden="true" style="color:var(--ink-3)">›</span></button>`).join("") || `<div class="vide" style="padding:20px;text-align:center;color:var(--ink-3)">Pas encore de produit. E-book, guide, formation, template, appel découverte… Commence par un cadeau gratuit pour récolter des e-mails.</div>`}</div>`;
+  $("#bt-nouveau-prod").onclick = () => editeProduit(null);
+  z.querySelectorAll("[data-prod]").forEach(b => b.onclick = () => editeProduit(+b.dataset.prod));
+  $("#bt-stripe")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    try { location.href = (await api("/api/boutique/stripe", {method: "POST"})).url; } catch (er) { toast(er.message); e.target.disabled = false; }
+  });
+}
+function editeProduit(i) {
+  const p = BQ.page, neuf = i == null;
+  const x = neuf ? {id: idCourt(), titre: "", sous_titre: "", description: "", prix: 0, prix_barre: 0, devise: "eur", image: "", fichier: "", fichier_nom: "", lien: "", bouton: "", visible: true} : structuredClone(p.produits[i]);
+  let livraison = x.lien && !x.fichier ? "lien" : "fichier", fichierEnvoye = null;
+  BQ.vueAp = "p:" + x.id;
+  const rendu = () => {
+    $("#feuille").innerHTML = `<div class="bt-feuille"><h2 id="m-titre">${neuf ? "Nouveau produit" : "Modifier le produit"}</h2><p class="sous">E-book, guide, formation, template, appel… Tout ce que tu veux vendre ou offrir.</p>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;margin-bottom:6px" class="bt-prod-haut">
+        <label class="bt-image-prod ${x.image ? "pleine" : ""}" style="${x.image ? `background-image:url('${urlImg(x.image)}')` : ""}">Ajoute un visuel (carré)<input type="file" accept="image/*" id="pr-image"></label>
+        <div><div class="champ"><label for="pr-titre">Titre</label><input id="pr-titre" value="${esc(x.titre)}" maxlength="120" placeholder="Mon guide ventre plat"></div>
+          <div class="champ"><label for="pr-st">Accroche</label><input id="pr-st" value="${esc(x.sous_titre)}" maxlength="160" placeholder="21 recettes rapides anti-ballonnements"></div></div>
+      </div>
+      <div class="duo">
+        <div class="champ"><label for="pr-prix">Prix (€)</label><input id="pr-prix" type="number" min="0" step="0.01" inputmode="decimal" value="${x.prix ? (x.prix / 100).toFixed(2).replace(/\.00$/, "") : ""}" placeholder="0 = gratuit"><span class="aide">${x.prix ? "" : "Gratuit : on demande l'e-mail en échange 💌"}</span></div>
+        <div class="champ"><label for="pr-barre">Prix barré (facultatif)</label><input id="pr-barre" type="number" min="0" step="0.01" inputmode="decimal" value="${x.prix_barre ? (x.prix_barre / 100).toFixed(2).replace(/\.00$/, "") : ""}" placeholder="Ex. 49"></div>
+      </div>
+      <div class="champ"><label for="pr-desc">Description</label><textarea id="pr-desc" maxlength="4000" placeholder="Ce qu'elle va apprendre, ce qu'il y a dedans, pour qui c'est…">${esc(x.description)}</textarea></div>
+      <div class="champ"><label>Ce que reçoit ta cliente</label>
+        <div class="seg"><button type="button" data-liv="fichier" aria-pressed="${livraison === "fichier"}">📄 Un fichier à télécharger</button><button type="button" data-liv="lien" aria-pressed="${livraison === "lien"}">🔗 Un lien</button></div></div>
+      ${livraison === "fichier" ? `<label class="bt-depot" style="margin-bottom:16px">📄<span id="pr-fichier-nom">${esc(fichierEnvoye?.name || x.fichier_nom || "Choisis ton fichier (PDF, ZIP, vidéo, audio…)")}</span><input type="file" id="pr-fichier"></label>`
+        : `<div class="champ"><input id="pr-lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="Lien de ta formation, Notion, Calendly, Drive…"><span class="aide">Le lien est donné après le paiement (ou l'inscription si c'est gratuit).</span></div>`}
+      <div class="champ"><label for="pr-bouton">Texte du bouton d'achat</label><input id="pr-bouton" value="${esc(x.bouton)}" maxlength="50" placeholder="${x.prix ? "Je le veux" : "Je le reçois gratuitement"}"></div>
+      <label class="bt-interr"><span>Visible dans ma boutique</span><input type="checkbox" id="pr-visible" ${x.visible !== false ? "checked" : ""}></label>
+      <div class="pied-modale" style="justify-content:space-between;margin-top:16px">${neuf ? "<span></span>" : `<button class="btn" id="pr-suppr" style="color:var(--warn)">Supprimer</button>`}
+        <span class="bt-rangee"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="pr-ok">${neuf ? "Ajouter le produit" : "Enregistrer"}</button></span></div></div>`;
+    const lit = () => {
+      x.titre = $("#pr-titre").value.trim(); x.sous_titre = $("#pr-st").value.trim(); x.description = $("#pr-desc").value;
+      x.prix = Math.round((parseFloat(($("#pr-prix").value || "0").replace(",", ".")) || 0) * 100);
+      x.prix_barre = Math.round((parseFloat(($("#pr-barre").value || "0").replace(",", ".")) || 0) * 100);
+      if ($("#pr-lien")) x.lien = $("#pr-lien").value.trim();
+      x.bouton = $("#pr-bouton").value.trim(); x.visible = $("#pr-visible").checked;
+    };
+    $$("[data-liv]").forEach(b => b.onclick = () => { lit(); livraison = b.dataset.liv; rendu(); });
+    $("#pr-image").onchange = async e => { lit(); const f = e.target.files[0]; if (!f) return;
+      try { x.image = (await envoieImageBoutique(f, "produit")).nom; rendu(); } catch (er) { toast(er.message); } };
+    $("#pr-fichier")?.addEventListener("change", e => { fichierEnvoye = e.target.files[0] || null; $("#pr-fichier-nom").textContent = fichierEnvoye?.name || ""; });
+    $("#pr-prix").oninput = () => { const v = parseFloat($("#pr-prix").value.replace(",", ".")) || 0; $("#pr-prix").nextElementSibling.textContent = v ? (v < .5 ? "Minimum 0,50 €" : "") : "Gratuit : on demande l'e-mail en échange 💌"; };
+    $("#pr-suppr")?.addEventListener("click", async () => {
+      if (!confirm("Supprimer ce produit ?")) return;
+      p.produits.splice(i, 1); p.blocs = p.blocs.filter(b => !(b.type === "produit" && b.produit === x.id));
+      BQ.vueAp = "page"; fermeModale(); modifieBoutique(true); toast("Produit supprimé");
+    });
+    $("#pr-ok").onclick = async () => {
+      lit();
+      if (!x.titre) return toast("Donne un titre à ton produit");
+      if (livraison === "lien") { if (!x.lien) return toast("Indique le lien que reçoit ta cliente"); x.retirer_fichier = !!x.fichier; }
+      else { x.lien = ""; if (!fichierEnvoye && !x.fichier) return toast("Ajoute le fichier que reçoit ta cliente"); }
+      const b = $("#pr-ok"); b.disabled = true; b.innerHTML = '<span class="spin" style="border-color:#fff;border-right-color:transparent"></span>Enregistrement…';
+      if (neuf) p.produits.push(x); else p.produits[i] = x;
+      if (neuf && !p.blocs.some(bl => bl.type === "produits")) p.blocs.splice(p.blocs.findIndex(bl => bl.type !== "lien") + 1 || p.blocs.length, 0, {id: idCourt(), type: "produits", titre: "Ma boutique", visible: true});
+      await sauveBoutique(true);
+      delete x.retirer_fichier;
+      if (fichierEnvoye) {
+        b.innerHTML = '<span class="spin" style="border-color:#fff;border-right-color:transparent"></span>Envoi du fichier…';
+        const fd = new FormData(); fd.append("fichier", fichierEnvoye);
+        const r = await fetch(`/api/boutique/produits/${x.id}/fichier`, {method: "POST", body: fd});
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { toast(j.erreur || "Envoi du fichier impossible"); b.disabled = false; b.textContent = "Réessayer"; return; }
+        const pr = p.produits.find(y => y.id === x.id); if (pr) { pr.fichier = "ok"; pr.fichier_nom = j.fichier_nom; }
+      }
+      fermeModale(); renduOnglet(); apercu(); toast(neuf ? "Produit ajouté à ta boutique" : "Produit enregistré");
+    };
+  };
+  rendu();
+  $("#modale").classList.add("ouvert");
+  apercu();
+}
+
+// ---- Onglet Kit média
+function ongletKit(z) {
+  const p = BQ.page, k = p.kit ||= {actif: true, tarifs: [], chiffres_perso: []}, c = BQ.etat.kit_chiffres;
+  k.tarifs ||= []; k.chiffres_perso ||= [];
+  const kf = n => n == null ? null : n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " M" : n >= 1000 ? (n / 1000).toFixed(1).replace(".", ",") + " k" : String(n);
+  const tuiles = c ? [[kf((c.abonnes_instagram || 0) + (c.abonnes_tiktok || 0)) , "Abonnés au total"], [kf(c.abonnes_instagram), "Instagram"], [kf(c.abonnes_tiktok), "TikTok"],
+    [kf(c.vues_mediane), "Vues médianes"], [c.engagement ? (c.engagement * 100).toFixed(1).replace(".", ",") + " %" : null, "Engagement"]].filter(([v]) => v && v !== "0") : [];
+  const aBloc = p.blocs.some(b => b.type === "kit");
+  z.innerHTML = `
+    <section class="bt-sec"><h3>Ton kit média</h3><p class="aide">Une page pour les marques : ton audience, tes meilleurs contenus et tes tarifs. Adresse : <a href="${esc(BQ.etat.url)}/kit" target="_blank" rel="noopener">${esc(BQ.etat.url.replace(/^https?:\/\//, ""))}/kit</a></p>
+      <label class="bt-interr"><span>Kit média en ligne</span><input type="checkbox" data-k="actif" ${k.actif !== false ? "checked" : ""}></label>
+      ${aBloc ? "" : `<button class="btn petit" id="kit-bloc" style="margin-top:6px">+ Ajouter le lien du kit sur ma page</button>`}
+    </section>
+    <section class="bt-sec"><h3>Tes chiffres</h3>
+      ${c ? `<p class="aide">Calculés automatiquement à partir de l'analyse de ton compte${c.date ? " du " + new Date(c.date).toLocaleDateString("fr-FR") : ""}. Relance l'analyse dans Réglages pour les mettre à jour.</p>
+        <div class="bt-kit-chiffres">${tuiles.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("")}</div>`
+        : `<p class="aide">Analyse ton compte dans <a href="#" onclick="va('parametres');return false">Réglages → Mon profil</a> : tes abonnés, vues et engagement s'afficheront ici automatiquement.</p>`}
+      <p class="bt-sous-titre">Chiffres en plus (facultatif)</p>
+      <div class="bt-paires">${k.chiffres_perso.map((x, i) => `<div class="bt-paire"><input data-kl="chiffres_perso:${i}:libelle" value="${esc(x.libelle)}" placeholder="Audience féminine"><input data-kl="chiffres_perso:${i}:valeur" value="${esc(x.valeur)}" placeholder="87 %"><button class="icone-btn" data-kl-suppr="chiffres_perso:${i}" aria-label="Retirer">✕</button></div>`).join("")}</div>
+      <button class="btn petit" data-kl-ajout="chiffres_perso" style="margin-top:8px">+ Un chiffre</button>
+    </section>
+    <section class="bt-sec"><h3>Présentation</h3>
+      <div class="champ"><label>À propos</label><textarea data-k="a_propos" maxlength="1500" placeholder="Qui tu es, ton audience, ce que tu proposes aux marques…">${esc(k.a_propos || "")}</textarea></div>
+      <div class="champ"><label>Marques avec qui tu as travaillé</label><input data-k="marques" value="${esc(k.marques || "")}" maxlength="600" placeholder="Séphora, Nature & Découvertes…"></div>
+      <div class="champ"><label>E-mail pour les collaborations</label><input data-k="contact" type="email" value="${esc(k.contact || "")}" placeholder="collab@ton-site.fr"></div>
+    </section>
+    <section class="bt-sec"><h3>Tarifs</h3><p class="aide">Facultatif : tes prestations et leurs prix.</p>
+      <div class="bt-paires">${k.tarifs.map((x, i) => `<div class="bt-paire"><input data-kl="tarifs:${i}:libelle" value="${esc(x.libelle)}" placeholder="1 Reel + 3 stories"><input data-kl="tarifs:${i}:prix" value="${esc(x.prix)}" placeholder="350 €"><button class="icone-btn" data-kl-suppr="tarifs:${i}" aria-label="Retirer">✕</button></div>`).join("")}</div>
+      <button class="btn petit" data-kl-ajout="tarifs" style="margin-top:8px">+ Une prestation</button>
+    </section>`;
+  lieChamps(z);
+  z.querySelectorAll("[data-kl-ajout]").forEach(b => b.onclick = () => { k[b.dataset.klAjout].push({libelle: "", valeur: "", prix: ""}); renduOnglet(); });
+  z.querySelectorAll("[data-kl-suppr]").forEach(b => b.onclick = () => { const [l, i] = b.dataset.klSuppr.split(":"); k[l].splice(+i, 1); modifieBoutique(true); });
+  $("#kit-bloc")?.addEventListener("click", () => { p.blocs.push({id: idCourt(), type: "kit", titre: "Kit média", texte: "Mes chiffres et collaborations", visible: true}); modifieBoutique(true); toast("Lien ajouté en bas de ta page"); });
+}
+
+// ---- Onglet Statistiques
+async function ongletStats(z) {
+  z.innerHTML = '<p class="vide">Chargement…</p>';
+  let s; try { s = await api("/api/boutique/stats"); } catch (e) { z.innerHTML = `<p class="vide">${esc(e.message)}</p>`; return; }
+  const max = Math.max(1, ...s.serie.map(x => x.vues));
+  z.innerHTML = `
+    <div class="bt-kpis">
+      <div class="bt-kpi"><b>${s.vues_30j}</b><span>visites (30 jours)</span></div>
+      <div class="bt-kpi"><b>${s.clics_total}</b><span>clics sur tes liens</span></div>
+      <div class="bt-kpi"><b>${s.ventes}</b><span>ventes</span></div>
+      <div class="bt-kpi"><b>${euros(s.chiffre).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div>
+      <div class="bt-kpi"><b>${s.inscrits}</b><span>e-mails récoltés</span></div>
+    </div>
+    <section class="bt-sec"><h3>Visites des 30 derniers jours</h3><p class="aide">${s.vues_7j} cette semaine. Tes propres visites ne sont pas comptées.</p>
+      <div class="bt-barres">${s.serie.map(x => `<i style="height:${Math.round(x.vues / max * 100)}%" title="${new Date(x.jour).toLocaleDateString("fr-FR", {day: "numeric", month: "short"})} : ${x.vues} visite${x.vues > 1 ? "s" : ""}"></i>`).join("")}</div></section>
+    <section class="bt-sec"><h3>Liens les plus cliqués</h3>${s.clics.map(x => `<div class="bt-ligne"><span>${esc(x.titre)}</span><b>${x.clics}</b></div>`).join("") || '<p class="aide" style="margin:0">Pas encore de clic.</p>'}</section>
+    <section class="bt-sec"><h3>Produits les plus vus</h3>${s.produits.map(x => `<div class="bt-ligne"><span>${esc(x.titre)}</span><b>${x.vues} vue${x.vues > 1 ? "s" : ""}</b></div>`).join("") || '<p class="aide" style="margin:0">Pas encore de visite sur tes produits.</p>'}</section>
+    <section class="bt-sec"><h3>Dernières ventes et téléchargements</h3>${s.dernieres_ventes.map(v => `<div class="bt-ligne"><span>${esc(v.produit)} · <small style="color:var(--ink-3)">${esc(v.email || "")}</small></span><b>${euros(v.montant)}</b></div>`).join("") || '<p class="aide" style="margin:0">Rien pour l\'instant.</p>'}</section>
+    <section class="bt-sec"><h3>E-mails récoltés <a class="btn petit" href="/api/boutique/inscrits.csv" style="margin-left:auto" download>Exporter (CSV)</a></h3>
+      <p class="aide">À importer dans ton outil d'e-mailing (Brevo, Systeme.io, MailerLite…).</p>
+      ${s.derniers_inscrits.slice(0, 12).map(x => `<div class="bt-ligne"><span>${esc(x.email)}${x.prenom ? " · " + esc(x.prenom) : ""}</span><small style="color:var(--ink-3)">${new Date(x.date).toLocaleDateString("fr-FR")}</small></div>`).join("") || '<p class="aide" style="margin:0">Aucun inscrit pour l\'instant.</p>'}</section>`;
+}
+
 // ---------------------------------------------------------------- Démarrage
 (async () => {
   const q = new URLSearchParams(location.search);
-  await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", q.has("paiement") ? "/" : location.pathname);
+  await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", location.pathname);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); va("abonnement"); }
+  if (q.get("stripe")) { await chargeBoutique(true); BQ.onglet = "produits"; va("boutique"); toast(BQ.page?.stripe?.pret ? "Stripe est relié : tu peux vendre" : "Inscription Stripe à terminer"); }
   if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
 })();
 </script>

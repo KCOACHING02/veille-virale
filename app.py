@@ -371,6 +371,7 @@ def etat():
         "abonnement": droits(g.u), "demo": en_demo(), "admin": est_admin(g.u),
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
+        "boutique": bq.pseudo_de(g.u["id"]),
     })
 
 
@@ -960,6 +961,527 @@ def studio_fichier(sid, dossier_, nom):
     except FileNotFoundError:
         abort(404)
     return send_from_directory(d, nom, as_attachment=request.args.get("telecharger") == "1")
+
+
+# ------------------------------------------------------------
+#  Boutique en lien dans la bio : page publique /@pseudo, produits, kit média
+# ------------------------------------------------------------
+import re as _re  # noqa: E402
+
+import boutique as bq  # noqa: E402
+
+bq.init()
+NOM_IMAGE = _re.compile(r"^[0-9a-f]{12}\.(jpg|png)$")
+
+
+def _vitrine(pseudo: str):
+    """(uid, page) d'une boutique publiée — ou visible par sa propriétaire connectée."""
+    pseudo = (pseudo or "").lower()
+    uid = bq.uid_de(pseudo)
+    page = bq.lit_page(uid) if uid else None
+    if not page:
+        abort(404)
+    if not page.get("publie") and session.get("uid") != uid:
+        abort(404)
+    return uid, page
+
+
+def _profil_compte(uid: int) -> dict | None:
+    f = espace_client(uid).profil_compte
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+
+
+def _vente_possible(page: dict) -> bool:
+    return bool(en_demo() or ((page.get("stripe") or {}).get("pret") and bq.stripe_actif()))
+
+
+def _html(contenu: str, code: int = 200):
+    from flask import Response
+    return Response(contenu, code, mimetype="text/html")
+
+
+@app.get("/@<pseudo>")
+def boutique_publique(pseudo):
+    uid, page = _vitrine(pseudo)
+    if session.get("uid") != uid:
+        bq.compte(uid, "vue")
+    return _html(bq.rendu_page(page, pseudo.lower(), url=f"{url_site()}/@{pseudo.lower()}"))
+
+
+@app.get("/@<pseudo>/i/<nom>")
+def boutique_image(pseudo, nom):
+    uid = bq.uid_de(pseudo.lower())
+    if not uid or not NOM_IMAGE.match(nom):
+        abort(404)
+    return send_from_directory(bq.dossier(uid) / "images", nom, max_age=30 * 86400)
+
+
+@app.get("/@<pseudo>/l/<bid>")
+def boutique_clic(pseudo, bid):
+    uid, page = _vitrine(pseudo)
+    b = next((x for x in page["blocs"] if x.get("id") == bid and x.get("type") == "lien"), None)
+    u = bq.url_sure((b or {}).get("url"))
+    if not u:
+        abort(404)
+    if session.get("uid") != uid:
+        bq.compte(uid, "clics", bid)
+    return redirect(u, 302)
+
+
+def _produit(page, pid):
+    p = next((x for x in page["produits"] if x.get("id") == pid and x.get("visible", True)), None)
+    if not p:
+        abort(404)
+    return p
+
+
+@app.get("/@<pseudo>/p/<pid>")
+def boutique_produit(pseudo, pid):
+    uid, page = _vitrine(pseudo)
+    p = _produit(page, pid)
+    if session.get("uid") != uid:
+        bq.compte(uid, "produits", pid)
+    msg = "Paiement annulé : tu n'as pas été débitée." if request.args.get("annule") else ""
+    return _html(bq.rendu_produit(page, pseudo.lower(), p, msg, _vente_possible(page)))
+
+
+@app.get("/@<pseudo>/p/<pid>/ouvrir")
+def boutique_produit_lien(pseudo, pid):
+    uid, page = _vitrine(pseudo)
+    p = _produit(page, pid)
+    u = bq.url_sure(p.get("lien"))
+    if not u or p.get("prix"):
+        abort(404)
+    bq.compte(uid, "clics", "p-" + pid)
+    return redirect(u, 302)
+
+
+def _email_valide(e: str) -> bool:
+    return bool(_re.fullmatch(r"[^@\s]{1,64}@[^@\s]{1,190}\.[a-zA-Z]{2,}", e or ""))
+
+
+def _livre_gratuit(uid, page, pseudo, p, email, prenom=""):
+    """Produit gratuit : inscription + lien de téléchargement immédiat (et par e-mail)."""
+    bq.ajoute_inscrit(uid, email, prenom, "produit : " + (p.get("titre") or ""))
+    v = bq.enregistre_vente(uid, p, email, 0, p.get("devise", "eur"), "gratuit-" + p["id"] + "-" + email)
+    lien = f"{url_site()}/@{pseudo}/merci?j={v['jeton']}"
+    if v["nouvelle"]:
+        bq.mail_livraison(page, p, email, lien, True)
+    return lien
+
+
+@app.post("/@<pseudo>/p/<pid>/obtenir")
+def boutique_obtenir(pseudo, pid):
+    uid, page = _vitrine(pseudo)
+    p = _produit(page, pid)
+    email = (request.form.get("email") or "").strip().lower()
+    if p.get("prix") or not _email_valide(email):
+        return jsonify({"erreur": "Indique une adresse e-mail valide."}), 400
+    return jsonify({"url": _livre_gratuit(uid, page, pseudo.lower(), p, email, (request.form.get("prenom") or "").strip())})
+
+
+@app.post("/@<pseudo>/inscription")
+def boutique_inscription(pseudo):
+    uid, page = _vitrine(pseudo)
+    email = (request.form.get("email") or "").strip().lower()
+    if not _email_valide(email):
+        return jsonify({"erreur": "Indique une adresse e-mail valide."}), 400
+    b = next((x for x in page["blocs"] if x.get("id") == request.form.get("bloc") and x.get("type") == "capture"), {})
+    p = next((x for x in page["produits"] if x.get("id") == b.get("produit") and not x.get("prix")), None)
+    if p and (p.get("fichier") or p.get("lien")):
+        return jsonify({"url": _livre_gratuit(uid, page, pseudo.lower(), p, email)})
+    bq.ajoute_inscrit(uid, email, "", b.get("titre") or "formulaire")
+    return jsonify({"message": b.get("merci") or "C'est noté, merci ! À très vite dans ta boîte mail."})
+
+
+@app.post("/@<pseudo>/p/<pid>/acheter")
+def boutique_acheter(pseudo, pid):
+    uid, page = _vitrine(pseudo)
+    p = _produit(page, pid)
+    pseudo = pseudo.lower()
+    if not p.get("prix"):
+        return redirect(f"/@{pseudo}/p/{pid}")
+    compte = (page.get("stripe") or {}).get("compte")
+    if compte and (page.get("stripe") or {}).get("pret") and bq.stripe_actif():
+        try:
+            return redirect(bq.session_achat(compte, p, url_site(), pseudo), 303)
+        except ValueError as e:
+            return _html(bq.rendu_produit(page, pseudo, p, f"Le paiement est momentanément indisponible ({e})."), 502)
+    if en_demo():  # démo : achat simulé, sans paiement
+        v = bq.enregistre_vente(uid, p, "acheteuse@demo.fr", p["prix"], p.get("devise", "eur"), "demo-" + uuid.uuid4().hex)
+        return redirect(f"/@{pseudo}/merci?j={v['jeton']}&demo=1", 303)
+    return _html(bq.rendu_produit(page, pseudo, p, "Ce produit n'est pas encore disponible à l'achat."), 409)
+
+
+@app.get("/@<pseudo>/merci")
+def boutique_merci(pseudo):
+    uid, page = _vitrine(pseudo)
+    pseudo = pseudo.lower()
+    v = None
+    if request.args.get("s"):
+        compte = (page.get("stripe") or {}).get("compte")
+        try:
+            r = bq.verifie_session(compte, request.args["s"]) if compte else None
+        except ValueError:
+            r = None
+        p = next((x for x in page["produits"] if x.get("id") == (r or {}).get("produit")), None)
+        if not r or not p:
+            return _html(bq.rendu_message(page, pseudo, "Paiement en attente", "Ton paiement n'est pas encore confirmé. "
+                                          "Si tu as été débitée, tu recevras ton accès par e-mail dans quelques minutes."), 202)
+        v = bq.enregistre_vente(uid, p, r["email"], r["montant"], r["devise"], request.args["s"])
+        if v["nouvelle"]:
+            lien = f"{url_site()}/@{pseudo}/merci?j={v['jeton']}"
+            if r["email"]:
+                bq.mail_livraison(page, p, r["email"], lien, False)
+                bq.ajoute_inscrit(uid, r["email"], "", "achat : " + (p.get("titre") or ""))
+            proprio = ab.get(uid)
+            if proprio:
+                bq.mail_vente(proprio["email"], page, p, r["montant"], r["devise"], r["email"] or "une cliente")
+    elif request.args.get("j"):
+        v = bq.vente_par_jeton(uid, request.args["j"])
+    if not v:
+        return _html(bq.rendu_message(page, pseudo, "Lien expiré", "Ce lien n'est plus valable. Écris-nous et on te renvoie ton accès."), 404)
+    p = next((x for x in page["produits"] if x.get("id") == v["produit"]), None) or {"titre": "ton produit"}
+    gratuit = not v.get("montant")
+    titre = "C'est à toi !" if gratuit else "Merci pour ton achat !"
+    texte = (f"« {p.get('titre')} » est prêt. " + ("Tu reçois aussi le lien par e-mail." if v.get("email") and "demo" not in v["email"] else "")
+             + (" (Achat simulé : mode démo.)" if request.args.get("demo") else ""))
+    return _html(bq.rendu_message(page, pseudo, titre, texte, ("Télécharger" if p.get("fichier") else "Accéder", f"/@{pseudo}/telecharger/{v['jeton']}")))
+
+
+@app.get("/@<pseudo>/telecharger/<jeton>")
+def boutique_telecharger(pseudo, jeton):
+    uid = bq.uid_de(pseudo.lower())
+    page = bq.lit_page(uid) if uid else None
+    v = bq.vente_par_jeton(uid, jeton, consomme=True) if page else None
+    if not v:
+        abort(404)
+    p = next((x for x in page["produits"] if x.get("id") == v["produit"]), None)
+    if not p:
+        abort(404)
+    if p.get("fichier") and (bq.dossier(uid) / "fichiers" / p["fichier"]).exists():
+        return send_from_directory(bq.dossier(uid) / "fichiers", p["fichier"], as_attachment=True,
+                                   download_name=p.get("fichier_nom") or p["fichier"], max_age=0)
+    u = bq.url_sure(p.get("lien"))
+    if u:
+        return redirect(u, 302)
+    abort(404)
+
+
+@app.get("/@<pseudo>/kit")
+def boutique_kit(pseudo):
+    uid, page = _vitrine(pseudo)
+    if not (page.get("kit") or {}).get("actif", True):
+        abort(404)
+    return _html(bq.rendu_kit(page, pseudo.lower(), _profil_compte(uid)))
+
+
+@app.get("/@<pseudo>/kit/m/<nom>")
+def boutique_kit_media(pseudo, nom):
+    uid = bq.uid_de(pseudo.lower())
+    prof = _profil_compte(uid) if uid else None
+    if not prof or nom not in {t.get("miniature") for t in prof.get("top") or []}:
+        abort(404)
+    f = espace_client(uid).media / nom
+    if not f.exists():
+        abort(404)
+    allege(f)
+    return send_from_directory(f.parent, f.name, max_age=7 * 86400)
+
+
+# ---- API d'édition (application)
+def _options_boutique() -> dict:
+    return {"themes": [{"id": k, "nom": t["nom"], "ambiance": t["ambiance"], "design": t["design"]} for k, t in bq.THEMES.items()],
+            "ambiances": bq.AMBIANCES, "polices": [{"nom": k, "categorie": v[2]} for k, v in bq.POLICES.items()],
+            "polices_texte": bq.POLICES_TEXTE, "entetes": bq.ENTETES, "formes": bq.FORMES, "fonds": bq.FONDS, "motifs": bq.MOTIFS,
+            "boutons": bq.BOUTONS, "animations": bq.ANIMATIONS, "vues_produits": bq.VUES_PRODUITS,
+            "reseaux": {k: v[0] for k, v in bq.RESEAUX.items()}, "defaut": bq.DESIGN_DEFAUT}
+
+
+def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False) -> dict:
+    pseudo = bq.pseudo_de(uid)
+    st = (page or {}).get("stripe") or {}
+    if page and st.get("compte") and bq.stripe_actif() and (rafraichir_stripe or not st.get("pret")):
+        try:
+            e = bq.etat_stripe(st["compte"])
+            if e["pret"] != st.get("pret"):
+                with bq.verrou(uid):
+                    page2 = bq.lit_page(uid)
+                    page2["stripe"] = {**st, **e}
+                    bq.ecrit_page(uid, page2)
+                    page = page2
+            st = {**st, **e}
+        except Exception:  # noqa: BLE001
+            pass
+    if page:
+        page = {**page, "stripe": {"pret": bool(st.get("pret")), "relie": bool(st.get("compte"))}}
+    prof = _profil_compte(uid)
+    suggestion = None
+    if not page:
+        ini = bq.page_initiale(uid, prof, g.u.get("prenom") or "")
+        base = bq.nettoie_pseudo((prof or {}).get("instagram") or (prof or {}).get("tiktok") or ini["nom"])
+        libre = base if base and not bq.pseudo_libre(base, uid) else ""
+        if base and not libre:
+            libre = next((base[:26] + f"-{i}" for i in range(2, 50) if not bq.pseudo_libre(base[:26] + f"-{i}", uid)), "")
+        suggestion = {"nom": ini["nom"], "bio": ini["bio"], "reseaux": ini["reseaux"], "pseudo": libre}
+    return {"page": page, "pseudo": pseudo, "suggestion": suggestion, "url": f"{url_site()}/@{pseudo}" if pseudo else None,
+            "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission()},
+            "kit_chiffres": bq.chiffres_kit(prof) if prof else None, "options": _options_boutique()}
+
+
+@app.get("/api/boutique")
+@connecte
+def boutique_etat():
+    return jsonify(_etat_boutique(g.u["id"], bq.lit_page(g.u["id"]), bool(request.args.get("stripe"))))
+
+
+@app.get("/api/boutique/pseudo")
+@connecte
+def boutique_pseudo_libre():
+    p = bq.nettoie_pseudo(request.args.get("p", ""))
+    return jsonify({"pseudo": p, "erreur": bq.pseudo_libre(p, g.u["id"])})
+
+
+@app.post("/api/boutique")
+@connecte
+def boutique_cree():
+    c = request.get_json(force=True)
+    uid = g.u["id"]
+    pseudo = bq.nettoie_pseudo(c.get("pseudo", ""))
+    err = bq.reserve_pseudo(uid, pseudo)
+    if err:
+        return jsonify({"erreur": err}), 400
+    with bq.verrou(uid):
+        page = bq.lit_page(uid) or bq.page_initiale(uid, _profil_compte(uid), g.u.get("prenom") or "")
+        for k in ("nom", "bio"):
+            if isinstance(c.get(k), str):
+                page[k] = c[k].strip()[:280 if k == "bio" else 60]
+        if isinstance(c.get("photo"), str) and NOM_IMAGE.match(c["photo"]):
+            page["photo"] = c["photo"]
+        if c.get("theme") in bq.THEMES:
+            page["design"] = bq.applique_theme(page["design"], c["theme"])
+        bq.ecrit_page(uid, page)
+    return jsonify(_etat_boutique(uid, page))
+
+
+@app.put("/api/boutique/pseudo")
+@connecte
+def boutique_change_pseudo():
+    pseudo = bq.nettoie_pseudo(request.get_json(force=True).get("pseudo", ""))
+    err = bq.reserve_pseudo(g.u["id"], pseudo)
+    return (jsonify({"erreur": err}), 400) if err else jsonify({"pseudo": pseudo, "url": f"{url_site()}/@{pseudo}"})
+
+
+def _bloc_propre(b: dict) -> dict | None:
+    t = b.get("type")
+    if t not in ("lien", "titre", "texte", "video", "produit", "produits", "capture", "kit"):
+        return None
+    r = {"id": str(b.get("id") or bq.nouvel_id())[:12], "type": t, "visible": b.get("visible", True) is not False}
+    for k, lim in (("titre", 120), ("url", 800), ("texte", 1200), ("emoji", 8), ("bouton", 60), ("produit", 12), ("merci", 200)):
+        if isinstance(b.get(k), str):
+            r[k] = b[k].strip()[:lim]
+    if t == "lien":
+        r["en_avant"] = bool(b.get("en_avant"))
+    if isinstance(b.get("image"), str) and NOM_IMAGE.match(b["image"]):
+        r["image"] = b["image"]
+    if isinstance(b.get("ids"), list):
+        r["ids"] = [str(i)[:12] for i in b["ids"]][:50]
+    return r
+
+
+def _produit_propre(p: dict, ancien: dict | None) -> dict:
+    r = {"id": (ancien or {}).get("id") or str(p.get("id") or bq.nouvel_id())[:12], "visible": p.get("visible", True) is not False}
+    for k, lim in (("titre", 120), ("sous_titre", 160), ("description", 4000), ("bouton", 50), ("lien", 800)):
+        r[k] = (p.get(k) or "").strip()[:lim] if isinstance(p.get(k), str) else ""
+    for k in ("prix", "prix_barre"):
+        try:
+            r[k] = max(0, min(10_000_00, int(p.get(k) or 0)))
+        except (TypeError, ValueError):
+            r[k] = 0
+    if 0 < r["prix"] < 50:
+        r["prix"] = 50  # minimum Stripe : 0,50 €
+    r["devise"] = p.get("devise") if p.get("devise") in ("eur", "usd", "chf", "cad", "gbp") else "eur"
+    r["image"] = p["image"] if isinstance(p.get("image"), str) and NOM_IMAGE.match(p["image"]) else ""
+    # le fichier ne vient jamais du navigateur : il est attaché par l'envoi dédié
+    r["fichier"], r["fichier_nom"] = (ancien or {}).get("fichier", ""), (ancien or {}).get("fichier_nom", "")
+    if p.get("retirer_fichier"):
+        r["fichier"] = r["fichier_nom"] = ""
+    return r
+
+
+@app.put("/api/boutique")
+@connecte
+def boutique_maj():
+    c = request.get_json(force=True)
+    uid = g.u["id"]
+    with bq.verrou(uid):
+        page = bq.lit_page(uid)
+        if not page:
+            return jsonify({"erreur": "Crée d'abord ta boutique."}), 404
+        for k, lim in (("nom", 60), ("bio", 280)):
+            if isinstance(c.get(k), str):
+                page[k] = c[k].strip()[:lim]
+        for k in ("photo", "couverture"):
+            if k in c and (c[k] == "" or (isinstance(c[k], str) and NOM_IMAGE.match(c[k]))):
+                page[k] = c[k]
+        if isinstance(c.get("reseaux"), dict):
+            page["reseaux"] = {k: str(v).strip()[:200] for k, v in c["reseaux"].items() if k in bq.RESEAUX and str(v or "").strip()}
+        if isinstance(c.get("blocs"), list):
+            page["blocs"] = [b for b in (_bloc_propre(x) for x in c["blocs"][:80] if isinstance(x, dict)) if b]
+        if isinstance(c.get("produits"), list):
+            anciens = {p["id"]: p for p in page["produits"]}
+            page["produits"] = [_produit_propre(x, anciens.get(x.get("id"))) for x in c["produits"][:60] if isinstance(x, dict)]
+        if isinstance(c.get("design"), dict):
+            page["design"] = bq.design_propre({**page["design"], **c["design"]})
+        if c.get("theme") in bq.THEMES:
+            page["design"] = bq.applique_theme(page["design"], c["theme"])
+        if isinstance(c.get("kit"), dict):
+            k = c["kit"]
+            page["kit"] = {"actif": k.get("actif", True) is not False, "a_propos": str(k.get("a_propos") or "")[:1500],
+                           "marques": str(k.get("marques") or "")[:600], "contact": str(k.get("contact") or "")[:120],
+                           "tarifs": [{"libelle": str(t.get("libelle") or "")[:80], "prix": str(t.get("prix") or "")[:30]}
+                                      for t in (k.get("tarifs") or [])[:12] if isinstance(t, dict)],
+                           "chiffres_perso": [{"libelle": str(t.get("libelle") or "")[:40], "valeur": str(t.get("valeur") or "")[:20]}
+                                              for t in (k.get("chiffres_perso") or [])[:6] if isinstance(t, dict)]}
+        if "publie" in c:
+            page["publie"] = bool(c["publie"])
+        bq.ecrit_page(uid, page)
+    if c.get("nettoyer"):
+        bq.nettoie_images(uid, page)
+    return jsonify({"ok": True, "design": page["design"], "produits": page["produits"], "blocs": page["blocs"]})
+
+
+@app.post("/api/boutique/apercu")
+@connecte
+def boutique_apercu():
+    """Aperçu en direct : la page telle qu'elle est dans l'éditeur, sans l'enregistrer."""
+    uid = g.u["id"]
+    base = bq.lit_page(uid)
+    if not base:
+        abort(404)
+    c = request.get_json(force=True)
+    page = dict(base)
+    vue = c.get("vue", "page")
+    if isinstance(c.get("design"), dict):
+        page["design"] = bq.design_propre({**base["design"], **c["design"]})
+    if c.get("theme") in bq.THEMES:
+        page["design"] = bq.applique_theme(page["design"], c["theme"])
+    for k in ("nom", "bio", "photo", "couverture"):
+        if isinstance(c.get(k), str):
+            page[k] = c[k]
+    if isinstance(c.get("reseaux"), dict):
+        page["reseaux"] = c["reseaux"]
+    if isinstance(c.get("blocs"), list):
+        page["blocs"] = [b for b in (_bloc_propre(x) for x in c["blocs"] if isinstance(x, dict)) if b]
+    if isinstance(c.get("produits"), list):
+        anciens = {p["id"]: p for p in base["produits"]}
+        page["produits"] = [_produit_propre(x, anciens.get(x.get("id"))) for x in c["produits"] if isinstance(x, dict)]
+    if isinstance(c.get("kit"), dict):
+        page["kit"] = c["kit"]
+    pseudo = bq.pseudo_de(uid)
+    if vue == "kit":
+        h = bq.rendu_kit(page, pseudo, _profil_compte(uid))
+    elif vue.startswith("p:"):
+        p = next((x for x in page["produits"] if x["id"] == vue[2:]), None)
+        h = bq.rendu_produit(page, pseudo, p, "", _vente_possible(base)) if p else bq.rendu_page(page, pseudo, True)
+    else:
+        h = bq.rendu_page(page, pseudo, True)
+    if vue != "page":
+        h = h.replace(bq.SCRIPT_PUBLIC, bq.SCRIPT_APERCU)
+    return _html(h)
+
+
+@app.post("/api/boutique/image")
+@connecte
+def boutique_image_envoi():
+    f = request.files.get("fichier")
+    if not f:
+        return jsonify({"erreur": "Aucune image reçue."}), 400
+    role = request.form.get("role", "")
+    try:
+        nom = bq.enregistre_image(g.u["id"], f.stream, 700 if role == "photo" else 1600)
+    except Exception:  # noqa: BLE001
+        return jsonify({"erreur": "Ce fichier n'est pas une image lisible (JPG, PNG ou WebP)."}), 400
+    r = {"nom": nom}
+    if role == "photo":
+        try:
+            r["palettes"] = bq.palettes_photo(bq.dossier(g.u["id"]) / "images" / nom)
+        except Exception:  # noqa: BLE001
+            pass
+    return jsonify(r)
+
+
+@app.get("/api/boutique/palettes")
+@connecte
+def boutique_palettes():
+    page = bq.lit_page(g.u["id"])
+    if not page or not page.get("photo"):
+        return jsonify({"palettes": []})
+    return jsonify({"palettes": bq.palettes_photo(bq.dossier(g.u["id"]) / "images" / page["photo"])})
+
+
+EXT_PRODUITS = {".pdf", ".zip", ".epub", ".mp3", ".mp4", ".mov", ".m4a", ".png", ".jpg", ".jpeg", ".docx", ".xlsx", ".pptx", ".key", ".numbers", ".pages", ".txt", ".csv"}
+
+
+@app.post("/api/boutique/produits/<pid>/fichier")
+@connecte
+def boutique_fichier_produit(pid):
+    f = request.files.get("fichier")
+    uid = g.u["id"]
+    if not f or not f.filename:
+        return jsonify({"erreur": "Aucun fichier reçu."}), 400
+    ext = Path(f.filename).suffix.lower()
+    if ext not in EXT_PRODUITS:
+        return jsonify({"erreur": "Format non accepté. PDF, ZIP, EPUB, MP3, MP4, images ou documents Office."}), 400
+    nom = uuid.uuid4().hex + ext
+    f.save(bq.dossier(uid) / "fichiers" / nom)
+    with bq.verrou(uid):
+        page = bq.lit_page(uid)
+        p = next((x for x in page["produits"] if x["id"] == pid), None)
+        if not p:
+            (bq.dossier(uid) / "fichiers" / nom).unlink(missing_ok=True)
+            return jsonify({"erreur": "Enregistre d'abord le produit."}), 404
+        ancien = p.get("fichier")
+        p["fichier"], p["fichier_nom"] = nom, Path(f.filename).name[:120]
+        bq.ecrit_page(uid, page)
+    if ancien:
+        (bq.dossier(uid) / "fichiers" / ancien).unlink(missing_ok=True)
+    return jsonify({"fichier_nom": p["fichier_nom"]})
+
+
+@app.get("/api/boutique/stats")
+@connecte
+def boutique_stats():
+    page = bq.lit_page(g.u["id"])
+    return jsonify(bq.stats(g.u["id"], page) if page else {})
+
+
+@app.get("/api/boutique/inscrits.csv")
+@connecte
+def boutique_inscrits_csv():
+    from flask import Response
+    return Response(bq.inscrits_csv(g.u["id"]), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=inscrits.csv"})
+
+
+@app.post("/api/boutique/stripe")
+@connecte
+def boutique_stripe():
+    uid = g.u["id"]
+    page = bq.lit_page(uid)
+    if not page:
+        return jsonify({"erreur": "Crée d'abord ta boutique."}), 404
+    if not bq.stripe_actif():
+        return jsonify({"erreur": "Le paiement n'est pas encore activé sur Veille virale. En attendant, propose des produits gratuits ou des liens externes."}), 400
+    try:
+        compte, lien = bq.connecte_stripe(uid, g.u["email"], (page.get("stripe") or {}).get("compte"), f"{url_site()}/app")
+    except ValueError as e:
+        return jsonify({"erreur": str(e)}), 400
+    with bq.verrou(uid):
+        page = bq.lit_page(uid)
+        page["stripe"] = {**(page.get("stripe") or {}), "compte": compte}
+        bq.ecrit_page(uid, page)
+    return jsonify({"url": lien})
 
 
 # ------------------------------------------------------------
