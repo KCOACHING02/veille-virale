@@ -1,6 +1,16 @@
 Polices utilisées pour les textes incrustés des carrousels et des Reels du studio.
 Toutes sont distribuées sous licence SIL Open Font License 1.1 (https://openfontlicense.org) :
 - Poppins — Indian Type Foundry
-- Anton — The Anton Project Authors (Vernon Adams)
+- Montserrat — Julieta Ulanovsky et contributeurs
+- Space Grotesk — Florian Karsten
+- Quicksand — Andrew Paglinawan
+- Anton — Vernon Adams
+- Bebas Neue — Dharma Type
+- Archivo Black — Omnibus-Type
 - DM Serif Display — Colophon Foundry, Frank Grießhammer
+- Playfair Display — Claus Eggers Sørensen
+- Abril Fatface — TypeTogether
 - Caveat — Impallari Type
+- Pacifico — Vernon Adams
+Les versions grasses de Montserrat, Space Grotesk, Quicksand, Playfair Display et Caveat
+sont des instances fixes tirées des polices variables officielles (Google Fonts).
