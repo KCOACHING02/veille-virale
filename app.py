@@ -64,6 +64,32 @@ for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBH
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
 
 app.secret_key = cle_secrete()
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 7 * 86400  # polices, images : gardées en cache par le navigateur
+
+
+# ------------------------------------------------------------
+#  Performance : compression des réponses et pages HTML jamais mises en cache
+# ------------------------------------------------------------
+import gzip as _gzip  # noqa: E402
+
+TYPES_COMPRESSES = ("application/json", "text/html", "text/css", "application/javascript", "text/javascript", "image/svg+xml")
+
+
+@app.after_request
+def compresse(rep):
+    if rep.mimetype == "text/html":
+        rep.headers["Cache-Control"] = "no-cache"  # toujours la dernière version de l'application après une mise à jour
+    if (rep.direct_passthrough or rep.status_code < 200 or rep.status_code >= 300 or "Content-Encoding" in rep.headers
+            or rep.mimetype not in TYPES_COMPRESSES or "gzip" not in request.headers.get("Accept-Encoding", "")):
+        return rep
+    donnees = rep.get_data()
+    if len(donnees) < 1500:
+        return rep
+    rep.set_data(_gzip.compress(donnees, compresslevel=5))
+    rep.headers["Content-Encoding"] = "gzip"
+    rep.headers["Vary"] = "Accept-Encoding"
+    rep.headers["Content-Length"] = str(len(rep.get_data()))
+    return rep
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30),
                   MAX_CONTENT_LENGTH=300 * 1024 * 1024)  # vidéos du studio : 300 Mo maximum
 ab.init()
@@ -114,6 +140,10 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
         fichier.write_text(json.dumps({"uid": uid, "titre": titre, "params": persiste}, ensure_ascii=False), encoding="utf-8")
 
     def tourne():
+        try:  # les tâches lourdes (Whisper, ffmpeg) passent après les pages : le site reste fluide pendant une veille
+            os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), 10)
+        except (AttributeError, OSError):
+            pass
         with (file_ or FILE):
             job["statut"] = "en cours"
             def hook(m):
@@ -187,7 +217,14 @@ def connecte(f):
 
 @app.get("/connexion")
 def page_connexion():
-    return send_from_directory(CODE / "static", "connexion.html")
+    return _page("connexion.html")
+
+
+def _page(nom: str):
+    """Page HTML lue en mémoire (compressible), jamais mise en cache par le navigateur."""
+    rep = send_from_directory(CODE / "static", nom, max_age=0)
+    rep.direct_passthrough = False
+    return rep
 
 
 def url_site() -> str:
@@ -266,14 +303,14 @@ def deconnexion():
 def accueil():
     """Visiteur : page de présentation. Client connecté : son application."""
     if ab.get(session.get("uid", 0)):
-        return send_from_directory(CODE / "static", "index.html")
-    return send_from_directory(CODE / "static", "accueil.html")
+        return _page("index.html")
+    return _page("accueil.html")
 
 
 @app.get("/app")
 @connecte
 def application():
-    return send_from_directory(CODE / "static", "index.html")
+    return _page("index.html")
 
 
 @app.get("/api/formules")
@@ -294,7 +331,24 @@ def page_legale(page):
 @app.get("/media/<path:nom>")
 @connecte
 def media(nom):
-    return send_from_directory(g.esp.media, nom, max_age=86400)
+    allege(g.esp.media / Path(nom).name)
+    return send_from_directory(g.esp.media, nom, max_age=7 * 86400)
+
+
+def allege(f: Path, largeur: int = 480, seuil: int = 90_000):
+    """Les couvertures Instagram font souvent 1080 px : on les réduit une fois pour toutes (galerie bien plus rapide)."""
+    try:
+        if f.suffix.lower() in (".jpg", ".jpeg") and f.exists() and f.stat().st_size > seuil:
+            from PIL import Image
+            im = Image.open(f)
+            if im.width > largeur:
+                im = im.convert("RGB")
+                im.thumbnail((largeur, largeur * 2))
+                tmp = f.with_suffix(".tmp.jpg")
+                im.save(tmp, "JPEG", quality=78, optimize=True)
+                tmp.replace(f)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 @app.get("/rapports/<path:nom>")
@@ -422,6 +476,8 @@ def job(jid):
     if not j or j["uid"] != g.u["id"]:
         abort(404)
     res = {k: v for k, v in j.items() if k != "resultat"}
+    if len(res["logs"]) > 160:  # le début (phases) et la fin suffisent au suivi
+        res["logs"] = res["logs"][:40] + res["logs"][-120:]
     r = j.get("resultat")
     res["resultat"] = {"id": r["id"]} if isinstance(r, dict) and "posts" in r else r
     return jsonify(res)
@@ -804,7 +860,7 @@ def admin_requis(f):
 @app.get("/admin")
 @admin_requis
 def page_admin():
-    return send_from_directory(CODE / "static", "admin.html")
+    return _page("admin.html")
 
 
 @app.get("/api/admin")

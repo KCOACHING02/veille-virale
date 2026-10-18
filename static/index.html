@@ -205,6 +205,14 @@ textarea{width:100%;min-height:120px;border:1px solid var(--line);border-radius:
 .creneau div{padding:9px 10px}
 .creneau small{color:var(--ink-3);font-size:12px;display:block}
 .creneau p{margin:3px 0 0;font:600 14px/1.3 var(--display);font-stretch:92%}
+.pied-estim{align-items:center;flex-wrap:wrap}
+.pied-estim #m-estim{margin-right:auto;flex:1 1 200px}
+details.plus-criteres summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink-2)}
+@media (max-width:860px){
+  .jour{margin-bottom:6px}
+  .creneau{display:grid;grid-template-columns:76px 1fr;align-items:stretch}
+  .creneau img{aspect-ratio:auto;height:100%;min-height:92px}
+}
 .mec{display:inline-block;font-size:11.5px;color:var(--glow);font-weight:600;margin-top:5px}
 
 /* ---------- Panneaux ---------- */
@@ -228,6 +236,7 @@ td.num{font-variant-numeric:tabular-nums}
 .comptes-l{display:grid;gap:8px}
 .compte-l{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--paper)}
 .compte-l .plat{background:var(--surface);border:1px solid var(--line)}
+.compte-l .plat svg,.puce .plat svg{color:var(--ink)}
 .compte-l b{font-weight:600}
 .compte-l .btn{margin-left:auto}
 .ajout{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -1122,8 +1131,8 @@ function ouvreNouvelle(mode = "copie") {
   const c = S.etat.criteres, o = S.etat.objectifs;
   const nbWatch = (S.etat.comptes.instagram || []).length + (S.etat.comptes.tiktok || []).length;
   $("#feuille").innerHTML = `
-    <h2 id="m-titre">Nouvelle analyse</h2>
-    <p class="sous">L'outil trouve les Reels qui remplissent ton cahier des charges, les regarde et les adapte à ta niche.</p>
+    <h2 id="m-titre">Nouvelle veille</h2>
+    <p class="sous">L'outil trouve les Reels et carrousels qui ont vraiment cartonné, les analyse et les adapte à ta niche.</p>
     <div class="seg" id="m-mode" role="group" aria-label="Type d'analyse" style="margin-bottom:18px">
       <button type="button" data-v="copie" aria-pressed="${mode === "copie"}">Analyser et copier des comptes</button>
       <button type="button" data-v="veille" aria-pressed="${mode === "veille"}">Lancer ma veille de la semaine</button>
@@ -1142,17 +1151,17 @@ function ouvreNouvelle(mode = "copie") {
     <div id="m-veille" ${mode === "veille" ? "" : "hidden"}>
       <p style="margin:0 0 16px">${nbWatch} compte${nbWatch > 1 ? "s" : ""} surveillé${nbWatch > 1 ? "s" : ""}. Résultat : un planning de ${o.reels_par_jour * o.jours_planifies} Reels (${o.reels_par_jour} par jour), adaptés et diversifiés.</p>
     </div>
-    <div class="champ"><label>Cahier des charges</label>
-      <div class="ligne">
+    <details class="champ plus-criteres"><summary>Critères de sélection (facultatif)</summary>
+      <div class="ligne" style="margin-top:10px">
         <label class="champ" style="margin:0"><span class="aide">Repérage des Reels viraux</span><select class="select" id="m-seuil" style="width:100%"><option value="auto" ${c.seuil_mode === "auto" ? "selected" : ""}>Automatique (${c.seuil_multiple || 3}× la moyenne du compte)</option><option value="fixe" ${c.seuil_mode !== "auto" ? "selected" : ""}>Seuil fixe de vues</option></select></label>
         <label class="champ" style="margin:0" id="m-vues-champ" ${c.seuil_mode === "auto" ? "hidden" : ""}><span class="aide">Vues minimum</span><input id="m-vues" type="number" step="50000" min="0" value="${c.vues_min}"></label>
         <label class="champ" style="margin:0"><span class="aide">Engagement minimum (%)</span><input id="m-eng" type="number" step="0.5" min="0" value="${c.taux_engagement_min * 100}"></label>
         <label class="champ" style="margin:0"><span class="aide">Période (mois)</span><input id="m-mois" type="number" min="1" max="12" value="${c.mois}"></label>
       </div>
-    </div>
-    <div class="champ" id="m-nb-champ" ${mode === "copie" ? "" : "hidden"}><label for="m-nb">Nombre de Reels à adapter</label><input id="m-nb" type="number" min="1" max="40" value="10" style="width:120px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px"><span class="aide">Les meilleurs Reels du cahier des charges. Tu pourras en adapter d'autres un par un depuis la galerie.</span></div>
+    </details>
+    <div class="champ" id="m-nb-champ" ${mode === "copie" ? "" : "hidden"}><label for="m-nb">Nombre de publications à adapter</label><input id="m-nb" type="number" min="1" max="40" value="10" style="width:120px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px"><span class="aide">Les meilleures publications retenues. Tu pourras en adapter d'autres un par un depuis la galerie.</span></div>
     <div id="m-erreur"></div>
-    <div class="pied-modale" style="align-items:center"><span id="m-estim" class="aide" style="margin-right:auto"></span><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-lancer">Lancer l'analyse</button></div>`;
+    <div class="pied-modale pied-estim"><span id="m-estim" class="aide"></span><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-lancer">Lancer</button></div>`;
   const majReconnus = () => {
     const it = analyseSaisie($("#m-texte").value, $("#m-pl").value);
     $("#m-reconnus").innerHTML = it.map(i => `<span class="puce ${i.type === "post" ? "post" : i.type === "ko" ? "ko" : ""}">${i.pl ? `<span class="plat" style="width:16px;height:16px;background:none">${ICONES[i.pl]}</span>` : ""}${esc(i.txt)}</span>`).join("");
@@ -1165,7 +1174,7 @@ function ouvreNouvelle(mode = "copie") {
     try {
       const e = await api("/api/estimation", {method: "POST", body: {mode: md, texte: $("#m-texte").value, plateforme: $("#m-pl").value, nb: +$("#m-nb").value, mois: +$("#m-mois").value}});
       if (!$("#m-estim")) return;
-      $("#m-estim").innerHTML = `Estimation : <b>≈ ${e.cout_usd.toLocaleString("fr-FR", {minimumFractionDigits: 2})} $</b>, environ ${e.minutes} min` +
+      $("#m-estim").innerHTML = (S.etat?.admin ? `Coût estimé : <b>≈ ${e.cout_usd.toLocaleString("fr-FR", {minimumFractionDigits: 2})} $</b>, ` : "") + `Durée : environ <b>${e.minutes} min</b>` +
         (e.comptes_en_cache ? ` <span title="collectés il y a moins de 24 h">(${e.comptes_en_cache}/${e.comptes} compte${e.comptes > 1 ? "s" : ""} déjà en mémoire)</span>` : "");
     } catch { if ($("#m-estim")) $("#m-estim").textContent = ""; }
   }, 350); };
@@ -1477,13 +1486,13 @@ function suisJob(id, montrer, fini, surLog) {
       clearInterval(S.poll); S.jobId = null; S.echecs = 0; $("#job-rail").innerHTML = "";
       const msg = "L'analyse a été interrompue (le serveur a redémarré, probablement pour une mise à jour). Relance-la : elle n'a pas été décomptée de ton quota.";
       if ($("#p-erreur")) $("#p-erreur").innerHTML = `<p class="erreur">${msg}</p><p style="margin-top:10px"><button class="btn prim" onclick="fermeModale();ouvreNouvelle('veille')">Relancer une analyse</button></p>`;
-      else toast("Analyse interrompue : relance-la depuis « Nouvelle analyse ».");
+      else toast("Veille interrompue : relance-la depuis « Nouvelle veille ».");
       if ($("#assistant").classList.contains("ouvert")) renduAssistant();
       return;
     }
     S.job = j; majProgression(); if (S.vue === "accueil") majAccueilJob();
     // Affichage au fil de l'eau : la galerie se remplit pendant l'analyse
-    if (j.analyse_id && j.statut === "en cours" && ["reels", "planning"].includes(S.vue) && Date.now() - (S.dernierRafraichi || 0) > 6000) {
+    if (j.analyse_id && j.statut === "en cours" && ["reels", "planning"].includes(S.vue) && Date.now() - (S.dernierRafraichi || 0) > 15000) {
       S.dernierRafraichi = Date.now();
       try {
         if (!$$("#choix-analyse option").some(o => o.value === j.analyse_id)) await chargeListe(j.analyse_id);
@@ -1502,7 +1511,7 @@ function suisJob(id, montrer, fini, surLog) {
         if ($("#assistant").classList.contains("ouvert")) renduAssistant(); }
     }
   };
-  tick(); S.poll = setInterval(tick, 1500);
+  tick(); S.poll = setInterval(tick, 2500);
 }
 // Lecture du journal technique → une phrase simple et un pourcentage pour l'utilisateur
 function etatAnalyse(j) {
@@ -1762,7 +1771,7 @@ const PAGES = {
       ${ligne("Ton activité", esc(n.nom || n.description || "–"), "activite")}
       ${ligne("Ton client idéal", esc(n.cible || "–"), "client")}
       ${ligne("Ton rythme", `${o.reels_par_jour} Reel${o.reels_par_jour > 1 ? "s" : ""} par jour, ${o.conversations_par_jour} conversations visées, mot-clé « ${esc(o.mot_cle_cta)} »`, "objectifs")}
-      ${ligne("Cahier des charges", `${texteSeuil(a)}, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} % d'engagement, ${a.mois} derniers mois`, "criteres")}
+      ${ligne("Critères de sélection", `${texteSeuil(a)}, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} % d'engagement, ${a.mois} derniers mois`, "criteres")}
       ${ligne("Comptes à copier", nbC ? `${nbC} compte${nbC > 1 ? "s" : ""}` : "<b>Aucun : ajoute au moins un compte</b>", "modeles")}
     </div>
     ${S.etat?.abonnement?.veille_auto !== undefined ? `<label class="interrupteur"><input type="checkbox" id="w-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">Ton planning de la semaine est prêt à ton réveil.${S.etat.abonnement.plan === "essai" ? " Inclus dans les formules payantes." : ""}</span></span></label>` : ""}
@@ -1882,7 +1891,7 @@ async function renduAbonnement() {
 
 // ---------------------------------------------------------------- Démarrage
 (async () => {
-  await chargeEtat(); await chargePubs(); await chargeListe(); va("accueil");
+  await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil");
   const q = new URLSearchParams(location.search);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); history.replaceState(null, "", "/"); va("abonnement"); }
   if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);

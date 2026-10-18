@@ -109,7 +109,7 @@ def modele_whisper(nom: str):
         if nom not in _MODELES:
             from faster_whisper import WhisperModel
             log(f"  Chargement du modèle Whisper « {nom} » (première fois : téléchargement)")
-            _MODELES[nom] = WhisperModel(nom, device="cpu", compute_type="int8", cpu_threads=os.cpu_count() or 2)
+            _MODELES[nom] = WhisperModel(nom, device="cpu", compute_type="int8", cpu_threads=max(1, (os.cpu_count() or 2) - 1))  # un cœur reste libre pour le site
         return _MODELES[nom]
 
 
@@ -231,6 +231,19 @@ def traite_videos(posts: list[Post], cfg: dict, token: str | None, dossier: Path
         fil.join()
 
 
+def reduit(f: Path, largeur: int = 480):
+    """Miniature légère pour la galerie (les couvertures d'origine font souvent 1080 px et 200 Ko)."""
+    try:
+        from PIL import Image
+        im = Image.open(f)
+        if im.width > largeur:
+            im = im.convert("RGB")
+            im.thumbnail((largeur, largeur * 2))
+            im.save(f, "JPEG", quality=78, optimize=True)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def miniatures(posts: list[Post], media: Path):
     """Télécharge la couverture de chaque Reel affiché dans l'interface (si pas déjà d'image)."""
     media.mkdir(parents=True, exist_ok=True)
@@ -241,6 +254,7 @@ def miniatures(posts: list[Post], media: Path):
             p.miniature = nom
             return
         if p.cover_url and telecharge(p.cover_url, media / nom):
+            reduit(media / nom)
             p.miniature = nom
         else:
             (media / nom).unlink(missing_ok=True)
@@ -278,6 +292,7 @@ def slides_carrousels(posts: list[Post], dossier: Path, media: Path | None = Non
             media.mkdir(parents=True, exist_ok=True)
             nom = f"{p.plateforme}_{p.id}.jpg"
             shutil.copy(chemins[0], media / nom)
+            reduit(media / nom)
             p.miniature = nom
     with cf.ThreadPoolExecutor(max_workers=4) as ex:
         list(ex.map(un, a_faire))
