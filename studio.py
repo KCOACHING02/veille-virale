@@ -328,6 +328,21 @@ def requete_photo(x: dict) -> str:
     return " ".join(t.replace(",", " ").split()[:6]) or "lifestyle"
 
 
+def propositions(esp: Espace, sid: str, i: int, n: int = 8) -> dict:
+    """Plusieurs images de la banque pour la slide i, parmi lesquelles l'utilisatrice choisit."""
+    import banque
+    p = charge(esp, sid)
+    if not (0 <= i < len(p["slides"])):
+        return {"requete": "", "resultats": []}
+    q = requete_photo(p["slides"][i])
+    res = banque.photos(q, n=n)
+    if len(res) < 3:
+        ambiance = next((requete_photo(x) for x in p["slides"] if x.get("photo") or x.get("recherche")), "")
+        if ambiance and ambiance != q:
+            res += [r for r in banque.photos(ambiance, n=n) if r["id"] not in {x["id"] for x in res}]
+    return {"requete": q, "resultats": res[:n]}
+
+
 def remplit_banque(esp: Espace, sid: str, demo: bool = False, toutes: bool = False) -> dict:
     """Propose par défaut une image de la banque pour chaque slide qui demande une photo et n'en a pas encore."""
     import banque

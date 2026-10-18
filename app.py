@@ -902,6 +902,18 @@ def studio_banque(sid):
     return jsonify(p)
 
 
+@app.get("/api/studio/<sid>/propositions/<int:i>")
+@connecte
+def studio_propositions(sid, i):
+    _projet(sid)
+    if not _banque_dispo():
+        return jsonify({"requete": "", "resultats": []})
+    try:
+        return jsonify(studio.propositions(g.esp, sid, i))
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"erreur": str(e)[:150], "resultats": []}), 502
+
+
 @app.post("/api/studio/<sid>/banque/auto")
 @connecte
 def studio_banque_auto(sid):
