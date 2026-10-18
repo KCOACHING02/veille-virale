@@ -53,6 +53,11 @@ def cle_secrete() -> str:
     return f.read_text().strip()
 
 
+# Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
+for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"):
+    if os.getenv(_v):
+        os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
+
 app.secret_key = cle_secrete()
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=timedelta(days=30))
 ab.init()

@@ -135,6 +135,20 @@ def liste_analyses(esp: Espace) -> list[dict]:
     return res
 
 
+def verifie_cle_claude():
+    """Appel gratuit qui valide la clé Claude : on arrête tout de suite au lieu de collecter pour rien."""
+    import anthropic
+    try:
+        anthropic.Anthropic().models.list(limit=1)
+    except anthropic.AuthenticationError:
+        raise RuntimeError("La clé Claude (ANTHROPIC_API_KEY) est refusée : elle est invalide, incomplète ou supprimée. "
+                           "Crée une nouvelle clé dans la console Claude et remplace-la dans les variables Railway.") from None
+    except anthropic.PermissionDeniedError:
+        raise RuntimeError("La clé Claude n'a pas les droits nécessaires (organisation ou espace de travail).") from None
+    except Exception as e:  # noqa: BLE001 — réseau, etc. : on n'empêche pas l'analyse
+        log(f"⚠️  Vérification de la clé Claude impossible : {e}")
+
+
 # ------------------------------------------------------------
 #  Exécution
 # ------------------------------------------------------------
@@ -153,6 +167,8 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             raise RuntimeError("Clé APIFY_TOKEN manquante (fichier .env).")
         if not sans_ia and not a_ia:
             raise RuntimeError("Clé ANTHROPIC_API_KEY manquante (fichier .env).")
+        if a_ia:
+            verifie_cle_claude()  # avant de dépenser des crédits Apify
     if mode == "copie" and not (saisie["comptes"] or saisie["posts"]):
         raise RuntimeError("Aucun compte ni lien de Reel reconnu.")
 
@@ -393,6 +409,7 @@ def analyse_mon_compte(esp: Espace, cfg: dict, instagram: str = "", tiktok: str 
         bio = d.bio(instagram or tiktok)
     else:
         token = os.getenv("APIFY_TOKEN")
+        verifie_cle_claude()
         from apprentissage import mon_compte
         from ia import IA, propose_profil
         from video import miniatures
