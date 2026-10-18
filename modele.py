@@ -39,6 +39,7 @@ class Post:
     video_url: str | None = None
     cover_url: str | None = None
     duree_s: float | None = None
+    medias: list = field(default_factory=list)              # carrousel : URL de l'image de chaque slide, dans l'ordre
     # enrichissements
     commentaires_texte: list = field(default_factory=list)   # [{"texte":…, "likes":…}]
     transcription: str = ""

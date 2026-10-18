@@ -51,7 +51,10 @@ def posts_concurrents(comptes: list[tuple[str, str]] | None = None) -> list[Post
                 likes=int(vues * er * 0.8), commentaires=int(vues * er * random.uniform(0.02, 0.12)), vues=vues,
                 partages=int(vues * er * 0.05), enregistrements=int(vues * er * 0.08), duree_s=random.randint(15, 45),
             )
-            p.commentaires_texte = [{"texte": c, "likes": random.randint(3, 400)} for c in random.sample(COMMENTAIRES, 5)]
+            if p.format == "Carrousel":  # comme sur Instagram : pas de vues publiques pour un carrousel
+                p.vues, p.partages, p.enregistrements, p.duree_s = None, None, None, None
+                p.likes = int(base * (random.uniform(0.15, 0.5) if viral else random.uniform(0.02, 0.06)))
+                p.commentaires = int(p.likes * random.uniform(0.01, 0.05))
             posts.append(p)
     return posts
 
@@ -106,7 +109,17 @@ def miniatures(posts: list[Post], dossier: Path, media: Path):
 
 def adaptation(p: Post, i: int) -> dict:
     mec = MECANIQUES[i % 6]
-    return {
+    car = {}
+    if p is not None and p.format == "Carrousel":
+        car = {"slides_modele": [
+            {"original": "[démo] 5 erreurs qui font gonfler ton ventre", "visuel": "Photo d'une femme main sur le ventre, texte blanc en haut",
+             "adapte": "[démo] Ton ventre gonflé à 11 h ? Ce n'est pas ce que tu crois.", "photo": "[démo] Toi de profil, main sur le ventre, lumière du matin"},
+            *({"original": f"[démo] Erreur n°{k}", "visuel": "Fond beige uni, grand chiffre rose", "adapte": f"[démo] Erreur n°{k} : une phrase courte dans ton ton",
+               "photo": "[démo] Ton petit-déjeuner vu de dessus" if k == 2 else ""} for k in range(1, 5)),
+            {"original": "[démo] Enregistre ce post", "visuel": "Fond uni, flèche", "adapte": "[démo] Commente START et je t'envoie le guide", "photo": ""}],
+            "style_visuel": "[démo] Fond beige, gros titres noirs sans-serif, chiffres roses, photo seulement en couverture",
+            "typo_conseillee": "geometrique", "theme_conseille": "clair"}
+    return {**car,
         "hook_original": "[démo] Si tu as le ventre gonflé tous les jours à 11h, ce n'est pas ce que tu crois.",
         "texte_ecran": "[démo] Ventre gonflé à 11h ?", "analyse_visuelle": "[démo] Face caméra, cuisine lumineuse, sous-titres jaunes.",
         "sujet": "[démo] Ventre gonflé le matin", "mecanique": mec,

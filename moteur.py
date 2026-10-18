@@ -325,16 +325,18 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         cache_adapt = AdaptationsCache(esp) if not demo else None
         a_faire = [p for p in pool if not (cache_adapt and cache_adapt.restaure(p))]
         if len(a_faire) < len(pool):
-            log(f"{len(pool) - len(a_faire)} Reel(s) déjà adaptés récemment, réutilisés sans nouveau coût")
-        log(f"{len(a_faire)} Reels à analyser en profondeur")
+            log(f"{len(pool) - len(a_faire)} publication(s) déjà adaptée(s) récemment, réutilisée(s) sans nouveau coût")
+        log(f"{len(a_faire)} publications à analyser en profondeur")
         enregistre(affiches, stats_courantes())
 
         # ---------------- 3. Vidéos ----------------
         if demo:
             d.lit_videos(pool, travail / "media", esp.media)
-        elif a_faire and cfg["video"].get("actif", True):
-            from video import traite_videos
-            traite_videos(a_faire, cfg, token, travail / "media", esp.media)
+        elif a_faire:
+            from video import slides_carrousels, traite_videos
+            if cfg["video"].get("actif", True):
+                traite_videos([p for p in a_faire if not p.medias], cfg, token, travail / "media", esp.media)
+            slides_carrousels(a_faire, travail / "media", esp.media)
 
         # ---------------- 4. Apprentissage + voix ----------------
         from apprentissage import mon_compte, suivi_excel, synthese, voix
@@ -441,8 +443,10 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
             token = os.getenv("APIFY_TOKEN")
             if not os.getenv("ANTHROPIC_API_KEY"):
                 raise RuntimeError("Clé ANTHROPIC_API_KEY manquante.")
-            if cfg["video"].get("actif", True):
-                from video import traite_videos
+            from video import slides_carrousels, traite_videos
+            if p.medias:
+                slides_carrousels([p], travail, esp.media)
+            elif cfg["video"].get("actif", True):
                 traite_videos([p], cfg, token, travail, esp.media)
             from apprentissage import voix
             from ia import IA

@@ -249,3 +249,36 @@ def miniatures(posts: list[Post], media: Path):
         log(f"Récupération de {len(a_faire)} miniatures…")
         with cf.ThreadPoolExecutor(max_workers=8) as ex:
             list(ex.map(un, a_faire))
+
+
+def slides_carrousels(posts: list[Post], dossier: Path, media: Path | None = None):
+    """Carrousels : télécharge l'image de chaque slide (réduite à 900 px) pour que Claude lise texte et visuels."""
+    a_faire = [p for p in posts if p.medias]
+    if not a_faire:
+        return
+    log(f"Lecture de {len(a_faire)} carrousel(s), slide par slide…")
+    from PIL import Image
+
+    def un(p: Post):
+        d = dossier / f"{p.plateforme}_{p.id}"
+        d.mkdir(parents=True, exist_ok=True)
+        chemins = []
+        for i, u in enumerate(p.medias):
+            f = d / f"slide_{i + 1:02d}.jpg"
+            if telecharge(u, f):
+                try:
+                    im = Image.open(f).convert("RGB")
+                    im.thumbnail((900, 900))
+                    im.save(f, "JPEG", quality=82)
+                    chemins.append(str(f))
+                except Exception:  # noqa: BLE001
+                    f.unlink(missing_ok=True)
+        p.images = chemins
+        if chemins and media is not None and not p.miniature:
+            media.mkdir(parents=True, exist_ok=True)
+            nom = f"{p.plateforme}_{p.id}.jpg"
+            shutil.copy(chemins[0], media / nom)
+            p.miniature = nom
+    with cf.ThreadPoolExecutor(max_workers=4) as ex:
+        list(ex.map(un, a_faire))
+    log(f"  {sum(1 for p in a_faire if p.images)}/{len(a_faire)} carrousels lus")

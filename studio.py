@@ -137,10 +137,22 @@ def prerempli(ad: dict, cfg: dict) -> list[dict]:
     return slides
 
 
+def slides_du_modele(ad: dict) -> list[dict]:
+    """Carrousel modèle analysé slide par slide : mêmes slides, textes adaptés, photo à prendre pour chacune."""
+    res = []
+    for x in ad.get("slides_modele") or []:
+        if isinstance(x, dict) and (x.get("adapte") or x.get("original")):
+            res.append({"titre": (x.get("adapte") or x.get("original") or "").strip(), "texte": "", "photo": (x.get("photo") or "").strip()})
+    return res[:10]
+
+
 def _source(post: dict) -> dict:
-    """Ce que l'on sait du Reel modèle, pour en reproduire la structure."""
+    """Ce que l'on sait du modèle (Reel ou carrousel), pour en reproduire la structure."""
     ad = post.get("adaptation") or {}
     return {"format": post.get("format"), "url": post.get("url"), "compte": post.get("compte"), "duree_s": post.get("duree_s"),
+            "slides_modele": [{"original": x.get("original", ""), "visuel": x.get("visuel", "")} for x in ad.get("slides_modele") or []
+                              if isinstance(x, dict)][:10],
+            "style_visuel": ad.get("style_visuel") or "",
             "legende": (post.get("legende") or "")[:1500], "transcription": (post.get("transcription") or "")[:2500],
             "structure": ad.get("structure") or "", "analyse_visuelle": ad.get("analyse_visuelle") or "",
             "texte_ecran": ad.get("texte_ecran") or "", "hook_original": ad.get("hook_original") or ""}
@@ -161,13 +173,15 @@ def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, s
         "miniature": post.get("miniature"), "statut": "brouillon", "erreur": None,
         "hook": hook, "texte_ecran": ad.get("texte_ecran_adapte") or "", "script": ad.get("script_reel") or "",
         "cta": ad.get("cta_conversation") or "", "dm": ad.get("sequence_dm") or [], "legende": legende,
-        "slides": prerempli(ad, cfg), "images": [], "video": None, "theme": "sombre", "sous_titres": True,
-        "source": _source(post), "nb_photos": None,
-        "style": "ma_voix", "typo": "moderne",
+        "slides": slides_du_modele(ad) or prerempli(ad, cfg), "images": [], "video": None,
+        "theme": ad.get("theme_conseille") if ad.get("theme_conseille") in THEMES else "sombre", "sous_titres": True,
+        "source": _source(post), "nb_photos": None, "copie_du_modele": bool(slides_du_modele(ad)),
+        "style": "ma_voix", "typo": ad.get("typo_conseillee") if ad.get("typo_conseillee") in TYPOS else "moderne",
         "pseudo": (cfg.get("mon_compte") or {}).get("instagram") or "",
         "fichiers": [], "zip": None, "adaptation": ad,
     }
     projet["style"] = style if style in STYLES else "ma_voix"
+    projet["nb_photos"] = sum(1 for x in projet["slides"] if x.get("photo"))
     sauve(esp, projet)
     return projet
 
@@ -199,8 +213,9 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
     else:
         from apprentissage import voix
         from ia import IA
-        res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {}, style=consigne, reel=reel,
-                                                             source=p.get("source") or {})
+        nb_modele = len((p.get("source") or {}).get("slides_modele") or [])
+        res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {}, nb=(nb_modele or None) if not reel else None,
+                                                             style=consigne, reel=reel, source=p.get("source") or {})
         if res.get("erreur"):
             raise RuntimeError(res["erreur"])
     slides = res.get("slides")

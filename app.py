@@ -690,7 +690,10 @@ def studio_cree():
         return jsonify({"erreur": "Adapte d'abord ce Reel."}), 400
     cfg = g.esp.lit_config()
     p = studio.cree(g.esp, cfg, post, c.get("type", "carrousel"), c["analyse_id"], c.get("style") or "ma_voix")
-    jid = lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
+    # Carrousel copié d'un carrousel modèle : les slides sont déjà adaptées une par une pendant la veille, rien à réécrire
+    jid = None if (p.get("copie_du_modele") and p["type"] == "carrousel") else lance(
+        g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
+    p.pop("adaptation", None)
     return jsonify({"projet": p, "job": jid})
 
 

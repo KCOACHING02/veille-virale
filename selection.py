@@ -10,6 +10,13 @@ from pathlib import Path
 from modele import Post, date_utc, log
 
 FORMATS_VIDEO = {"Reel", "Vidéo"}
+FORMATS_DEFAUT = ["Reel", "Vidéo", "Carrousel"]
+PLANCHER_INTERACTIONS = 300   # carrousels : minimum de j'aime + commentaires pour être retenu
+
+
+def famille(p: Post) -> str:
+    """Les vidéos se jugent sur les vues ; les carrousels (sans vues publiques) sur les j'aime + commentaires."""
+    return "video" if p.format in FORMATS_VIDEO else "image"
 
 
 # ------------------------------------------------------------
@@ -17,11 +24,15 @@ FORMATS_VIDEO = {"Reel", "Vidéo"}
 # ------------------------------------------------------------
 def calcule_scores(posts: list[Post], cfg: dict) -> list[Post]:
     """
+    Vidéos (Reels, TikTok) :
     - taux d'engagement    = (likes + commentaires + partages + enregistrements) / vues
     - taux de commentaires = commentaires / vues  → signal direct de conversations
     - score viral          = vues / médiane des vues du compte
-    Critères : Reel/vidéo, vues ≥ vues_min, taux d'engagement ≥ taux_engagement_min.
-    Classement : rang moyen (taux de commentaires, taux d'engagement), critères OK d'abord.
+    - critères : vues ≥ seuil, taux d'engagement ≥ taux_engagement_min
+    Carrousels (Instagram ne publie pas leurs vues) :
+    - score viral = (j'aime + commentaires) / médiane des carrousels du même compte
+    - critères : interactions ≥ N × l'habitude du compte (et ≥ un plancher)
+    Classement : rang moyen (surperformance, taux de commentaires, taux d'engagement), critères OK d'abord.
     """
     a = cfg["analyse"]
     maintenant = datetime.now(timezone.utc)
@@ -29,7 +40,7 @@ def calcule_scores(posts: list[Post], cfg: dict) -> list[Post]:
 
     candidats = []
     for p in posts:
-        if a.get("reels_uniquement", True) and p.format not in FORMATS_VIDEO:
+        if p.format not in (a.get("formats") or FORMATS_DEFAUT):
             continue
         d = date_utc(p.date)
         if d and (d < limite or maintenant - d < timedelta(hours=48)):
@@ -42,24 +53,38 @@ def calcule_scores(posts: list[Post], cfg: dict) -> list[Post]:
 
     par_compte: dict[tuple, list[Post]] = {}
     for p in candidats:
-        par_compte.setdefault((p.plateforme, p.compte), []).append(p)
+        par_compte.setdefault((p.plateforme, p.compte, famille(p)), []).append(p)
     retenus = []
-    for (plat, compte), lst in par_compte.items():
-        vues = [p.vues for p in lst if p.vues]
-        med = statistics.median(vues) if vues else None
-        seuil = seuil_vues(a, med)
-        for p in lst:
-            p.score_viral = round(p.vues / med, 2) if (med and p.vues) else 0.0
-            p.seuil_vues = seuil
-            p.criteres_ok = bool(p.vues and p.vues >= seuil
-                                 and (p.taux_engagement or 0) >= a["taux_engagement_min"])
-            retenus.append(p)
+    for (plat, compte, fam), lst in par_compte.items():
+        if fam == "video":
+            vues = [p.vues for p in lst if p.vues]
+            med = statistics.median(vues) if vues else None
+            seuil = seuil_vues(a, med)
+            for p in lst:
+                p.score_viral = round(p.vues / med, 2) if (med and p.vues) else 0.0
+                p.seuil_vues = seuil
+                p.criteres_ok = bool(p.vues and p.vues >= seuil
+                                     and (p.taux_engagement or 0) >= a["taux_engagement_min"])
+                retenus.append(p)
+        else:
+            inter = [p.interactions for p in lst if p.interactions]
+            med = statistics.median(inter) if inter else None
+            seuil = int(max(a.get("plancher_interactions", PLANCHER_INTERACTIONS), a.get("seuil_multiple", 3) * med)) if med else None
+            for p in lst:
+                p.score_viral = round(p.interactions / med, 2) if (med and p.interactions) else 0.0
+                p.seuil_vues = seuil  # pour un carrousel : seuil d'interactions
+                # Un compte qui n'a publié qu'un ou deux carrousels n'a pas d'« habitude » : on exige alors le double du plancher
+                assez = len(inter) >= 3 or (p.interactions or 0) >= 2 * a.get("plancher_interactions", PLANCHER_INTERACTIONS)
+                p.criteres_ok = bool(seuil and p.interactions >= seuil and assez)
+                retenus.append(p)
 
     def rangs(cle):
-        tri = sorted(retenus, key=lambda p: getattr(p, cle) or 0, reverse=True)
+        presents = sorted([getattr(p, cle) for p in retenus if getattr(p, cle) is not None])
+        mediane = presents[len(presents) // 2] if presents else 0
+        tri = sorted(retenus, key=lambda p: getattr(p, cle) if getattr(p, cle) is not None else mediane, reverse=True)
         return {id(p): i for i, p in enumerate(tri)}
-    r_com, r_eng = rangs("taux_commentaires"), rangs("taux_engagement")
-    retenus.sort(key=lambda p: (not p.criteres_ok, r_com[id(p)] + r_eng[id(p)]))
+    r_com, r_eng, r_vir = rangs("taux_commentaires"), rangs("taux_engagement"), rangs("score_viral")
+    retenus.sort(key=lambda p: (not p.criteres_ok, r_com[id(p)] + r_eng[id(p)] + r_vir[id(p)]))
     return retenus
 
 
@@ -134,6 +159,14 @@ def candidats(classes: list[Post], cfg: dict, histo: Historique) -> list[Post]:
 
     ok = [p for p in frais if p.criteres_ok]
     pool = ok[:taille]
+    # Diversité des formats : les carrousels viraux ont leur place même si les Reels dominent le classement
+    car = [p for p in ok if famille(p) == "image"]
+    quota = min(len(car), max(2, taille // 3))
+    manquants = [p for p in car if p not in pool][:max(0, quota - sum(1 for p in pool if famille(p) == "image"))]
+    if manquants:
+        reels_pool = [p for p in pool if famille(p) != "image"]
+        retires = set(id(p) for p in reels_pool[len(reels_pool) - len(manquants):])
+        pool = [p for p in pool if id(p) not in retires] + manquants
     if len(ok) < besoin:
         log(f"⚠️  Seulement {len(ok)} Reels inédits remplissent les critères pour {besoin} nécessaires.")
     if len(pool) < taille and a.get("completer_si_insuffisant", True):

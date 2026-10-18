@@ -85,6 +85,17 @@ main{min-width:0;padding:20px 28px 80px}
 .badge{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;background:rgba(255,255,255,.92);color:#271B2D;display:inline-flex;align-items:center;gap:5px;backdrop-filter:blur(6px)}
 .badge.ok{background:var(--ok);color:#fff}
 .badge.dem{background:var(--glow);color:#fff}
+.badge.fmt{background:rgba(39,27,45,.78);color:#fff;margin-left:4px}
+.slides-modele{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.slides-modele li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.slides-modele .n{width:28px;height:28px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-weight:700;font-size:13px}
+.slides-modele .orig{margin:6px 0 0;color:var(--ink-3);font-size:13px}
+.slides-modele .photo{margin:4px 0 0;font-size:13px;color:var(--ink-2)}
+.bandeau-studio{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--glow-soft);border-radius:var(--r-m);padding:14px 16px;margin-bottom:6px}
+.bandeau-studio div{display:grid} .bandeau-studio span{color:var(--ink-2);font-size:14px}
+.formats button{position:relative}
+.formats button.reco{border-color:var(--glow)}
+.badge-reco{position:absolute;top:12px;right:12px;font-style:normal;font-size:12px;font-weight:600;background:var(--glow);color:#fff;border-radius:99px;padding:2px 9px}
 .plat{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;flex-shrink:0}
 .plat svg{width:14px;height:14px;color:#271B2D}
 .ecran .bas{position:absolute;left:12px;right:12px;bottom:10px;z-index:1;color:#fff}
@@ -551,6 +562,7 @@ a.btn{text-decoration:none}
           <button data-v="adaptes" aria-pressed="false">Adaptés<span class="c"></span></button>
           <button data-v="tous" aria-pressed="false">Tous<span class="c"></span></button>
         </div>
+        <select class="select" id="f-format" aria-label="Format"><option value="">Reels et carrousels</option><option value="Reel">Reels</option><option value="Carrousel">Carrousels</option></select>
         <input class="recherche" id="f-texte" type="search" placeholder="Chercher un mot, un hook…" aria-label="Chercher">
         <button class="btn" id="f-plus" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtres</button>
         <div class="filtres-plus" id="filtres-plus" hidden>
@@ -713,8 +725,8 @@ function heroAccueil() {
   const age = (Date.now() - new Date(a.date)) / 864e5, date = new Date(a.date).toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long"});
   const vieille = age > 6 && a.mode === "veille";
   return `<div class="hero"><div class="ic-hero">✓</div><div><span class="sur">${a.mode === "veille" ? "Veille du " : "Analyse du "}${date}</span>
-    <h2>${vieille ? "Une nouvelle semaine commence" : `${ad} Reel${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} à reproduire`}</h2>
-    <p>${vieille ? "Ta dernière veille date de plus d'une semaine. Relance-la pour trouver les Reels qui viennent d'exploser." : `${ret} Reel${ret > 1 ? "s ont" : " a"} vraiment cartonné sur ${nbLong(a.stats.videos)} passés au crible. Chacun est adapté à ta niche : hook, script, légende et messages privés.`}</p>
+    <h2>${vieille ? "Une nouvelle semaine commence" : `${ad} publication${ad > 1 ? "s" : ""} prête${ad > 1 ? "s" : ""} à reproduire`}</h2>
+    <p>${vieille ? "Ta dernière veille date de plus d'une semaine. Relance-la pour trouver les Reels qui viennent d'exploser." : `${ret} publication${ret > 1 ? "s ont" : " a"} vraiment cartonné sur ${nbLong(a.stats.videos)} passées au crible${(() => { const c = a.posts.filter(p => adapte(p) && estCarrousel(p)).length; return c ? `, dont ${c} carrousel${c > 1 ? "s" : ""}` : ""; })()}. Chacune est adaptée à ta niche, dans son format d'origine.`}</p>
     <div class="actions">${vieille ? `<button class="btn prim" onclick="lanceVeilleDirecte()">Lancer la veille de la semaine</button><button class="btn clair" onclick="va('reels')">Revoir mes Reels</button>`
       : `<button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels</button>${a.planning?.length ? `<button class="btn clair" onclick="va('planning')">Mon planning</button>` : ""}`}</div></div></div>`;
 }
@@ -731,7 +743,7 @@ async function renduAccueil() {
   const etape = (fait, n, titre, detail, action) => `<button class="etape-s ${fait ? "fait" : ""}" ${action ? `onclick="${action}"` : "disabled"}>
       <span class="num">${fait ? "✓" : n}</span><b>${titre}</b><small>${detail}</small></button>`;
   let html = `<section class="bloc-accueil"><h2>Ta semaine</h2><div class="etapes-s">
-    ${etape(veilleOk, 1, "Trouver", veilleOk ? `${ad} Reels adaptés` : "Lancer la veille", veilleOk ? "va('reels')" : "lanceVeilleDirecte()")}
+    ${etape(veilleOk, 1, "Trouver", veilleOk ? `${ad} adaptés` : "Lancer la veille", veilleOk ? "va('reels')" : "lanceVeilleDirecte()")}
     ${etape(crees >= 3, 2, "Créer", `${crees} contenu${crees > 1 ? "s" : ""} prêt${crees > 1 ? "s" : ""}`, "va('studio')")}
     ${etape((bi.publies || 0) >= (bi.objectif_publies || 1), 3, "Publier", `${bi.publies || 0} / ${bi.objectif_publies || 0} Reels`, "va('resultats')")}
     ${etape((bi.conversations || 0) >= (bi.objectif_conversations || 1), 4, "Converser", `${bi.conversations || 0} / ${bi.objectif_conversations || 0} conversations`, "va('resultats')")}
@@ -777,12 +789,17 @@ function remplitComptes() {
   $("#f-compte").innerHTML = '<option value="">Tous les comptes</option>' + c.map(x => `<option value="${esc(x)}">@${esc(x.split(":")[1])} (${x.startsWith("TikTok") ? "TikTok" : "Insta"})</option>`).join("");
 }
 const adapte = p => p.adaptation && (p.adaptation.hooks_adaptes || p.adaptation.hook_viral);
+const estCarrousel = p => p.format === "Carrousel";
+const nbSlides = p => (p.medias || []).length || (p.adaptation?.slides_modele || []).length;
+const libFormat = p => estCarrousel(p) ? `Carrousel${nbSlides(p) ? " · " + nbSlides(p) + " slides" : ""}` : p.plateforme === "TikTok" ? "Vidéo" : "Reel";
 const texteSeuil = a => a.seuil_mode === "auto" ? `≥ ${String(a.seuil_multiple || 3).replace(".", ",")}× les vues habituelles du compte (min. ${nb(a.seuil_plancher || 30000)})` : `≥ ${nbLong(a.vues_min)} vues`;
 const hookPrincipal = ad => (ad && (ad.hook_viral || (ad.hooks_adaptes || [])[0])) || "";
 function postsFiltres() {
   const a = S.analyse; if (!a) return [];
   const pl = $("#f-plateforme").value, cpt = $("#f-compte").value, q = $("#f-texte").value.trim().toLowerCase(), tri = $("#f-tri").value;
   let ps = a.posts.filter(p => S.filtre === "tous" || (S.filtre === "cdc" ? (p.criteres_ok || p.demande) : adapte(p)));
+  const fmt = $("#f-format").value;
+  if (fmt) ps = ps.filter(p => fmt === "Carrousel" ? estCarrousel(p) : !estCarrousel(p));
   if (pl) ps = ps.filter(p => p.plateforme === pl);
   if (cpt) ps = ps.filter(p => p.plateforme + ":" + p.compte === cpt);
   if (q) ps = ps.filter(p => (p.legende + " " + p.compte + " " + JSON.stringify(p.adaptation || {})).toLowerCase().includes(q));
@@ -801,15 +818,19 @@ function carte(p) {
     <div class="ecran">
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
       <div class="haut">
-        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">✓ Retenu</span>' : ""}</span>
+        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">✓ Retenu</span>' : ""}${estCarrousel(p) ? `<span class="badge fmt">${esc(libFormat(p))}</span>` : ""}</span>
         <span class="plat" title="${p.plateforme}">${ICONES[p.plateforme]}</span>
       </div>
       <div class="bas">
-        <div class="vues">${nb(p.vues)}<small>vues</small></div>
+        ${estCarrousel(p) ? `<div class="vues">${nb(p.likes)}<small>j'aime</small></div>
+        <div class="jauges">
+          ${jauge("Interac.", p.interactions, p.seuil_vues || 1, "×" + (p.interactions && p.seuil_vues ? (p.interactions / p.seuil_vues).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "–"))}
+          ${jauge("Habit.", p.score_viral, c.seuil_multiple || 3, "×" + (p.score_viral || 0).toLocaleString("fr-FR",{maximumFractionDigits:1}))}
+        </div>` : `<div class="vues">${nb(p.vues)}<small>vues</small></div>
         <div class="jauges">
           ${(() => { const sv = p.seuil_vues || c.vues_min; return jauge("Vues", p.vues, sv, "×" + (p.vues && sv ? (p.vues / sv).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "–")); })()}
           ${jauge("Engag.", p.taux_engagement, c.taux_engagement_min, pc(p.taux_engagement))}
-        </div>
+        </div>`}
       </div>
     </div>
     <div class="pied">
@@ -827,7 +848,7 @@ function renduReels() {
   }
   const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
   $("#resume").innerHTML = (a.en_cours ? `<p class="encours" style="width:100%;margin:0 0 4px"><span class="spin"></span>Analyse en cours : les Reels apparaissent au fur et à mesure (${s.adaptes} adapté${s.adaptes > 1 ? "s" : ""} pour l'instant).</p>` : "") + `
-    <div><b>${nbLong(s.videos)}</b><span>Reels analysés sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
+    <div><b>${nbLong(s.videos)}</b><span>publications analysées sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
     <div class="cible"><b>${cdc}</b><span>retenus (vraiment viraux)</span></div>
     <div><b>${ad}</b><span>adaptés pour toi</span></div>
     ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (Apify ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, Claude ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
@@ -839,7 +860,7 @@ function renduReels() {
   g.innerHTML = ps.length ? ps.map(carte).join("") : `<div class="vide"><h2>Aucun Reel ici</h2><p>${S.filtre === "cdc" ? "Aucun Reel de cette analyse n'atteint les critères. Regarde l'onglet « Tous » ou ajoute des comptes plus gros." : "Change les filtres pour en voir davantage."}</p></div>`;
 }
 $$("#f-statut button").forEach(b => b.onclick = () => { S.filtre = b.dataset.v; renduReels(); });
-["#f-plateforme", "#f-compte", "#f-tri"].forEach(s => $(s).onchange = renduReels);
+["#f-plateforme", "#f-compte", "#f-tri", "#f-format"].forEach(s => $(s).onchange = renduReels);
 $("#f-plus").onclick = () => { const f = $("#filtres-plus"); f.hidden = !f.hidden; $("#f-plus").setAttribute("aria-expanded", !f.hidden); };
 $("#f-texte").oninput = renduReels;
 document.addEventListener("click", e => { const r = e.target.closest("[data-cle]"); if (r) ouvreReel(r.dataset.cle); });
@@ -866,13 +887,18 @@ function ouvreReel(cle, onglet) {
         : p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="">` : '<div class="ph"></div>'}
       <div>
         <h2>@${esc(p.compte)}</h2>
-        <div class="meta">${p.plateforme}, ${date}${p.duree_s ? ", " + Math.round(p.duree_s) + " s" : ""}${p.creneau ? ` — prévu ${esc(p.creneau.toLowerCase())}` : ""}</div>
-        <div class="chiffres">
+        <div class="meta">${esc(libFormat(p))} ${p.plateforme}, ${date}${p.duree_s ? ", " + Math.round(p.duree_s) + " s" : ""}${p.creneau ? ` — prévu ${esc(p.creneau.toLowerCase())}` : ""}</div>
+        ${estCarrousel(p) ? `<div class="chiffres">
+          <div class="${p.criteres_ok ? "ok" : "ko"}"><b>${nbLong(p.interactions)}</b><span>j'aime + commentaires (min. ${nb(p.seuil_vues)} pour ce compte)</span></div>
+          <div><b>${nbLong(p.likes)}</b><span>j'aime</span></div>
+          <div><b>${nbLong(p.commentaires)}</b><span>commentaires</span></div>
+          <div><b>${p.score_viral ? "×" + p.score_viral.toLocaleString("fr-FR") : "–"}</b><span>vs ses carrousels habituels</span></div>
+        </div>` : `<div class="chiffres">
           <div class="${p.vues >= (p.seuil_vues || c.vues_min) ? "ok" : "ko"}"><b>${nbLong(p.vues)}</b><span>vues (min. ${nb(p.seuil_vues || c.vues_min)}${c.seuil_mode === "auto" && !p.demande ? " pour ce compte" : ""})</span></div>
           <div class="${p.taux_engagement >= c.taux_engagement_min ? "ok" : "ko"}"><b>${pc(p.taux_engagement)}</b><span>engagement (min. ${pc(c.taux_engagement_min)})</span></div>
           <div><b>${pc(p.taux_commentaires)}</b><span>commentaires par vue</span></div>
           <div><b>${p.score_viral ? "×" + p.score_viral.toLocaleString("fr-FR") : "–"}</b><span>vs habitude du compte</span></div>
-        </div>
+        </div>`}
       </div>
       <button class="fermer" aria-label="Fermer" data-fermer-t>✕</button>
     </div>
@@ -881,7 +907,7 @@ function ouvreReel(cle, onglet) {
     <div class="actions-t">
       ${(() => { const pub = (S.pubs || []).find(x => x.inspiration?.cle === p.cle);
         return pub ? `<button class="btn" onclick="fermeTiroir();va('resultats')">✓ Publié — voir les résultats</button>`
-                   : adapte(p) ? `<button class="btn prim" data-publie="${esc(p.cle)}">J'ai publié ce Reel</button>` : ""; })()}
+                   : adapte(p) ? `<button class="btn prim" data-publie="${esc(p.cle)}">J'ai publié</button>` : ""; })()}
       ${adapte(p) ? `<button class="btn" data-studio="${esc(p.cle)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Créer le contenu</button>` : ""}
       ${p.url ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Voir l'original</a>` : ""}
       ${adapte(p) ? `<button class="btn" data-adapter="${esc(p.cle)}">Refaire l'adaptation</button>` : ""}
@@ -897,7 +923,7 @@ function ouvreReel(cle, onglet) {
       await chargePubs(); toast("C'est noté : ce Reel est suivi"); ouvreReel(cle, onglet);
     } catch (err) { toast(err.message); } };
   $$("[data-onglet]", t).forEach(b => b.onclick = () => ouvreReel(cle, b.dataset.onglet));
-  $("[data-studio]", t)?.addEventListener("click", () => choisirFormat(p.cle));
+  $$("[data-studio]", t).forEach(b => b.addEventListener("click", () => choisirFormat(p.cle)));
   t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
 }
 function urlEmbed(p) {
@@ -913,6 +939,18 @@ function corpsOnglet(p, o) {
   if (o === "Vidéo") return `
     <div class="lecteur"><iframe src="${esc(urlEmbed(p))}" title="Vidéo originale de @${esc(p.compte)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
     <p class="aide" style="text-align:center">La vidéo ne s'affiche pas ? Elle a peut-être été supprimée ou rendue privée. <a href="${esc(p.url)}" target="_blank" rel="noopener">L'ouvrir sur ${esc(p.plateforme)}</a></p>`;
+  if (o === "Adaptation" && estCarrousel(p) && (ad.slides_modele || []).length) return `
+    <div class="bandeau-studio"><div><b>Reproduis ce carrousel</b><span>Les ${ad.slides_modele.length} slides sont réécrites pour toi. Il te faut ${ad.slides_modele.filter(x => x.photo).length} photo${ad.slides_modele.filter(x => x.photo).length > 1 ? "s" : ""}.</span></div><button class="btn prim" data-studio="${esc(p.cle)}">Créer ce carrousel</button></div>
+    <h3>Slide par slide</h3>
+    <ol class="slides-modele">${ad.slides_modele.map((x, i) => `<li><span class="n">${i + 1}</span><div>
+      ${copiable(x.adapte)}
+      ${x.original ? `<p class="orig">Original : ${esc(x.original)}</p>` : ""}
+      ${x.photo ? `<p class="photo">📷 ${esc(x.photo)}</p>` : '<p class="photo">Fond uni, sans photo</p>'}</div></li>`).join("")}</ol>
+    ${ad.style_visuel ? `<h3>Style du modèle</h3><p>${esc(ad.style_visuel)}</p>` : ""}
+    ${ad.legende_reprise ? `<h3>Légende à reprendre${ad.legende_reprise !== p.legende ? " (traduite)" : ""}</h3>${copiable(ad.legende_reprise)}` : ""}
+    <h3>${ad.legende_reprise ? "Légende adaptée (variante)" : "Légende"}</h3>${copiable(ad.legende_adaptee)}
+    <h3>Autres hooks possibles</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
+    <h3>Transposabilité à ta niche</h3><p><span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
   if (o === "Adaptation") return `
     ${ad.hook_viral ? `<h3>Hook viral à reprendre${ad.langue_originale && ad.hook_viral !== ad.hook_original ? ` (traduit de l'${esc(ad.langue_originale)})` : ""}</h3><div class="hooks">${copiable(ad.hook_viral)}</div>
       ${ad.hook_viral !== ad.hook_original ? `<p style="margin:6px 0 0;color:var(--ink-3);font-size:13.5px">Original : ${esc(ad.hook_original)}</p>` : ""}` : ""}
@@ -934,11 +972,12 @@ function corpsOnglet(p, o) {
     <h3>Pourquoi ça marche</h3><p>${esc(ad.pourquoi_ca_marche)}</p>
     <h3>Structure</h3><p>${esc(ad.structure)}</p>
     <h3>Ce qu'on voit</h3><p>${esc(ad.analyse_visuelle)}</p>
+    ${(ad.slides_modele || []).length ? `<h3>Les slides du modèle</h3><ol class="slides-modele">${ad.slides_modele.map((x, i) => `<li><span class="n">${i + 1}</span><div><p style="margin:0"><b>${esc(x.original || "(sans texte)")}</b></p><p class="orig">${esc(x.visuel)}</p></div></li>`).join("")}</ol>` : ""}
     ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
   return `
     ${ad.erreur ? `<p class="erreur" style="margin-bottom:14px">Dernière tentative d'adaptation : ${esc(ad.erreur)}</p>` : ""}
-    <div class="adapter-cta"><h2>Adapter ce Reel à ta niche</h2><p>Claude regarde la vidéo et écrit tes hooks, ton script, ta légende et ta séquence DM.</p>
-    <button class="btn prim" data-adapter="${esc(p.cle)}">Adapter ce Reel</button></div>
+    <div class="adapter-cta"><h2>Adapter ${estCarrousel(p) ? "ce carrousel" : "ce Reel"} à ta niche</h2><p>${estCarrousel(p) ? "Claude lit chaque slide et la réécrit pour toi, avec la photo à prévoir." : "Claude regarde la vidéo et écrit tes hooks, ton script, ta légende et ta séquence DM."}</p>
+    <button class="btn prim" data-adapter="${esc(p.cle)}">Adapter ${estCarrousel(p) ? "ce carrousel" : "ce Reel"}</button></div>
     <h3>Légende originale</h3><div class="carte">${esc(p.legende) || "Sans légende"}</div>
     ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
 }
@@ -1168,11 +1207,14 @@ async function choisirFormat(cle) {
   S.optionsStudio = S.optionsStudio || await api("/api/studio");
   const opts = S.optionsStudio;
   let style = "ma_voix";
+  const modele = S.analyse?.posts.find(x => x.cle === cle) || {};
+  const estCar = estCarrousel(modele), nbSl = (modele.adaptation?.slides_modele || []).length;
   $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:26px;font-stretch:85%">Que veux-tu créer ?</h2>
     <p style="color:var(--ink-2);margin:6px 0 18px">Claude écrit les textes à partir de ce Reel. Tu ajoutes tes photos ou ta vidéo, et tu récupères un package prêt à publier.</p>
     <div class="formats">
-      <button data-format="carrousel"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span><b>Carrousel</b><span>Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350.</span></button>
-      <button data-format="reel"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span><b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>
+      ${(() => { const bc = `<button data-format="carrousel" class="${estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span>${estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Carrousel</b><span>${estCar && nbSl ? `Les ${nbSl} mêmes slides, réécrites pour toi, avec tes photos.` : "Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350."}</span></button>`;
+        const br = `<button data-format="reel" class="${!estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>${!estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>`;
+        return estCar ? bc + br : br + bc; })()}
     </div>
     <h3 style="font-size:16px;margin:0 0 4px">Style d'écriture</h3>
     <p style="color:var(--ink-2);margin:0 0 10px;font-size:14px">Le hook viral reste tel quel. Le reste est écrit dans ta voix, avec la construction choisie. Tu pourras en changer ensuite.</p>
@@ -1185,8 +1227,9 @@ async function choisirFormat(cle) {
     try {
       const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: b.dataset.format, style}});
       fermeModale(); fermeTiroir();
-      S.projetId = r.projet.id; S.projet = r.projet; S.tacheStudio = {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"};
-      va("studio"); suisTacheStudio(r.job);
+      S.projetId = r.projet.id; S.projet = r.projet;
+      S.tacheStudio = r.job ? {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"} : null;
+      va("studio"); if (r.job) suisTacheStudio(r.job);
     } catch (e) { toast(e.message); $$("[data-format]").forEach(x => x.disabled = false); }
   });
 }
@@ -1470,8 +1513,8 @@ function etatAnalyse(j) {
     else if (/Collecte de \d+ compte|Instagram :|TikTok :|DÉMO/i.test(m)) { phase = "collecte"; phrase = "Je parcours les comptes que tu surveilles…"; pct = Math.max(pct, 6); }
     else if ((r = m.match(/^\s*(\d+)\/(\d+) — /)) && phase === "collecte") { pct = Math.max(pct, 6 + 22 * r[1] / r[2]); }
     else if (/publications collectées|déjà collecté/i.test(m)) { pct = Math.max(pct, 28); }
-    else if ((r = m.match(/(\d+) Reels à analyser/))) { phase = "selection"; nbRepere = +r[1]; phrase = "Je repère les Reels qui ont vraiment cartonné…"; pct = Math.max(pct, 32); }
-    else if (/vidéos|Transcription|images clés/i.test(m)) { phase = "videos"; phrase = "Je regarde les vidéos et j'écoute leurs hooks…"; pct = Math.max(pct, 40); }
+    else if ((r = m.match(/(\d+) (?:Reels|publications) à analyser/))) { phase = "selection"; nbRepere = +r[1]; phrase = "Je repère les publications qui ont vraiment cartonné…"; pct = Math.max(pct, 32); }
+    else if (/vidéos|Transcription|images clés|carrousel/i.test(m)) { phase = "videos"; phrase = "Je regarde les vidéos et je lis les carrousels…"; pct = Math.max(pct, 40); }
     else if (/Commentaires/i.test(m)) { phrase = "Je lis ce que dit leur audience…"; pct = Math.max(pct, 48); }
     else if (/Ton compte|Lecture de tes Reels|Lecture de ta bio/i.test(m)) { phrase = "J'étudie ce qui marche déjà sur ton compte…"; pct = Math.max(pct, 52); }
     else if (/adaptation par Claude/i.test(m)) { phase = "adaptation"; enAdaptation = true; phrase = "J'écris tes hooks, tes scripts et tes messages…"; pct = Math.max(pct, 56); }

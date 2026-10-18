@@ -17,7 +17,8 @@ APIFY_BASE = "https://api.apify.com/v2"
 # En cas d'échec sur un compte, repli automatique sur apify/instagram-scraper.
 ACTOR_REELS_ECO = os.getenv("APIFY_ACTOR_REELS", "esdrasdw~instagram-content-scraper")
 CHAMPS_REELS = ["displayUrl", "title", "ownerUsername", "url", "timestamp", "videoPlayCount", "likesCount", "commentsCount",
-                "videoDuration", "videoUrl", "shortCode", "id", "caption"]
+                "videoDuration", "videoUrl", "shortCode", "id", "caption", "type", "productType", "childPosts", "images"]
+MAX_SLIDES = 10
 
 # Coût réel des runs Apify (une analyse à la fois : un compteur global suffit)
 _COUT = {"usd": 0.0}
@@ -108,6 +109,13 @@ def post_instagram(it: dict) -> Post | None:
         cover_url=it.get("displayUrl") or (it.get("images") or [None])[0],
         duree_s=it.get("videoDuration"),
     )
+    if fmt == "Carrousel":
+        for c in (it.get("childPosts") or [])[:MAX_SLIDES]:
+            u = c.get("displayUrl") or (c.get("images") or [None])[0] if isinstance(c, dict) else None
+            if u:
+                p.medias.append(u)
+        if not p.medias and isinstance(it.get("images"), list):
+            p.medias = [u for u in it["images"] if isinstance(u, str)][:MAX_SLIDES]
     # Les derniers commentaires sont souvent fournis gratuitement avec le post
     for c in it.get("latestComments") or []:
         if c.get("text"):
@@ -147,12 +155,11 @@ def collecte_instagram(comptes: list[str], jours: int, max_par_compte: int, cfg:
     if ACTOR_REELS_ECO:
         try:
             items = apify_run(ACTOR_REELS_ECO, {
-                "directUrls": [c.strip("@") for c in comptes], "resultsType": "reels", "resultsLimit": max_par_compte,
+                # « posts » : Reels ET carrousels (avec l'image de chaque slide), même prix que les Reels seuls
+                "directUrls": [c.strip("@") for c in comptes], "resultsType": "posts", "resultsLimit": max_par_compte,
                 "onlyPostsNewerThan": f"{jours} days", "skipPinnedPosts": True, "selectedFields": CHAMPS_REELS,
             }, token)
             posts = [p for p in map(post_instagram, items) if p]
-            for p in posts:
-                p.format = "Reel"
             if posts:
                 return posts
             log(f"  Collecteur économique sans résultat pour {', '.join(comptes)} : repli sur le collecteur standard")
@@ -200,7 +207,8 @@ def _cache_dir():
 
 
 def _cache_fichier(plateforme: str, compte: str):
-    return _cache_dir() / f"{plateforme.lower()}_{compte.lower().strip('@')}.json"
+    # v2 : Reels + carrousels (les anciens caches ne contenaient que les Reels)
+    return _cache_dir() / f"v2_{plateforme.lower()}_{compte.lower().strip('@')}.json"
 
 
 def cache_frais(plateforme: str, compte: str, jours: int, maxi: int) -> list[Post] | None:
@@ -223,7 +231,7 @@ def _met_en_cache(plateforme: str, compte: str, jours: int, maxi: int, posts: li
     import json
     from dataclasses import asdict
     garde = ("plateforme", "compte", "id", "url", "date", "format", "legende", "likes", "commentaires", "vues",
-             "partages", "enregistrements", "video_url", "cover_url", "duree_s", "commentaires_texte")
+             "partages", "enregistrements", "video_url", "cover_url", "duree_s", "commentaires_texte", "medias")
     _cache_fichier(plateforme, compte).write_text(json.dumps({
         "date": datetime.now().isoformat(timespec="seconds"), "jours": jours, "max": maxi, "n": len(posts),
         "posts": [{k: v for k, v in asdict(p).items() if k in garde} for p in posts]}, ensure_ascii=False), encoding="utf-8")

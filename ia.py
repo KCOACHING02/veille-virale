@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import concurrent.futures as cf
 import time
 from pathlib import Path
@@ -43,6 +44,20 @@ OUTIL_ADAPTATION = {
             "format_conseille": {"type": "string", "description": "Format (face caméra, voix off, texte écran…) et durée."},
             "idee_visuelle": {"type": "string", "description": "Ce qu'on montre à l'écran dans les 3 premières secondes."},
             "pertinence": {"type": "integer", "description": "1 à 5 : à quel point ce Reel est transposable à la niche."},
+            "slides_modele": {
+                "type": "array",
+                "description": "UNIQUEMENT pour un carrousel : une entrée par slide du modèle, dans l'ordre, exactement autant que de slides jointes. Vide pour un Reel.",
+                "items": {"type": "object", "properties": {
+                    "original": {"type": "string", "description": "Le texte lu sur la slide, recopié tel quel (traduit fidèlement s'il n'est pas dans la langue de la marque). Vide s'il n'y a pas de texte."},
+                    "visuel": {"type": "string", "description": "Ce qu'on voit : photo de quoi, fond, mise en page, place du texte."},
+                    "adapte": {"type": "string", "description": "Le texte de cette slide pour la marque : même rôle et même longueur que l'original. Slide 1 : le hook viral repris tel quel."},
+                    "photo": {"type": "string", "description": "La photo que la marque doit prendre elle-même pour reproduire cette slide, décrite concrètement. Vide si la slide est un fond uni avec du texte."}},
+                    "required": ["original", "visuel", "adapte", "photo"]},
+            },
+            "style_visuel": {"type": "string", "description": "UNIQUEMENT pour un carrousel : le style du modèle en une phrase (couleurs, type de police, mise en page, photo ou fond uni)."},
+            "typo_conseillee": {"type": "string", "enum": ["moderne", "geometrique", "minimal", "douce", "impact", "affiche", "brut", "elegant", "classique", "retro", "manuscrit", "signature"],
+                                "description": "UNIQUEMENT pour un carrousel : la police du studio la plus proche de celle du modèle (moderne = sans-serif ronde, geometrique = sans-serif large, minimal = sans-serif technique, douce = arrondie, impact/affiche = capitales condensées, brut = très épaisse, elegant/classique/retro = à empattements, manuscrit/signature = écriture)."},
+            "theme_conseille": {"type": "string", "enum": ["sombre", "clair", "rose"], "description": "UNIQUEMENT pour un carrousel : fond le plus proche du modèle (sombre, clair ou coloré)."},
         },
         "required": ["hook_original", "langue_originale", "hook_viral", "legende_reprise", "texte_ecran", "analyse_visuelle", "sujet", "mecanique", "pourquoi_ca_marche",
                      "structure", "hooks_adaptes", "texte_ecran_adapte", "script_reel",
@@ -231,6 +246,8 @@ Règles :
     # --------------------------------------------------------
     def adapte(self, p: Post) -> dict:
         nb = self.cfg["claude"]["hooks_par_post"]
+        if p.format == "Carrousel":
+            return self._adapte_carrousel(p, nb)
         texte = f"""Reel viral à analyser puis adapter.
 
 Plateforme : {p.plateforme} · @{p.compte} · durée {round(p.duree_s) if p.duree_s else '?'} s
@@ -259,6 +276,41 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
             res["legende_reprise"] = p.legende
         return res
 
+    def _adapte_carrousel(self, p: Post, nb: int) -> dict:
+        n = len(p.images)
+        texte = f"""CARROUSEL viral à analyser puis adapter ({n or '?'} slides jointes, dans l'ordre).
+
+Plateforme : {p.plateforme} · @{p.compte}
+Performance : {nombre(p.likes) or 'n/a'} j'aime · {nombre(p.commentaires)} commentaires ({p.score_viral}× les carrousels habituels du compte)
+
+LÉGENDE :
+\"\"\"{p.legende[:2500] or '(vide)'}\"\"\"
+
+Lis chaque slide (texte ET visuel). Le hook est le texte de la slide 1 : c'est lui qui va dans hook_original et hook_viral.
+Remplis slides_modele avec exactement {n} entrée(s), une par slide, dans l'ordre : le texte original, ce qu'on voit, le texte adapté à la marque (même rôle, même longueur) et la photo que la marque doit prendre elle-même pour reproduire la slide.
+Décris le style du modèle (style_visuel) et choisis la police et le fond du studio les plus proches (typo_conseillee, theme_conseille).
+Les champs script_reel, texte_ecran et texte_ecran_adapte concernent une version Reel du même contenu : remplis-les quand même, brièvement.
+Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
+        contenu = []
+        for chemin in p.images[:10]:
+            try:
+                contenu.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                            "data": base64.b64encode(Path(chemin).read_bytes()).decode()}})
+            except OSError:
+                pass
+        contenu.append({"type": "text", "text": texte})
+        res = self._appel(OUTIL_ADAPTATION, contenu, max_tokens=7000)
+        if not res.get("erreur"):
+            sl = res.get("slides_modele")
+            if isinstance(sl, str):
+                try:
+                    res["slides_modele"] = json.loads(sl)
+                except ValueError:
+                    res["slides_modele"] = []
+            if p.legende and str(res.get("langue_originale", "")).strip().lower() == str(self.cfg["niche"].get("langue", "français")).strip().lower():
+                res["legende_reprise"] = p.legende
+        return res
+
     def carrousel(self, ad: dict, nb: int | None = None, style: str = "", reel: bool = False, source: dict | None = None) -> dict:
         """
         Transforme le Reel modèle et son adaptation en textes de slides (+ script pour un Reel), dans le style demandé.
@@ -268,7 +320,9 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
         combien = f"{nb} " if nb else "5 à 9 "
         quoi = (f"Reel : {combien}plans texte (diaporama, une phrase forte par plan) ET le script à dire (champ script)" if reel
                 else f"carrousel Instagram de {combien}slides")
+        slides_src = "".join(f"\n  Slide {i + 1} : « {x.get('original', '')} » — {x.get('visuel', '')}" for i, x in enumerate(src.get("slides_modele") or []))
         modele = f"""LE MODÈLE À REPRODUIRE (@{src.get('compte') or '?'}, {src.get('format') or 'Reel'}, {round(src['duree_s']) if src.get('duree_s') else '?'} s) :
+{("Slides du carrousel modèle :" + slides_src + chr(10) + "Style : " + (src.get('style_visuel') or '') + chr(10) + "Garde exactement le même nombre de slides et le même rôle pour chacune." + chr(10)) if slides_src else ""}
 Hook original : {src.get('hook_original') or ''}
 Texte à l'écran : {src.get('texte_ecran') or ''}
 Structure : {src.get('structure') or ''}
