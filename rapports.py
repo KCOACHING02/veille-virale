@@ -35,7 +35,7 @@ def export_excel(posts: list[Post], chemin: Path, cfg: dict, voix_client: dict, 
     planning, analyse = [], []
     for p in posts:
         ad = p.adaptation or {}
-        hooks = ad.get("hooks_adaptes") or []
+        hooks = ([ad["hook_viral"]] if ad.get("hook_viral") else []) + (ad.get("hooks_adaptes") or [])
         planning.append({
             "Créneau": p.creneau, "Mécanique": ad.get("mecanique", ""), "Hook retenu": hooks[0] if hooks else "",
             "Texte écran": ad.get("texte_ecran_adapte", ""), "CTA": ad.get("cta_conversation", ""),
@@ -53,7 +53,7 @@ def export_excel(posts: list[Post], chemin: Path, cfg: dict, voix_client: dict, 
             **{f"Hook adapté {i + 1}": h for i, h in enumerate(hooks)},
             "Texte écran adapté": ad.get("texte_ecran_adapte", ""), "Script Reel": ad.get("script_reel", ""),
             "CTA conversation": ad.get("cta_conversation", ""), "Séquence DM": _dm(ad),
-            "Légende adaptée": ad.get("legende_adaptee", ""), "Format conseillé": ad.get("format_conseille", ""),
+            "Légende à reprendre": ad.get("legende_reprise", ""), "Légende adaptée": ad.get("legende_adaptee", ""), "Format conseillé": ad.get("format_conseille", ""),
             "Idée visuelle": ad.get("idee_visuelle", ""), "Pertinence /5": ad.get("pertinence", ""),
             "Transcription originale": p.transcription,
         })
@@ -62,7 +62,7 @@ def export_excel(posts: list[Post], chemin: Path, cfg: dict, voix_client: dict, 
     larg = {"Créneau": 16, "Mécanique": 20, "Hook retenu": 45, "Texte écran": 30, "CTA": 40, "Inspiration": 26,
             "Lien": 26, "Hook original": 40, "Texte écran original": 28, "Analyse visuelle": 45, "Pourquoi ça marche": 50,
             "Structure": 45, "Ce que dit l'audience": 45, "Texte écran adapté": 30, "Script Reel": 70,
-            "CTA conversation": 40, "Séquence DM": 70, "Légende adaptée": 70, "Format conseillé": 30,
+            "CTA conversation": 40, "Séquence DM": 70, "Légende adaptée": 70, "Légende à reprendre": 70, "Format conseillé": 30,
             "Idée visuelle": 40, "Transcription originale": 70, "Question / douleur": 60, "Hook": 55, "Pourquoi": 60,
             "Compte": 22, "Exemple": 30, "Légende": 50, "Ce qu'on retient": 90}
 

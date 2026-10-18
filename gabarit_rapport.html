@@ -146,6 +146,9 @@
   </div>
 
   <h3>Tes hooks</h3>
+  {% if a.hook_viral %}<ul class="hooks"><li><span>{{ a.hook_viral }}</span><button data-copy>Copier</button></li></ul>
+  {% if a.legende_reprise %}<h3>Légende à reprendre</h3><div class="bloc"><button data-copy>Copier</button>{{ a.legende_reprise }}</div>{% endif %}
+  <h3>Variantes adaptées</h3>{% endif %}
   <ul class="hooks">{% for h in a.hooks_adaptes %}<li><span>{{ h }}</span><button data-copy>Copier</button></li>{% endfor %}</ul>
   {% if a.texte_ecran_adapte %}<h3>Texte à l'écran</h3><div class="bloc"><button data-copy>Copier</button>{{ a.texte_ecran_adapte }}</div>{% endif %}
 

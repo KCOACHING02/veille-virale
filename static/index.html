@@ -488,7 +488,8 @@ function remplitComptes() {
   const c = [...new Set((S.analyse?.posts || []).map(p => p.plateforme + ":" + p.compte))].sort();
   $("#f-compte").innerHTML = '<option value="">Tous les comptes</option>' + c.map(x => `<option value="${esc(x)}">@${esc(x.split(":")[1])} (${x.startsWith("TikTok") ? "TikTok" : "Insta"})</option>`).join("");
 }
-const adapte = p => p.adaptation && p.adaptation.hooks_adaptes;
+const adapte = p => p.adaptation && (p.adaptation.hooks_adaptes || p.adaptation.hook_viral);
+const hookPrincipal = ad => (ad && (ad.hook_viral || (ad.hooks_adaptes || [])[0])) || "";
 function postsFiltres() {
   const a = S.analyse; if (!a) return [];
   const pl = $("#f-plateforme").value, cpt = $("#f-compte").value, q = $("#f-texte").value.trim().toLowerCase(), tri = $("#f-tri").value;
@@ -506,7 +507,7 @@ function jauge(label, val, seuil, texte) {
 }
 function carte(p) {
   const c = S.analyse.criteres, ad = p.adaptation || {};
-  const hook = adapte(p) ? ad.hooks_adaptes[0] : (p.legende || "").split("\n")[0];
+  const hook = adapte(p) ? hookPrincipal(ad) : (p.legende || "").split("\n")[0];
   return `<button class="reel" data-cle="${esc(p.cle)}" aria-label="Ouvrir le Reel de @${esc(p.compte)}">
     <div class="ecran">
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
@@ -596,11 +597,14 @@ function ouvreReel(cle, onglet) {
 function corpsOnglet(p, o) {
   const ad = p.adaptation || {};
   if (o === "Adaptation") return `
-    <h3>Tes hooks</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
+    ${ad.hook_viral ? `<h3>Hook viral à reprendre${ad.langue_originale && ad.hook_viral !== ad.hook_original ? ` (traduit de l'${esc(ad.langue_originale)})` : ""}</h3><div class="hooks">${copiable(ad.hook_viral)}</div>
+      ${ad.hook_viral !== ad.hook_original ? `<p style="margin:6px 0 0;color:var(--ink-3);font-size:13.5px">Original : ${esc(ad.hook_original)}</p>` : ""}` : ""}
+    ${ad.legende_reprise ? `<h3>Légende à reprendre${ad.legende_reprise !== p.legende ? " (traduite)" : ""}</h3>${copiable(ad.legende_reprise)}` : ""}
+    <h3>${ad.hook_viral ? "Variantes adaptées à ta niche" : "Tes hooks"}</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
     ${ad.texte_ecran_adapte ? `<h3>Texte à l'écran</h3>${copiable(ad.texte_ecran_adapte)}` : ""}
     <h3>Script du Reel</h3>${copiable(ad.script_reel)}
     <div class="deux"><div><h3>Format</h3><p>${esc(ad.format_conseille)}</p></div><div><h3>3 premières secondes</h3><p>${esc(ad.idee_visuelle)}</p></div></div>
-    <h3>Légende</h3>${copiable(ad.legende_adaptee)}
+    <h3>${ad.legende_reprise ? "Légende adaptée (variante)" : "Légende"}</h3>${copiable(ad.legende_adaptee)}
     <h3>Transposabilité à ta niche</h3><p><span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
   if (o === "Séquence DM") return `
     <h3>Appel à l'action</h3>${copiable(ad.cta_conversation)}
@@ -651,7 +655,7 @@ function renduPlanning() {
   <div class="semaine">${JOURS.map(j => `<div class="jour"><h2>${j}</h2>${ps.filter(p => p.creneau.startsWith(j)).map(p => `
     <button class="creneau" data-cle="${esc(p.cle)}">
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}
-      <div><small>${esc(p.creneau.replace(j, "").trim())}</small><p>${esc((p.adaptation?.hooks_adaptes || [""])[0])}</p><span class="mec">${esc(p.adaptation?.mecanique || "")}</span></div>
+      <div><small>${esc(p.creneau.replace(j, "").trim())}</small><p>${esc(hookPrincipal(p.adaptation))}</p><span class="mec">${esc(p.adaptation?.mecanique || "")}</span></div>
     </button>`).join("")}</div>`).join("")}</div>`;
 }
 

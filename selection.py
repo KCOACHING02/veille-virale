@@ -106,7 +106,7 @@ class Historique:
             self.data["posts"][f"{p.plateforme}:{p.id}"] = {
                 "date": jour, "compte": p.compte, "url": p.url, "creneau": p.creneau,
                 "mecanique": (p.adaptation or {}).get("mecanique", ""),
-                "hook": ((p.adaptation or {}).get("hooks_adaptes") or [""])[0],
+                "hook": (p.adaptation or {}).get("hook_viral") or ((p.adaptation or {}).get("hooks_adaptes") or [""])[0],
             }
         self.chemin.write_text(json.dumps(self.data, ensure_ascii=False, indent=1), encoding="utf-8")
 

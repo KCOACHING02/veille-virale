@@ -18,7 +18,10 @@ OUTIL_ADAPTATION = {
     "input_schema": {
         "type": "object",
         "properties": {
-            "hook_original": {"type": "string", "description": "Le hook réel du Reel : ce qui est DIT et/ou ÉCRIT À L'ÉCRAN dans les 3 premières secondes (d'après la transcription et les images). Mot pour mot si possible."},
+            "hook_original": {"type": "string", "description": "Le hook réel du Reel, MOT POUR MOT dans sa langue d'origine : ce qui est DIT et/ou ÉCRIT À L'ÉCRAN dans les 3 premières secondes (d'après la transcription et les images)."},
+            "langue_originale": {"type": "string", "description": "Langue du Reel original, en un mot en français (ex. « français », « anglais », « arabe »)."},
+            "hook_viral": {"type": "string", "description": "Le hook à reprendre : identique au hook original s'il est déjà dans la langue de la marque, sinon sa traduction FIDÈLE (même sens, même rythme, même construction, aucune réécriture)."},
+            "legende_reprise": {"type": "string", "description": "La légende originale reprise telle quelle si elle est déjà dans la langue de la marque ; sinon sa traduction FIDÈLE, complète, en gardant la mise en forme, les emojis et les hashtags (hashtags traduits seulement s'ils ont un équivalent courant)."},
             "texte_ecran": {"type": "string", "description": "Le texte affiché à l'écran au début, s'il y en a (d'après les images). Vide sinon."},
             "analyse_visuelle": {"type": "string", "description": "Ce qu'on voit : cadrage, personne face caméra ou non, décor, sous-titres, rythme des plans, gestes."},
             "sujet": {"type": "string", "description": "De quoi parle le Reel, en une phrase."},
@@ -26,7 +29,7 @@ OUTIL_ADAPTATION = {
             "pourquoi_ca_marche": {"type": "string", "description": "2-3 phrases : levier psychologique + éléments de format qui expliquent la viralité."},
             "structure": {"type": "string", "description": "Structure en étapes courtes avec timing approximatif (ex : 0-3 s hook → 3-15 s problème → …)."},
             "ce_que_dit_l_audience": {"type": "string", "description": "D'après les commentaires : ce qui a fait réagir, questions posées, objections, en 2-3 phrases. Vide s'il n'y a pas de commentaires."},
-            "hooks_adaptes": {"type": "array", "items": {"type": "string"}, "description": "Hooks réécrits pour la niche, même mécanique, formulation originale."},
+            "hooks_adaptes": {"type": "array", "items": {"type": "string"}, "description": "Variantes du hook adaptées à la niche de la marque (même mécanique), proposées en complément du hook viral repris."},
             "texte_ecran_adapte": {"type": "string", "description": "Le texte à afficher à l'écran pendant le hook (court, lisible sans le son)."},
             "script_reel": {"type": "string", "description": "Script adapté : [0-3 s] hook dit + texte écran / [corps] 3-5 phrases / [fin] CTA oral. 20 à 45 secondes."},
             "cta_conversation": {"type": "string", "description": "CTA qui déclenche une conversation : commenter le mot-clé (DM automatique) ou répondre à une question personnelle."},
@@ -42,7 +45,7 @@ OUTIL_ADAPTATION = {
             "idee_visuelle": {"type": "string", "description": "Ce qu'on montre à l'écran dans les 3 premières secondes."},
             "pertinence": {"type": "integer", "description": "1 à 5 : à quel point ce Reel est transposable à la niche."},
         },
-        "required": ["hook_original", "texte_ecran", "analyse_visuelle", "sujet", "mecanique", "pourquoi_ca_marche",
+        "required": ["hook_original", "langue_originale", "hook_viral", "legende_reprise", "texte_ecran", "analyse_visuelle", "sujet", "mecanique", "pourquoi_ca_marche",
                      "structure", "ce_que_dit_l_audience", "hooks_adaptes", "texte_ecran_adapte", "script_reel",
                      "cta_conversation", "sequence_dm", "legende_adaptee", "format_conseille", "idee_visuelle", "pertinence"],
     },
@@ -165,7 +168,7 @@ Objectif business : {o['reels_par_jour']} Reels par jour, au moins {o['conversat
 Chaque Reel se termine par un CTA qui fait commenter le mot-clé « {o['mot_cle_cta']} » (DM automatique) ou répondre à une question personnelle. Les vues ne suffisent pas : on veut des conversations avec le client idéal, puis des clients.
 
 Règles :
-1. Reprends la MÉCANIQUE (type de hook, structure, levier émotionnel, format visuel), jamais le texte. Pas de copie, pas de paraphrase proche.
+1. REPRISE FIDÈLE : le hook viral et la légende sont repris tels quels (champs hook_viral et legende_reprise). S'ils ne sont pas en {n['langue']}, traduis-les fidèlement, sans les réécrire ni les « améliorer ». Les variantes de hooks, le script, le CTA et la séquence DM sont, eux, adaptés à la marque.
 2. Le vrai hook est dans les 3 premières secondes : utilise la transcription et les images pour l'identifier. Si tu n'as que la légende, dis-le dans l'analyse.
 3. Hooks : moins de 12 mots, compréhensibles sans le son, pas d'emoji en début. Réutilise les expressions de l'audience quand c'est pertinent.
 4. Script dit face caméra, naturel, comme à une amie. Légende naturelle, phrases courtes, rien qui sonne « publicité » ou « écrit par une IA ».
@@ -209,7 +212,11 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
             except OSError:
                 pass
         contenu.append({"type": "text", "text": texte})
-        return self._appel(OUTIL_ADAPTATION, contenu, max_tokens=4000)
+        res = self._appel(OUTIL_ADAPTATION, contenu, max_tokens=5000)
+        # Même langue : la légende est recopiée telle quelle depuis la source (aucun risque de reformulation)
+        if not res.get("erreur") and p.legende and str(res.get("langue_originale", "")).strip().lower() == str(self.cfg["niche"].get("langue", "français")).strip().lower():
+            res["legende_reprise"] = p.legende
+        return res
 
     def adapte_tous(self, posts: list[Post]):
         log(f"Analyse et adaptation par Claude de {len(posts)} Reels…")
