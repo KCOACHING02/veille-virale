@@ -1431,7 +1431,8 @@ function renduProjet() {
           <h3>1. Tes ${p.type === "reel" ? "photos ou ta vidéo" : "photos"}</h3>
           ${ecrit ? "" : besoinPhotos(p)}
           ${S.optionsStudio?.banque && !(p.type === "reel" && p.video) ? `<div class="st-outils" style="margin:0 0 12px">
-            ${p.slides.length ? `<button class="btn petit" id="st-bq-auto">✨ ${p.images.length ? "Compléter avec" : "Proposer"} des images de la banque</button>` : ""}
+            ${p.slides.length ? `<button class="btn petit" id="st-bq-auto">✨ ${p.images.length ? "Compléter avec" : "Proposer"} des images de la banque</button>
+              <button class="btn petit" id="st-bq-toutes">🖼️ Une image sur chaque slide</button>` : ""}
             ${p.type === "reel" ? `<button class="btn petit" id="st-bq-video">🎬 Choisir une vidéo dans la banque</button>` : ""}</div>` : ""}
           <p class="aide">${p.type === "carrousel" ? (p.nb_photos ? "Ajoute-les dans cet ordre : chacune va sur sa slide. Les autres slides sont sur fond uni." : "Une photo par slide, dans l'ordre. Les slides sans photo sont sur fond uni.") : "Ta vidéo (face caméra, voix off…) : je la recadre et j'ajoute le hook et les sous-titres. Pas de vidéo ? Ajoute des photos : je monte un diaporama avec les textes."}</p>
           <label class="depot" id="st-depot"><input type="file" id="st-fichiers" multiple accept="${p.type === "reel" ? "image/*,video/*" : "image/*"}" hidden>
@@ -1522,12 +1523,14 @@ function renduProjet() {
   if ($("#st-apercu")) brancheApercu();
   $$("[data-bq-slide]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); ouvreBanque(+b.dataset.bqSlide); });
   $("#st-bq-video")?.addEventListener("click", () => ouvreBanque(0, true));
-  $("#st-bq-auto")?.addEventListener("click", async () => {
+  const lanceBanque = async toutes => {
     await sauveProjet(true);
-    try { const r = await api(`/api/studio/${p.id}/banque/auto`, {method: "POST", body: {toutes: !p.slides.some(x => x.photo)}});
+    try { const r = await api(`/api/studio/${p.id}/banque/auto`, {method: "POST", body: {toutes}});
       S.tacheStudio = {id: r.job, sid: p.id, titre: "Choix des images", phrase: "Je choisis des images…"}; renduProjet(); suisTacheStudio(r.job); }
     catch (e) { toast(e.message); }
-  });
+  };
+  $("#st-bq-auto")?.addEventListener("click", () => lanceBanque(!p.slides.some(x => x.photo)));
+  $("#st-bq-toutes")?.addEventListener("click", () => lanceBanque(true));
   if (p.statut === "pret") brancheResultat(p);
 }
 // ---- Banque d'images (Pexels) : choisir l'image d'une slide, ou sa propre photo

@@ -344,8 +344,12 @@ def remplit_banque(esp: Espace, sid: str, demo: bool = False, toutes: bool = Fal
     log(f"Je choisis des images pour {len(cibles)} slide(s)…")
     utilises = set()
     for i in cibles:
+        # Slide sans idée de photo : on garde l'ambiance des slides qui en ont une (même univers visuel)
+        ambiance = next((requete_photo(x) for x in p["slides"] if x.get("photo") or x.get("recherche")), "")
         try:
-            res = [r for r in banque.photos(requete_photo(p["slides"][i]), n=8) if r["id"] not in utilises]
+            res = [r for r in banque.photos(requete_photo(p["slides"][i]), n=12) if r["id"] not in utilises]
+            if len(res) < 2 and ambiance:
+                res += [r for r in banque.photos(ambiance, n=12) if r["id"] not in utilises and r not in res]
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  {str(e)[:120]}")
             break
