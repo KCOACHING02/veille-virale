@@ -453,6 +453,19 @@ def _dimensions(f: Path) -> tuple[int, int]:
         return (1080, 1920)
 
 
+def _hdr(f: Path) -> bool:
+    """Vidéo HDR (iPhone : HLG / Dolby Vision) : il faut la convertir en SDR, sinon les couleurs sortent délavées."""
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=color_transfer",
+                              "-of", "csv=p=0", str(f)], capture_output=True, text=True, timeout=60).stdout
+        return out.strip() in ("arib-std-b67", "smpte2084")
+    except Exception:  # noqa: BLE001
+        return False
+
+
+TONEMAP = "zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,"
+
+
 def _a_du_son(f: Path) -> bool:
     out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0", str(f)],
                          capture_output=True, text=True, timeout=60).stdout
@@ -529,12 +542,37 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 
 def _ffmpeg(args: list[str], cwd: Path, timeout: int = 1800):
-    r = subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", *args], cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
+    try:
+        r = subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", *args], cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("Le montage vidéo a pris trop de temps : essaie une vidéo plus courte.") from None
     if r.returncode != 0:
-        raise RuntimeError("Le montage vidéo a échoué : " + (r.stderr.strip().splitlines() or ["erreur inconnue"])[-1][:200])
+        print(f"[ffmpeg] code {r.returncode} pour {' '.join(args)[:300]}\n{r.stderr[-2000:]}", flush=True)  # visible dans les journaux du serveur
+        lignes = [l for l in r.stderr.strip().splitlines() if l.strip()]
+        if r.returncode < 0:
+            raise RuntimeError("Le montage vidéo a été interrompu par le serveur (mémoire insuffisante pour cette vidéo).")
+        raise RuntimeError("Le montage vidéo a échoué : " + (lignes[-1][:200] if lignes else f"code {r.returncode}"))
 
 
-ENCODAGE = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
+ENCODAGE = ["-c:v", "libx264", "-threads", "2", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
+LEGER = ["-threads", "2", "-filter_threads", "1"]  # limite la mémoire (vidéos 4K HDR des iPhone)
+
+
+def normalise(src: Path, d: Path) -> tuple[Path, Path | None]:
+    """
+    Version « compatible » d'une vidéo difficile (4K HDR, son spatial, flux exotiques) : image ramenée à 1080 px max,
+    8 bits, 30 i/s, et son extrait à part. Utilisée si le montage direct échoue.
+    """
+    image = d / "norm.mp4"
+    _ffmpeg(["-threads", "1", "-i", str(src), "-map", "0:v:0", "-t", str(DUREE_MAX_REEL), "-an", "-sn", "-dn",
+             "-vf", "scale='min(1080,iw)':'min(1920,ih)':force_original_aspect_ratio=decrease,fps=30,format=yuv420p",
+             "-c:v", "libx264", "-threads", "1", "-preset", "ultrafast", "-crf", "18", str(image)], d)
+    son = d / "son.m4a"
+    try:
+        _ffmpeg(["-i", str(src), "-map", "0:a:0", "-vn", "-t", str(DUREE_MAX_REEL), "-c:a", "aac", "-b:a", "128k", str(son)], d, 300)
+    except RuntimeError:
+        son = None  # piste audio illisible : le Reel sera muet (on ajoute un son dans Instagram)
+    return image, son
 
 
 def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
@@ -552,14 +590,28 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
     fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", p.get("typo", "moderne"))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
-    if w / h > 0.75:  # vidéo horizontale ou carrée : fond flou + vidéo entière au centre
-        filtre = ("[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:2[fond];"
-                  "[0:v]scale=1080:-2[av];[fond][av]overlay=(W-w)/2:(H-h)/2,fps=30,setsar=1," + ass + "[v]")
-    else:
-        filtre = "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1," + ass + "[v]"
+    tm = TONEMAP if _hdr(src) else ""
+
+    def filtre_pour(hdr: str) -> str:
+        if w / h > 0.75:  # vidéo horizontale ou carrée : fond flou + vidéo entière au centre
+            return ("[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:2[fond];"
+                    "[0:v]scale=1080:-2[av];[fond][av]overlay=(W-w)/2:(H-h)/2,fps=30,setsar=1," + hdr + "format=yuv420p," + ass + "[v]")
+        return "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1," + hdr + "format=yuv420p," + ass + "[v]"
+    filtre = filtre_pour(tm)
     log("Montage de ton Reel (hook + sous-titres)…")
-    son = ["-map", "0:a:0", "-c:a", "aac", "-b:a", "128k"] if _a_du_son(src) else []
-    _ffmpeg(["-i", str(src), "-t", str(DUREE_MAX_REEL), "-filter_complex", filtre, "-map", "[v]", *son, *ENCODAGE, str(sortie / "reel.mp4")], d)
+    try:
+        son = ["-map", "0:a:0", "-c:a", "aac", "-b:a", "128k"] if _a_du_son(src) else []
+        _ffmpeg([*LEGER, "-i", str(src), "-t", str(DUREE_MAX_REEL), "-filter_complex", filtre, "-map", "[v]", *son, *ENCODAGE,
+                 str(sortie / "reel.mp4")], d)
+    except RuntimeError as e:
+        log(f"  Montage direct impossible ({str(e)[:100]}) : nouvel essai en mode compatible…")
+        image, piste = normalise(src, d)
+        entrees = ["-i", str(image)] + (["-i", str(piste)] if piste else [])
+        son = ["-map", "1:a:0", "-c:a", "aac", "-b:a", "128k", "-shortest"] if piste else []
+        _ffmpeg([*LEGER, *entrees, "-filter_complex", filtre_pour(""), "-map", "[v]", *son, *ENCODAGE, str(sortie / "reel.mp4")], d)
+        image.unlink(missing_ok=True)
+        if piste:
+            piste.unlink(missing_ok=True)
     # Couverture : une image du début avec le hook
     from PIL import Image
     _ffmpeg(["-ss", "0.6", "-i", str(sortie / "reel.mp4"), "-frames:v", "1", "-q:v", "3", str(d / "cadre.jpg")], d, 120)
