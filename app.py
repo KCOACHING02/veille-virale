@@ -473,8 +473,8 @@ def main():
     global DEMO_FORCE
     ap = argparse.ArgumentParser()
     ap.add_argument("--demo", action="store_true")
-    ap.add_argument("--hote", default="127.0.0.1")
-    ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--hote", default=os.getenv("HOST", "127.0.0.1"))
+    ap.add_argument("--port", type=int, default=int(os.getenv("PORT", "8000")))  # PORT est fourni par Railway, Render…
     ap.add_argument("--sans-planificateur", action="store_true")
     args = ap.parse_args()
     DEMO_FORCE = args.demo

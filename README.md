@@ -38,7 +38,15 @@ python app.py --demo                   # données fictives, aucune clé consomm�
 
 Sans clés API, l'application démarre automatiquement en mode démo. Mets ton e-mail dans `ADMIN_EMAILS` pour avoir un accès illimité.
 
-## Mise en ligne (VPS OVH ou autre)
+## Mise en ligne simple : Railway (recommandé)
+
+1. Sur railway.com : *New Project → Deploy from GitHub repo* → `veille-virale`. Railway détecte le Dockerfile tout seul.
+2. Onglet *Variables* : `APIFY_TOKEN`, `ANTHROPIC_API_KEY`, `ADMIN_EMAILS` (et plus tard les clés Stripe).
+3. Clic droit sur le service → *Attach volume*, chemin de montage **`/app/data`** (sinon les comptes clients sont effacés à chaque mise à jour).
+4. *Settings → Networking → Generate Domain* : l'adresse de l'application s'affiche.
+5. Chaque modification poussée sur GitHub est remise en ligne automatiquement.
+
+## Mise en ligne sur un serveur (VPS OVH ou autre)
 
 1. Pointe ton nom de domaine vers le serveur et remplace `ton-domaine.fr` dans `Caddyfile`.
 2. Copie le dossier sur le serveur, crée `.env`, puis lance `docker compose up -d`.
