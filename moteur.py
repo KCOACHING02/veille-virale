@@ -158,7 +158,10 @@ def verifie_cle_claude(cfg: dict | None = None):
     from ia import explique_erreur
     modele = ((cfg or {}).get("claude") or {}).get("modele") or "claude-sonnet-5-5"
     try:
-        anthropic.Anthropic().messages.create(model=modele, max_tokens=1, messages=[{"role": "user", "content": "ok"}])
+        anthropic.Anthropic().messages.create(
+            model=modele, max_tokens=16, messages=[{"role": "user", "content": "Réponds ok."}],
+            tools=[{"name": "test", "description": "test", "input_schema": {"type": "object", "properties": {}}}],
+            tool_choice={"type": "auto"})
     except (anthropic.AuthenticationError, anthropic.PermissionDeniedError, anthropic.NotFoundError, anthropic.BadRequestError) as e:
         raise RuntimeError(explique_erreur(e)) from None
     except Exception as e:  # noqa: BLE001 — réseau, surcharge passagère : on n'empêche pas l'analyse

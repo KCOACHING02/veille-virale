@@ -110,23 +110,42 @@ class IA:
         self.systeme = self._systeme(voix, apprentissages)
 
     def _appel(self, outil: dict, contenu, max_tokens: int = 3000, systeme=None) -> dict:
+        """
+        Appel à Claude avec réponse structurée par l'outil `outil`.
+        Le choix d'outil est laissé en « auto » (certains modèles refusent un outil imposé) et une consigne explicite
+        demande d'appeler l'outil ; en secours, un JSON écrit en texte est accepté.
+        """
+        import json as _json
+        sys_ = systeme if systeme is not None else self.systeme
+        consigne = f"Réponds uniquement en appelant l'outil « {outil['name']} », sans aucun texte autour."
+        sys_ = (sys_ + "\n\n" + consigne) if isinstance(sys_, str) else [*sys_, {"type": "text", "text": consigne}]
+        derniere = None
         for essai in range(3):
             try:
                 rep = self.client.messages.create(
-                    model=self.modele, max_tokens=max_tokens,
-                    system=systeme if systeme is not None else self.systeme,
-                    tools=[outil], tool_choice={"type": "tool", "name": outil["name"]},
+                    model=self.modele, max_tokens=max_tokens, system=sys_,
+                    tools=[outil], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": contenu}],
                 )
                 for bloc in rep.content:
-                    if bloc.type == "tool_use":
+                    if getattr(bloc, "type", "") == "tool_use":
                         return bloc.input
-                raise ValueError("Réponse sans outil")
+                texte = "".join(getattr(b, "text", "") for b in rep.content)
+                debut, fin = texte.find("{"), texte.rfind("}")
+                if debut >= 0 and fin > debut:
+                    try:
+                        return _json.loads(texte[debut:fin + 1])
+                    except ValueError:
+                        pass
+                raise ValueError("Claude n'a pas renvoyé de réponse structurée")
             except Exception as e:  # noqa: BLE001
-                if essai == 2:
-                    return {"erreur": explique_erreur(e)}
-                time.sleep(5 * (essai + 1))
-        return {}
+                derniere = e
+                bas = str(e).lower()
+                if any(x in bas for x in ("invalid x-api-key", "credit balance", "not supported", "invalid_request")):
+                    break  # inutile de réessayer une erreur de configuration
+                if essai < 2:
+                    time.sleep(5 * (essai + 1))
+        return {"erreur": explique_erreur(derniere)}
 
     def _systeme(self, voix: str, apprentissages: str) -> list:
         n, o = self.cfg["niche"], self.cfg["objectifs"]
