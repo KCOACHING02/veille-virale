@@ -100,7 +100,8 @@ class Transcripteur:
     def __init__(self, cfg: dict):
         v = cfg["video"]
         self.moteur = v.get("transcription", "local")
-        self.modele_local = v.get("modele_whisper", "small")
+        # Choix du serveur (pas du client) : « base » est ~3× plus rapide que « small » sur un petit serveur sans GPU
+        self.modele_local = os.getenv("WHISPER_MODEL", "base")
         self._local = None
         if self.moteur == "openai" and not os.getenv("OPENAI_API_KEY"):
             log("  ⚠️  OPENAI_API_KEY absente : transcription locale à la place")
@@ -122,7 +123,16 @@ class Transcripteur:
                 from faster_whisper import WhisperModel
                 log(f"  Chargement du modèle Whisper « {self.modele_local} » (première fois : téléchargement)")
                 self._local = WhisperModel(self.modele_local, device="cpu", compute_type="int8")
-            segments, _ = self._local.transcribe(str(wav), vad_filter=True, beam_size=1)
+            # Le WAV (16 kHz mono, produit par ffmpeg) est lu directement : on évite le décodeur PyAV,
+            # dont les versions récentes sont incompatibles avec faster-whisper (« metadata_errors »).
+            import wave
+            import numpy as np
+            with wave.open(str(wav), "rb") as w:
+                n = min(w.getnframes(), w.getframerate() * 150)  # 2 min 30 max : le hook est au début
+                audio = np.frombuffer(w.readframes(n), dtype=np.int16).astype(np.float32) / 32768.0
+            if audio.size < 1600:
+                return ""
+            segments, _ = self._local.transcribe(audio, vad_filter=True, beam_size=1)
             return " ".join(s.text.strip() for s in segments).strip()
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Transcription impossible : {e}")

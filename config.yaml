@@ -52,7 +52,7 @@ video:
   actif: true
   images_par_video: 4         # 0,3 s / 1,5 s / 3 s (le hook) + 1 image de la suite
   transcription: "local"      # "local" (gratuit, Whisper sur ta machine) | "openai" (rapide, clé OPENAI_API_KEY) | "aucun"
-  modele_whisper: "small"     # local : "base" (rapide) | "small" (bon compromis) | "medium" (précis, lent)
+  modele_whisper: "base"     # local : "base" (rapide) | "small" (bon compromis) | "medium" (précis, lent)
   actor_tiktok_video: "maximedupre~tiktok-video-downloader"
 
 # --- Amélioration 2 : lire les commentaires ---

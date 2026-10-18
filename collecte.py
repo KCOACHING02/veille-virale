@@ -139,8 +139,12 @@ def collecte_tiktok(comptes: list[str], jours: int, max_par_compte: int, cfg: di
 def collecte_concurrents(cfg: dict, token: str) -> list[Post]:
     a, c = cfg["analyse"], cfg["comptes"]
     jours = a["mois"] * 30
-    return (collecte_instagram(c.get("instagram") or [], jours, a["posts_max_par_compte"], cfg, token)
-            + collecte_tiktok(c.get("tiktok") or [], jours, a["posts_max_par_compte"], cfg, token))
+    # Instagram et TikTok sont collectés en parallèle
+    import concurrent.futures as cf
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        ig = ex.submit(collecte_instagram, c.get("instagram") or [], jours, a["posts_max_par_compte"], cfg, token)
+        tt = ex.submit(collecte_tiktok, c.get("tiktok") or [], jours, a["posts_max_par_compte"], cfg, token)
+        return ig.result() + tt.result()
 
 
 # ------------------------------------------------------------

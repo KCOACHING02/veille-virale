@@ -31,7 +31,7 @@ video:
   actif: true
   images_par_video: 4
   transcription: local
-  modele_whisper: small
+  modele_whisper: base
   actor_tiktok_video: maximedupre~tiktok-video-downloader
 commentaires:
   actif: true

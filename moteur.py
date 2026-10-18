@@ -208,12 +208,18 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         if demo:
             d.lit_videos(pool, travail / "media", esp.media)
         else:
-            if cfg["video"].get("actif", True):
-                from video import traite_videos
-                traite_videos(pool, cfg, token, travail / "media", esp.media)
-            if cfg["commentaires"].get("actif", True) and token:
-                from commentaires import recupere
-                recupere(pool, cfg, token)
+            # Lecture des vidéos et collecte des commentaires en parallèle
+            import concurrent.futures as cf
+            with cf.ThreadPoolExecutor(max_workers=2) as ex:
+                taches = []
+                if cfg["video"].get("actif", True):
+                    from video import traite_videos
+                    taches.append(ex.submit(traite_videos, pool, cfg, token, travail / "media", esp.media))
+                if cfg["commentaires"].get("actif", True) and token:
+                    from commentaires import recupere
+                    taches.append(ex.submit(recupere, pool, cfg, token))
+                for t in taches:
+                    t.result()
 
         tous = demandes + classes
         affiches = (demandes + [p for p in classes if p.criteres_ok] + pool + classes[:80])
