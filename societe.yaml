@@ -11,7 +11,7 @@ siege: "[adresse du siège social]"
 immatriculation: "[RCS de … n° SIREN ou SIRET]"
 tva: "[n° de TVA intracommunautaire, ou « TVA non applicable, art. 293 B du CGI »]"
 directeur_publication: "[prénom et nom du représentant légal]"
-email_contact: "[adresse e-mail de contact]"
+email_contact: "contact@virallink.fr"
 prix_ttc: true          # true : prix affichés TTC ; false : prix HT (clientèle professionnelle)
 mediateur: "[nom et site du médiateur de la consommation auquel tu adhères]"
 date_maj: "18 octobre 2026"

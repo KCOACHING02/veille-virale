@@ -55,7 +55,7 @@ def cle_publique() -> str:
 
 def _jwt(aud: str) -> str:
     entete = _b64(json.dumps({"typ": "JWT", "alg": "ES256"}).encode())
-    contact = os.getenv("EMAIL_CONTACT") or "mailto:contact@veille-virale.fr"
+    contact = os.getenv("EMAIL_CONTACT") or "mailto:contact@virallink.fr"
     corps = _b64(json.dumps({"aud": aud, "exp": int(time.time()) + 12 * 3600, "sub": contact if contact.startswith("mailto:") else "mailto:" + contact}).encode())
     signature = cle_privee().sign(f"{entete}.{corps}".encode(), ec.ECDSA(hashes.SHA256()))
     r, s = decode_dss_signature(signature)
