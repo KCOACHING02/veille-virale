@@ -46,9 +46,13 @@ def init():
         CREATE TABLE IF NOT EXISTS usage(
             uid INTEGER, mois TEXT, analyses INTEGER DEFAULT 0, adaptations INTEGER DEFAULT 0, PRIMARY KEY(uid, mois));
         CREATE TABLE IF NOT EXISTS reinit(jeton TEXT PRIMARY KEY, uid INTEGER, expire TEXT);
+        CREATE TABLE IF NOT EXISTS push(endpoint TEXT PRIMARY KEY, uid INTEGER NOT NULL, p256dh TEXT, auth TEXT, cree TEXT);
         """)
         for table, col, typ in (("usage", "cout_usd", "REAL DEFAULT 0"), ("usage", "studio", "INTEGER DEFAULT 0"), ("utilisateurs", "derniere_connexion", "TEXT"),
-                                ("utilisateurs", "cgv_acceptees", "TEXT")):
+                                ("utilisateurs", "cgv_acceptees", "TEXT"), ("utilisateurs", "code_parrain", "TEXT"),
+                                ("utilisateurs", "parrain", "INTEGER"), ("utilisateurs", "mois_offerts", "INTEGER DEFAULT 0"),
+                                ("utilisateurs", "parrainage_recompense", "INTEGER DEFAULT 0"), ("utilisateurs", "synthese", "INTEGER DEFAULT 1"),
+                                ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0")):
             try:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
             except sqlite3.OperationalError:
@@ -72,6 +76,94 @@ def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False) -> dict:
         except sqlite3.IntegrityError:
             raise ValueError("Un compte existe déjà avec cette adresse.") from None
     return verifie(email, mdp)
+
+
+# ------------------------------------------------------------
+#  Parrainage : un mois offert à la filleule (essai prolongé) et à la marraine (quand la filleule s'abonne)
+# ------------------------------------------------------------
+JOURS_FILLEULE = 30
+
+
+def code_parrain(uid: int) -> str:
+    u = get(uid)
+    if u and u.get("code_parrain"):
+        return u["code_parrain"]
+    import re as _re
+    base = _re.sub(r"[^a-z0-9]", "", ((u or {}).get("prenom") or "").lower())[:10] or "amie"
+    for _ in range(20):
+        code = f"{base}{secrets.randbelow(9000) + 1000}"
+        with _verrou, _db() as c:
+            if not c.execute("SELECT 1 FROM utilisateurs WHERE code_parrain=?", (code,)).fetchone():
+                c.execute("UPDATE utilisateurs SET code_parrain=? WHERE id=?", (code, uid))
+                return code
+    return str(uid)
+
+
+def par_code(code: str) -> dict | None:
+    with _db() as c:
+        r = c.execute("SELECT * FROM utilisateurs WHERE code_parrain=?", ((code or "").strip().lower(),)).fetchone()
+    return dict(r) if r else None
+
+
+def rattache_parrain(uid: int, code: str) -> bool:
+    """À l'inscription : la filleule gagne un mois d'essai en plus."""
+    p = par_code(code)
+    u = get(uid)
+    if not p or not u or p["id"] == uid or u.get("parrain"):
+        return False
+    fin = max(datetime.fromisoformat(u["fin_essai"]), datetime.now()) + timedelta(days=JOURS_FILLEULE) if u.get("fin_essai") else None
+    maj(uid, parrain=p["id"], **({"fin_essai": fin.isoformat(timespec="minutes")} if fin else {}))
+    return True
+
+
+def filleules(uid: int) -> dict:
+    with _db() as c:
+        l = [dict(r) for r in c.execute("SELECT id, prenom, statut, a_paye, cree FROM utilisateurs WHERE parrain=?", (uid,))]
+    return {"inscrites": len(l), "abonnees": sum(1 for x in l if x["a_paye"]), "liste": l}
+
+
+def recompense_parrain(uid_filleule: int) -> dict | None:
+    """Première souscription payante de la filleule : un mois offert à la marraine (crédit Stripe ou essai prolongé). Une seule fois."""
+    f = get(uid_filleule)
+    if not f or not f.get("parrain") or f.get("parrainage_recompense"):
+        return None
+    maj(uid_filleule, parrainage_recompense=1)
+    p = get(f["parrain"])
+    if not p:
+        return None
+    if p.get("stripe_client") and stripe_actif():
+        prix = (plans().get(p["plan"]) or {}).get("prix_mensuel") or 0
+        if prix:
+            try:
+                requests.post(f"https://api.stripe.com/v1/customers/{p['stripe_client']}/balance_transactions",
+                              data={"amount": -int(prix * 100), "currency": "eur", "description": "Parrainage : un mois offert"},
+                              auth=(os.environ["STRIPE_SECRET_KEY"], ""), timeout=30)
+            except Exception:  # noqa: BLE001
+                pass
+    elif p.get("statut") == "essai":
+        base = max(datetime.fromisoformat(p["fin_essai"]), datetime.now()) if p.get("fin_essai") else datetime.now()
+        maj(p["id"], fin_essai=(base + timedelta(days=30)).isoformat(timespec="minutes"))
+    maj(p["id"], mois_offerts=(p.get("mois_offerts") or 0) + 1)
+    return p
+
+
+# ------------------------------------------------------------
+#  Notifications push (abonnements des appareils)
+# ------------------------------------------------------------
+def ajoute_push(uid: int, endpoint: str, p256dh: str, auth: str):
+    with _verrou, _db() as c:
+        c.execute("INSERT OR REPLACE INTO push(endpoint, uid, p256dh, auth, cree) VALUES (?,?,?,?,?)",
+                  (endpoint, uid, p256dh, auth, datetime.now().isoformat(timespec="minutes")))
+
+
+def retire_push(endpoint: str):
+    with _verrou, _db() as c:
+        c.execute("DELETE FROM push WHERE endpoint=?", (endpoint,))
+
+
+def push_de(uid: int) -> list[dict]:
+    with _db() as c:
+        return [dict(r) for r in c.execute("SELECT * FROM push WHERE uid=?", (uid,))]
 
 
 def verifie(email: str, mdp: str) -> dict | None:
@@ -281,8 +373,9 @@ def webhook(charge_utile: bytes, signature: str) -> str:
     typ = ev["type"]
     if typ == "checkout.session.completed":
         uid = int(obj.get("client_reference_id") or obj["metadata"]["uid"])
-        maj(uid, plan=obj["metadata"].get("plan", "createur"), statut="actif",
+        maj(uid, plan=obj["metadata"].get("plan", "createur"), statut="actif", a_paye=1,
             stripe_client=obj.get("customer"), stripe_abonnement=obj.get("subscription"))
+        recompense_parrain(uid)
     elif typ in ("customer.subscription.updated", "customer.subscription.deleted"):
         uid = int((obj.get("metadata") or {}).get("uid", 0))
         if uid:

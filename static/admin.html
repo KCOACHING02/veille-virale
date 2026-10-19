@@ -53,6 +53,7 @@ select{border:1px solid var(--line);background:var(--surface);border-radius:8px;
 <div class="page">
   <header><h1>Administration</h1><a class="btn" href="/app">Retour à l'application</a></header>
   <div class="kpis" id="kpis"></div>
+  <div class="kpis" id="croissance"></div>
   <div class="config" id="config"></div>
   <div id="lien"></div>
   <div class="outils"><input id="q" type="search" placeholder="Rechercher un client (e-mail, prénom)…" aria-label="Rechercher un client"></div>
@@ -74,6 +75,11 @@ async function charge() {
   $("#kpis").innerHTML = [[k.clients, "clients inscrits"], [k.payants, "clients payants"], [k.essais, "essais en cours"],
     [k.mrr.toLocaleString("fr-FR") + " €", "revenu mensuel (abonnements actifs)"], [usd(k.cout_mois_usd), "coût Apify + Claude ce mois-ci"]]
     .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+  const g = D.croissance || {};
+  $("#croissance").innerHTML = [[g.conversion == null ? "—" : g.conversion + " %", "conversion essai → payant (inscrites depuis 14 j+)"],
+    [g.inactives, "clientes inactives depuis 14 jours"], [g.resilies, "abonnements résiliés"], [g.parrainages, "inscriptions par parrainage"],
+    [g.boutiques, "boutiques en ligne"], [(g.ca_boutiques || 0).toLocaleString("fr-FR") + " €", `vendus par les boutiques (${g.ventes_boutiques || 0} ventes)`]]
+    .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
   const c = D.config;
   $("#config").innerHTML = [["Apify", c.apify], ["Claude", c.claude], ["Paiement Stripe", c.stripe], ["E-mails Resend", c.emails], ["Banque d'images", c.banque]]
     .map(([n, ok]) => `<span class="puce ${ok ? "" : "non"}">${ok ? "✓" : "✗"} ${n}</span>`).join("") + (c.demo ? '<span class="puce non">Mode démo</span>' : "");
@@ -84,7 +90,8 @@ function rendu() {
   const plans = Object.entries(D.plans);
   $("#lignes").innerHTML = D.clients.filter(c => !q || (c.email + " " + (c.prenom || "")).toLowerCase().includes(q)).map(c => `
     <tr data-id="${c.id}">
-      <td class="qui"><b>${esc(c.prenom || "—")}${c.admin ? " · admin" : ""}</b><small>${esc(c.email)}</small>${c.job ? `<br><small>⏳ ${esc(c.job)}</small>` : ""}</td>
+      <td class="qui"><b>${esc(c.prenom || "—")}${c.admin ? " · admin" : ""}</b><small>${esc(c.email)}</small>${c.job ? `<br><small>⏳ ${esc(c.job)}</small>` : ""}
+        ${c.inactive ? '<br><span class="statut fin">inactive</span>' : ""}${c.parrain ? `<br><small>parrainée par ${esc(c.parrain)}</small>` : ""}${c.filleules ? `<br><small>💌 ${c.filleules} filleule${c.filleules > 1 ? "s" : ""}</small>` : ""}</td>
       <td><select data-champ="plan" aria-label="Formule">${plans.map(([id, nom]) => `<option value="${id}" ${id === c.plan ? "selected" : ""}>${esc(nom)}</option>`).join("")}</select></td>
       <td><select data-champ="statut" aria-label="Statut">${["essai", "actif", "impaye", "resilie", "suspendu"].map(s => `<option ${s === c.statut ? "selected" : ""}>${s}</option>`).join("")}</select>
         <br><span class="statut ${c.actif ? "actif" : "fin"}">${c.actif ? "accès ouvert" : "accès fermé"}</span>${c.statut === "essai" ? `<br><small>fin d'essai ${d(c.fin_essai)}</small>` : ""}</td>
@@ -92,7 +99,7 @@ function rendu() {
       <td class="num">${c.analyses_mois}</td><td class="num">${c.adaptations_mois}</td>
       <td class="num ${c.prix && c.cout_mois * 0.95 > c.prix * 0.5 ? "cher" : ""}">${usd(c.cout_mois)}</td><td class="num">${usd(c.cout_total)}</td>
       <td class="num">${c.prix ? c.prix + " €" : "—"}</td>
-      <td><div class="actions"><button class="btn petit" data-action="prolonger">+7 j d'essai</button><button class="btn petit" data-action="mdp">Lien mot de passe</button></div></td>
+      <td><div class="actions"><button class="btn petit" data-action="prolonger">+7 j d'essai</button><button class="btn petit" data-action="mdp">Lien mot de passe</button>${c.inactive ? '<button class="btn petit" data-action="relance">Relancer</button>' : ""}</div></td>
     </tr>`).join("") || '<tr><td colspan="11">Aucun client.</td></tr>';
 }
 async function modifie(id, corps) {
@@ -106,6 +113,10 @@ $("#lignes").addEventListener("change", e => { const s = e.target.closest("selec
 $("#lignes").addEventListener("click", e => {
   const b = e.target.closest("[data-action]"); if (!b) return;
   const id = b.closest("tr").dataset.id;
+  if (b.dataset.action === "relance") {
+    fetch("/api/admin/clients/" + id + "/relance", {method: "POST"}).then(r => r.json().then(j => toast(r.ok ? "Relance envoyée (e-mail + notification)" : j.erreur || "Erreur")));
+    return;
+  }
   modifie(id, b.dataset.action === "prolonger" ? {prolonger_jours: 7} : {lien_mdp: true});
 });
 $("#q").addEventListener("input", rendu);

@@ -41,6 +41,7 @@ from flask import Flask, abort, g, jsonify, redirect, request, send_from_directo
 
 import abonnements as ab
 import emails
+import notifications as nt
 import moteur
 import publications as pubs
 from espace import CODE, DATA, espace_client
@@ -267,6 +268,11 @@ def inscription():
         return jsonify({"erreur": str(e)}), 400
     session.permanent, session["uid"] = True, u["id"]
     ab.maj(u["id"], derniere_connexion=datetime.now().isoformat(timespec="minutes"))
+    code = (c.get("parrain") or request.cookies.get("vv_parrain") or "").strip().lower()
+    if code and ab.rattache_parrain(u["id"], code):
+        p = ab.par_code(code)
+        if p:
+            nt.notifie(p["id"], "Ta filleule s'est inscrite 💌", f"{u.get('prenom') or 'Une amie'} a rejoint Veille virale grâce à toi.", "/app")
     emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app")
     return jsonify({"ok": True})
 
@@ -321,7 +327,11 @@ def accueil():
     """Visiteur : page de présentation. Client connecté : son application."""
     if ab.get(session.get("uid", 0)):
         return _page("index.html")
-    return _page("accueil.html")
+    rep = _page("accueil.html")
+    code = (request.args.get("parrain") or "").strip().lower()
+    if code and _re.fullmatch(r"[a-z0-9]{3,20}", code):
+        rep.set_cookie("vv_parrain", code, max_age=60 * 86400, samesite="Lax", secure=request.is_secure)
+    return rep
 
 
 @app.get("/app")
@@ -421,6 +431,7 @@ def _apres_analyse(uid):
         u = ab.get(uid)
         if u and a.get("mode") == "veille" and st.get("adaptes"):
             emails.veille_prete(u["email"], u.get("prenom") or "", st["adaptes"], url_site() + "/app")
+            nt.notifie(uid, "Ta veille est prête 🔥", f"{st['adaptes']} Reels viraux adaptés à ta niche t'attendent.", "/app")
     return fin
 
 
@@ -558,7 +569,8 @@ def profil():
                     "mon_compte": cfg.get("mon_compte") or {}, "hashtags": {"instagram": cfg["decouverte"].get("hashtags_instagram") or [],
                                                                              "tiktok": cfg["decouverte"].get("hashtags_tiktok") or []},
                     "voix": voix, "profil_compte": prof, "limite_comptes": droits(g.u)["quotas"]["comptes_surveilles"],
-                    "marque": cfg.get("marque") or {}, "typos": _options_studio()["typos"]})
+                    "marque": cfg.get("marque") or {}, "typos": _options_studio()["typos"],
+                    "synthese": bool(g.u.get("synthese", 1))})
 
 
 MISES_EN_FORME = ("phrases courtes", "sauts de ligne entre les idées", "listes à puces ou numérotées", "majuscules pour insister",
@@ -638,6 +650,8 @@ def maj_profil():
         ab.maj(g.u["id"], onboarding=1)
     if "veille_auto" in c:
         ab.maj(g.u["id"], veille_auto=1 if c["veille_auto"] else 0)
+    if "synthese" in c:
+        ab.maj(g.u["id"], synthese=1 if c["synthese"] else 0)
     return jsonify({"ok": True})
 
 
@@ -781,7 +795,8 @@ def choisir_plan():
         except ValueError as e:
             return jsonify({"erreur": str(e)}), 400
     if en_demo():  # sans Stripe, en démo : changement direct pour tester
-        ab.maj(g.u["id"], plan=plan, statut="actif")
+        ab.maj(g.u["id"], plan=plan, statut="actif", a_paye=1)
+        ab.recompense_parrain(g.u["id"])
         return jsonify({"ok": True, "simule": True})
     return jsonify({"erreur": "Le paiement n'est pas encore configuré (STRIPE_SECRET_KEY)."}), 400
 
@@ -828,11 +843,15 @@ def _banque_dispo() -> bool:
     return banque.active() or en_demo()
 
 
+def _options_studio_couv():
+    return [{"id": k, "nom": v} for k, v in studio.STYLES_COUV.items()]
+
+
 def _options_studio():
     return {"styles": [{"id": k, "nom": v[0], "aide": v[1]} for k, v in studio.STYLES.items()],
             "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5]} for k, v in studio.TYPOS.items()],
             "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
-            "marque": studio.couleurs_marque(g.esp.lit_config())}
+            "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv()}
 
 
 @app.post("/api/studio")
@@ -1062,6 +1081,22 @@ def studio_apercu(sid, i):
         abort(500)
 
 
+@app.get("/api/studio/<sid>/couverture")
+@connecte
+def studio_couverture(sid):
+    """Aperçu de la couverture du Reel (rendu local, aucune API consommée)."""
+    from flask import Response
+    _projet(sid)
+    a = request.args
+    try:
+        t = float(a["t"]) if a.get("t") else None
+    except ValueError:
+        t = None
+    data = studio.apercu_couverture(g.esp, sid, a.get("style"), t, a.get("image"), a.get("texte") or None, bool(a.get("grille")),
+                                    360 if a.get("petit") else 540)
+    return Response(data, mimetype="image/jpeg", headers={"Cache-Control": "private, max-age=60"})
+
+
 @app.get("/studio/<sid>/<dossier_>/<nom>")
 @connecte
 def studio_fichier(sid, dossier_, nom):
@@ -1105,6 +1140,7 @@ def _vitrine(pseudo: str):
         abort(404)
     if not page.get("publie") and session.get("uid") != uid:
         abort(404)
+    page["_parrain"] = ab.code_parrain(uid)
     return uid, page
 
 
@@ -1234,6 +1270,8 @@ def _livre(uid, page, pseudo, p, email, prenom="", montant=0, devise="eur", sess
     if proprio and (montant or p.get("type") == "rdv"):
         quand = f" pour le {bv.date_fr(bv._date(rdv['debut']))}" if rdv else ""
         bq.mail_vente(proprio["email"], page, p, montant, devise, (email or "une cliente") + quand)
+        nt.notifie(uid, "Nouvelle réservation 📅" if rdv and not montant else f"Nouvelle vente : {bq.prix_txt(montant, devise)} 🎉",
+                   f"{p.get('titre')}{quand}", "/app")
     return v
 
 
@@ -1665,6 +1703,8 @@ def boutique_maj():
                            for e in (q.get("emails") or [])[:10] if isinstance(e, dict)]}
         if isinstance(c.get("sources_noms"), dict):
             page["sources_noms"] = {bv.source_propre(k): str(v)[:80] for k, v in list(c["sources_noms"].items())[:200] if bv.source_propre(k)}
+        if "exemple" in c:
+            page["exemple"] = bool(c["exemple"])
         if "publie" in c:
             page["publie"] = bool(c["publie"])
         bq.ecrit_page(uid, page)
@@ -1938,6 +1978,127 @@ def boutique_stripe():
 
 
 # ------------------------------------------------------------
+#  Application installable (PWA), notifications push, parrainage, boutiques en exemple
+# ------------------------------------------------------------
+@app.get("/manifest.webmanifest")
+def manifeste():
+    from flask import Response
+    m = {"name": "Veille virale", "short_name": "Veille virale", "description": "Les Reels viraux de ta niche, adaptés pour toi.",
+         "start_url": "/app?source=app", "scope": "/", "display": "standalone", "orientation": "portrait",
+         "background_color": "#F6F4F8", "theme_color": "#FF4F79", "lang": "fr",
+         "icons": [{"src": "/static/icones/icone-192.png", "sizes": "192x192", "type": "image/png"},
+                   {"src": "/static/icones/icone-512.png", "sizes": "512x512", "type": "image/png"},
+                   {"src": "/static/icones/icone-masque-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}]}
+    return Response(json.dumps(m, ensure_ascii=False), mimetype="application/manifest+json", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/sw.js")
+def service_worker():
+    rep = send_from_directory(CODE / "static", "sw.js", max_age=0, mimetype="application/javascript")
+    rep.headers["Service-Worker-Allowed"] = "/"
+    rep.headers["Cache-Control"] = "no-cache"
+    return rep
+
+
+@app.get("/api/push/cle")
+@connecte
+def push_cle():
+    return jsonify({"cle": nt.cle_publique(), "appareils": len(ab.push_de(g.u["id"]))})
+
+
+@app.post("/api/push")
+@connecte
+def push_abonne():
+    c = request.get_json(force=True)
+    k = c.get("keys") or {}
+    if not (str(c.get("endpoint", "")).startswith("https://") and k.get("p256dh") and k.get("auth")):
+        return jsonify({"erreur": "Abonnement invalide."}), 400
+    ab.ajoute_push(g.u["id"], c["endpoint"], k["p256dh"], k["auth"])
+    nt.notifie(g.u["id"], "Notifications activées ✅", "Tu seras prévenue quand ta veille est prête et à chaque vente.", "/app")
+    return jsonify({"ok": True})
+
+
+@app.delete("/api/push")
+@connecte
+def push_desabonne():
+    ab.retire_push(str((request.get_json(silent=True) or {}).get("endpoint", "")))
+    return jsonify({"ok": True})
+
+
+@app.get("/api/parrainage")
+@connecte
+def parrainage():
+    code = ab.code_parrain(g.u["id"])
+    f = ab.filleules(g.u["id"])
+    u = ab.get(g.u["id"])
+    return jsonify({"code": code, "lien": f"{url_site()}/?parrain={code}", "inscrites": f["inscrites"], "abonnees": f["abonnees"],
+                    "mois_offerts": u.get("mois_offerts") or 0, "jours_filleule": ab.JOURS_FILLEULE})
+
+
+@app.get("/api/vitrines")
+def vitrines():
+    """Boutiques publiées dont la propriétaire accepte de servir d'exemple (page d'accueil publique)."""
+    res = []
+    with ab._db() as c:
+        lignes = c.execute("SELECT pseudo, uid FROM boutiques").fetchall()
+    for r in lignes:
+        page = bq.lit_page(r["uid"])
+        if page and page.get("publie") and page.get("exemple") and page.get("photo"):
+            res.append({"pseudo": r["pseudo"], "nom": page.get("nom") or r["pseudo"], "produits": len(page.get("produits") or []),
+                        "maj": page.get("maj") or ""})
+    res.sort(key=lambda x: (-x["produits"], x["maj"]), reverse=False)
+    rep = jsonify({"vitrines": res[:8]})
+    rep.headers["Cache-Control"] = "public, max-age=600"
+    return rep
+
+
+def synthese_de(u: dict) -> list[tuple[str, str]]:
+    """Blocs du récapitulatif du lundi (vide s'il n'y a rien à raconter)."""
+    import html as _h
+    esp = espace_client(u["id"])
+    blocs = []
+    an = moteur.liste_analyses(esp)
+    if an and an[0].get("date") and an[0]["date"] >= (datetime.now() - timedelta(days=8)).isoformat():
+        a = moteur.charge(esp, an[0]["id"])
+        adaptes = sorted([p for p in a.get("posts", []) if p.get("adaptation")], key=lambda p: -(p["adaptation"].get("pertinence") or 0))
+        if adaptes:
+            hooks = "".join(f"<li>{_h.escape((p['adaptation'].get('hook_viral') or '')[:120])}</li>" for p in adaptes[:3])
+            blocs.append(("🔥 Ta veille", f"<p><b>{len(adaptes)} Reels viraux</b> adaptés à ta niche. À tourner en priorité :</p><ol>{hooks}</ol>"))
+    try:
+        b = pubs.bilan_semaine(esp, esp.lit_config())
+        if b["publies"]:
+            blocs.append(("📈 Tes publications", f"<p><b>{b['publies']}</b> Reels publiés ({b['vues']} vues, {b['conversations']} conversations, "
+                                                f"{b['clients']} clientes).</p>"))
+    except Exception:  # noqa: BLE001
+        pass
+    page = bq.lit_page(u["id"])
+    if page and page.get("publie"):
+        s = bq.stats(u["id"], page)
+        if s["vues_7j"] or s["ventes_7j"] or s["inscrits_7j"]:
+            blocs.append(("🛍️ Ta boutique", f"<p><b>{s['vues_7j']}</b> visites, <b>{s['inscrits_7j']}</b> nouvelles inscrites, "
+                                            f"<b>{s['ventes_7j']}</b> ventes ({bq.prix_txt(s['chiffre_7j'], 'eur').replace('Gratuit', '0 €')}).</p>"))
+    return blocs
+
+
+def envoie_syntheses():
+    maintenant = datetime.now()
+    if maintenant.weekday() != 0 or maintenant.hour < 10:
+        return
+    semaine = maintenant.strftime("%G-%V")
+    for u in ab.tous():
+        try:
+            if not u.get("synthese", 1) or (u.get("derniere_synthese") or "") == semaine or not droits(u)["actif"] or not u.get("onboarding"):
+                continue
+            ab.maj(u["id"], derniere_synthese=semaine)
+            blocs = synthese_de(u)
+            if blocs:
+                emails.synthese(u["email"], u.get("prenom") or "", blocs, url_site() + "/app", url_site() + "/app#parametres")
+                nt.notifie(u["id"], "Ta semaine est prête ☀️", "Ta veille, tes publications et ta boutique en un coup d'œil.", "/app")
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+
+
+# ------------------------------------------------------------
 #  Administration (réservée aux adresses ADMIN_EMAILS)
 # ------------------------------------------------------------
 def admin_requis(f):
@@ -1977,7 +2138,33 @@ def admin_donnees():
             "prix": prix, "job": (job_en_cours(u["id"]) or {}).get("titre"),
         })
     clients.sort(key=lambda c: c["cree"] or "", reverse=True)
-    return jsonify({
+    tous_ = {u["id"]: u for u in ab.tous()}
+    limite = (datetime.now() - timedelta(days=14)).isoformat()
+    for c in clients:
+        u = tous_.get(c["id"]) or {}
+        c["inactive"] = bool(c["actif"]) and (c["derniere_connexion"] or "") < limite
+        c["parrain"] = (tous_.get(u.get("parrain")) or {}).get("email") if u.get("parrain") else None
+        c["filleules"] = sum(1 for x in tous_.values() if x.get("parrain") == c["id"])
+        c["a_paye"] = bool(u.get("a_paye"))
+    anciens = [c for c in clients if (c["cree"] or "") < limite]
+    mois = datetime.now().strftime("%Y-%m")
+    ca_boutiques, boutiques_publiees, ventes_boutiques = 0, 0, 0
+    with ab._db() as cx:
+        for r in cx.execute("SELECT uid FROM boutiques").fetchall():
+            page = bq.lit_page(r["uid"])
+            if page and page.get("publie"):
+                boutiques_publiees += 1
+            for v in bq._lit(bq.dossier(r["uid"]) / "ventes.json", []):
+                if v.get("montant") and "demo" not in (v.get("session") or ""):
+                    ventes_boutiques += 1
+                    ca_boutiques += v["montant"]
+    croissance = {
+        "conversion": round(100 * sum(1 for c in anciens if c["a_paye"]) / len(anciens)) if anciens else None,
+        "resilies": sum(1 for c in clients if c["statut"] == "resilie"), "inactives": sum(1 for c in clients if c["inactive"]),
+        "boutiques": boutiques_publiees, "ventes_boutiques": ventes_boutiques, "ca_boutiques": round(ca_boutiques / 100),
+        "parrainages": sum(1 for u in tous_.values() if u.get("parrain")), "mois": mois,
+    }
+    return jsonify({"croissance": croissance,
         "clients": clients, "plans": {k: v["nom"] for k, v in p.items()},
         "kpi": {"clients": len(clients), "payants": sum(1 for c in clients if c["prix"]),
                 "essais": sum(1 for c in clients if c["statut"] == "essai" and c["actif"]),
@@ -1985,6 +2172,19 @@ def admin_donnees():
         "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")), "banque": banque.active(),
                    "stripe": ab.stripe_actif(), "emails": emails.actif(), "demo": en_demo(), "url": url_site()},
     })
+
+
+@app.post("/api/admin/clients/<int:uid>/relance")
+@admin_requis
+def admin_relance(uid):
+    u = ab.get(uid)
+    if not u:
+        abort(404)
+    if not emails.actif():
+        return jsonify({"erreur": "Les e-mails ne sont pas configurés (RESEND_API_KEY)."}), 400
+    emails.relance(u["email"], u.get("prenom") or "", url_site() + "/app")
+    nt.notifie(uid, "Ta veille t'attend 👀", "Les Reels qui ont explosé cette semaine sont prêts à être adaptés.", "/app")
+    return jsonify({"ok": True})
 
 
 @app.patch("/api/admin/clients/<int:uid>")
@@ -2053,6 +2253,7 @@ def planificateur():
                     ab.maj(u["id"], derniere_veille_auto=lundi)
                     lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(),
                                                                            "max_adaptations": d["reste"]["adaptations"]})
+            envoie_syntheses()
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(900)

@@ -6,6 +6,14 @@
 <title>Veille virale</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#FF4F79">
+<link rel="icon" type="image/png" href="/static/icones/favicon.png">
+<link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Veille virale">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="/static/boutique.css?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -733,6 +741,24 @@ a.btn{text-decoration:none}
 .t-boutique{margin-top:18px;padding-top:4px;border-top:1px dashed var(--line)}
 .bt-tiroir{display:grid;gap:6px;background:var(--sunk);border-radius:14px;padding:14px;margin-top:6px}.bt-tiroir span{font-size:13.5px;color:var(--ink-2)}.bt-tiroir .btn{justify-self:start}
 @media (max-width:860px){.bt-table div{grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr));font-size:13px}}
+.parr-chiffres{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.parr-chiffres div{background:var(--sunk);border-radius:12px;padding:10px 12px;text-align:center}.parr-chiffres b{display:block;font:800 22px/1.1 var(--display)}.parr-chiffres span{font-size:12.5px;color:var(--ink-3)}
+.parrainage{background:linear-gradient(120deg,var(--glow-soft),var(--surface))}
+.etapes-install{padding-left:22px;line-height:1.7}
+.etapes-s.cinq{grid-template-columns:repeat(5,1fr)}
+@media (max-width:860px){.etapes-s.cinq{grid-template-columns:repeat(2,1fr)}}
+.st-couv-styles{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin}
+.st-couv-styles button{flex:0 0 92px;border:2px solid transparent;background:none;padding:0;border-radius:12px;cursor:pointer;text-align:center;color:var(--ink-2)}
+.st-couv-styles img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;display:block;background:var(--sunk)}
+.st-couv-styles small{font-size:12px}
+.st-couv-styles button[aria-pressed="true"]{border-color:var(--glow);color:var(--ink);font-weight:600}
+.st-couv-src{display:flex;gap:8px;flex-wrap:wrap}
+.st-couv-src button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:13.5px}
+.st-couv-src button.img{padding:0;width:56px;height:56px;overflow:hidden}.st-couv-src button.img img{width:100%;height:100%;object-fit:cover;display:block}
+.st-couv-src button[aria-pressed="true"]{border-color:var(--glow);box-shadow:0 0 0 1px var(--glow)}
+.st-couv-apercus{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;max-width:420px}
+.st-couv-apercus figure{margin:0;text-align:center}.st-couv-apercus img{width:100%;border-radius:12px;display:block;background:var(--sunk);box-shadow:var(--shadow)}
+.st-couv-apercus figcaption{font-size:12.5px;color:var(--ink-3);margin-top:6px}
 .bt-saut{position:sticky;top:0;z-index:6;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;background:var(--paper);padding:6px 0 10px;margin-top:-6px}
 .bt-saut button{flex-shrink:0;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-2)}
 .bt-saut button:hover{color:var(--ink);border-color:var(--ink-3)}
@@ -873,6 +899,7 @@ a.btn{text-decoration:none}
     <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
     <div class="bas">
       <div class="utilisateur" id="utilisateur"></div>
+      <button class="btn petit" id="installer-app" hidden onclick="installeApp()" style="margin:0 0 10px">📲 Installer l'application</button>
       <div id="job-rail"></div>
       <div class="etat-cles" id="etat-cles"></div>
     </div>
@@ -1119,6 +1146,15 @@ async function renduAccueil() {
     <div class="crea-recentes">${recents.map(p => { const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
       const src = img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
       return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section>`;
+  if (S.etat.boutique) {
+    try {
+      const sb = await api("/api/boutique/stats");
+      if (S.vue !== "accueil") return;
+      html = html.replace('<div class="etapes-s">', `<div class="etapes-s cinq">`).replace("</div></section>", `${etape(sb.ventes_7j > 0, 5, "Vendre", sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} · ${euros(sb.chiffre_7j)}` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`, "BQ.onglet='stats';va('boutique')")}</div></section>`);
+      if (sb.vues_7j || sb.inscrits_7j || sb.ventes_7j) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Ta boutique cette semaine</h2><button class="lien" onclick="BQ.onglet='stats';va('boutique')">Statistiques →</button></div>
+        <div class="bt-kpis"><div class="bt-kpi"><b>${sb.vues_7j}</b><span>visites</span></div><div class="bt-kpi"><b>${sb.inscrits_7j}</b><span>nouvelles inscrites</span></div><div class="bt-kpi"><b>${sb.ventes_7j}</b><span>ventes</span></div><div class="bt-kpi"><b>${euros(sb.chiffre_7j).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div></div></section>`;
+    } catch {}
+  }
   if (!S.etat.boutique) html += `<section class="bt-promo"><span class="ic">🛍️</span><div><b>Crée ta boutique en lien dans la bio</b><p>Tes liens, tes produits numériques, tes e-mails et ton kit média sur une seule page. 2 minutes, sans rien installer.</p></div><button class="btn prim" onclick="va('boutique')">Créer ma boutique</button></section>`;
   const ab = S.etat.abonnement;
   if (ab?.gratuit) {
@@ -1867,6 +1903,42 @@ function sauveProjet(immediat) {
   $("#st-enregistre") && ($("#st-enregistre").textContent = "…");
   return immediat ? go() : (S.minuteurStudio = setTimeout(go, 450));
 }
+// ---- Couverture du Reel : style, texte, image (moment de la vidéo ou photo), aperçu fil + grille
+function blocCouverture(p, avecVideo) {
+  const styles = S.optionsStudio?.couvertures || [];
+  const st = p.couv_style || "hook", t = p.couv_temps ?? 0.6, max = Math.max(1, Math.min(p.video_duree || 30, 90));
+  const v = encodeURIComponent((p.genere_le || "") + (p.hook || "") + (p.theme || "") + (p.typo || "") + (p.couv_texte || "") + t + (p.couv_image || "") + p.images.join(",") + (p.video || ""));
+  return `<div class="st-bloc" id="st-couv"><h3>5. La couverture</h3>
+    <p class="aide">C'est elle qu'on voit dans ta grille de profil : le texte reste toujours dans la zone visible.</p>
+    <div class="st-couv-styles">${styles.map(x => `<button type="button" data-couv-style="${x.id}" aria-pressed="${st === x.id}"><img loading="lazy" src="/api/studio/${p.id}/couverture?style=${x.id}&petit=1&v=${v}" alt=""><small>${esc(x.nom)}</small></button>`).join("")}</div>
+    <div class="champ" style="margin-top:12px"><label for="st-couv-texte">Texte de la couverture</label><input class="st-input" id="st-couv-texte" value="${esc(p.couv_texte || "")}" placeholder="${esc(p.hook || "Le hook")}"><span class="aide">Vide = le hook. Plus court = plus lisible dans la grille.</span></div>
+    <div class="champ"><label>Image de fond</label>
+      <div class="st-couv-src">${avecVideo ? `<button type="button" data-couv-img="" aria-pressed="${!p.couv_image}">🎬 Image de la vidéo</button>` : ""}${p.images.map((n, i) => `<button type="button" data-couv-img="${esc(n)}" aria-pressed="${p.couv_image === n || (!avecVideo && !p.couv_image && i === 0)}" class="img"><img src="/studio/${p.id}/sources/${encodeURIComponent(n)}" alt="Photo ${i + 1}"></button>`).join("")}</div>
+      ${avecVideo && !p.couv_image ? `<div class="bt-curseur" style="margin-top:6px"><input type="range" id="st-couv-t" min="0" max="${max}" step="0.5" value="${t}" aria-label="Moment de la vidéo"><span id="st-couv-t-aff">${(+t).toFixed(1).replace(".", ",")} s</span></div><span class="aide">Fais glisser pour choisir le moment de la vidéo.</span>` : ""}</div>
+    <div class="st-couv-apercus"><figure><img id="st-couv-fil" alt="Couverture dans le fil"><figcaption>Dans le fil (9:16)</figcaption></figure>
+      <figure><img id="st-couv-grille" alt="Couverture dans la grille"><figcaption>Dans ta grille (3:4)</figcaption></figure></div>
+  </div>`;
+}
+function brancheCouverture(p) {
+  const maj = () => {
+    const q = `style=${encodeURIComponent(p.couv_style || "hook")}&t=${p.couv_temps ?? 0.6}&texte=${encodeURIComponent($("#st-couv-texte").value)}&image=${encodeURIComponent(p.couv_image || "")}&r=${Date.now()}`;
+    // les vignettes de styles suivent le texte et l'image choisis
+    $$("[data-couv-style] img").forEach(im => { im.src = `/api/studio/${p.id}/couverture?style=${im.closest("button").dataset.couvStyle}&petit=1&t=${p.couv_temps ?? 0.6}&texte=${encodeURIComponent($("#st-couv-texte").value)}&image=${encodeURIComponent(p.couv_image || "")}`; });
+    $("#st-couv-fil").src = `/api/studio/${p.id}/couverture?${q}`;
+    $("#st-couv-grille").src = `/api/studio/${p.id}/couverture?${q}&grille=1`;
+  };
+  const enregistre = async (champs, rendu) => {
+    Object.assign(p, champs);
+    try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: champs}); } catch (e) { return toast(e.message); }
+    if (rendu) { await sauveProjet(true); renduProjet(); } else maj();
+  };
+  let tm;
+  $$("[data-couv-style]").forEach(b => b.onclick = () => { $$("[data-couv-style]").forEach(x => x.setAttribute("aria-pressed", x === b)); enregistre({couv_style: b.dataset.couvStyle}); });
+  $$("[data-couv-img]").forEach(b => b.onclick = () => enregistre({couv_image: b.dataset.couvImg}, true));
+  $("#st-couv-texte").oninput = () => { clearTimeout(tm); tm = setTimeout(() => enregistre({couv_texte: $("#st-couv-texte").value}), 450); };
+  $("#st-couv-t")?.addEventListener("input", e => { $("#st-couv-t-aff").textContent = (+e.target.value).toFixed(1).replace(".", ",") + " s"; clearTimeout(tm); tm = setTimeout(() => enregistre({couv_temps: +e.target.value}), 300); });
+  maj();
+}
 function renduProjet() {
   const p = S.projet, el = $("#studio");
   if (!p) return;
@@ -1956,6 +2028,7 @@ function renduProjet() {
           <h3>4. La légende</h3>
           <textarea id="st-legende" rows="8">${esc(p.legende)}</textarea>
         </div>
+        ${p.type === "reel" && (avecVideo || p.images.length || p.slides.length) ? blocCouverture(p, avecVideo) : ""}
       </div>
       <div class="st-droite">
         ${!enCours ? (() => { const n = avecVideo ? 1 : Math.max(p.slides.length, 1); S.apercuI = Math.min(S.apercuI || 0, n - 1);
@@ -2002,6 +2075,7 @@ function renduProjet() {
   depot.addEventListener("drop", e => envoieFichiers([...e.dataTransfer.files]));
   $$("#st-generer", el).forEach(b => b.onclick = genereProjet);
   if ($("#st-apercu")) brancheApercu();
+  if ($("#st-couv")) brancheCouverture(p);
   if ($("[data-choix]")) chargePropositions(p);
   $$("[data-bq-slide]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); ouvreBanque(+b.dataset.bqSlide); });
   $("#st-bq-video")?.addEventListener("click", () => ouvreBanque(0, true));
@@ -2594,8 +2668,12 @@ async function renduParametres() {
     ${r("Ta voix", esc(n.ton || "Non renseignée"), "voix")}
     ${r("Ta marque (écriture et visuels)", (() => { const m = p.marque || {}; const bouts = [m.adresse === "vous" ? "vouvoiement" : m.adresse === "tu" ? "tutoiement" : "", m.emojis ? "emojis : " + m.emojis : "", m.longueur ? "légendes " + m.longueur + "s" : "", m.couleurs?.fond ? `<span class="pt-c" style="background:${esc(m.couleurs.fond)}"></span><span class="pt-c" style="background:${esc(m.couleurs.texte)}"></span><span class="pt-c" style="background:${esc(m.couleurs.accent)}"></span>` : ""].filter(Boolean); return bouts.length ? bouts.join(", ") : "Non renseignée : Claude écrit dans un format standard"; })(), "marque")}
     </div>
-    <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || !["essai", "gratuit"].includes(S.etat.abonnement.plan) ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
+    <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || S.etat.abonnement.plan !== "essai" ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
+    <label class="interrupteur"><input type="checkbox" id="p-synthese" ${p.synthese ? "checked" : ""}><span><b>Récapitulatif chaque lundi par e-mail</b><br><span style="color:var(--ink-3);font-size:13.5px">Ta veille, tes publications et ta boutique de la semaine en un coup d'œil.</span></span></label>
+    <div class="panneau" style="margin-top:16px" id="p-telephone"></div>
     <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire le démarrage rapide</button></p>`;
+  $("#p-synthese").onchange = async e => { await api("/api/profil", {method: "PUT", body: {synthese: e.target.checked}}); toast(e.target.checked ? "Récapitulatif activé" : "Récapitulatif désactivé"); };
+  renduTelephone();
   $$("[data-param]").forEach(b => b.onclick = () => ouvreAssistant(b.dataset.param, true));
   $("#p-auto").onchange = async e => { await api("/api/profil", {method: "PUT", body: {veille_auto: e.target.checked}}); await chargeEtat(); toast(e.target.checked ? "Veille automatique activée" : "Veille automatique désactivée"); };
 }
@@ -2611,14 +2689,85 @@ async function renduAbonnement() {
       <div class="conso">${barre(d.gratuit ? "Classements ce mois-ci" : "Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${d.quotas.adaptations_par_mois ? barre("Reels adaptés ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois) : ""}
       <p style="margin:0;color:var(--ink-2);font-size:14px">${d.gratuit ? `Jusqu'à ${d.quotas.comptes_surveilles} comptes par classement.` : `Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés.`} ${d.veille_auto ? "Veille automatique du lundi incluse." : ""}</p></div>
       ${a.portail ? '<p style="margin:14px 0 0"><button class="btn" id="ab-portail">Gérer mon abonnement et mes factures</button></p>' : ""}</div>
+    <div class="panneau parrainage" id="ab-parrainage"></div>
     <div class="plans">${a.plans.map(p => `<div class="plan ${p.id === d.plan && d.statut === "actif" ? "actuel" : ""}">
       <h3>${esc(p.nom)}</h3><div class="prix">${p.prix_mensuel} €<small> / mois</small></div>
       <ul><li>${p.adaptations_par_mois} Reels adaptés par mois</li><li>${p.analyses_par_mois} analyses par mois</li><li>${p.comptes_surveilles} comptes surveillés</li>${p.veille_auto ? "<li>Veille automatique chaque lundi</li>" : ""}</ul>
       ${p.id === d.plan && d.statut === "actif" ? '<button class="btn" disabled>Ta formule</button>' : `<button class="btn prim" data-plan="${p.id}">Choisir ${esc(p.nom)}</button>`}</div>`).join("")}</div>
     ${!a.stripe ? `<p style="color:var(--ink-3);font-size:13.5px;margin-top:14px">${a.demo ? "Paiement non configuré : en démo, le changement de formule est immédiat." : "Le paiement en ligne n'est pas encore activé."}</p>` : ""}`;
+  renduParrainage();
   $$("[data-plan]").forEach(b => b.onclick = async () => { try { const r = await api("/api/abonnement/choisir", {method: "POST", body: {plan: b.dataset.plan}});
     if (r.url) location.href = r.url; else { toast("Formule activée"); await chargeEtat(); renduAbonnement(); } } catch (e) { toast(e.message); } });
   $("#ab-portail")?.addEventListener("click", async () => { try { location.href = (await api("/api/abonnement/portail", {method: "POST"})).url; } catch (e) { toast(e.message); } });
+}
+
+// ================================================================ Téléphone : application installable et notifications
+let invitationInstall = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); invitationInstall = e; majBoutonInstall(); });
+window.addEventListener("appinstalled", () => { invitationInstall = null; toast("Veille virale est installée sur ton écran d'accueil"); majBoutonInstall(); });
+const estInstallee = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const estIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+function majBoutonInstall() {
+  const b = $("#installer-app"); if (!b) return;
+  b.hidden = estInstallee() || !(invitationInstall || estIOS());
+}
+async function installeApp() {
+  if (invitationInstall) { invitationInstall.prompt(); await invitationInstall.userChoice.catch(() => {}); invitationInstall = null; majBoutonInstall(); return; }
+  $("#feuille").innerHTML = `<h2 id="m-titre">Installer Veille virale</h2><p class="sous">Sur iPhone, l'application s'installe depuis Safari, en trois gestes :</p>
+    <ol class="etapes-install"><li>Touche le bouton <b>Partager</b> <span aria-hidden="true">⬆️</span> en bas de Safari.</li><li>Choisis <b>Sur l'écran d'accueil</b>.</li><li>Touche <b>Ajouter</b>. L'icône Veille virale apparaît avec tes autres applis.</li></ol>
+    <p class="aide">Ouvre-la ensuite depuis l'icône pour activer les notifications (Réglages → Sur ton téléphone).</p>
+    <div class="pied-modale"><button class="btn prim" data-fermer>J'ai compris</button></div>`;
+  $("#modale").classList.add("ouvert");
+}
+async function abonnementPush() {
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+async function activeNotifications() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    return toast(estIOS() && !estInstallee() ? "Sur iPhone : installe d'abord l'application sur ton écran d'accueil" : "Ton navigateur ne gère pas les notifications");
+  }
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") return toast("Notifications refusées : tu peux les autoriser dans les réglages du navigateur");
+  const {cle} = await api("/api/push/cle");
+  const brut = atob(cle.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - cle.length % 4) % 4));
+  const reg = await navigator.serviceWorker.ready;
+  const ab_ = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: Uint8Array.from(brut, c => c.charCodeAt(0))});
+  await api("/api/push", {method: "POST", body: ab_.toJSON()});
+  toast("Notifications activées sur cet appareil"); renduTelephone();
+}
+async function coupeNotifications() {
+  const a = await abonnementPush().catch(() => null);
+  if (a) { await api("/api/push", {method: "DELETE", body: {endpoint: a.endpoint}}).catch(() => {}); await a.unsubscribe().catch(() => {}); }
+  toast("Notifications coupées sur cet appareil"); renduTelephone();
+}
+async function renduTelephone() {
+  const z = $("#p-telephone"); if (!z) return;
+  const gere = "serviceWorker" in navigator && "PushManager" in window;
+  const actif = gere && Notification.permission === "granted" && !!(await abonnementPush().catch(() => null));
+  z.innerHTML = `<h2>Sur ton téléphone</h2>
+    <div class="reglage"><b>Application</b><span>${estInstallee() ? "✓ Installée sur cet appareil" : "Ajoute Veille virale sur ton écran d'accueil, comme une vraie appli."}</span>
+      ${estInstallee() ? "" : `<button class="btn petit prim" id="p-installer">Installer</button>`}</div>
+    <div class="reglage"><b>Notifications</b><span>${actif ? "✓ Activées : veille prête, nouvelles ventes et réservations, récapitulatif du lundi." : !gere && estIOS() ? "Sur iPhone, installe d'abord l'application puis ouvre-la depuis son icône." : "Sois prévenue quand ta veille est prête et à chaque vente."}</span>
+      ${actif ? `<button class="btn petit" id="p-notif-off">Couper</button>` : gere ? `<button class="btn petit prim" id="p-notif">Activer</button>` : ""}</div>`;
+  $("#p-installer")?.addEventListener("click", installeApp);
+  $("#p-notif")?.addEventListener("click", () => activeNotifications().catch(e => toast(e.message)));
+  $("#p-notif-off")?.addEventListener("click", coupeNotifications);
+}
+
+// ================================================================ Parrainage
+async function renduParrainage() {
+  const z = $("#ab-parrainage"); if (!z) return;
+  let r; try { r = await api("/api/parrainage"); } catch { z.remove(); return; }
+  const message = `Je t'ai parlé de Veille virale : l'outil qui me trouve les Reels qui cartonnent dans ma niche et les adapte pour moi. Avec mon lien, tu as ${r.jours_filleule + 7} jours d'essai gratuit : ${r.lien}`;
+  z.innerHTML = `<h2>💌 Parraine une amie</h2>
+    <p style="margin:0 0 12px;color:var(--ink-2)">Elle a <b>un mois d'essai en plus</b>. Toi, tu gagnes <b>un mois offert</b> dès qu'elle s'abonne.</p>
+    ${copiable(r.lien)}
+    <div class="bt-rangee" style="margin-top:10px">${navigator.share ? `<button class="btn prim" id="ab-partager">Partager mon lien</button>` : ""}<button class="btn" data-copier="${esc(message)}">Copier un message tout prêt</button></div>
+    <div class="parr-chiffres"><div><b>${r.inscrites}</b><span>amie${r.inscrites > 1 ? "s" : ""} inscrite${r.inscrites > 1 ? "s" : ""}</span></div><div><b>${r.abonnees}</b><span>abonnée${r.abonnees > 1 ? "s" : ""}</span></div><div><b>${r.mois_offerts}</b><span>mois gagné${r.mois_offerts > 1 ? "s" : ""}</span></div></div>
+    <p class="aide" style="margin:10px 0 0">Ton lien figure aussi sur la pastille « Créé avec Veille virale » de ta boutique.</p>`;
+  $("#ab-partager")?.addEventListener("click", () => navigator.share({title: "Veille virale", text: message, url: r.lien}).catch(() => {}));
 }
 
 
@@ -2940,6 +3089,7 @@ function ongletContenu(z) {
         <label class="bt-depot">${p.couverture ? `<img src="${urlImg(p.couverture)}" alt="">` : "🖼️"}<span>${p.couverture ? "Changer l'image de couverture" : "Ajoute une image de couverture (sinon ta photo est utilisée)"}</span><input type="file" accept="image/*" data-envoi="couverture"></label>
         ${p.couverture ? `<button class="lien" data-retire="couverture" style="justify-self:start">Retirer la couverture</button>` : ""}</div>` : ""}
     </section>
+    <section class="bt-sec"><label class="bt-interr" style="padding:0"><span><b>Montrer ma boutique en exemple</b><br><small style="color:var(--ink-3)">Elle peut apparaître sur la page d'accueil de Veille virale (avec un lien vers elle) : de la visibilité en plus. Il faut une photo de profil.</small></span><input type="checkbox" id="bt-exemple" ${p.exemple ? "checked" : ""}></label></section>
     <section class="bt-sec"><h3>Réseaux sociaux</h3><p class="aide">Les icônes sous ton nom.</p>
       <div class="bt-reseaux">${Object.entries(res).map(([k, v]) => `<div class="bt-res">${svgRes(k)}<input data-r="${k}" value="${esc(v)}" placeholder="${esc(AIDE_RES[k] || "")}" aria-label="${esc(BQ.etat.options.reseaux[k])}"><button class="icone-btn" data-retire-res="${k}" aria-label="Retirer ${esc(BQ.etat.options.reseaux[k])}">✕</button></div>`).join("") || '<p class="aide" style="margin:0">Aucun réseau pour l\'instant.</p>'}</div>
       ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
@@ -2953,6 +3103,7 @@ function ongletContenu(z) {
   z.querySelectorAll("[data-retire-res]").forEach(b => b.onclick = () => { delete p.reseaux[b.dataset.retireRes]; modifieBoutique(true); });
   z.querySelectorAll("[data-retire]").forEach(b => b.onclick = () => { p[b.dataset.retire] = ""; modifieBoutique(true); });
   $("#bt-ajout-bloc").onclick = choisirTypeBloc;
+  $("#bt-exemple").onchange = async e => { p.exemple = e.target.checked; await api("/api/boutique", {method: "PUT", body: {exemple: p.exemple}}); toast(p.exemple ? "Merci ! Ta boutique peut servir d'exemple" : "Ta boutique n'apparaîtra plus en exemple"); };
   z.querySelectorAll("[data-bloc-action]").forEach(b => b.onclick = e => {
     e.stopPropagation();
     const i = +b.dataset.i, a = b.dataset.blocAction, L = p.blocs;
@@ -3646,6 +3797,7 @@ function ongletKit(z) {
   if (q.get("stripe")) { await chargeBoutique(true); BQ.onglet = "produits"; va("boutique"); toast(BQ.page?.stripe?.pret ? "Stripe est relié : tu peux vendre" : "Inscription Stripe à terminer"); }
   if (q.get("projet")) ouvreProjet(q.get("projet")).catch(() => toast("Ce contenu n'existe plus."));  // lien de l'e-mail « contenu prêt »
   else if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
+  majBoutonInstall();
 })();
 </script>
 </body>

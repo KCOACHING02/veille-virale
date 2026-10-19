@@ -460,6 +460,18 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
     for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre", "script", "style", "typo"):
         if k in champs:
             p[k] = champs[k]
+    # Couverture du Reel : style, texte, image (moment de la vidéo ou une des photos)
+    if champs.get("couv_style") in STYLES_COUV:
+        p["couv_style"] = champs["couv_style"]
+    if "couv_texte" in champs:
+        p["couv_texte"] = str(champs["couv_texte"] or "")[:160]
+    if "couv_temps" in champs:
+        try:
+            p["couv_temps"] = max(0.0, min(180.0, float(champs["couv_temps"])))
+        except (TypeError, ValueError):
+            pass
+    if "couv_image" in champs:
+        p["couv_image"] = champs["couv_image"] if champs["couv_image"] in p.get("images", []) else ""
     if isinstance(champs.get("slides"), list):
         anciennes = p.get("slides") or []
         def garde(s, i, k, n):
@@ -685,6 +697,162 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
 
 
 # ------------------------------------------------------------
+#  Couverture du Reel (image de la vidéo ou photo + texte, plusieurs mises en page)
+#  Tout le texte reste dans la zone 3:4 centrale : il n'est pas coupé dans la grille du profil Instagram.
+# ------------------------------------------------------------
+STYLES_COUV = {"hook": "Hook en bas", "centre": "Titre centré", "bandeau": "Bandeau", "magazine": "Magazine", "etiquette": "Étiquettes",
+               "cadre": "Cadre", "split": "Moitié couleur"}
+ZONE_GRILLE = (240, 1680)  # en 1080x1920, la grille du profil montre la bande 3:4 du milieu
+
+
+def image_couverture(p: dict, d: Path, temps: float | None = None, image: str | None = None) -> Path | None:
+    """Image de fond de la couverture : une photo choisie, sinon l'image de la vidéo au moment choisi, sinon la 1re photo."""
+    nom = p.get("couv_image") if image is None else image
+    if nom and nom in p.get("images", []) and (d / "sources" / nom).exists():
+        return d / "sources" / nom
+    if p.get("video") and (d / "sources" / p["video"]).exists():
+        t = float(p.get("couv_temps", 0.6) if temps is None else temps)
+        dossier_c = d / "couv_cadres"
+        dossier_c.mkdir(exist_ok=True)
+        f = dossier_c / f"{t:.1f}.jpg"
+        if not f.exists():
+            src = d / "sources" / p["video"]
+            vf = (TONEMAP + "format=yuvj420p,") if _hdr(src) else ""
+            for filtre in (vf + "scale=1080:-2", "scale=1080:-2"):
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", str(src), "-frames:v", "1", "-vf", filtre,
+                                "-q:v", "3", str(f)], capture_output=True, timeout=90)
+                if f.exists():
+                    break
+        if f.exists():
+            return f
+    if p.get("images"):
+        return d / "sources" / p["images"][0]
+    return None
+
+
+def couverture(p: dict, fond_img: Path | None, style: str | None = None, texte: str | None = None):
+    """Couverture 1080x1920 dans le style choisi."""
+    from PIL import Image, ImageDraw
+    style = style or p.get("couv_style") or "hook"
+    titre = propre(texte if texte is not None else (p.get("couv_texte") or p.get("hook") or ""))
+    theme, typo = theme_de(p), p.get("typo", "moderne")
+    if style == "hook":
+        return slide({"titre": titre, "texte": ""}, 0, 1, fond_img, theme, "", VERTICAL, reel=True, typo=typo)
+    th = theme if isinstance(theme, dict) else THEMES.get(theme, THEMES["sombre"])
+    l, h = VERTICAL
+    f_titre, poids, _, majuscules, facteur, _ = TYPOS.get(typo, TYPOS["moderne"])
+    police = f_titre + (f"@{poids}" if poids else "")
+    interligne = INTERLIGNES.get(typo, 1.1 if majuscules else 1.16)
+    if majuscules:
+        titre = titre.upper()
+    haut, bas = ZONE_GRILLE
+    marge = 90
+    if fond_img and fond_img.exists():
+        fond = _couvre(Image.open(fond_img).convert("RGB"), VERTICAL).convert("RGBA")
+    else:
+        fond = Image.new("RGBA", VERTICAL, th["fond"] + (255,))
+    accent = th["accent"] if theme != "rose" else (255, 255, 255)
+    d = ImageDraw.Draw(fond)
+
+    def bloc_texte(x0, y0, largeur, hauteur, maxi, couleur, centre=True, ombre=False):
+        nonlocal d
+        lignes, ht, taille, espace = _compose(d, _jetons(titre, ""), police, None, largeur, hauteur, int(maxi * facteur), int(48 * facteur), interligne)
+        y = y0 + (hauteur - ht) // 2
+        for ligne in lignes:
+            larg = sum(w for _, _, _, w in ligne) + espace * (len(ligne) - 1)
+            x = x0 + ((largeur - larg) // 2 if centre else 0)
+            for mot, f, _, w in ligne:
+                if ombre:
+                    d.text((x + 3, y + 4), mot, font=f, fill=(0, 0, 0, 120))
+                d.text((x, y), mot, font=f, fill=couleur)
+                x += w + espace
+            y += int(taille * interligne)
+        return lignes, ht, taille, espace
+
+    if style == "centre":
+        fond.alpha_composite(Image.new("RGBA", VERTICAL, (12, 8, 16, 120)))
+        d = ImageDraw.Draw(fond)
+        d.rounded_rectangle([(l - 120) // 2, 640, (l + 120) // 2, 654], radius=7, fill=accent)
+        bloc_texte(marge, 690, l - 2 * marge, 620, 150, (255, 255, 255), ombre=True)
+    elif style == "bandeau":
+        lignes, ht, taille, espace = _compose(d, _jetons(titre, ""), police, None, l - 2 * marge - 60, 420, int(110 * facteur), int(46 * facteur), interligne)
+        y_b = 1180
+        d.rounded_rectangle([marge - 10, y_b, l - marge + 10, y_b + ht + 90], radius=26, fill=th["accent"] + (245,))
+        coul = (255, 255, 255) if sum(th["accent"]) < 600 else (30, 20, 30)
+        y = y_b + 45
+        for ligne in lignes:
+            larg = sum(w for _, _, _, w in ligne) + espace * (len(ligne) - 1)
+            x = (l - larg) // 2
+            for mot, f, _, w in ligne:
+                d.text((x, y), mot, font=f, fill=coul)
+                x += w + espace
+            y += int(taille * interligne)
+    elif style == "magazine":
+        voile = _degrade(VERTICAL, 0.0, 200).transpose(Image.FLIP_TOP_BOTTOM)
+        fond.alpha_composite(voile)
+        d = ImageDraw.Draw(fond)
+        petit = _police("Bold", 34)
+        kicker = "NOUVEAU"
+        d.rounded_rectangle([marge, haut + 70, marge + d.textlength(kicker, font=petit) + 40, haut + 128], radius=29, fill=accent)
+        d.text((marge + 20, haut + 78), kicker, font=petit, fill=(255, 255, 255) if sum(accent) < 600 else (30, 20, 30))
+        bloc_texte(marge, haut + 160, l - 2 * marge, 560, 132, (255, 255, 255), centre=False, ombre=True)
+        if p.get("pseudo"):
+            pol = _police("Medium", 34)
+            d.text((marge, bas - 110), "@" + p["pseudo"].lstrip("@"), font=pol, fill=(255, 255, 255))
+    elif style == "etiquette":
+        fond.alpha_composite(Image.new("RGBA", VERTICAL, (0, 0, 0, 40)))
+        d = ImageDraw.Draw(fond)
+        lignes, ht, taille, espace = _compose(d, _jetons(titre, ""), police, None, l - 2 * marge - 50, 640, int(92 * facteur), int(44 * facteur), 1.42)
+        y = 960 - ht // 2
+        for ligne in lignes:
+            larg = sum(w for _, _, _, w in ligne) + espace * (len(ligne) - 1)
+            x = (l - larg) // 2
+            d.rounded_rectangle([x - 26, y - int(taille * .14), x + larg + 26, y + int(taille * 1.16)], radius=18, fill=(255, 255, 255, 245))
+            for mot, f, _, w in ligne:
+                d.text((x, y), mot, font=f, fill=(25, 18, 28))
+                x += w + espace
+            y += int(taille * 1.42)
+    elif style == "cadre":
+        fond.alpha_composite(_degrade(VERTICAL, 0.45, 220))
+        d = ImageDraw.Draw(fond)
+        d.rounded_rectangle([46, haut + 30, l - 46, bas - 30], radius=36, outline=(255, 255, 255), width=7)
+        bloc_texte(marge + 20, bas - 640, l - 2 * marge - 40, 520, 118, (255, 255, 255), centre=False, ombre=True)
+    elif style == "split":
+        coupe = 1000
+        haut_img = fond.crop((0, 0, l, coupe)) if fond_img else None
+        fond = Image.new("RGBA", VERTICAL, th["fond"] + (255,))
+        if haut_img is not None:
+            fond.paste(_couvre(haut_img.convert("RGB"), (l, coupe)).convert("RGBA"), (0, 0))
+        d = ImageDraw.Draw(fond)
+        d.rectangle([0, coupe - 8, l, coupe + 8], fill=th["accent"])
+        bloc_texte(marge, coupe + 70, l - 2 * marge, bas - coupe - 130, 118, th["texte"])
+    return fond.convert("RGB")
+
+
+def couvertures(p: dict, d: Path, sortie: Path) -> list[str]:
+    """couverture.jpg (9:16) et couverture_grille.jpg (3:4, telle qu'elle apparaît dans la grille du profil)."""
+    im = couverture(p, image_couverture(p, d))
+    im.save(sortie / "couverture.jpg", "JPEG", quality=91)
+    im.crop((0, ZONE_GRILLE[0], 1080, ZONE_GRILLE[1])).save(sortie / "couverture_grille.jpg", "JPEG", quality=91)
+    return ["couverture.jpg", "couverture_grille.jpg"]
+
+
+def apercu_couverture(esp: Espace, sid: str, style: str | None, temps: float | None, image: str | None, texte: str | None, grille: bool = False,
+                      largeur: int = 540) -> bytes:
+    import io
+    p = charge(esp, sid)
+    d = dossier(esp, sid)
+    p["couleurs"] = couleurs_marque(esp.lit_config()) if p.get("theme") == "marque" else p.get("couleurs")
+    im = couverture(p, image_couverture(p, d, temps, image), style if style in STYLES_COUV else None, texte)
+    if grille:
+        im = im.crop((0, ZONE_GRILLE[0], 1080, ZONE_GRILLE[1]))
+    im.thumbnail((largeur, largeur * 2))
+    b = io.BytesIO()
+    im.save(b, "JPEG", quality=80)
+    return b.getvalue()
+
+
+# ------------------------------------------------------------
 #  Vidéo (ffmpeg + libass)
 # ------------------------------------------------------------
 def _duree(f: Path) -> float | None:
@@ -863,15 +1031,12 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
         image.unlink(missing_ok=True)
         if piste:
             piste.unlink(missing_ok=True)
-    # Couverture : une image du début avec le hook
-    from PIL import Image
-    _ffmpeg(["-ss", "0.6", "-i", str(sortie / "reel.mp4"), "-frames:v", "1", "-q:v", "3", str(d / "cadre.jpg")], d, 120)
-    if (d / "cadre.jpg").exists():
-        couv = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, d / "cadre.jpg", theme_de(p), "", VERTICAL, reel=True,
-                     typo=p.get("typo", "moderne"))
-        couv.save(sortie / "couverture.jpg", "JPEG", quality=90)
-        (d / "cadre.jpg").unlink(missing_ok=True)
-    return ["reel.mp4", "couverture.jpg"] if (sortie / "couverture.jpg").exists() else ["reel.mp4"]
+    log("Je crée la couverture…")
+    try:
+        return ["reel.mp4", *couvertures(p, d, sortie)]
+    except Exception as e:  # noqa: BLE001
+        log(f"  ⚠️  Couverture impossible ({str(e)[:100]})")
+        return ["reel.mp4"]
 
 
 def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
@@ -894,9 +1059,8 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
     _ffmpeg(["-f", "concat", "-safe", "0", "-i", "plans.txt", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
              "-vf", "fps=30,format=yuv420p,setsar=1", "-t", f"{duree:.1f}", "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "64k",
              *ENCODAGE, str(sortie / "reel.mp4")], d)
-    shutil.copy(plans / "00.jpg", sortie / "couverture.jpg")
     shutil.rmtree(plans, ignore_errors=True)
-    return ["reel.mp4", "couverture.jpg"]
+    return ["reel.mp4", *couvertures(p, d, sortie)]
 
 
 # ------------------------------------------------------------
@@ -988,7 +1152,8 @@ def package(p: dict, d: Path, sortie: Path, fichiers: list[str]) -> str:
     lisez = [
         "TON CONTENU PRÊT À PUBLIER", "=" * 26, "",
         "1. Ouvre Instagram > + > " + ("Publication, et sélectionne les slides dans l'ordre (slide_01, slide_02…)."
-                                      if p["type"] == "carrousel" else "Reel, et choisis reel.mp4. Mets couverture.jpg comme couverture."),
+                                      if p["type"] == "carrousel" else "Reel, et choisis reel.mp4. Touche « Modifier la couverture » > « Ajouter depuis la pellicule » et prends couverture.jpg "
+                                         "(couverture_grille.jpg montre ce qui apparaîtra dans la grille de ton profil)."),
         "2. Colle la légende de « legende.txt ».",
         _ligne_son(p),
         "4. Active la réponse automatique au mot-clé avec le premier message de « messages-prives.txt ».",

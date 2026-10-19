@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Veille virale — tes Reels de la semaine, inspirés de ceux qui ont explosé</title>
 <meta name="description" content="Repère les Reels Instagram et TikTok qui explosent dans ta niche, comprends pourquoi, et reçois-les adaptés à ton audience : hook, script, légende, carrousel et messages privés.">
+<link rel="icon" type="image/png" href="/static/icones/favicon.png">
+<link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
+<meta name="theme-color" content="#FF4F79">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -20,6 +23,15 @@ h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 20px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
 .btn.prim{background:var(--glow);border-color:var(--glow);color:#fff}
 .btn.prim:hover{filter:brightness(1.06)}
+.atouts-boutique{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:22px}
+.atouts-boutique div{background:var(--surface);border-radius:16px;padding:18px;box-shadow:var(--shadow);display:grid;gap:6px}
+.atouts-boutique span{color:var(--ink-2);font-size:15px}
+.bandeau-parrain{background:var(--glow);color:#fff;text-align:center;padding:9px 16px;font-size:14.5px}
+.vitrines{display:flex;gap:18px;overflow-x:auto;padding:22px 4px 10px;scroll-snap-type:x mandatory}
+.vitrine{flex:0 0 190px;scroll-snap-align:start;text-decoration:none;text-align:center;color:var(--ink-2);font-weight:600;font-size:14px}
+.vitrine .tel-v{width:190px;height:370px;border-radius:28px;border:7px solid #1C1420;overflow:hidden;position:relative;margin-bottom:8px;background:var(--sunk);box-shadow:var(--shadow);transition:transform .2s}
+.vitrine:hover .tel-v{transform:translateY(-4px)}
+.vitrine iframe{width:375px;height:740px;border:0;transform:scale(.47);transform-origin:0 0;pointer-events:none;position:absolute;left:0;top:0}
 /* En-tête */
 .tete{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid transparent}
 .tete .l{display:flex;align-items:center;gap:22px;height:66px}
@@ -98,6 +110,7 @@ footer .l span{margin-right:auto}
 </style>
 </head>
 <body>
+<div class="bandeau-parrain" id="bandeau-parrain" hidden>💌 Une amie t'a invitée : tu as <b>un mois d'essai gratuit en plus</b>.</div>
 <header class="tete"><div class="l">
   <a class="marque" href="/"><i></i>Veille virale</a>
   <nav aria-label="Sections"><a href="#fonctionnement">Comment ça marche</a><a href="#contenu">Ce que tu reçois</a><a href="#tarifs">Tarifs</a><a href="#faq">Questions</a></nav>
@@ -141,6 +154,19 @@ footer .l span{margin-right:auto}
   </div>
 </div></section>
 
+<section class="s" id="boutiques"><div class="l">
+  <p class="surtitre">Et pour vendre</p>
+  <h2>Ta boutique en lien dans la bio, incluse.</h2>
+  <p class="intro">Tes liens, tes produits numériques, tes rendez-vous et ton kit média sur une seule page, avec des dizaines de styles. Claude t'aide à trouver quoi vendre et écrit même ton guide PDF.</p>
+  <div class="atouts-boutique">
+    <div><b>🎨 21 thèmes, 272 boutons</b><span>Formes, polices, fonds animés : une page qui te ressemble, en deux minutes.</span></div>
+    <div><b>✨ Quoi vendre ?</b><span>Claude propose tes produits d'après ce qui marche dans ta niche, et écrit ton guide PDF.</span></div>
+    <div><b>📅 Ventes et rendez-vous</b><span>Paiement sur ton propre Stripe, codes promo, offres limitées, appels réservés en ligne.</span></div>
+    <div><b>📊 Ce qui rapporte</b><span>Chaque Reel a son lien suivi : tu sais lequel amène des ventes.</span></div>
+  </div>
+  <div class="vitrines" id="vitrines" hidden></div>
+</div></section>
+
 <section class="s" id="tarifs"><div class="l">
   <p class="surtitre">Tarifs</p>
   <h2>Sans engagement, résiliable en un clic.</h2>
@@ -173,9 +199,22 @@ footer .l span{margin-right:auto}
 
 <script>
 document.getElementById("annee").textContent = new Date().getFullYear();
+// Invitation d'une amie (lien de parrainage) : essai plus long, rappelé partout
+const parrain = new URLSearchParams(location.search).get("parrain") || (document.cookie.match(/(?:^|; )vv_parrain=([^;]+)/) || [])[1];
+if (parrain) {
+  document.getElementById("bandeau-parrain").hidden = false;
+  document.querySelectorAll('a[href="/connexion"]').forEach(a => a.href = "/connexion?parrain=" + encodeURIComponent(parrain));
+}
+fetch("/api/vitrines").then(r => r.json()).then(v => {
+  if (!v.vitrines.length) return;
+  const z = document.getElementById("vitrines"); z.hidden = false;
+  z.innerHTML = v.vitrines.map(x => `<a class="vitrine" href="/@${encodeURIComponent(x.pseudo)}" target="_blank" rel="noopener"><div class="tel-v"><iframe loading="lazy" tabindex="-1" title="${esc(x.nom)}" src="/@${encodeURIComponent(x.pseudo)}"></iframe></div>${esc(x.nom)}</a>`).join("");
+}).catch(() => {});
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 fetch("/api/formules").then(r => r.json()).then(f => {
-  document.getElementById("intro-tarifs").textContent = `Commence par ${f.essai_jours} jours gratuits, sans carte bancaire.`;
+  const jours = f.essai_jours + (parrain ? 30 : 0);
+  document.getElementById("intro-tarifs").textContent = `Commence par ${jours} jours gratuits, sans carte bancaire.`;
+  document.getElementById("cta-essai").textContent = `Essayer ${jours} jours gratuitement`;
   const milieu = f.plans.length > 2 ? 1 : 0;
   document.getElementById("tarifs-liste").innerHTML = f.plans.map((p, i) => `
     <div class="tarif ${i === milieu ? "fort" : ""}">

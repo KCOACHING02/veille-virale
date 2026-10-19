@@ -848,6 +848,8 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
     classes = (f'e-{d["entete"]} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
+    if page.get("_parrain"):  # la pastille « Créé avec Veille virale » porte le lien de parrainage de la créatrice
+        corps = corps.replace('<a href="/" target="_blank" rel="noopener">Créé avec', f'<a href="/?parrain={quote(page["_parrain"])}" target="_blank" rel="noopener">Créé avec')
     corps = corps.replace('class="lien', f'class="{cb} lien').replace('class="bouton"', f'class="bouton {cb}"')
     decor = ""
     if d.get("decor", "aucun") != "aucun":
@@ -1008,7 +1010,11 @@ def stats(uid: int, page: dict) -> dict:
     titres = {b["id"]: b.get("titre") or b.get("url") or "Lien" for b in page.get("blocs", []) if b.get("type") == "lien"}
     prods = {p["id"]: p.get("titre") for p in page.get("produits", [])}
     payees = [v for v in ventes if v.get("montant")]
+    il_y_a_7j = (datetime.now() - timedelta(days=7)).isoformat()
+    semaine = [v for v in payees if (v.get("date") or "") >= il_y_a_7j[:16]]
     return {
+        "ventes_7j": len(semaine), "chiffre_7j": sum(v["montant"] for v in semaine),
+        "inscrits_7j": sum(1 for x in inscrits if (x.get("date") or "")[:16] >= il_y_a_7j[:16]),
         "vues_30j": sum(vues.get(x, 0) for x in serie), "vues_7j": sum(vues.get(x, 0) for x in serie[-7:]),
         "serie": [{"jour": x, "vues": vues.get(x, 0)} for x in serie],
         "clics": sorted(({"titre": titres[k], "clics": n} for k, n in s.get("clics", {}).items() if k in titres), key=lambda x: -x["clics"]),

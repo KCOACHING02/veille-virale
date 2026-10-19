@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Veille virale — connexion</title>
+<link rel="icon" type="image/png" href="/static/icones/favicon.png">
+<link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -114,7 +117,7 @@ $("#f").onsubmit = async ev => {
   $("#b").disabled = true;
   const url = {inscription: "/api/inscription", connexion: "/api/connexion", oubli: "/api/mot-de-passe-oublie", nouveau: "/api/reinitialiser"}[mode];
   const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value, cgv: $("#cgv").checked, jeton: params.get("t")})});
+    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value, cgv: $("#cgv").checked, jeton: params.get("t"), parrain: params.get("parrain") || ""})});
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { message(j.erreur || "Erreur, réessaie."); $("#b").disabled = false; return; }
   if (mode === "oubli") {
