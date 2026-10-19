@@ -328,6 +328,165 @@ THEMES.update({
 })
 AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif"]
 
+# ------------------------------------------------------------
+#  Collection de thèmes : 20 par ambiance. Chaque thème = une palette (fond, fond 2, texte, bouton, accent),
+#  deux polices et une « allure » (formes, boutons, disposition). Les couleurs secondaires sont déduites
+#  pour garder un bon contraste.
+# ------------------------------------------------------------
+ALLURES = {
+    "doux": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="arrondi", rayon=16, survol="soulever",
+                 image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte"),
+    "pilule": dict(entete="minimal", fond_type="degrade", photo_forme="rond", photo_contour=True, bouton_style="doux", bouton_forme="pilule", rayon=999,
+                   survol="grossir", image_forme="rond", carte_cadre="flottant", produits_vue="carrousel", prix_style="bouton"),
+    "editorial": dict(entete="magazine", fond_type="uni", photo_forme="arrondi", bouton_style="contour", bouton_forme="carre", rayon=0, survol="enfoncer",
+                      image_forme="fenetre", carte_cadre="contour", produits_vue="vitrine", prix_style="surligne", taille_titre="xl"),
+    "arche": dict(entete="arche", fond_type="uni", photo_forme="arche", bouton_style="plein", bouton_forme="pilule", rayon=999, survol="soulever",
+                  image_forme="arche", carte_cadre="sans", produits_vue="zigzag", prix_style="texte"),
+    "pop": dict(entete="cote", fond_type="motif", motif="points", photo_forme="goutte", photo_contour=True, bouton_style="decale", bouton_forme="arrondi",
+                rayon=14, survol="enfoncer", image_forme="galet", carte_cadre="decale", produits_vue="grille", prix_style="pastille", decor="confettis"),
+    "brutal": dict(entete="cote", fond_type="motif", motif="grille", photo_forme="arrondi", bouton_style="decale", bouton_forme="carre", rayon=0,
+                   survol="enfoncer", image_forme="carre", carte_cadre="decale", produits_vue="bento", prix_style="etiquette", taille_titre="xl"),
+    "neon": dict(entete="minimal", fond_type="motif", motif="grille", photo_forme="rond", photo_contour=True, bouton_style="neon", bouton_forme="biseau",
+                 rayon=10, survol="grossir", image_forme="biseau", carte_cadre="contour", produits_vue="liste", prix_style="etiquette", decor="etincelles"),
+    "verre": dict(entete="banniere", fond_type="anime", photo_forme="rond", photo_contour=True, bouton_style="verre", bouton_forme="pilule", rayon=999,
+                  survol="incliner", image_forme="carre", carte_cadre="verre", produits_vue="carrousel", prix_style="bouton", decor="bulles"),
+    "papier": dict(entete="minimal", fond_type="motif", motif="grain", photo_forme="polaroid", bouton_style="papier", bouton_forme="croquis", rayon=18,
+                   survol="tourner", image_forme="polaroid", carte_cadre="sans", produits_vue="polaroid", prix_style="surligne"),
+    "retro": dict(entete="minimal", fond_type="motif", motif="rayures", photo_forme="polaroid", bouton_style="plein", bouton_forme="ticket", rayon=10,
+                  survol="tourner", image_forme="carre", carte_cadre="contour", produits_vue="grille", prix_style="etiquette"),
+    "y2k": dict(entete="minimal", fond_type="anime", photo_forme="coeur", bouton_style="holo", bouton_forme="bulle", rayon=20, survol="rebond",
+                image_forme="fleur", carte_cadre="verre", produits_vue="grille", prix_style="pastille", decor="etincelles"),
+    "luxe": dict(entete="minimal", fond_type="uni", photo_forme="anneau", bouton_style="double", bouton_forme="carre", rayon=0, survol="aucun",
+                 image_forme="fenetre", carte_cadre="contour", produits_vue="vitrine", prix_style="texte"),
+    "nature": dict(entete="arche", fond_type="motif", motif="vagues", photo_forme="goutte", bouton_style="doux", bouton_forme="feuille", rayon=22,
+                   survol="soulever", image_forme="galet", carte_cadre="sans", produits_vue="zigzag", prix_style="texte"),
+    "pixel": dict(entete="cote", fond_type="motif", motif="grille", photo_forme="hexagone", bouton_style="decale", bouton_forme="pixel", rayon=0,
+                  survol="enfoncer", image_forme="biseau", carte_cadre="decale", produits_vue="mini", prix_style="bouton", decor="formes"),
+    "souligne": dict(entete="portrait", fond_type="uni", photo_forme="rond", bouton_style="souligne", bouton_forme="carre", rayon=0, survol="aucun",
+                     alignement="gauche", image_forme="carre", carte_cadre="sans", produits_vue="liste", prix_style="texte"),
+    "vichy": dict(entete="arche", fond_type="motif", motif="vichy", photo_forme="arche", bouton_style="plein", bouton_forme="capsule", rayon=18,
+                  survol="rebond", image_forme="arche", carte_cadre="ombre", produits_vue="grille", prix_style="pastille", decor="coeurs"),
+}
+
+
+def _rgb_(h):
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def _lum(h):
+    r, g, b = _rgb_(h)
+    return (r * 299 + g * 587 + b * 114) / 1000
+
+
+def _melange(a, b, t):
+    return "#%02X%02X%02X" % tuple(round(x * (1 - t) + y * t) for x, y in zip(_rgb_(a), _rgb_(b)))
+
+
+def _theme(id_, nom, ambiance, f1, f2, texte, bouton, accent, titre, corps, allure, **extra):
+    a = ALLURES[allure]
+    clair = _lum(f1) > 150
+    bouton_texte = "#1A1A1A" if _lum(bouton) > 150 else "#FFFFFF"
+    if a["bouton_style"] in ("contour", "double", "souligne"):
+        bouton_texte = texte
+    ombre = texte if allure in ("pop", "brutal", "pixel") else _melange(bouton, "#000000", .32)
+    if allure in ("verre", "y2k"):
+        bloc = "#FFFFFFB3" if clair else "#FFFFFF2E"
+    else:
+        bloc = ("#FFFFFF" if _lum(f1) < 245 else _melange(f1, "#000000", .03)) if clair else _melange(f1, "#FFFFFF", .08)
+    THEMES[id_] = _t(nom, ambiance, **a, fond1=f1, fond2=f2, texte=texte, bouton_fond=bouton, bouton_texte=bouton_texte, bouton_ombre=ombre,
+                     bloc_fond=bloc, bloc_texte=texte if (clair or allure in ("verre", "y2k") or _lum(texte) > 150) else "#FFFFFF", accent=accent,
+                     police_titre=titre, police_texte=corps, **extra)
+
+
+for _x in [
+    # Classique
+    ("ivoire", "Ivoire", "Classique", "#FAF7F0", "#EFE8DA", "#2B2A27", "#2B2A27", "#B08D57", "Cormorant Garamond", "Lora", "editorial"),
+    ("marine", "Marine", "Classique", "#F3F5F8", "#E3E9F1", "#1B2A41", "#1B2A41", "#C9A227", "Playfair Display", "Inter", "doux"),
+    ("bordeaux", "Bordeaux", "Classique", "#F7F1EE", "#EADBD5", "#5B1A2B", "#5B1A2B", "#C08B5C", "DM Serif Display", "DM Sans", "arche"),
+    ("graphite", "Graphite", "Classique", "#1E1F22", "#2A2B2F", "#ECECEC", "#ECECEC", "#9AA4B2", "Gloock", "Inter", "editorial"),
+    ("porcelaine", "Porcelaine", "Classique", "#FFFFFF", "#F2F4F7", "#22262E", "#E9EDF3", "#3D5A80", "Libre Baskerville", "Poppins", "souligne"),
+    ("olive", "Olive", "Classique", "#F2F1E8", "#E3E1CF", "#3A3D2A", "#5C6142", "#A68A4B", "Fraunces", "Lora", "doux"),
+    ("champagne", "Champagne", "Classique", "#F6EEE3", "#EBDCC8", "#4A3B2C", "#D9C2A3", "#A6782F", "Playfair Display", "Poppins", "pilule"),
+    ("noir_or", "Noir et or", "Classique", "#121212", "#1E1E1E", "#E9D9B0", "#E9D9B0", "#C9A55B", "Cormorant Garamond", "Inter", "luxe"),
+    ("craie", "Craie", "Classique", "#F4F4F2", "#E6E6E2", "#30302E", "#FFFFFF", "#7A7A74", "Instrument Serif", "DM Sans", "doux"),
+    ("ardoise", "Ardoise", "Classique", "#2F3A45", "#3B4855", "#F1F3F5", "#F1F3F5", "#E0B973", "DM Serif Display", "Inter", "arche"),
+    ("encre_bleue", "Encre bleue", "Classique", "#F5F7FB", "#E6ECF7", "#13294B", "#13294B", "#E35D3A", "Abril Fatface", "Lora", "editorial"),
+    ("atelier", "Atelier", "Classique", "#EEEAE4", "#E0D9CF", "#2E2A26", "#2E2A26", "#8C6E54", "Bricolage Grotesque", "Inter", "souligne"),
+    ("emeraude", "Émeraude", "Classique", "#0F2A23", "#173A31", "#F0EBDD", "#F0EBDD", "#C9A86A", "Playfair Display", "DM Sans", "luxe"),
+    ("perle", "Perle", "Classique", "#F8F6F7", "#ECE6EA", "#3B3340", "#E7DCE3", "#9C6B86", "Cormorant Garamond", "Nunito", "pilule"),
+    ("journal", "Journal", "Classique", "#F2EFE6", "#E4DFD1", "#111111", "#111111", "#C1272D", "Abril Fatface", "Space Mono", "editorial"),
+    # Vibrant
+    ("mangue", "Mangue", "Vibrant", "#FFB347", "#FF7E5F", "#3A1300", "#FFFFFF", "#7B2CBF", "Shrikhand", "Nunito", "pilule"),
+    ("lagon", "Lagon", "Vibrant", "#00B4C8", "#3B82F6", "#FFFFFF", "#FFFFFF", "#FFE45C", "Unbounded", "Outfit", "verre"),
+    ("framboise", "Framboise", "Vibrant", "#FF2E63", "#FF8FAB", "#FFFFFF", "#FFFFFF", "#08D9D6", "Archivo Black", "DM Sans", "pop"),
+    ("citron", "Citron", "Vibrant", "#FFF35C", "#FFE600", "#1A1A1A", "#1A1A1A", "#FF4FA3", "Bebas Neue", "DM Sans", "brutal"),
+    ("electrique", "Électrique", "Vibrant", "#1B00FF", "#5A3BFF", "#FFFFFF", "#FFFFFF", "#00FFC6", "Syne", "Inter", "verre"),
+    ("flamant", "Flamant rose", "Vibrant", "#FFC6D9", "#FF9EBB", "#5A0F2E", "#FFFFFF", "#FF4F79", "Pacifico", "Nunito", "y2k"),
+    ("kiwi", "Kiwi", "Vibrant", "#B7F36B", "#7BD389", "#123B1C", "#FFFFFF", "#FF6B6B", "Righteous", "Outfit", "pop"),
+    ("sorbet", "Sorbet", "Vibrant", "#FFD1DC", "#C1F0E5", "#3E2A47", "#FFFFFF", "#FF7AA2", "Quicksand", "Nunito", "pilule"),
+    ("tropique", "Tropique", "Vibrant", "#0E6E5C", "#F2A541", "#FFFFFF", "#F2A541", "#FFE8C2", "Abril Fatface", "Outfit", "pilule"),
+    ("bubblegum", "Bubblegum", "Vibrant", "#FF77E9", "#9D4EDD", "#FFFFFF", "#FFFFFF", "#FFE45C", "Unbounded", "Nunito", "y2k"),
+    ("clementine", "Clémentine", "Vibrant", "#FF6B1A", "#FF9A3C", "#FFFFFF", "#1F1300", "#FFE07A", "Anton", "DM Sans", "brutal"),
+    ("arc_en_ciel", "Arc-en-ciel", "Vibrant", "#FF9AA2", "#B5EAD7", "#2D1E40", "#FFFFFF", "#7C4DFF", "Shrikhand", "Nunito", "pop"),
+    ("menthe", "Menthe", "Vibrant", "#3DFFB0", "#00C2A8", "#06261C", "#06261C", "#FF4FA3", "Space Grotesk", "Space Mono", "brutal"),
+    ("disco", "Disco", "Vibrant", "#2B0A3D", "#4B1460", "#FFFFFF", "#FFD23F", "#FF4FA3", "Righteous", "Outfit", "neon"),
+    ("coquelicot", "Coquelicot", "Vibrant", "#E63946", "#C92A37", "#FFFFFF", "#F1FAEE", "#FFD166", "Archivo Black", "Inter", "doux"),
+    ("cobalt", "Cobalt", "Vibrant", "#F5F7FF", "#DDE4FF", "#1E2A78", "#1E2A78", "#FF5C39", "Bricolage Grotesque", "DM Sans", "pop"),
+    # Cosy
+    ("caramel", "Caramel", "Cosy", "#F3E3CF", "#E8CFB0", "#4B2E1E", "#B5733E", "#B5733E", "Fraunces", "Nunito", "arche"),
+    ("brume", "Brume", "Cosy", "#E9ECEF", "#DDE2E6", "#3D4852", "#FFFFFF", "#7C93A6", "Instrument Serif", "Inter", "doux"),
+    ("cannelle", "Cannelle", "Cosy", "#6B3E26", "#8A5236", "#F8EBDD", "#F8EBDD", "#E7A977", "DM Serif Display", "Lora", "pilule"),
+    ("chai", "Chaï", "Cosy", "#EADBC8", "#DCC7AE", "#3F2E22", "#F7EFE5", "#A0522D", "Caveat", "Lora", "papier"),
+    ("foret", "Forêt", "Cosy", "#1F3A2E", "#2C4F3E", "#EEF2E6", "#EEF2E6", "#D6A85B", "Gloock", "DM Sans", "nature"),
+    ("lavande", "Lavande", "Cosy", "#ECE6F5", "#DCD2EE", "#3D3054", "#FFFFFF", "#8E7CC3", "Cormorant Garamond", "Nunito", "nature"),
+    ("peche", "Pêche", "Cosy", "#FBE3D6", "#F6CBB7", "#5A2E22", "#FFFFFF", "#E07A5F", "Fraunces", "Nunito", "pilule"),
+    ("miel", "Miel", "Cosy", "#F7E7B4", "#F2D27C", "#4A3410", "#FFFFFF", "#C98A1B", "Abril Fatface", "Nunito", "retro"),
+    ("argile", "Argile", "Cosy", "#D9A38A", "#C98B70", "#3B1E14", "#F6E6DC", "#7A3E2B", "Bricolage Grotesque", "Lora", "arche"),
+    ("cocon", "Cocon", "Cosy", "#F5EFE6", "#EADFD0", "#4D4038", "#E8D8C4", "#B98B73", "Quicksand", "Nunito", "doux"),
+    ("mousse", "Mousse", "Cosy", "#DDE5B6", "#ADC178", "#2E3A1F", "#F0EAD2", "#6C584C", "Fraunces", "Outfit", "nature"),
+    ("nuit_douce", "Nuit douce", "Cosy", "#2A2438", "#352F44", "#F1E9DA", "#5C5470", "#DBD8E3", "Instrument Serif", "Nunito", "pilule"),
+    ("vanille", "Vanille", "Cosy", "#FFF8EC", "#F5E9D3", "#4A3B2A", "#EAD7B7", "#C28E5C", "Libre Baskerville", "Nunito", "souligne"),
+    ("automne", "Automne", "Cosy", "#8C3B1F", "#A85232", "#FBEBD8", "#FBEBD8", "#F2B880", "Abril Fatface", "Lora", "retro"),
+    ("rose_poudre", "Rose poudré", "Cosy", "#F4DCDC", "#EBC8C8", "#5A3A3A", "#FFFFFF", "#C4777F", "Pacifico", "Lora", "vichy"),
+    ("the_vert", "Thé vert", "Cosy", "#E3EBD3", "#D0DDB8", "#2F3D24", "#FFFFFF", "#7C9A5E", "Caveat", "Inter", "papier"),
+    # Audacieux
+    ("rouge_noir", "Rouge et noir", "Audacieux", "#0A0A0A", "#1A1A1A", "#FFFFFF", "#FF1F3D", "#FF1F3D", "Anton", "Space Grotesk", "brutal"),
+    ("acide", "Acide", "Audacieux", "#D4FF00", "#B8E000", "#0A0A0A", "#0A0A0A", "#7A00FF", "Unbounded", "Space Mono", "brutal"),
+    ("cyber", "Cyber", "Audacieux", "#05010F", "#1A0B3A", "#E0F7FF", "#05010F", "#00F0FF", "Syne", "Space Mono", "neon"),
+    ("manifeste", "Manifeste", "Audacieux", "#F5F5F0", "#E5E5DE", "#0A0A0A", "#FF3B00", "#FF3B00", "Bebas Neue", "Space Grotesk", "editorial"),
+    ("vaporwave", "Vaporwave", "Audacieux", "#FF71CE", "#01CDFE", "#FFFFFF", "#FFFFFF", "#B967FF", "Righteous", "Outfit", "verre"),
+    ("contraste", "Contraste", "Audacieux", "#FFFFFF", "#F0F0F0", "#000000", "#000000", "#000000", "Archivo Black", "Inter", "brutal"),
+    ("lave", "Lave", "Audacieux", "#1A0500", "#4A1200", "#FFE6D5", "#FF5A1F", "#FFB100", "Anton", "Inter", "verre"),
+    ("choc", "Choc", "Audacieux", "#0038FF", "#001E8C", "#FFFFFF", "#FFFFFF", "#FFDD00", "Bebas Neue", "DM Sans", "editorial"),
+    ("hologramme", "Hologramme", "Audacieux", "#E0E0FF", "#FFE0F5", "#22113A", "#FFFFFF", "#7B5CFF", "Unbounded", "Nunito", "y2k"),
+    ("jungle", "Jungle", "Audacieux", "#003B2F", "#00684A", "#E8FF9E", "#E8FF9E", "#FF6FB5", "Shrikhand", "Outfit", "pop"),
+    ("brique", "Brique", "Audacieux", "#B5371D", "#8E2A16", "#FFF2E8", "#FFF2E8", "#FFC857", "Archivo Black", "Space Grotesk", "brutal"),
+    ("neon_rose", "Néon rose", "Audacieux", "#0D0D0D", "#1F1F1F", "#FFFFFF", "#0D0D0D", "#FF2E93", "Righteous", "Space Mono", "neon"),
+    ("desert", "Désert", "Audacieux", "#E8D5B5", "#D4B98E", "#1A1208", "#1A1208", "#C1440E", "Bebas Neue", "Space Mono", "editorial"),
+    ("pixel", "Pixel", "Audacieux", "#1E1E2E", "#2B2B45", "#F8F8F2", "#F8F8F2", "#50FA7B", "Space Grotesk", "Space Mono", "pixel"),
+    ("eclair", "Éclair", "Audacieux", "#FFE600", "#FFD000", "#111111", "#111111", "#FF2E2E", "Anton", "DM Sans", "brutal"),
+    ("violet", "Violet", "Audacieux", "#24005C", "#3D0099", "#F5ECFF", "#C6F432", "#C6F432", "Unbounded", "Inter", "verre"),
+    # Créatif
+    ("collage", "Collage", "Créatif", "#F3EEE3", "#E8DFCF", "#1E1B18", "#FFFFFF", "#E4572E", "Caveat", "Lora", "papier"),
+    ("carnet", "Carnet", "Créatif", "#FFFDF6", "#E9E4D4", "#2A2A2A", "#FFF3B0", "#3A86FF", "Caveat", "Nunito", "papier"),
+    ("bd", "BD", "Créatif", "#FFFFFF", "#FFE24D", "#111111", "#FFE24D", "#FF3B3B", "Shrikhand", "DM Sans", "pop"),
+    ("cinema", "Cinéma", "Créatif", "#141414", "#2A2A2A", "#F5E6C8", "#F5E6C8", "#E50914", "Bebas Neue", "Inter", "retro"),
+    ("aquarelle", "Aquarelle", "Créatif", "#EAF4F4", "#F6E7EC", "#334E58", "#FFFFFF", "#E58F65", "Pacifico", "Nunito", "verre"),
+    ("origami", "Origami", "Créatif", "#F9F5EF", "#E9E1D3", "#2D3142", "#EF8354", "#EF8354", "Space Grotesk", "DM Sans", "brutal"),
+    ("vinyle", "Vinyle", "Créatif", "#1C1C1C", "#2E2E2E", "#F2E8CF", "#F2E8CF", "#E9C46A", "Abril Fatface", "Space Mono", "retro"),
+    ("mosaique", "Mosaïque", "Créatif", "#FFF8F0", "#FFD6BA", "#3D348B", "#3D348B", "#F35B04", "Archivo Black", "Nunito", "pop"),
+    ("jardin", "Jardin", "Créatif", "#FDF6F0", "#F7D9C4", "#5B3A29", "#FFFFFF", "#D96C75", "Pacifico", "Lora", "nature"),
+    ("kraft", "Kraft", "Créatif", "#C8A27A", "#B88F66", "#2B1B0E", "#F5ECD9", "#7A2E1F", "Caveat", "Space Mono", "papier"),
+    ("cosmos", "Cosmos", "Créatif", "#0B0B2B", "#1B1B4B", "#FFFFFF", "#FFFFFF", "#FFD166", "Unbounded", "Outfit", "verre"),
+    ("acidule", "Acidulé", "Créatif", "#FFE5EC", "#E0FFF4", "#3A0CA3", "#FFFFFF", "#F72585", "Righteous", "Nunito", "y2k"),
+    ("tableau", "Tableau noir", "Créatif", "#2F3E36", "#384A40", "#F4F1E8", "#3B4E44", "#F2CC8F", "Caveat", "Space Mono", "papier"),
+    ("graffiti", "Graffiti", "Créatif", "#1A1A1A", "#262626", "#FFFFFF", "#FF3CAC", "#39FF14", "Shrikhand", "Space Grotesk", "brutal"),
+    ("album", "Album photo", "Créatif", "#EFE7DA", "#E3D7C3", "#3E3226", "#FFFFFF", "#B5651D", "Gloock", "Lora", "papier"),
+    ("briques", "Briques", "Créatif", "#FFD500", "#FFC300", "#1A1A1A", "#E3000B", "#0055BF", "Archivo Black", "DM Sans", "pixel"),
+]:
+    _theme(*_x)
+
+
 COULEUR = re.compile(r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
 
 

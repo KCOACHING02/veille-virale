@@ -2984,12 +2984,19 @@ async function htmlApercu(corps) {
 }
 function remplitThemes(zone, ambiance, actif, palette) {
   const themes = BQ.etat.options.themes.filter(t => t.ambiance === ambiance);
-  zone.innerHTML = themes.map(t => `<button class="bt-th" data-theme="${t.id}" aria-pressed="${t.id === actif}"><div class="mini"><iframe tabindex="-1" title="${esc(t.nom)}" loading="lazy"></iframe></div>${esc(t.nom)}</button>`).join("");
-  themes.forEach(async t => {
-    let d = themeApplique(BQ.page.design, t.id); if (palette) d = {...d, ...paletteDesign(palette)};
+  // aperçu actif en premier, puis les autres ; chaque aperçu n'est calculé que lorsqu'il devient visible (20 par ambiance)
+  themes.sort((a, b) => (b.id === actif) - (a.id === actif));
+  zone.innerHTML = themes.map(t => `<button class="bt-th" data-theme="${t.id}" aria-pressed="${t.id === actif}"><div class="mini" style="background:${esc((t.design.fond1 || "#eee").slice(0, 7))}"><iframe tabindex="-1" title="${esc(t.nom)}"></iframe></div>${esc(t.nom)}</button>`).join("");
+  const charge = async b => {
+    if (b.dataset.charge) return; b.dataset.charge = "1";
+    let d = themeApplique(BQ.page.design, b.dataset.theme); if (palette) d = {...d, ...paletteDesign(palette)};
     const h = await htmlApercu(contenuApercu({design: {...d, apparition: false}}));
-    const f = zone.querySelector(`[data-theme="${t.id}"] iframe`); if (f) f.srcdoc = h;
-  });
+    const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
+  };
+  if (!("IntersectionObserver" in window)) return zone.querySelectorAll(".bt-th").forEach(charge);
+  const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { obs.unobserve(e.target); charge(e.target); } }), {rootMargin: "200px"});
+  zone.querySelectorAll(".bt-th").forEach(b => obs.observe(b));
+  const n = zone.parentElement?.querySelector(".bt-nb-themes"); if (n) n.textContent = `${themes.length} thèmes`;
 }
 
 // ---------------------------------------------------------------- Éditeur
@@ -3283,6 +3290,7 @@ function ongletDesign(z) {
     <nav class="bt-saut">${[["th", "Thèmes"], ["en", "En-tête"], ["ph", "Photo"], ["fo", "Fond"], ["co", "Couleurs"], ["ty", "Typo"], ["bo", "Boutons"], ["pr", "Produits"], ["de", "Décor"]].map(([i, l]) => `<button data-saut="bt-s-${i}">${l}</button>`).join("")}</nav>
     <section class="bt-sec" id="bt-s-th"><h3>Thèmes <button class="btn petit" id="bt-surprise" style="margin-left:auto">🎲 Surprends-moi</button></h3><p class="aide">Un look complet en un clic. Tout reste modifiable en dessous.</p>
       <div class="seg" style="margin-bottom:12px;max-width:100%;overflow-x:auto">${o.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
+      <p class="aide" style="margin:-4px 0 6px">${o.themes.filter(t => t.ambiance === amb).length} thèmes ${({Classique: "classiques", Vibrant: "vibrants", Cosy: "cosy", Audacieux: "audacieux", "Créatif": "créatifs"})[amb] || ""} · fais défiler <span style="float:right"><button class="btn petit" data-defile="-1" aria-label="Thèmes précédents">←</button> <button class="btn petit" data-defile="1" aria-label="Thèmes suivants">→</button></span></p>
       <div class="bt-themes" id="bt-themes"></div>
       ${BQ.palettes || BQ.page.photo ? `<p class="bt-sous-titre">✨ Couleurs tirées de ta photo</p><div class="bt-palettes" id="bt-palettes">${(BQ.palettes || []).map((p, i) => paletteHTML(p, i)).join("") || '<span class="aide">Calcul…</span>'}</div>` : ""}
     </section>
@@ -3347,6 +3355,7 @@ function ongletDesign(z) {
   $("#bt-themes").onclick = e => { const b = e.target.closest("[data-theme]"); if (!b) return;
     BQ.page.design = themeApplique(BQ.page.design, b.dataset.theme); modifieBoutique(true); };
   $("#bt-surprise").onclick = surprendsMoi;
+  z.querySelectorAll("[data-defile]").forEach(b => b.onclick = () => $("#bt-themes").scrollBy({left: +b.dataset.defile * $("#bt-themes").clientWidth * .9, behavior: "smooth"}));
   z.querySelectorAll("[data-saut]").forEach(b => b.onclick = () => document.getElementById(b.dataset.saut)?.scrollIntoView({behavior: "smooth", block: "start"}));
   z.querySelectorAll("[data-dset]").forEach(b => b.onclick = () => {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
