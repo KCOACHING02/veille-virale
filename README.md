@@ -1,8 +1,8 @@
-# Veille virale
+# Virallink (anciennement « Veille virale »)
 
 Application web par abonnement pour créateurs de contenu et coachs : elle repère les Reels Instagram et TikTok qui ont cartonné chez les comptes que l'utilisateur veut copier, comprend pourquoi ils ont marché et les réécrit pour sa niche. Chaque Reel adapté arrive avec ses hooks, son script, sa légende et une séquence de messages privés pour transformer les commentaires en conversations.
 
-> « Veille virale » est un nom de travail : le nom et le logo se changent dans `static/index.html` et `static/connexion.html`.
+> Le nom du produit est « Virallink » ; le nom et le logo se changent dans `static/index.html` et `static/connexion.html`.
 
 ## Le parcours client
 

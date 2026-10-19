@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Veille virale</title>
+<title>Virallink</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="manifest" href="/manifest.webmanifest">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Veille virale">
+<meta name="apple-mobile-web-app-title" content="Virallink">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="/static/boutique.css?v=3">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -965,7 +965,7 @@ a.btn{text-decoration:none}
 <body>
 <div class="app">
   <nav class="rail" aria-label="Navigation">
-    <div class="marque"><i></i>Veille virale</div>
+    <div class="marque"><i></i>Virallink</div>
     <button class="nav" data-vue="accueil" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>Accueil</button>
     <button class="nav" data-vue="reels" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg><span class="long">Mes Reels</span><span class="court">Reels</span><span class="n" id="n-reels"></span></button>
     <button class="nav" data-vue="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Studio</button>
@@ -1061,7 +1061,7 @@ a.btn{text-decoration:none}
 <!-- Assistant de configuration -->
 <div class="assistant" id="assistant" role="dialog" aria-modal="true" aria-labelledby="a-titre">
   <aside class="a-cote">
-    <div class="marque"><i></i>Veille virale</div>
+    <div class="marque"><i></i>Virallink</div>
     <ol class="a-etapes" id="a-etapes"></ol>
     <p class="note">Tout se modifie ensuite dans Paramètres.</p>
   </aside>
@@ -3019,7 +3019,7 @@ async function renduAbonnement() {
 // ================================================================ Téléphone : application installable et notifications
 let invitationInstall = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); invitationInstall = e; majBoutonInstall(); });
-window.addEventListener("appinstalled", () => { invitationInstall = null; toast("Veille virale est installée sur ton écran d'accueil"); majBoutonInstall(); });
+window.addEventListener("appinstalled", () => { invitationInstall = null; toast("Virallink est installée sur ton écran d'accueil"); majBoutonInstall(); });
 const estInstallee = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 const estIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -3029,8 +3029,8 @@ function majBoutonInstall() {
 }
 async function installeApp() {
   if (invitationInstall) { invitationInstall.prompt(); await invitationInstall.userChoice.catch(() => {}); invitationInstall = null; majBoutonInstall(); return; }
-  $("#feuille").innerHTML = `<h2 id="m-titre">Installer Veille virale</h2><p class="sous">Sur iPhone, l'application s'installe depuis Safari, en trois gestes :</p>
-    <ol class="etapes-install"><li>Touche le bouton <b>Partager</b> <span aria-hidden="true">⬆️</span> en bas de Safari.</li><li>Choisis <b>Sur l'écran d'accueil</b>.</li><li>Touche <b>Ajouter</b>. L'icône Veille virale apparaît avec tes autres applis.</li></ol>
+  $("#feuille").innerHTML = `<h2 id="m-titre">Installer Virallink</h2><p class="sous">Sur iPhone, l'application s'installe depuis Safari, en trois gestes :</p>
+    <ol class="etapes-install"><li>Touche le bouton <b>Partager</b> <span aria-hidden="true">⬆️</span> en bas de Safari.</li><li>Choisis <b>Sur l'écran d'accueil</b>.</li><li>Touche <b>Ajouter</b>. L'icône Virallink apparaît avec tes autres applis.</li></ol>
     <p class="aide">Ouvre-la ensuite depuis l'icône pour activer les notifications (Réglages → Sur ton téléphone).</p>
     <div class="pied-modale"><button class="btn prim" data-fermer>J'ai compris</button></div>`;
   $("#modale").classList.add("ouvert");
@@ -3062,7 +3062,7 @@ async function renduTelephone() {
   const gere = "serviceWorker" in navigator && "PushManager" in window;
   const actif = gere && Notification.permission === "granted" && !!(await abonnementPush().catch(() => null));
   z.innerHTML = `<h2>Sur ton téléphone</h2>
-    <div class="reglage"><b>Application</b><span>${estInstallee() ? "✓ Installée sur cet appareil" : "Ajoute Veille virale sur ton écran d'accueil, comme une vraie appli."}</span>
+    <div class="reglage"><b>Application</b><span>${estInstallee() ? "✓ Installée sur cet appareil" : "Ajoute Virallink sur ton écran d'accueil, comme une vraie appli."}</span>
       ${estInstallee() ? "" : `<button class="btn petit prim" id="p-installer">Installer</button>`}</div>
     <div class="reglage"><b>Notifications</b><span>${actif ? "✓ Activées : veille prête, nouvelles ventes et réservations, récapitulatif du lundi." : !gere && estIOS() ? "Sur iPhone, installe d'abord l'application puis ouvre-la depuis son icône." : "Sois prévenue quand ta veille est prête et à chaque vente."}</span>
       ${actif ? `<button class="btn petit" id="p-notif-off">Couper</button>` : gere ? `<button class="btn petit prim" id="p-notif">Activer</button>` : ""}</div>`;
@@ -3075,14 +3075,14 @@ async function renduTelephone() {
 async function renduParrainage() {
   const z = $("#ab-parrainage"); if (!z) return;
   let r; try { r = await api("/api/parrainage"); } catch { z.remove(); return; }
-  const message = `Je t'ai parlé de Veille virale : l'outil qui me trouve les Reels qui cartonnent dans ma niche et les adapte pour moi. Avec mon lien, tu as ${r.jours_filleule + 7} jours d'essai gratuit : ${r.lien}`;
+  const message = `Je t'ai parlé de Virallink : l'outil qui me trouve les Reels qui cartonnent dans ma niche et les adapte pour moi. Avec mon lien, tu as ${r.jours_filleule + 7} jours d'essai gratuit : ${r.lien}`;
   z.innerHTML = `<h2>💌 Parraine une amie</h2>
     <p style="margin:0 0 12px;color:var(--ink-2)">Elle a <b>un mois d'essai en plus</b>. Toi, tu gagnes <b>un mois offert</b> dès qu'elle s'abonne.</p>
     ${copiable(r.lien)}
     <div class="bt-rangee" style="margin-top:10px">${navigator.share ? `<button class="btn prim" id="ab-partager">Partager mon lien</button>` : ""}<button class="btn" data-copier="${esc(message)}">Copier un message tout prêt</button></div>
     <div class="parr-chiffres"><div><b>${r.inscrites}</b><span>amie${r.inscrites > 1 ? "s" : ""} inscrite${r.inscrites > 1 ? "s" : ""}</span></div><div><b>${r.abonnees}</b><span>abonnée${r.abonnees > 1 ? "s" : ""}</span></div><div><b>${r.mois_offerts}</b><span>mois gagné${r.mois_offerts > 1 ? "s" : ""}</span></div></div>
-    <p class="aide" style="margin:10px 0 0">Ton lien figure aussi sur la pastille « Créé avec Veille virale » de ta boutique.</p>`;
-  $("#ab-partager")?.addEventListener("click", () => navigator.share({title: "Veille virale", text: message, url: r.lien}).catch(() => {}));
+    <p class="aide" style="margin:10px 0 0">Ton lien figure aussi sur la pastille « Créé avec Virallink » de ta boutique.</p>`;
+  $("#ab-partager")?.addEventListener("click", () => navigator.share({title: "Virallink", text: message, url: r.lien}).catch(() => {}));
 }
 
 
@@ -3424,7 +3424,7 @@ function ongletContenu(z) {
         <label class="bt-depot">${p.couverture ? `<img src="${urlImg(p.couverture)}" alt="">` : "🖼️"}<span>${p.couverture ? "Changer l'image de couverture" : "Ajoute une image de couverture (sinon ta photo est utilisée)"}</span><input type="file" accept="image/*" data-envoi="couverture"></label>
         ${p.couverture ? `<button class="lien" data-retire="couverture" style="justify-self:start">Retirer la couverture</button>` : ""}</div>` : ""}
     </section>
-    <section class="bt-sec avance"><label class="bt-interr" style="padding:0"><span><b>Montrer ma boutique en exemple</b><br><small style="color:var(--ink-3)">Elle peut apparaître sur la page d'accueil de Veille virale (avec un lien vers elle) : de la visibilité en plus. Il faut une photo de profil.</small></span><input type="checkbox" id="bt-exemple" ${p.exemple ? "checked" : ""}></label></section>
+    <section class="bt-sec avance"><label class="bt-interr" style="padding:0"><span><b>Montrer ma boutique en exemple</b><br><small style="color:var(--ink-3)">Elle peut apparaître sur la page d'accueil de Virallink (avec un lien vers elle) : de la visibilité en plus. Il faut une photo de profil.</small></span><input type="checkbox" id="bt-exemple" ${p.exemple ? "checked" : ""}></label></section>
     <section class="bt-sec"><h3>Réseaux sociaux</h3><p class="aide">Les icônes sous ton nom.</p>
       <div class="bt-reseaux">${Object.entries(res).map(([k, v]) => `<div class="bt-res">${svgRes(k)}<input data-r="${k}" value="${esc(v)}" placeholder="${esc(AIDE_RES[k] || "")}" aria-label="${esc(BQ.etat.options.reseaux[k])}"><button class="icone-btn" data-retire-res="${k}" aria-label="Retirer ${esc(BQ.etat.options.reseaux[k])}">✕</button></div>`).join("") || '<p class="aide" style="margin:0">Aucun réseau pour l\'instant.</p>'}</div>
       ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
@@ -3730,7 +3730,7 @@ function ongletProduits(z) {
   if (pay.demo) bandeau = `<div class="bt-stripe info"><p><b>Mode démo :</b> les achats sont simulés (aucun paiement). Tout le reste fonctionne pour de vrai.</p></div>`;
   else if (!pay.plateforme) bandeau = `<div class="bt-stripe info"><p><b>Le paiement en ligne arrive bientôt.</b> En attendant, les produits gratuits et les liens externes (Systeme.io, Gumroad…) fonctionnent déjà.</p></div>`;
   else if (st.pret) bandeau = `<div class="bt-stripe ok"><p>✓ <b>Stripe est relié.</b> L'argent de tes ventes arrive directement sur ton compte.</p></div>`;
-  else bandeau = `<div class="bt-stripe info"><p><b>${st.relie ? "Termine ton inscription Stripe" : "Relie ton compte Stripe"}</b> pour encaisser tes ventes. L'argent arrive directement chez toi${pay.commission ? ` (commission Veille virale : ${pay.commission} %)` : ""}.${payants ? "" : " Pas besoin si tu ne proposes que des produits gratuits."}</p><button class="btn prim" id="bt-stripe">${st.relie ? "Continuer sur Stripe" : "Relier Stripe"}</button></div>`;
+  else bandeau = `<div class="bt-stripe info"><p><b>${st.relie ? "Termine ton inscription Stripe" : "Relie ton compte Stripe"}</b> pour encaisser tes ventes. L'argent arrive directement chez toi${pay.commission ? ` (commission Virallink : ${pay.commission} %)` : ""}.${payants ? "" : " Pas besoin si tu ne proposes que des produits gratuits."}</p><button class="btn prim" id="bt-stripe">${st.relie ? "Continuer sur Stripe" : "Relier Stripe"}</button></div>`;
   const type = x => x.type === "rdv" ? "📅 Rendez-vous" : x.type === "pack" ? `🎁 Pack de ${(x.inclus || []).length}` : x.fichier ? "📄 Téléchargement" : x.lien ? "🔗 Lien" : "⚠️ Rien à livrer";
   const promo = x => x.promo_prix && x.promo_fin && new Date(x.promo_fin) > new Date() ? `<span class="prix" style="background:var(--glow-soft);color:var(--glow)">⏳ ${euros(x.promo_prix)}</span>` : "";
   const aRdv = p.produits.some(x => x.type === "rdv");
@@ -3979,7 +3979,7 @@ async function chargeRdv() {
 function ongletEmails(z) {
   const p = BQ.page, q = p.sequence ||= {actif: false, emails: []};
   z.innerHTML = `
-    ${BQ.etat.emails ? "" : `<div class="bt-stripe info"><p><b>Les e-mails ne partent pas encore :</b> l'envoi sera activé dès que Veille virale aura configuré son service d'e-mails. Tu peux déjà préparer ta séquence.</p></div>`}
+    ${BQ.etat.emails ? "" : `<div class="bt-stripe info"><p><b>Les e-mails ne partent pas encore :</b> l'envoi sera activé dès que Virallink aura configuré son service d'e-mails. Tu peux déjà préparer ta séquence.</p></div>`}
     <section class="bt-sec"><h3>Séquence de bienvenue</h3><p class="aide">Chaque nouvelle inscrite (formulaire, cadeau, achat) reçoit ces e-mails automatiquement, un par un. Lien de désinscription inclus.</p>
       <label class="bt-interr"><span><b>${q.actif ? "Séquence active" : "Séquence en pause"}</b><br><small style="color:var(--ink-3)">${q.actif ? "Seules les inscrites arrivées après l'activation la reçoivent." : "Active-la quand tes e-mails sont prêts."}</small></span><input type="checkbox" id="sq-actif" ${q.actif ? "checked" : ""}></label>
       <button class="btn petit" id="sq-ia" style="margin-top:8px">✨ Écrire la séquence avec Claude</button> <span class="aide" id="sq-log"></span>

@@ -3,7 +3,7 @@
 #  et les mentions légales. Remplace chaque valeur entre crochets, puis publie.
 #  Tant qu'une valeur commence par « [ », elle apparaît surlignée en jaune sur le site.
 # ============================================================
-nom_produit: "Veille virale"
+nom_produit: "Virallink"
 societe: "Kcoaching"
 forme_juridique: "[forme juridique : SAS, SASU, EURL, entreprise individuelle…]"
 capital: "[capital social, ex. 1 000 €]"

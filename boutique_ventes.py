@@ -223,7 +223,7 @@ def ics(page: dict, r: dict, p: dict) -> str:
     f = "%Y%m%dT%H%M%SZ"
     lieu = ((p.get("rdv") or {}).get("lieu") or "").replace("\n", " ")
     nettoie = lambda s: (s or "").replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")  # noqa: E731
-    return "\r\n".join(["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Veille virale//Boutique//FR", "BEGIN:VEVENT",
+    return "\r\n".join(["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Virallink//Boutique//FR", "BEGIN:VEVENT",
                         f"UID:{r['id']}@veille-virale", f"DTSTAMP:{datetime.now(timezone.utc).strftime(f)}", f"DTSTART:{d.strftime(f)}",
                         f"DTEND:{fin.strftime(f)}", f"SUMMARY:{nettoie(p.get('titre'))} · {nettoie(page.get('nom'))}", f"LOCATION:{nettoie(lieu)}",
                         f"DESCRIPTION:{nettoie('Rendez-vous avec ' + (r.get('prenom') or r.get('email') or ''))}", "END:VEVENT", "END:VCALENDAR", ""])

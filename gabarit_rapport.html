@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Veille virale · {{ niche.nom }} · {{ date }}</title>
+<title>Virallink · {{ niche.nom }} · {{ date }}</title>
 <style>
   :root{--bg:#f6f1ea;--card:#fffdf9;--ink:#2e2520;--muted:#7a6a5e;--accent:#8a5f43;--soft:#efe4d7;--line:#e3d6c6;--ok:#4f7a4a;--warn:#c08a3e;--warnbg:#f6e6cc;--bad:#a5534a}
   @media (prefers-color-scheme:dark){:root{--bg:#1c1815;--card:#26201c;--ink:#f1e8de;--muted:#b3a291;--accent:#d3a27f;--soft:#332a24;--line:#3d332c;--ok:#8fbf87;--warn:#d9a65c;--warnbg:#3a2e1f;--bad:#d98b80}}
@@ -59,7 +59,7 @@
 </head>
 <body><div class="wrap">
 <header>
-  <h1>Veille virale — {{ niche.nom }}</h1>
+  <h1>Virallink — {{ niche.nom }}</h1>
   <p>{{ date }} · Reels des {{ analyse.mois }} derniers mois · critères : ≥ {{ nombre(analyse.vues_min) }} vues et ≥ {{ "%g"|format(analyse.taux_engagement_min*100) }} % d'engagement</p>
   <nav>
     <a href="#planning">Planning</a>

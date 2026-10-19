@@ -1,6 +1,6 @@
 """
 E-mails transactionnels via Resend (https://resend.com) — sans SDK.
-Variables : RESEND_API_KEY, EMAIL_EXPEDITEUR (ex. « Veille virale <bonjour@ton-domaine.fr> »).
+Variables : RESEND_API_KEY, EMAIL_EXPEDITEUR (ex. « Virallink <bonjour@ton-domaine.fr> »).
 Sans clé, rien n'est envoyé : le contenu est seulement écrit dans les logs du serveur.
 """
 
@@ -12,7 +12,7 @@ import threading
 
 import requests
 
-NOM_PRODUIT = os.getenv("NOM_PRODUIT", "Veille virale")
+NOM_PRODUIT = os.getenv("NOM_PRODUIT", "Virallink")
 
 
 def actif() -> bool:

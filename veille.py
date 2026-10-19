@@ -27,7 +27,7 @@ from espace import Espace, espace_local
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Veille virale Instagram / TikTok")
+    ap = argparse.ArgumentParser(description="Virallink Instagram / TikTok")
     ap.add_argument("--espace", help="Dossier d'un espace client (par défaut : utilisation locale)")
     ap.add_argument("--comptes", help="Comptes ou liens de Reels à analyser et copier (mode copie)")
     ap.add_argument("--plateforme", default="Instagram", choices=["Instagram", "TikTok"],

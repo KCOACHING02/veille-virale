@@ -118,7 +118,7 @@ def _ecrit(f: Path, donnees):
 
 
 # Réglages qui dépendent de la formule de la propriétaire (fournis par app.py, qui connaît les abonnements)
-AVEC_MARQUE = lambda uid: True       # noqa: E731  mention « Créé avec Veille virale » (formule gratuite)
+AVEC_MARQUE = lambda uid: True       # noqa: E731  mention « Créé avec Virallink » (formule gratuite)
 TAUX_COMMISSION = lambda uid: None   # noqa: E731  % prélevé sur les ventes ; None = BOUTIQUE_COMMISSION
 
 
@@ -1007,7 +1007,7 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
     classes = (f'e-{d["entete"]} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
-    if page.get("_parrain"):  # la pastille « Créé avec Veille virale » porte le lien de parrainage de la créatrice
+    if page.get("_parrain"):  # la pastille « Créé avec Virallink » porte le lien de parrainage de la créatrice
         corps = corps.replace('<a href="/" target="_blank" rel="noopener">Créé avec', f'<a href="/?parrain={quote(page["_parrain"])}" target="_blank" rel="noopener">Créé avec')
     corps = corps.replace('class="lien', f'class="{cb} lien').replace('class="bouton"', f'class="bouton {cb}"')
     decor = ""
@@ -1038,7 +1038,7 @@ def badge(page: dict | None = None) -> str:
     """Mention en bas de page : affichée en formule gratuite, retirée pour les abonnées."""
     if page is not None and not page.get("_marque", True):
         return ""
-    return '<div class="marque"><a href="/" target="_blank" rel="noopener">Créé avec Veille virale</a></div>'
+    return '<div class="marque"><a href="/" target="_blank" rel="noopener">Créé avec Virallink</a></div>'
 
 
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
@@ -1255,7 +1255,7 @@ def _stripe(methode: str, chemin: str, compte: str | None = None, **data):
     if r.status_code >= 400:
         msg = (j.get("error") or {}).get("message") or f"Erreur Stripe {r.status_code}"
         if "signed up for Connect" in msg or "connect" in msg.lower() and "platform" in msg.lower():
-            msg = "Stripe Connect n'est pas encore activé sur le compte Stripe de Veille virale (tableau de bord Stripe → Connect)."
+            msg = "Stripe Connect n'est pas encore activé sur le compte Stripe de Virallink (tableau de bord Stripe → Connect)."
         raise ValueError(msg)
     return j
 

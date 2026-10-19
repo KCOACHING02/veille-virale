@@ -1,11 +1,11 @@
-/* Veille virale : service worker — notifications push et ouverture de l'application. Pas de cache : toujours la dernière version. */
+/* Virallink : service worker — notifications push et ouverture de l'application. Pas de cache : toujours la dernière version. */
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", () => {});
 self.addEventListener("push", e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = {texte: e.data && e.data.text()}; }
-  e.waitUntil(self.registration.showNotification(d.titre || "Veille virale", {
+  e.waitUntil(self.registration.showNotification(d.titre || "Virallink", {
     body: d.texte || "", icon: "/static/icones/icone-192.png", badge: "/static/icones/icone-192.png", data: {url: d.url || "/app"}, lang: "fr"
   }));
 });

@@ -1,5 +1,5 @@
 # Utilisation PERSONNELLE en ligne de commande (sans l application web) : veille chaque lundi à 7h
-name: Veille virale hebdo
+name: Virallink hebdo
 on:
   schedule:
     - cron: "0 6 * * 1"

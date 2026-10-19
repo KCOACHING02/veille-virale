@@ -1,4 +1,4 @@
-# Veille virale — notes pour Claude
+# Virallink (ex-« Veille virale ») — notes pour Claude
 
 Application web par abonnement (Flask) qui repère les Reels et carrousels Instagram/TikTok viraux de comptes à copier, les analyse (vidéo, transcription, slides) et les adapte à la niche de l'utilisateur avec Claude. Le propriétaire est francophone : code, interface, messages et commits en **français**.
 

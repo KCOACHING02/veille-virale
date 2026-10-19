@@ -769,7 +769,7 @@ def _degrade(taille, debut: float, alpha_max: int = 215):
     return noir
 
 
-FILIGRANE = "Fait avec " + os.getenv("NOM_PRODUIT", "Veille virale")
+FILIGRANE = "Fait avec " + os.getenv("NOM_PRODUIT", "Virallink")
 
 
 def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: str, taille=CARROUSEL, reel: bool = False,
@@ -1421,7 +1421,7 @@ def package(p: dict, d: Path, sortie: Path, fichiers: list[str]) -> str:
         "2. Colle la légende de « legende.txt ».",
         _ligne_son(p),
         "4. Active la réponse automatique au mot-clé avec le premier message de « messages-prives.txt ».",
-        "5. Publie, puis colle le lien du post dans Veille virale (« J'ai publié ») pour suivre ses résultats.", "",
+        "5. Publie, puis colle le lien du post dans Virallink (« J'ai publié ») pour suivre ses résultats.", "",
     ]
     with zipfile.ZipFile(sortie / nom, "w", zipfile.ZIP_DEFLATED) as z:
         for f in fichiers:

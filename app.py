@@ -272,7 +272,7 @@ def inscription():
     if code and ab.rattache_parrain(u["id"], code):
         p = ab.par_code(code)
         if p:
-            nt.notifie(p["id"], "Ta filleule s'est inscrite 💌", f"{u.get('prenom') or 'Une amie'} a rejoint Veille virale grâce à toi.", "/app")
+            nt.notifie(p["id"], "Ta filleule s'est inscrite 💌", f"{u.get('prenom') or 'Une amie'} a rejoint Virallink grâce à toi.", "/app")
     emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app")
     return jsonify({"ok": True})
 
@@ -1979,7 +1979,7 @@ def boutique_stripe():
     if not page:
         return jsonify({"erreur": "Crée d'abord ta boutique."}), 404
     if not bq.stripe_actif():
-        return jsonify({"erreur": "Le paiement n'est pas encore activé sur Veille virale. En attendant, propose des produits gratuits ou des liens externes."}), 400
+        return jsonify({"erreur": "Le paiement n'est pas encore activé sur Virallink. En attendant, propose des produits gratuits ou des liens externes."}), 400
     try:
         compte, lien = bq.connecte_stripe(uid, g.u["email"], (page.get("stripe") or {}).get("compte"), f"{url_site()}/app")
     except ValueError as e:
@@ -1997,7 +1997,7 @@ def boutique_stripe():
 @app.get("/manifest.webmanifest")
 def manifeste():
     from flask import Response
-    m = {"name": "Veille virale", "short_name": "Veille virale", "description": "Les Reels viraux de ta niche, adaptés pour toi.",
+    m = {"name": "Virallink", "short_name": "Virallink", "description": "Les Reels viraux de ta niche, adaptés pour toi.",
          "start_url": "/app?source=app", "scope": "/", "display": "standalone", "orientation": "portrait",
          "background_color": "#F6F4F8", "theme_color": "#FF4F79", "lang": "fr",
          "icons": [{"src": "/static/icones/icone-192.png", "sizes": "192x192", "type": "image/png"},

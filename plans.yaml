@@ -29,8 +29,8 @@ gratuit:
   montage_reel: false           # montage des Reels (ffmpeg + transcription)
   suivi_publications: false     # relevés automatiques des Reels publiés (Apify)
   sequences_emails: false       # séquences d'e-mails automatiques de la boutique
-  filigrane: true               # « Fait avec Veille virale » sur les carrousels
-  mention_boutique: true        # « Créé avec Veille virale » en bas de la boutique
+  filigrane: true               # « Fait avec Virallink » sur les carrousels
+  mention_boutique: true        # « Créé avec Virallink » en bas de la boutique
   commission_boutique: 0        # % prélevé sur les ventes de la boutique (ex. 5) — à annoncer dans les CGV avant de l'activer
   stripe_price: ""
 
