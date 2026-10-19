@@ -441,9 +441,21 @@ Remplis l'outil enregistrer_carrousel."""
 
     def adapte_tous(self, posts: list[Post], apres_chaque=None):
         log(f"Analyse et adaptation par Virall.ai de {len(posts)} Reels…")
+        def traite(p):
+            p.adaptation = self.adapte(p)
+            if apres_chaque:
+                try:
+                    apres_chaque(p)
+                except Exception as e:  # noqa: BLE001
+                    log(f"  ⚠️  Sauvegarde intermédiaire impossible : {e}")
+
+        # Le premier Reel seul : il met en cache les consignes de la marque, que les suivants relisent
+        # à 10 % du prix. Lancés tous en même temps, chacun réécrivait le cache (plus cher que sans).
+        if posts:
+            traite(posts[0])
         with cf.ThreadPoolExecutor(max_workers=6) as ex:
-            futures = {ex.submit(self.adapte, p): p for p in posts}
-            for i, f in enumerate(cf.as_completed(futures), 1):
+            futures = {ex.submit(self.adapte, p): p for p in posts[1:]}
+            for i, f in enumerate(cf.as_completed(futures), 2):
                 futures[f].adaptation = f.result()
                 if apres_chaque:
                     try:
