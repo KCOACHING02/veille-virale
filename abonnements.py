@@ -323,8 +323,13 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> s
     # Garde-fou : coût réel (collecte + IA) plafonné par formule et par mois (budget_usd dans plans.yaml)
     budget = float(plans().get(plan_effectif(u), {}).get("budget_usd") or 0)
     if (analyses or adaptations) and budget and usage(u["id"])["cout_usd"] >= budget:
-        return ("Tu as atteint la limite d'usage raisonnable de ta formule ce mois-ci (elle n'est normalement jamais atteinte "
-                "dans les limites affichées). Elle se remet à zéro le 1er du mois ; écris-nous si tu as besoin d'un coup de pouce.")
+        actuel = plans().get(plan_effectif(u), {})
+        sup = sorted((p for k, p in plans().items() if not p.get("gratuit") and float(p.get("prix_mensuel") or 0) > float(actuel.get("prix_mensuel") or 0)),
+                     key=lambda p: float(p.get("prix_mensuel") or 0))
+        if sup:
+            return (f"Tu as atteint la limite d'usage de ta formule ce mois-ci. Passe à la formule {sup[0]['nom']} "
+                    "pour continuer tout de suite, ou attends le 1er du mois prochain.")
+        return "Tu as atteint la limite d'usage de ta formule ce mois-ci. Elle se remet à zéro le 1er du mois prochain."
     return None
 
 

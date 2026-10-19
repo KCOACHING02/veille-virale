@@ -1083,7 +1083,7 @@ const api = async (url, opts = {}) => {
   const r = await fetch(url, {headers: {"Content-Type": "application/json"}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined});
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) { location.href = "/connexion#connexion"; throw new Error("Session expirée"); }
-  if (r.status === 402) { setTimeout(() => { fermeModale(); fermeTiroir(); va("abonnement"); }, 50); toast(j.erreur || "Limite de ta formule atteinte"); }
+  if (r.status === 402) { setTimeout(() => { fermeModale(); fermeTiroir(); va("abonnement"); }, 50); toast(j.erreur || "Limite de ta formule atteinte", {duree: 7000}); }
   if (!r.ok) throw Object.assign(new Error(j.erreur || "Erreur " + r.status), {data: j});
   return j;
 };
