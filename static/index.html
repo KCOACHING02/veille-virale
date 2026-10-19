@@ -463,7 +463,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-moins:hover{color:var(--warn)}
 .st-outils{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .st-fond{display:inline-block;width:18px;height:18px;border-radius:5px;vertical-align:middle}
-.st-fond.sombre{background:#271B2D} .st-fond.clair{background:#F6F4F8;border:1px solid var(--line)} .st-fond.rose{background:#FF4F79}
+.st-fond.marque{border:1px solid rgba(0,0,0,.25)} .st-fond.sombre{background:#271B2D} .st-fond.clair{background:#F6F4F8;border:1px solid var(--line)} .st-fond.rose{background:#FF4F79}
 .st-themes{display:flex;gap:8px;flex-wrap:wrap}
 .st-themes button{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;cursor:pointer;font-weight:500}
 .st-themes button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft)}
@@ -553,6 +553,20 @@ a.btn{text-decoration:none}
 .f textarea{min-height:96px}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .choix{display:flex;flex-wrap:wrap;gap:8px}
+.pt-c{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid var(--line);vertical-align:-2px;margin-right:2px}
+.w-sous{font-size:17px;margin:22px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+.w-couleurs{display:flex;gap:14px;flex-wrap:wrap}
+.w-couleur{display:flex;align-items:center;gap:8px;font-weight:500}
+.w-couleur input{width:44px;height:44px;border:1px solid var(--line);border-radius:10px;padding:2px;background:var(--surface);cursor:pointer}
+.w-apercu{margin-top:12px;border-radius:14px;padding:22px 20px;max-width:300px;aspect-ratio:4/5;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#271B2D;color:#fff;border:1px solid var(--line)}
+.w-apercu i{width:44px;height:7px;border-radius:4px;background:#FF4F79}
+.w-apercu b{font-size:22px;line-height:1.15} .w-apercu span{opacity:.8;font-size:14px}
+.w-apercu.inactif{opacity:.45}
+.w-palette{display:flex;flex-wrap:wrap;gap:8px}
+.w-pastille{position:relative;width:46px;height:46px;border-radius:12px;border:1px solid var(--line);display:inline-block;cursor:pointer}
+.w-pastille>span{display:none;position:absolute;top:50px;left:0;z-index:3;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px;box-shadow:var(--shadow)}
+.w-pastille:hover>span,.w-pastille:focus-within>span,.w-pastille:active>span{display:flex}
+.w-pastille button{border:0;background:var(--sunk);border-radius:8px;padding:6px 8px;font-size:13px;cursor:pointer}
 .choix button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:500;text-align:left}
 .choix button[aria-pressed="true"]{border-color:var(--glow);background:var(--glow-soft)}
 .choix button small{display:block;color:var(--ink-3);font-weight:400;font-size:12.5px}
@@ -1698,6 +1712,8 @@ async function lanceAnalyse() {
 
 // ---------------------------------------------------------------- Studio
 const NOMS_THEMES = {sombre: "Nuit", clair: "Clair", rose: "Rose"};
+const themesStudio = () => { const m = S.optionsStudio?.marque; return m ? {marque: "Ma marque", ...NOMS_THEMES} : NOMS_THEMES; };
+const fondTheme = k => { const m = S.optionsStudio?.marque; return k === "marque" && m ? `style="background:${esc(m.fond)};box-shadow:inset 0 -6px 0 ${esc(m.accent)}"` : ""; };
 const pucesStyles = (opts, actif) => `<div class="st-puces" role="group" aria-label="Style d'écriture">${opts.styles.map(x => `<button type="button" data-style="${x.id}" aria-pressed="${x.id === actif}"><b>${esc(x.nom)}</b><small>${esc(x.aide)}</small></button>`).join("")}</div>`;
 const astuceVoix = opts => opts.voix_connue ? "" : `<p class="st-astuce">« Ma voix » sera plus fidèle quand l'outil aura lu ton compte : <a href="#" onclick="fermeModale();va('parametres');return false">indique ton compte dans Paramètres</a>.</p>`;
 async function choisirFormat(cle) {
@@ -1915,7 +1931,7 @@ function renduProjet() {
           ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Claude écrit tes slides…</p>` : `
             ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
             <ol class="st-slides">${(() => { const att = attribueJS(p.slides, p.images); return p.slides.map((x, i) => `<li class="st-slide">
-              <button type="button" class="st-vign" data-bq-slide="${i}" aria-label="Choisir l'image de la slide ${i + 1}">${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}">${x.photo ? "📷" : "+"}</span>`}<em>${att[i] ? "Changer" : "Image"}</em></button>
+              <button type="button" class="st-vign" data-bq-slide="${i}" aria-label="Choisir l'image de la slide ${i + 1}">${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}" ${fondTheme(p.theme)}>${x.photo ? "📷" : "+"}</span>`}<em>${att[i] ? "Changer" : "Image"}</em></button>
               <div><input class="st-input" data-k="titre" value="${esc(x.titre)}" aria-label="Titre de la slide ${i + 1}" placeholder="${i ? "Titre de la slide" : "Le hook"}">
               <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea>
               <div class="st-mise">
@@ -1933,7 +1949,7 @@ function renduProjet() {
           <p class="aide">Typographie</p>
           <div class="st-puces st-typos" role="group" aria-label="Typographie">${(S.optionsStudio?.typos || []).map(x => `<button type="button" data-typo="${x.id}" aria-pressed="${(p.typo || "moderne") === x.id}"><span class="apercu" style="font-family:'VV ${esc(x.police)}';font-weight:400;${["impact", "affiche"].includes(x.id) ? "text-transform:uppercase" : ""}">Aa</span><small>${esc(x.nom)}</small></button>`).join("")}</div>
           <p class="aide" style="margin-top:14px">Couleurs</p>
-          <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(NOMS_THEMES).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${p.theme === k}"><span class="st-fond ${k}"></span>${n}</button>`).join("")}</div>
+          <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(themesStudio()).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${p.theme === k}"><span class="st-fond ${k}" ${fondTheme(k)}></span>${n}</button>`).join("")}${S.optionsStudio?.marque ? "" : `<button type="button" class="lien" onclick="ouvreAssistant('marque', true)" style="font-size:13px">+ Mes couleurs</button>`}</div>
           <div class="champ" style="margin-top:14px"><label for="st-pseudo">Ton @ affiché sur les visuels</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte (laisser vide pour ne rien afficher)"></div>
         </div>
         <div class="st-bloc">
@@ -2237,7 +2253,7 @@ const W = {i: 0, p: null, edition: false};
 const ETAPES_A = [
   {id: "compte", nom: "Ton compte"}, {id: "activite", nom: "Ton activité"}, {id: "client", nom: "Ton client idéal"},
   {id: "objectifs", nom: "Tes objectifs"}, {id: "criteres", nom: "Critères de sélection"}, {id: "modeles", nom: "Les comptes à copier"},
-  {id: "voix", nom: "Ta voix"}, {id: "fin", nom: "C'est parti"}];
+  {id: "voix", nom: "Ta voix"}, {id: "marque", nom: "Ta marque"}, {id: "fin", nom: "C'est parti"}];
 // Démarrage d'une nouvelle utilisatrice : 3 étapes seulement (le reste a des valeurs par défaut, modifiables dans Réglages)
 const ETAPES_D = [{id: "compte", nom: "Ton compte"}, {id: "essentiel", nom: "Ton activité"}, {id: "demarrer", nom: "Les comptes à copier"}];
 W.etapes = ETAPES_D;
@@ -2266,7 +2282,9 @@ function renduAssistant() {
   $("#a-suivant")?.addEventListener("click", async () => {
     const err = verifie(e.id); if (err) return toast(err);
     try { await enregistreEtape(); } catch (x) { return; }
-    if (W.edition) { fermeAssistant(); toast("Modifications enregistrées"); await chargeEtat(); rendu(); } else { W.i++; renduAssistant(); }
+    if (W.edition) { fermeAssistant(); toast("Modifications enregistrées"); await chargeEtat();
+      if (e.id === "marque") { try { S.optionsStudio = {...(S.optionsStudio || {}), ...(await api("/api/studio"))}; } catch {} }
+      rendu(); } else { W.i++; renduAssistant(); }
   });
   APRES[e.id]?.();
   $(".a-main").scrollTop = 0;
@@ -2298,6 +2316,13 @@ async function enregistreEtape() {
     corps.hashtags = {instagram: lignes($("#w-hig").value), tiktok: lignes($("#w-htt").value)};
   }
   if (id === "voix") { corps.niche = {ton: val("#w-ton")}; corps.voix = $("#w-voix").value; }
+  if (id === "marque") {
+    const v = sel => $(sel + " [aria-pressed=true]")?.dataset.v || "";
+    corps.marque = {adresse: v("#w-adresse"), emojis: v("#w-emojis"), longueur: v("#w-longueur"),
+      mise_en_forme: $$("#w-mef [aria-pressed=true]").map(b => b.dataset.v), signature: val("#w-signature"), expressions: val("#w-expr"),
+      mots_interdits: val("#w-interdits"), hashtags: val("#w-htags"), consignes: val("#w-consignes"), typo: $("#w-typo").value,
+      couleurs: $("#w-sans-couleurs").checked ? {} : {fond: $("#w-c-fond").value, texte: $("#w-c-texte").value, accent: $("#w-c-accent").value}};
+  }
   if (!Object.keys(corps).length) return;
   try { await api("/api/profil", {method: "PUT", body: corps}); }
   catch (e) { toast(e.message); throw e; }
@@ -2329,7 +2354,31 @@ function blocAnalyseCompte(prof) {
       ${W.edition ? `<p style="margin:14px 0 0"><button class="btn prim" id="w-utiliser">Utiliser ces informations</button></p>` : `<p class="pret-ok">✓ Ces informations pré-remplissent l'étape suivante. Clique sur « Continuer ».</p>`}</div>` : ""}
   </div>`;
 }
+const MISES_EN_FORME = ["phrases courtes", "sauts de ligne entre les idées", "listes à puces ou numérotées", "majuscules pour insister", "une question au lecteur", "texte en paragraphes"];
 const PAGES = {
+  marque: () => { const m = W.p.marque || {}, c = m.couleurs || {}, mf = m.mise_en_forme || [];
+    const couleur = (k, nom, def) => `<label class="w-couleur"><input type="color" id="w-c-${k}" value="${esc(c[k] || def)}"><span>${nom}</span></label>`;
+    return `<h2 id="a-titre">Ta marque</h2>
+    <p class="intro">Ta façon d'écrire et tes couleurs. Claude les applique à chaque script, légende et message, et le Studio les utilise pour tes carrousels et tes Reels.</p>
+    <h3 class="w-sous">Ton écriture</h3>
+    <div class="f"><span class="lab">Tu t'adresses à ton audience…</span>${choix("w-adresse", [["tu", "En tutoyant"], ["vous", "En vouvoyant"]], m.adresse || "tu")}</div>
+    <div class="f"><span class="lab">Les emojis</span>${choix("w-emojis", [["aucun", "Aucun"], ["peu", "Quelques-uns", "1 à 3 par légende"], ["beaucoup", "Beaucoup"]], m.emojis || "peu")}</div>
+    <div class="f"><span class="lab">Longueur de tes légendes</span>${choix("w-longueur", [["courte", "Courtes", "2 à 4 lignes"], ["moyenne", "Moyennes", "5 à 10 lignes"], ["longue", "Longues", "mini-article"]], m.longueur || "moyenne")}</div>
+    <div class="f"><span class="lab">Ta mise en forme <small>(plusieurs choix possibles)</small></span><div class="choix" id="w-mef" role="group">${MISES_EN_FORME.map(x => `<button type="button" data-v="${esc(x)}" aria-pressed="${mf.includes(x)}">${esc(x[0].toUpperCase() + x.slice(1))}</button>`).join("")}</div></div>
+    <div class="f"><label for="w-signature">Ta phrase de fin habituelle <small>(facultatif)</small></label><input id="w-signature" value="${esc(m.signature || "")}" placeholder="Ex. Avec tout mon amour, Lina 💛"></div>
+    <div class="duo"><div class="f"><label for="w-expr">Mots et expressions que tu utilises</label><textarea id="w-expr" rows="3" placeholder="Ex. ma belle, on y va, la vérité c'est que…">${esc(m.expressions || "")}</textarea></div>
+    <div class="f"><label for="w-interdits">Mots que tu ne veux jamais voir</label><textarea id="w-interdits" rows="3" placeholder="Ex. régime, maigrir, transformation, incroyable">${esc(m.mots_interdits || "")}</textarea></div></div>
+    <div class="f"><label for="w-htags">Hashtags à mettre à chaque fois <small>(facultatif)</small></label><input id="w-htags" value="${esc(m.hashtags || "")}" placeholder="#tamarque #tacommunaute"></div>
+    <div class="f"><label for="w-consignes">Autres consignes <small>(facultatif)</small></label><textarea id="w-consignes" rows="2" placeholder="Ex. Je parle toujours de mon expérience de maman. Jamais de jargon.">${esc(m.consignes || "")}</textarea>
+      <span class="aide">Pour des exemples de textes que tu publies, utilise l'étape « Ta voix » : plus il y en a, plus c'est fidèle.</span></div>
+    <h3 class="w-sous">Tes visuels</h3>
+    <div class="f"><span class="lab">Tes couleurs</span><div class="w-couleurs">${couleur("fond", "Fond", "#271B2D")}${couleur("texte", "Texte", "#FFFFFF")}${couleur("accent", "Accent", "#FF4F79")}</div>
+      <div class="w-apercu" id="w-apercu"><i></i><b>Ton titre de slide</b><span>Le texte de ta slide</span></div>
+      <div class="st-outils" style="margin-top:10px"><label class="btn petit" style="cursor:pointer">🎨 Reprendre les couleurs d'une de mes publications<input type="file" id="w-palette-img" accept="image/*" hidden></label>
+        ${S.etat?.boutique ? '<button type="button" class="btn petit" id="w-c-boutique">Reprendre les couleurs de ma boutique</button>' : ""}
+        <label class="coche" style="margin:0"><input type="checkbox" id="w-sans-couleurs" ${c.fond ? "" : "checked"}> Pas de couleurs de marque (thèmes du Studio)</label></div>
+      <div class="w-palette" id="w-palette"></div></div>
+    <div class="f"><label for="w-typo">Ta police pour les titres</label><select class="select" id="w-typo"><option value="">Au choix dans le Studio</option>${(W.p.typos || []).map(t => `<option value="${t.id}" ${m.typo === t.id ? "selected" : ""}>${esc(t.nom)} (${esc(t.police)})</option>`).join("")}</select></div>`; },
   essentiel: () => { const n = W.p.niche, pr = W.p.profil_compte?.proposition || {}, o = W.p.objectifs;
     const v = (a, b) => esc(a || b || "");
     return `<h2 id="a-titre">Ton activité, en bref</h2>
@@ -2430,6 +2479,29 @@ const PAGES = {
     <p style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn prim" id="w-lancer" ${nbC ? "" : "disabled"}>Lancer ma première analyse</button><button class="btn" id="w-plus-tard">Je lancerai plus tard</button></p>`; },
 };
 const APRES = {
+  marque: maj => {
+    if (maj) return;  // appelé après un clic sur un choix : rien à recalculer
+    activeChoix();
+    $$("#w-mef button").forEach(b => b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"));
+    const apercu = () => { const a = $("#w-apercu"); if (!a) return; const sans = $("#w-sans-couleurs").checked;
+      a.style.background = sans ? "" : $("#w-c-fond").value; a.style.color = sans ? "" : $("#w-c-texte").value;
+      a.querySelector("i").style.background = sans ? "" : $("#w-c-accent").value; a.classList.toggle("inactif", sans); };
+    ["fond", "texte", "accent"].forEach(k => $("#w-c-" + k).addEventListener("input", () => { $("#w-sans-couleurs").checked = false; apercu(); }));
+    $("#w-sans-couleurs").onchange = apercu;
+    const applique = (fond, texte, accent) => { if (fond) $("#w-c-fond").value = fond; if (texte) $("#w-c-texte").value = texte; if (accent) $("#w-c-accent").value = accent; $("#w-sans-couleurs").checked = false; apercu(); };
+    $("#w-palette-img").onchange = async e => { const f = e.target.files[0]; if (!f) return;
+      const fd = new FormData(); fd.append("fichier", f);
+      try { const r = await fetch("/api/marque/palette", {method: "POST", body: fd}).then(x => x.json());
+        if (r.erreur) return toast(r.erreur);
+        $("#w-palette").innerHTML = `<p class="aide" style="margin:8px 0 6px">Couleurs trouvées : touche une couleur puis choisis où la mettre.</p>` + r.couleurs.map(c => `<span class="w-pastille" style="background:${c}" title="${c}">
+          <span><button type="button" data-mettre="fond" data-c="${c}">Fond</button><button type="button" data-mettre="texte" data-c="${c}">Texte</button><button type="button" data-mettre="accent" data-c="${c}">Accent</button></span></span>`).join("");
+        const [f1, f2, f3] = r.couleurs; applique(f1, f2, f3 || f2);
+      } catch { toast("Image illisible"); } };
+    $("#w-palette").onclick = e => { const b = e.target.closest("[data-mettre]"); if (b) { $("#w-c-" + b.dataset.mettre).value = b.dataset.c; $("#w-sans-couleurs").checked = false; apercu(); } };
+    $("#w-c-boutique")?.addEventListener("click", async () => { try { const r = await api("/api/boutique"); const d = (r.page || {}).design || {};
+      applique((d.fond1 || "").slice(0, 7), (d.texte || "").slice(0, 7), (d.accent || "").slice(0, 7)); toast("Couleurs de ta boutique reprises"); } catch (e) { toast(e.message); } });
+    apercu();
+  },
   demarrer: () => {
     APRES.modeles();
     $("#w-sugg").onclick = () => suggereComptes($("#w-sugg-res"), async comptes => {
@@ -2520,6 +2592,7 @@ async function renduParametres() {
     ${r("Ce qu'on appelle « viral »", texteCriteres(a), "criteres")}
     ${r("Comptes à copier", `${nbC} compte(s), ${(p.hashtags.instagram || []).length + (p.hashtags.tiktok || []).length} hashtags`, "modeles")}
     ${r("Ta voix", esc(n.ton || "Non renseignée"), "voix")}
+    ${r("Ta marque (écriture et visuels)", (() => { const m = p.marque || {}; const bouts = [m.adresse === "vous" ? "vouvoiement" : m.adresse === "tu" ? "tutoiement" : "", m.emojis ? "emojis : " + m.emojis : "", m.longueur ? "légendes " + m.longueur + "s" : "", m.couleurs?.fond ? `<span class="pt-c" style="background:${esc(m.couleurs.fond)}"></span><span class="pt-c" style="background:${esc(m.couleurs.texte)}"></span><span class="pt-c" style="background:${esc(m.couleurs.accent)}"></span>` : ""].filter(Boolean); return bouts.length ? bouts.join(", ") : "Non renseignée : Claude écrit dans un format standard"; })(), "marque")}
     </div>
     <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || !["essai", "gratuit"].includes(S.etat.abonnement.plan) ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
     <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire le démarrage rapide</button></p>`;

@@ -557,7 +557,53 @@ def profil():
     return jsonify({"niche": cfg["niche"], "objectifs": cfg["objectifs"], "analyse": cfg["analyse"], "comptes": cfg["comptes"],
                     "mon_compte": cfg.get("mon_compte") or {}, "hashtags": {"instagram": cfg["decouverte"].get("hashtags_instagram") or [],
                                                                              "tiktok": cfg["decouverte"].get("hashtags_tiktok") or []},
-                    "voix": voix, "profil_compte": prof, "limite_comptes": droits(g.u)["quotas"]["comptes_surveilles"]})
+                    "voix": voix, "profil_compte": prof, "limite_comptes": droits(g.u)["quotas"]["comptes_surveilles"],
+                    "marque": cfg.get("marque") or {}, "typos": _options_studio()["typos"]})
+
+
+MISES_EN_FORME = ("phrases courtes", "sauts de ligne entre les idées", "listes à puces ou numérotées", "majuscules pour insister",
+                  "une question au lecteur", "texte en paragraphes")
+
+
+def _marque_propre(m: dict) -> dict:
+    """Réglages de marque reçus de l'interface, nettoyés (valeurs connues, longueurs limitées)."""
+    t = lambda k, n: str(m.get(k) or "").strip()[:n]  # noqa: E731
+    c = m.get("couleurs") if isinstance(m.get("couleurs"), dict) else {}
+    couleurs = {k: c[k] for k in ("fond", "texte", "accent") if studio.HEX.match(str(c.get(k) or ""))}
+    return {
+        "adresse": m.get("adresse") if m.get("adresse") in ("tu", "vous") else "",
+        "emojis": m.get("emojis") if m.get("emojis") in ("aucun", "peu", "beaucoup") else "",
+        "longueur": m.get("longueur") if m.get("longueur") in ("courte", "moyenne", "longue") else "",
+        "mise_en_forme": [x for x in (m.get("mise_en_forme") or []) if x in MISES_EN_FORME],
+        "signature": t("signature", 200), "expressions": t("expressions", 500), "mots_interdits": t("mots_interdits", 500),
+        "hashtags": t("hashtags", 300), "consignes": t("consignes", 1000),
+        "couleurs": couleurs if len(couleurs) == 3 else {},
+        "typo": m.get("typo") if m.get("typo") in studio.TYPOS else "",
+    }
+
+
+@app.post("/api/marque/palette")
+@connecte
+def marque_palette():
+    """Couleurs dominantes d'une image de ses publications (calcul local, aucune API)."""
+    f = request.files.get("fichier")
+    if not f:
+        return jsonify({"erreur": "Aucune image reçue."}), 400
+    try:
+        from PIL import Image
+        im = Image.open(f.stream).convert("RGB")
+        im.thumbnail((200, 200))
+        q = im.quantize(colors=8, method=Image.Quantize.MEDIANCUT)
+        pal = q.getpalette()[:24]
+        comptes = sorted(q.getcolors(), reverse=True)
+        couleurs = []
+        for n, i in comptes:
+            r, gr, b = pal[3 * i:3 * i + 3]
+            if all(abs(r - x[0]) + abs(gr - x[1]) + abs(b - x[2]) > 60 for x in couleurs):
+                couleurs.append((r, gr, b))
+    except Exception:  # noqa: BLE001
+        return jsonify({"erreur": "Ce fichier n'est pas une image lisible (JPG, PNG ou WebP)."}), 400
+    return jsonify({"couleurs": ["#%02x%02x%02x" % c for c in couleurs[:6]]})
 
 
 @app.put("/api/profil")
@@ -585,6 +631,8 @@ def maj_profil():
         cfg["decouverte"]["hashtags_tiktok"] = [h.strip("# ") for h in c["hashtags"].get("tiktok") or [] if h.strip("# ")]
     if "voix" in c:
         g.esp.voix.write_text(c["voix"] or "", encoding="utf-8")
+    if isinstance(c.get("marque"), dict):
+        cfg["marque"] = _marque_propre(c["marque"])
     g.esp.ecrit_config(cfg)
     if c.get("onboarding_termine"):
         ab.maj(g.u["id"], onboarding=1)
@@ -783,7 +831,8 @@ def _banque_dispo() -> bool:
 def _options_studio():
     return {"styles": [{"id": k, "nom": v[0], "aide": v[1]} for k, v in studio.STYLES.items()],
             "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5]} for k, v in studio.TYPOS.items()],
-            "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo()}
+            "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
+            "marque": studio.couleurs_marque(g.esp.lit_config())}
 
 
 @app.post("/api/studio")

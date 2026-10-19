@@ -186,6 +186,38 @@ def explique_erreur(e) -> str:
 
 
 # ------------------------------------------------------------
+#  Format d'écriture choisi par la marque (Réglages → Ta marque)
+# ------------------------------------------------------------
+def regles_marque(cfg: dict) -> str:
+    """Consignes d'écriture saisies par l'utilisateur. Elles priment sur les règles générales de style."""
+    m = cfg.get("marque") or {}
+    lignes = []
+    if m.get("adresse") in ("tu", "vous"):
+        lignes.append("Toujours tutoyer le lecteur." if m["adresse"] == "tu" else "Toujours vouvoyer le lecteur.")
+    lignes.append({"aucun": "Aucun emoji.", "peu": "Quelques emojis seulement (1 à 3 par légende, jamais dans le hook).",
+                   "beaucoup": "Des emojis réguliers, en début de ligne ou pour rythmer, comme dans ses exemples."}.get(m.get("emojis"), ""))
+    lignes.append({"courte": "Légendes courtes : 2 à 4 lignes.", "moyenne": "Légendes de longueur moyenne : 5 à 10 lignes.",
+                   "longue": "Légendes longues et détaillées (mini-article), aérées."}.get(m.get("longueur"), ""))
+    if m.get("mise_en_forme"):
+        lignes.append("Mise en forme : " + ", ".join(m["mise_en_forme"]) + ".")
+    if (m.get("signature") or "").strip():
+        lignes.append(f"Termine les légendes par sa signature habituelle (adaptée si besoin au CTA) : « {m['signature'].strip()} ».")
+    if (m.get("expressions") or "").strip():
+        lignes.append(f"Expressions et mots qu'elle/il utilise (à placer avec naturel, sans en abuser) : {m['expressions'].strip()}.")
+    if (m.get("mots_interdits") or "").strip():
+        lignes.append(f"Mots et formulations à ne JAMAIS employer : {m['mots_interdits'].strip()}.")
+    if (m.get("hashtags") or "").strip():
+        lignes.append(f"Hashtags à toujours ajouter en fin de légende : {m['hashtags'].strip()}.")
+    if (m.get("consignes") or "").strip():
+        lignes.append("Autres consignes de la marque : " + m["consignes"].strip())
+    lignes = [l for l in lignes if l]
+    if not lignes:
+        return ""
+    return ("FORMAT D'ÉCRITURE DE LA MARQUE — choisi par la marque elle-même ; il prime sur les règles générales de style "
+            "(mais jamais sur la reprise fidèle du hook viral et de la légende originale) :\n- " + "\n- ".join(lignes))
+
+
+# ------------------------------------------------------------
 #  Client
 # ------------------------------------------------------------
 class IA:
@@ -261,6 +293,8 @@ Règles :
 6. Respect strict des interdits de la marque.
 7. Note de pertinence honnête."""
         blocs = [{"type": "text", "text": texte}]
+        if regles_marque(self.cfg):
+            blocs.append({"type": "text", "text": regles_marque(self.cfg)})
         if voix.strip():
             blocs.append({"type": "text", "text": "VOIX DE LA MARQUE — exemples réels de ses textes. Imite ce ton, ce vocabulaire, cette longueur de phrases, cette ponctuation et cet usage des emojis. Ne recopie pas ses légendes telles quelles ; ses expressions signature, elles, peuvent revenir naturellement.\n\n" + voix.strip()})
         if apprentissages.strip():
@@ -619,6 +653,8 @@ Langue : {n.get('langue', 'français')}
 Règles : écris comme la marque parle à une amie, phrases courtes, rien qui sonne publicité ou texte écrit par une IA
 (pas de « plongeons », « découvrez », « ultime », « incontournable », pas de listes d'adjectifs). Aucune promesse de résultat
 chiffrée ou médicale. Respect strict des interdits."""}]
+    if regles_marque(cfg):
+        blocs.append({"type": "text", "text": regles_marque(cfg)})
     if voix.strip():
         blocs.append({"type": "text", "text": "VOIX DE LA MARQUE — exemples réels de ses textes, à imiter (ton, vocabulaire, longueur, emojis) :\n\n" + voix.strip()[:6000]})
     return blocs

@@ -32,6 +32,40 @@ THEMES = {
     "clair": {"fond": (246, 244, 248), "texte": (39, 27, 45), "accent": (255, 79, 121), "doux": (94, 81, 102)},
     "rose": {"fond": (255, 79, 121), "texte": (255, 255, 255), "accent": (39, 27, 45), "doux": (255, 227, 234)},
 }
+HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def _rgb(h: str) -> tuple:
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def couleurs_marque(cfg: dict) -> dict | None:
+    """Couleurs saisies dans Réglages → Ta marque ({fond, texte, accent} en #rrggbb), si elles sont complètes."""
+    c = ((cfg or {}).get("marque") or {}).get("couleurs") or {}
+    return c if all(HEX.match(str(c.get(k) or "")) for k in ("fond", "texte", "accent")) else None
+
+
+def theme_de(p: dict):
+    """Thème à dessiner : un nom de THEMES, ou un dictionnaire de couleurs pour le thème « Ma marque »."""
+    c = p.get("couleurs")
+    if p.get("theme") == "marque" and c:
+        fond, texte = _rgb(c["fond"]), _rgb(c["texte"])
+        return {"fond": fond, "texte": texte, "accent": _rgb(c["accent"]),
+                "doux": tuple(round(t * 0.78 + f * 0.22) for t, f in zip(texte, fond))}
+    return p.get("theme") if p.get("theme") in THEMES else "sombre"
+
+
+def _defauts_marque(cfg: dict) -> dict:
+    """Thème et typographie par défaut d'un nouveau projet : ceux de la marque s'ils sont réglés."""
+    m = (cfg or {}).get("marque") or {}
+    d = {}
+    if couleurs_marque(cfg):
+        d.update(theme="marque", couleurs=couleurs_marque(cfg))
+    if m.get("typo") in TYPOS:
+        d["typo"] = m["typo"]
+    return d
+
+
 # Styles d'écriture proposés (le texte reste dans la voix de l'utilisateur ; seule la construction change)
 STYLES = {
     "ma_voix": ("Ma voix", "Comme sur ton compte", ""),
@@ -191,6 +225,7 @@ def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, s
         "fichiers": [], "zip": None, "adaptation": ad,
     }
     projet["style"] = style if style in STYLES else "ma_voix"
+    projet.update(_defauts_marque(cfg))
     projet["nb_photos"] = sum(1 for x in projet["slides"] if x.get("photo"))
     sauve(esp, projet)
     return projet
@@ -210,6 +245,7 @@ def cree_vierge(esp: Espace, cfg: dict) -> dict:
         "style": "ma_voix", "typo": "moderne", "pseudo": (cfg.get("mon_compte") or {}).get("instagram") or "",
         "fichiers": [], "zip": None, "vierge": True,
     }
+    projet.update(_defauts_marque(cfg))
     sauve(esp, projet)
     return projet
 
@@ -439,7 +475,7 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         p["nb_photos"] = sum(1 for x in p["slides"] if x.get("photo"))
     if isinstance(champs.get("images"), list):  # nouvel ordre des images
         p["images"] = [i for i in champs["images"] if i in p["images"]] + [i for i in p["images"] if i not in champs["images"]]
-    if p["theme"] not in THEMES:
+    if p["theme"] not in THEMES and p["theme"] != "marque":
         p["theme"] = "sombre"
     if p.get("style") not in STYLES:
         p["style"] = "ma_voix"
@@ -565,7 +601,7 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
           typo: str = "moderne", filigrane: bool = False):
     """Dessine une slide. Avec image : texte en bas sur un dégradé. Sans image : fond uni du thème."""
     from PIL import Image, ImageDraw
-    th = THEMES.get(theme, THEMES["sombre"])
+    th = theme if isinstance(theme, dict) else THEMES.get(theme, THEMES["sombre"])
     l, h = taille
     marge = int(l * 0.085)
     f_titre, poids, f_texte, majuscules, facteur, _ = TYPOS.get(typo, TYPOS["moderne"])
@@ -831,7 +867,7 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
     from PIL import Image
     _ffmpeg(["-ss", "0.6", "-i", str(sortie / "reel.mp4"), "-frames:v", "1", "-q:v", "3", str(d / "cadre.jpg")], d, 120)
     if (d / "cadre.jpg").exists():
-        couv = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, d / "cadre.jpg", p.get("theme", "sombre"), "", VERTICAL, reel=True,
+        couv = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, d / "cadre.jpg", theme_de(p), "", VERTICAL, reel=True,
                      typo=p.get("typo", "moderne"))
         couv.save(sortie / "couverture.jpg", "JPEG", quality=90)
         (d / "cadre.jpg").unlink(missing_ok=True)
@@ -848,7 +884,7 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
     plans.mkdir()
     for i, s in enumerate(slides):
         img = images[i]
-        slide(s, i, len(slides), img, p.get("theme", "sombre"), p.get("pseudo", ""), VERTICAL, reel=True,
+        slide(s, i, len(slides), img, theme_de(p), p.get("pseudo", ""), VERTICAL, reel=True,
               typo=p.get("typo", "moderne")).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
     liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {SLIDE_DIAPORAMA_S}\n" for i in range(len(slides)))
     liste_ += f"file 'plans/{len(slides) - 1:02d}.jpg'\n"
@@ -873,6 +909,8 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
     shutil.rmtree(sortie, ignore_errors=True)
     sortie.mkdir()
     p.update(statut="en_cours", erreur=None)
+    if p.get("theme") == "marque":  # couleurs de la marque telles qu'elles sont réglées aujourd'hui
+        p["couleurs"] = couleurs_marque(esp.lit_config())
     sauve(esp, p)
     try:
         if p["type"] == "carrousel":
@@ -885,7 +923,7 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
             for i, s in enumerate(p["slides"]):
                 nom = f"slide_{i + 1:02d}.jpg"
                 img = images[i]
-                slide(s, i, n, img, p.get("theme", "sombre"), p.get("pseudo", ""), typo=p.get("typo", "moderne"), filigrane=filigrane).save(
+                slide(s, i, n, img, theme_de(p), p.get("pseudo", ""), typo=p.get("typo", "moderne"), filigrane=filigrane).save(
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
         elif p.get("video"):
@@ -975,7 +1013,8 @@ def apercu(esp: Espace, sid: str, i: int, filigrane: bool = False) -> bytes:
     import io
     p = charge(esp, sid)
     d = dossier(esp, sid)
-    theme, typo, pseudo = p.get("theme", "sombre"), p.get("typo", "moderne"), p.get("pseudo", "")
+    p["couleurs"] = couleurs_marque(esp.lit_config()) if p.get("theme") == "marque" else p.get("couleurs")
+    theme, typo, pseudo = theme_de(p), p.get("typo", "moderne"), p.get("pseudo", "")
     if p["type"] == "reel" and p.get("video"):
         cadre = d / "apercu_cadre.jpg"
         src = d / "sources" / p["video"]
