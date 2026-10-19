@@ -183,6 +183,7 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
             def hook(m):
                 job["logs"].append({"t": datetime.now().strftime("%H:%M:%S"), "m": m})
             hook.studio = FIL.studio = job["studio"]
+            FIL.verrou = file_ or FILE  # une longue attente (traitement différé) peut libérer la file pendant ce temps
             LOG_HOOKS.append(hook)
             try:
                 job["resultat"] = fonction(*args, **kwargs)
@@ -480,7 +481,7 @@ def nouvelle():
                       "En gratuit, lance un classement de comptes : tu verras leurs Reels viraux et les sons tendance.")
     if mode == "copie":
         nb = max(1, min(nb, d["reste"]["adaptations"]))
-    msg = refus(u, analyses=1) if classement else refus(u, analyses=1, adaptations=nb if mode == "copie" else o["reels_par_jour"] * o["jours_planifies"])
+    msg = refus(u, analyses=1) if classement else refus(u, analyses=1, adaptations=nb if mode == "copie" else min(o["reels_par_jour"] * o["jours_planifies"], moteur.adaptations_auto(cfg)))
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     saisie = None
@@ -2295,10 +2296,10 @@ def planificateur():
                         continue
                     esp = espace_client(u["id"])
                     cfg = esp.lit_config()
-                    if not _nb_comptes(cfg) or refus(u, analyses=1, adaptations=cfg["objectifs"]["reels_par_jour"] * cfg["objectifs"]["jours_planifies"]):
+                    if not _nb_comptes(cfg) or refus(u, analyses=1, adaptations=min(cfg["objectifs"]["reels_par_jour"] * cfg["objectifs"]["jours_planifies"], moteur.adaptations_auto(cfg))):
                         continue
                     ab.maj(u["id"], derniere_veille_auto=lundi)
-                    lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(),
+                    lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(), "differe": True,
                                                                            "max_adaptations": d["reste"]["adaptations"]})
             envoie_syntheses()
         except Exception:  # noqa: BLE001

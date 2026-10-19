@@ -1228,15 +1228,17 @@ function carteAujourdhui(st) {
   const pied = `<p class="hero-pied">${ad} publication${ad > 1 ? "s" : ""} prête${ad > 1 ? "s" : ""} cette semaine · <a href="#" onclick="S.filtre='adaptes';va('reels');return false">Voir mes Reels</a>${a.planning?.length ? ` · <a href="#" onclick="va('planning');return false">Mon planning</a>` : ""}</p>`;
   if (aFinir && !(aCreer && prevus.includes(aCreer) && !prevus.includes(aFinir))) {
     S.cleDuJour = aFinir.cle; const pj = projet(aFinir);
-    return `<div class="hero hero-jour">${vign(aFinir)}<div><span class="sur">À faire aujourd'hui · Publier</span><h2>${esc(hookPrincipal(aFinir.adaptation))}</h2>
+    return `<div class="hero hero-jour">${vign(aFinir)}<div><span class="sur">À faire aujourd'hui · Publier</span><h2>${esc(titrePost(aFinir))}</h2>
       <p>Ton ${pj.type === "reel" ? "Reel" : "carrousel"} est prêt. Télécharge-le, publie-le, puis dis-le moi pour suivre ses vues.</p>
       <div class="actions"><button class="btn prim" onclick="ouvreProjet('${esc(pj.id)}')">Ouvrir mon contenu</button><button class="btn clair" onclick="ouvreReel('${esc(aFinir.cle)}')">J'ai publié</button></div>${pied}</div></div>`;
   }
   if (aCreer) {
     S.cleDuJour = aCreer.cle; const prevu = prevus.includes(aCreer);
-    return `<div class="hero hero-jour">${vign(aCreer)}<div><span class="sur">À faire aujourd'hui${prevu && aCreer.creneau ? " · " + esc(aCreer.creneau.replace(jour, "").trim() || aCreer.creneau) : ""}</span><h2>${esc(hookPrincipal(aCreer.adaptation))}</h2>
-      <p>Inspiré d'un ${estCarrousel(aCreer) ? "carrousel" : "Reel"} de @${esc(aCreer.compte)}${aCreer.vues ? ` (${nb(aCreer.vues)} vues)` : ""}. Tout est déjà écrit : il ne reste qu'à le fabriquer.</p>
-      <div class="actions"><button class="btn prim" data-studio-acc="${esc(aCreer.cle)}">Créer le contenu</button><button class="btn clair" data-cle="${esc(aCreer.cle)}">Lire le script</button></div>${pied}</div></div>`;
+    return `<div class="hero hero-jour">${vign(aCreer)}<div><span class="sur">À faire aujourd'hui${prevu && aCreer.creneau ? " · " + esc(aCreer.creneau.replace(jour, "").trim() || aCreer.creneau) : ""}</span><h2>${esc(titrePost(aCreer))}</h2>
+      ${adapte(aCreer) ? `<p>Inspiré d'un ${estCarrousel(aCreer) ? "carrousel" : "Reel"} de @${esc(aCreer.compte)}${aCreer.vues ? ` (${nb(aCreer.vues)} vues)` : ""}. Tout est déjà écrit : il ne reste qu'à le fabriquer.</p>
+      <div class="actions"><button class="btn prim" data-studio-acc="${esc(aCreer.cle)}">Créer le contenu</button><button class="btn clair" data-cle="${esc(aCreer.cle)}">Lire le script</button></div>`
+      : `<p>Un ${estCarrousel(aCreer) ? "carrousel" : "Reel"} viral de @${esc(aCreer.compte)}${aCreer.vues ? ` (${nb(aCreer.vues)} vues)` : ""}, prévu dans ton planning. Un clic et Virall.ai l'écrit pour ta niche.</p>
+      <div class="actions"><button class="btn prim" data-adapter="${esc(aCreer.cle)}">Adapter pour moi</button><button class="btn clair" data-cle="${esc(aCreer.cle)}">Voir l'original</button></div>`}${pied}</div></div>`;
   }
   S.cleDuJour = null;
   return `<div class="hero hero-jour"><div class="ic-hero">🎉</div><div><span class="sur">Aujourd'hui</span><h2>Tout est fait pour cette semaine</h2><p>Chaque contenu prêt a été créé ou publié. Bravo ! Ta prochaine veille arrive lundi.</p><div class="actions"><button class="btn prim" onclick="va('resultats')">Voir mes résultats</button></div></div></div>`;
@@ -1270,8 +1272,8 @@ async function renduAccueil() {
         return `<article class="carte-jour">
           <button class="vign" data-cle="${esc(p.cle)}" aria-label="Ouvrir">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}</button>
           <div class="txt"><small>${esc(p.creneau ? p.creneau.replace(jour, "").trim() || p.creneau : "@" + p.compte)}${publie ? ' · <span class="ok">publié ✓</span>' : ""}</small>
-            <p>${esc(hookPrincipal(p.adaptation))}</p>
-            <div class="actions"><button class="btn petit prim" data-studio-acc="${esc(p.cle)}">Créer le contenu</button><button class="btn petit" data-cle="${esc(p.cle)}">Voir</button></div></div>
+            <p>${esc(titrePost(p))}</p>
+            <div class="actions">${adapte(p) ? `<button class="btn petit prim" data-studio-acc="${esc(p.cle)}">Créer le contenu</button>` : `<button class="btn petit prim" data-adapter="${esc(p.cle)}">Adapter</button>`}<button class="btn petit" data-cle="${esc(p.cle)}">Voir</button></div></div>
         </article>`; }).join("")}</div></section>`;
   }
   const recents = (st?.projets || []).slice(0, 4);
@@ -1321,6 +1323,8 @@ const nbSlides = p => (p.medias || []).length || (p.adaptation?.slides_modele ||
 const libFormat = p => estCarrousel(p) ? `Carrousel${nbSlides(p) ? " · " + nbSlides(p) + " slides" : ""}` : p.plateforme === "TikTok" ? "Vidéo" : "Reel";
 const texteSeuil = a => a.seuil_mode === "auto" ? `≥ ${String(a.seuil_multiple || 3).replace(".", ",")}× les vues habituelles du compte (min. ${nb(a.seuil_plancher || 30000)})` : `≥ ${nbLong(a.vues_min)} vues`;
 const hookPrincipal = ad => (ad && (ad.hook_viral || (ad.hooks_adaptes || [])[0])) || "";
+// Titre d'une publication, adaptée ou non (veille : seules les meilleures sont adaptées d'office)
+const titrePost = p => hookPrincipal(p.adaptation) || (p.legende || "").split("\n")[0].slice(0, 120) || "@" + p.compte;
 function postsFiltres() {
   const a = S.analyse; if (!a) return [];
   const pl = $("#f-plateforme").value, cpt = $("#f-compte").value, q = $("#f-texte").value.trim().toLowerCase(), tri = $("#f-tri").value;
@@ -1646,7 +1650,7 @@ document.addEventListener("click", async e => {
   try {
     const r = await api(`/api/analyses/${S.analyse.id}/adapter`, {method: "POST", body: {cle: b.dataset.adapter}});
     b.disabled = true; b.innerHTML = '<span class="spin"></span>Adaptation en cours…';
-    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); if (S.ouvert) ouvreReel(S.ouvert); toast("Reel adapté"); });
+    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); if (S.ouvert) ouvreReel(S.ouvert); else rendu(); toast("Reel adapté"); });
   } catch (err) { toast(err.message); }
 });
 
@@ -1671,14 +1675,14 @@ function renduPlanning() {
     ${Object.keys(melange).length ? `<br><b>Répartition :</b> ${Object.entries(melange).sort((x, y) => y[1] - x[1]).map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")}.` : ""}
     ${dansPlanning < ps.length ? "<br>Pour avoir plus de contenus viraux, ajoute des comptes à surveiller (Réglages → Comptes surveillés)." : ""}</p></details>`;
   el.innerHTML = info + guide("planning", "Ton programme de la semaine", [
-      "Chaque jour, ouvre le contenu prévu (matin, puis soir).",
+      "Chaque jour, ouvre le contenu prévu (matin, puis soir). Les meilleurs sont déjà écrits pour toi ; ceux marqués « à adapter » le sont en un clic.",
       "Clique <b>Créer le contenu</b> pour le fabriquer, puis publie-le sur Instagram.",
       "Clique <b>J'ai publié</b> : le contenu passe en vert ici et ses résultats sont suivis."]) +
     `<p style="color:var(--ink-2);margin:0 0 16px">Objectif : ${a.objectifs.conversations_par_jour} conversations par jour avec le mot-clé « ${esc(a.objectifs.mot_cle_cta)} ». ${a.fichiers ? `<a href="/rapports/${a.fichiers.xlsx}">Télécharger l'Excel de suivi</a>` : ""}</p>
   <div class="semaine">${JOURS.map(j => `<div class="jour"><h2>${j}</h2>${ps.filter(p => p.creneau.startsWith(j)).map(p => `
     <button class="creneau" data-cle="${esc(p.cle)}" ${(S.pubs || []).some(x => x.inspiration?.cle === p.cle) ? 'style="outline:2px solid var(--ok)"' : ""}>
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}
-      <div><small>${esc(p.creneau.replace(j, "").trim())}${p.criteres_ok ? " · 🔥 Viral" : ""}</small><p>${esc(hookPrincipal(p.adaptation))}</p><div class="types">${pastilleType(p)}<span class="mec" style="margin:0">${esc(p.adaptation?.mecanique || "")}</span></div></div>
+      <div><small>${esc(p.creneau.replace(j, "").trim())}${p.criteres_ok ? " · 🔥 Viral" : ""}${adapte(p) ? "" : " · à adapter"}</small><p>${esc(titrePost(p))}</p><div class="types">${pastilleType(p)}<span class="mec" style="margin:0">${esc(p.adaptation?.mecanique || "")}</span></div></div>
     </button>`).join("")}</div>`).join("")}</div>`;
 }
 

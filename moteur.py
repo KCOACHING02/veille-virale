@@ -212,9 +212,30 @@ def ia_cout() -> float:
 # ------------------------------------------------------------
 #  Exécution
 # ------------------------------------------------------------
+ADAPTATIONS_AUTO = 7  # par défaut : nombre de publications adaptées d'office par veille
+
+
+def adaptations_auto(cfg: dict) -> int:
+    return max(1, int(os.getenv("ADAPTATIONS_AUTO") or (cfg.get("claude") or {}).get("adaptations_auto") or ADAPTATIONS_AUTO))
+
+
+def a_adapter_d_office(pool: list, n: int) -> list:
+    """Les n meilleures publications du pool (déjà triées), dont environ un tiers de carrousels s'il y en a."""
+    from selection import famille
+    if len(pool) <= n:
+        return list(pool)
+    car = [p for p in pool if famille(p) == "image"]
+    vid = [p for p in pool if famille(p) != "image"]
+    nb_car = min(len(car), max(1, n // 3)) if car else 0
+    choix = set(map(id, car[:nb_car] + vid[:n - nb_car]))
+    if len(choix) < n:  # pas assez de vidéos : on complète avec des carrousels
+        choix |= set(map(id, [p for p in car if id(p) not in choix][:n - len(choix)]))
+    return [p for p in pool if id(p) in choix]
+
+
 def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = None, nb_adapter: int | None = None,
              demo: bool = False, sans_ia: bool = False, depuis: str | None = None, max_adaptations: int | None = None,
-             aid: str | None = None, classement_seul: bool = False) -> dict:
+             aid: str | None = None, classement_seul: bool = False, differe: bool = False) -> dict:
     """classement_seul (formule gratuite) : collecte et classement des publications virales, sans vidéo lue ni adaptation par Claude."""
     cfg = applique_plafonds(cfg)
     if classement_seul:
@@ -305,8 +326,16 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                 pool += reste[:nb_adapter + len(demandes) - len(pool)]
         if classement_seul:
             pool = []  # aucune adaptation : seulement le classement et les sons
-        elif max_adaptations is not None and len(pool) > max_adaptations:
-            pool = pool[:max(max_adaptations, 1)]  # on reste dans le quota restant de la formule
+        # Veille : seuls les meilleurs sont adaptés d'office ; les autres restent dans le planning et la galerie
+        # avec le bouton « Adapter » (une adaptation n'est payée que si la cliente la veut).
+        a_adapter = pool
+        if mode == "veille" and pool:
+            a_adapter = a_adapter_d_office(pool, adaptations_auto(cfg))
+        if max_adaptations is not None and len(a_adapter) > max_adaptations:
+            garde = set(map(id, a_adapter[:max(max_adaptations, 1)]))  # on reste dans le quota restant de la formule
+            a_adapter = [p for p in a_adapter if id(p) in garde]
+            if mode != "veille":
+                pool = a_adapter
         tous = demandes + classes
         affiches = (demandes + [p for p in classes if p.criteres_ok] + pool + classes[:80])
         affiches = list({cle(p): p for p in affiches}.values())[:MAX_AFFICHES]
@@ -348,15 +377,21 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
 
         # Reels déjà adaptés récemment pour ce client (analyse relancée ou interrompue) : réutilisés sans rien repayer
         cache_adapt = AdaptationsCache(esp) if not demo else None
-        a_faire = [p for p in pool if not (cache_adapt and cache_adapt.restaure(p))]
-        if len(a_faire) < len(pool):
-            log(f"{len(pool) - len(a_faire)} publication(s) déjà adaptée(s) récemment, réutilisée(s) sans nouveau coût")
+        if cache_adapt:  # y compris ceux du planning non adaptés d'office mais adaptés lors d'une analyse précédente
+            for p in pool:
+                if p not in a_adapter:
+                    cache_adapt.restaure(p)
+        a_faire = [p for p in a_adapter if not (cache_adapt and cache_adapt.restaure(p))]
+        if len(a_faire) < len(a_adapter):
+            log(f"{len(a_adapter) - len(a_faire)} publication(s) déjà adaptée(s) récemment, réutilisée(s) sans nouveau coût")
+        if len(a_adapter) < len(pool):
+            log(f"{len(a_adapter)} meilleures publications adaptées d'office ; les autres le seront à la demande (bouton « Adapter »)")
         log(f"{len(a_faire)} publications à analyser en profondeur")
         enregistre(affiches, stats_courantes())
 
         # ---------------- 3. Vidéos ----------------
         if demo:
-            d.lit_videos(pool, travail / "media", esp.media)
+            d.lit_videos(a_adapter, travail / "media", esp.media)
         elif a_faire:
             from video import slides_carrousels, traite_videos
             if cfg["video"].get("actif", True):
@@ -387,7 +422,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             pass
         elif demo and not a_ia:
             import time as _t
-            for i, p in enumerate(pool):
+            for i, p in enumerate(a_adapter):
                 p.adaptation = d.adaptation(p, i)
                 _t.sleep(0.8)  # démo : simule la durée d'une adaptation pour montrer l'affichage progressif
                 enregistre(affiches, stats_courantes())
@@ -399,7 +434,10 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                     cache_adapt.ajoute(p)
                 enregistre(affiches, stats_courantes())
             if a_faire:
-                ia.adapte_tous(a_faire, apres_chaque=apres_chaque)
+                if differe and os.getenv("LOTS_DIFFERES", "1") != "0":
+                    ia.adapte_tous_differe(a_faire, esp.racine / f"lot_{aid}.json", apres_chaque=apres_chaque)
+                else:
+                    ia.adapte_tous(a_faire, apres_chaque=apres_chaque)
 
         # ---------------- 6. Planning (mode veille) ----------------
         planning = []
@@ -589,7 +627,7 @@ def estime(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = N
     jours, maxi = a["mois"] * 30, a["posts_max_par_compte"]
     if mode == "veille":
         comptes = [("Instagram", x) for x in cfg["comptes"].get("instagram") or []] + [("TikTok", x) for x in cfg["comptes"].get("tiktok") or []]
-        reels = int(o["reels_par_jour"] * o["jours_planifies"] * cfg["diversite"]["marge_candidats"] + .999)
+        reels = min(int(o["reels_par_jour"] * o["jours_planifies"] * cfg["diversite"]["marge_candidats"] + .999), adaptations_auto(cfg))
         posts_precis = 0
     else:
         saisie = saisie or {"comptes": [], "posts": []}
@@ -601,7 +639,7 @@ def estime(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = N
     prix = {"Instagram": PRIX_REELS_ECO, "TikTok": PRIX_APIFY_RESULTAT}
     collecte = sum(maxi * prix.get(pl, PRIX_APIFY_RESULTAT) for pl, c in comptes if (pl, c) not in en_cache) + posts_precis * PRIX_APIFY_RESULTAT
     decouverte = 0.0
-    if mode == "veille" and cfg["decouverte"].get("actif"):
+    if mode == "veille" and cfg["decouverte"].get("actif") and os.getenv("DECOUVERTE_HASHTAGS") == "1":
         memo = esp.racine / "decouverte.json"
         try:
             age = (datetime.now() - datetime.fromisoformat(json.loads(memo.read_text(encoding="utf-8"))["date"])).days if memo.exists() else 999

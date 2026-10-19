@@ -63,6 +63,7 @@ apify:
 claude:
   modele: claude-sonnet-5-5
   hooks_par_post: 3
+  adaptations_auto: 7         # veille : publications adaptées d'office, les autres à la demande
 sortie:
   dossier: rapports
   historique: historique.json

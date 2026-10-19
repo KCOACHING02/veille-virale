@@ -150,14 +150,14 @@ def _prix(modele: str) -> tuple[float, float]:
     return PRIX_ENTREE_M, PRIX_SORTIE_M
 
 
-def _compte(rep, modele: str = ""):
+def _compte(rep, modele: str = "", facteur: float = 1.0):
     """Additionne les jetons et le coût réel selon le modèle utilisé."""
     u = getattr(rep, "usage", None)
     if u:
         entree = (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0) \
             + int((getattr(u, "cache_read_input_tokens", 0) or 0) * 0.1)
         sortie = getattr(u, "output_tokens", 0) or 0
-        pe, ps = _prix(modele)
+        pe, ps = (x * facteur for x in _prix(modele))
         _JETONS["in"] += entree
         _JETONS["out"] += sortie
         _JETONS["usd"] += entree / 1e6 * pe + sortie / 1e6 * ps
@@ -249,6 +249,7 @@ class IA:
         self.cfg = cfg
         self.modele = cfg["claude"]["modele"]
         self.systeme = self._systeme(voix, apprentissages)
+        self._lot = None  # traitement différé : intercepte les appels d'adaptation
 
     def _appel(self, outil: dict, contenu, max_tokens: int = 3000, systeme=None, modele: str | None = None) -> dict:
         """
@@ -256,30 +257,14 @@ class IA:
         Le choix d'outil est laissé en « auto » (certains modèles refusent un outil imposé) et une consigne explicite
         demande d'appeler l'outil ; en secours, un JSON écrit en texte est accepté.
         """
-        import json as _json
-        sys_ = systeme if systeme is not None else self.systeme
-        consigne = f"Réponds uniquement en appelant l'outil « {outil['name']} », sans aucun texte autour."
-        sys_ = (sys_ + "\n\n" + consigne) if isinstance(sys_, str) else [*sys_, {"type": "text", "text": consigne}]
+        if self._lot is not None and outil is OUTIL_ADAPTATION:  # traitement différé (voir adapte_tous_differe)
+            return self._lot(contenu, max_tokens)
         derniere = None
         for essai in range(3):
             try:
-                rep = self.client.messages.create(
-                    model=modele or self.modele, max_tokens=max_tokens, system=sys_,
-                    tools=[outil], tool_choice={"type": "auto"},
-                    messages=[{"role": "user", "content": contenu}],
-                )
+                rep = self.client.messages.create(**self._params(outil, contenu, max_tokens, systeme, modele))
                 _compte(rep, modele or self.modele)
-                for bloc in rep.content:
-                    if getattr(bloc, "type", "") == "tool_use":
-                        return bloc.input
-                texte = "".join(getattr(b, "text", "") for b in rep.content)
-                debut, fin = texte.find("{"), texte.rfind("}")
-                if debut >= 0 and fin > debut:
-                    try:
-                        return _json.loads(texte[debut:fin + 1])
-                    except ValueError:
-                        pass
-                raise ValueError("Virall.ai n'a pas renvoyé de réponse exploitable")
+                return self._lit_reponse(rep)
             except Exception as e:  # noqa: BLE001
                 derniere = e
                 bas = str(e).lower()
@@ -288,6 +273,27 @@ class IA:
                 if essai < 2:
                     time.sleep(5 * (essai + 1))
         return {"erreur": explique_erreur(derniere)}
+
+    def _params(self, outil: dict, contenu, max_tokens: int, systeme=None, modele: str | None = None) -> dict:
+        sys_ = systeme if systeme is not None else self.systeme
+        consigne = f"Réponds uniquement en appelant l'outil « {outil['name']} », sans aucun texte autour."
+        sys_ = (sys_ + "\n\n" + consigne) if isinstance(sys_, str) else [*sys_, {"type": "text", "text": consigne}]
+        return {"model": modele or self.modele, "max_tokens": max_tokens, "system": sys_, "tools": [outil],
+                "tool_choice": {"type": "auto"}, "messages": [{"role": "user", "content": contenu}]}
+
+    @staticmethod
+    def _lit_reponse(rep) -> dict:
+        for bloc in rep.content:
+            if getattr(bloc, "type", "") == "tool_use":
+                return bloc.input
+        texte = "".join(getattr(b, "text", "") for b in rep.content)
+        debut, fin = texte.find("{"), texte.rfind("}")
+        if debut >= 0 and fin > debut:
+            try:
+                return json.loads(texte[debut:fin + 1])
+            except ValueError:
+                pass
+        raise ValueError("Virall.ai n'a pas renvoyé de réponse exploitable")
 
     def _systeme(self, voix: str, apprentissages: str) -> list:
         n, o = self.cfg["niche"], self.cfg["objectifs"]
@@ -464,12 +470,107 @@ Remplis l'outil enregistrer_carrousel."""
                         log(f"  ⚠️  Sauvegarde intermédiaire impossible : {e}")
                 if i % 5 == 0 or i == len(posts):
                     log(f"  {i}/{len(posts)}")
+        self._bilan(posts)
+
+    @staticmethod
+    def _bilan(posts: list[Post]):
         erreurs = [p for p in posts if p.adaptation.get("erreur")]
         if erreurs:
             log(f"  ⚠️  {len(erreurs)} adaptation(s) en erreur : {erreurs[0].adaptation['erreur'][:300]}")
         if posts and len(erreurs) == len(posts):
             # Rien n'a marché : on arrête avec le vrai motif au lieu d'afficher une analyse vide
             raise RuntimeError("Aucun Reel n'a pu être adapté. " + erreurs[0].adaptation["erreur"])
+
+    def adapte_tous_differe(self, posts: list[Post], memo: Path, apres_chaque=None):
+        """
+        Même travail qu'adapte_tous, en traitement différé : moitié prix, résultats en quelques minutes à quelques heures.
+        Pour les veilles automatiques (personne n'attend devant l'écran). La file des tâches est libérée pendant
+        l'attente ; le numéro du lot est mémorisé pour reprendre le même lot si le serveur redémarre.
+        """
+        from modele import FIL
+        demandes = {}
+
+        def collecte(contenu, max_tokens):
+            demandes[self._en_cours] = self._params(OUTIL_ADAPTATION, contenu, max_tokens)
+            return {"erreur": "__en_lot__"}
+
+        # 1. Préparation des demandes (mêmes consignes, mêmes images qu'en direct)
+        self._lot = collecte
+        try:
+            for i, p in enumerate(posts):
+                self._en_cours = f"p{i}"
+                self.adapte(p)
+        finally:
+            self._lot = None
+        cles = [f"{p.plateforme}:{p.id}" for p in posts]
+        lot_id = None
+        try:
+            m = json.loads(memo.read_text(encoding="utf-8"))
+            if m.get("cles") == cles:
+                lot_id = m["id"]
+                log("Reprise du traitement différé déjà lancé")
+        except (OSError, ValueError, KeyError):
+            pass
+        resultats: dict = {}
+        if demandes:
+            try:
+                if not lot_id:
+                    lot = self.client.messages.batches.create(requests=[{"custom_id": k, "params": v} for k, v in demandes.items()])
+                    lot_id = lot.id
+                    memo.write_text(json.dumps({"id": lot_id, "cles": cles}), encoding="utf-8")
+                log(f"Adaptation de {len(demandes)} publications en traitement différé (moitié prix) : quelques minutes à quelques heures…")
+                limite = time.time() + float(os.getenv("LOT_ATTENTE_MAX_H", "8")) * 3600
+                verrou = getattr(FIL, "verrou", None)
+                if verrou:
+                    verrou.release()  # les autres tâches avancent pendant l'attente
+                try:
+                    while True:
+                        lot = self.client.messages.batches.retrieve(lot_id)
+                        if lot.processing_status == "ended":
+                            break
+                        if time.time() > limite:
+                            self.client.messages.batches.cancel(lot_id)
+                            log("  Traitement différé trop long : adaptation directe")
+                            break
+                        time.sleep(60)
+                finally:
+                    if verrou:
+                        verrou.acquire()
+                if lot.processing_status == "ended":
+                    for r in self.client.messages.batches.results(lot_id):
+                        if r.result.type == "succeeded":
+                            _compte(r.result.message, self.modele, facteur=0.5)
+                            try:
+                                resultats[r.custom_id] = self._lit_reponse(r.result.message)
+                            except ValueError:
+                                pass
+            except Exception as e:  # noqa: BLE001
+                print(f"[lot] traitement différé impossible : {e}")
+                log("  Traitement différé indisponible : adaptation directe")
+        # 2. Lecture des résultats (le post-traitement d'adapte s'applique) ; ce qui manque est refait en direct
+        manquants = []
+        for i, p in enumerate(posts):
+            k = f"p{i}"
+            if k in resultats:
+                self._lot = lambda contenu, max_tokens, _r=resultats[k]: _r
+                try:
+                    p.adaptation = self.adapte(p)
+                finally:
+                    self._lot = None
+                if apres_chaque:
+                    try:
+                        apres_chaque(p)
+                    except Exception as e:  # noqa: BLE001
+                        log(f"  ⚠️  Sauvegarde intermédiaire impossible : {e}")
+            else:
+                manquants.append(p)
+        memo.unlink(missing_ok=True)
+        if manquants:
+            if len(manquants) < len(posts):
+                log(f"  {len(manquants)} publication(s) à reprendre en direct")
+            self.adapte_tous(manquants, apres_chaque=apres_chaque)
+        else:
+            self._bilan(posts)
 
     # --------------------------------------------------------
     def voix_client(self, posts: list[Post]) -> dict:
