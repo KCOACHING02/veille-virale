@@ -52,6 +52,16 @@ app.json.sort_keys = False  # garde l'ordre voulu des options (thèmes, formes�
 DEMO_FORCE = False
 
 
+@app.before_request
+def vers_domaine_principal():
+    """Ancienne adresse *.up.railway.app → nom de domaine (URL_PUBLIQUE), pour les pages consultées (GET).
+    Les appels entrants (webhooks Stripe, formulaires) ne sont pas redirigés : ils continuent de fonctionner."""
+    cible = (os.getenv("URL_PUBLIQUE") or "").rstrip("/")
+    hote = (request.host or "").split(":")[0].lower()
+    if cible and request.method in ("GET", "HEAD") and hote.endswith(".up.railway.app") and hote not in cible:
+        return redirect(cible + request.full_path.rstrip("?"), 301)
+
+
 def cle_secrete() -> str:
     if os.getenv("SECRET_KEY"):
         return os.environ["SECRET_KEY"]
