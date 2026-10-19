@@ -95,10 +95,103 @@ TYPOS = {
     "manuscrit": ("Caveat-Bold.ttf", None, "Poppins-Regular.ttf", False, 1.3, "Caveat"),
     "signature": ("Pacifico-Regular.ttf", None, "Poppins-Regular.ttf", False, 1.08, "Pacifico"),
 }
-INTERLIGNES = {"signature": 1.55, "manuscrit": 1.1, "affiche": 1.05}  # polices aux jambages très hauts ou très bas
-NOMS_TYPOS = {"moderne": "Moderne", "geometrique": "Géométrique", "minimal": "Minimal", "douce": "Douce", "impact": "Impact",
+NOMS_TYPOS = {"moderne": "Net", "geometrique": "Géométrique", "minimal": "Tech", "douce": "Douce", "impact": "Impact",
               "affiche": "Affiche", "brut": "Brut", "elegant": "Élégant", "classique": "Classique", "retro": "Rétro",
               "manuscrit": "Manuscrit", "signature": "Signature"}
+# Palette étendue : polices figées en gras (famille « VV … » pour libass), voir static/fonts/LISEZ-MOI.txt
+# id : (fichier, nom affiché, police du texte, majuscules, facteur de taille)
+_TXT_SERIF, _TXT_DOUX = "LoraTexte.ttf", "NunitoTexte.ttf"
+_PLUS = {
+    # Moderne
+    "epure": ("Outfit.ttf", "Épuré", "Poppins-Regular.ttf", False, 1.07), "futuriste": ("Sora.ttf", "Futuriste", "Poppins-Regular.ttf", False, 0.96),
+    "pro": ("Manrope.ttf", "Pro", "Poppins-Regular.ttf", False, 0.99), "startup": ("PlusJakarta.ttf", "Startup", "Poppins-Regular.ttf", False, 0.97),
+    "editorial": ("DMSans.ttf", "Éditorial", "DMSansTexte.ttf", False, 1.05), "urbain": ("Urbanist.ttf", "Urbain", "Poppins-Regular.ttf", False, 1.05),
+    "lisible": ("Lexend.ttf", "Lisible", "Poppins-Regular.ttf", False, 1.01), "arty": ("Syne.ttf", "Arty", "Poppins-Regular.ttf", False, 1.08),
+    "neutre": ("Inter.ttf", "Neutre", "DMSansTexte.ttf", False, 1.02), "amical": ("Figtree.ttf", "Amical", "Poppins-Regular.ttf", False, 1.05),
+    "rond": ("Rubik.ttf", "Rond", "Poppins-Regular.ttf", False, 1.04), "sobre": ("WorkSans.ttf", "Sobre", "Poppins-Regular.ttf", False, 1.06),
+    # Impact
+    "gros_titre": ("Oswald.ttf", "Gros titre", "Poppins-Medium.ttf", True, 1.0), "gothique": ("LeagueGothic.ttf", "Gothique", "Poppins-Medium.ttf", True, 1.16),
+    "stade": ("BigShoulders.ttf", "Stade", "Poppins-Medium.ttf", True, 1.0), "sport": ("BarlowCondensed.ttf", "Sport", "Poppins-Medium.ttf", True, 1.08),
+    "energie": ("Teko.ttf", "Énergie", "Poppins-Medium.ttf", True, 1.18), "slab": ("AlfaSlab.ttf", "Slab", "Poppins-Regular.ttf", False, 0.97),
+    "massif": ("BowlbyOne.ttf", "Massif", "Poppins-Medium.ttf", False, 0.92), "journal": ("FjallaOne.ttf", "Journal", "Poppins-Medium.ttf", True, 0.94),
+    "pochoir": ("Staatliches.ttf", "Pochoir", "Poppins-Medium.ttf", True, 1.0), "urbain_neon": ("Bungee.ttf", "Street", "Poppins-Medium.ttf", True, 0.85),
+    # Élégant
+    "luxe": ("Cormorant.ttf", "Luxe", _TXT_SERIF, False, 1.26), "livre": ("Baskerville.ttf", "Livre", _TXT_SERIF, False, 0.97),
+    "doux_retro": ("Fraunces.ttf", "Doux rétro", _TXT_SERIF, False, 1.1), "couture": ("Prata.ttf", "Couture", _TXT_SERIF, False, 1.0),
+    "mode": ("Bodoni.ttf", "Mode", _TXT_SERIF, False, 1.06), "antique": ("Cinzel.ttf", "Antique", _TXT_SERIF, False, 0.94),
+    "litteraire": ("Lora.ttf", "Littéraire", _TXT_SERIF, False, 1.04), "magazine": ("Instrument.ttf", "Magazine", _TXT_SERIF, False, 1.1),
+    "vintage": ("YoungSerif.ttf", "Vintage", _TXT_SERIF, False, 1.02), "contraste": ("Gloock.ttf", "Contraste", _TXT_SERIF, False, 1.02),
+    # Italique
+    "italique": ("PlayfairItalique.ttf", "Italique", _TXT_SERIF, False, 1.03), "italique_luxe": ("CormorantItalique.ttf", "Italique luxe", _TXT_SERIF, False, 1.28),
+    "italique_fin": ("InstrumentItalique.ttf", "Italique fin", _TXT_SERIF, False, 1.1), "italique_rond": ("FrauncesItalique.ttf", "Italique rond", _TXT_SERIF, False, 1.1),
+    # Doux
+    "calin": ("Nunito.ttf", "Câlin", _TXT_DOUX, False, 1.05), "bulle": ("Fredoka.ttf", "Bulle", _TXT_DOUX, False, 1.06),
+    "ludique": ("Baloo.ttf", "Ludique", _TXT_DOUX, False, 1.1), "aerien": ("Comfortaa.ttf", "Aérien", _TXT_DOUX, False, 0.98),
+    "simple": ("VarelaRound.ttf", "Simple", _TXT_DOUX, False, 1.05), "rond_net": ("MPlusRounded.ttf", "Rond net", _TXT_DOUX, False, 1.02),
+    "bonbon": ("Sniglet.ttf", "Bonbon", _TXT_DOUX, False, 1.0), "gourmand": ("Chewy.ttf", "Gourmand", _TXT_DOUX, False, 0.95),
+    # Manuscrit
+    "danse": ("Dancing.ttf", "Danse", "Poppins-Regular.ttf", False, 1.18), "satin": ("Satisfy.ttf", "Satin", "Poppins-Regular.ttf", False, 1.12),
+    "calligraphie": ("GreatVibes.ttf", "Calligraphie", "Poppins-Regular.ttf", False, 1.22), "carnet": ("Kalam.ttf", "Carnet", "Poppins-Regular.ttf", False, 1.04),
+    "feutre": ("ShadowsIntoLight.ttf", "Feutre fin", "Poppins-Regular.ttf", False, 1.05), "marqueur": ("PermanentMarker.ttf", "Marqueur", "Poppins-Regular.ttf", False, 0.92),
+    "fil": ("Sacramento.ttf", "Fil", "Poppins-Regular.ttf", False, 1.38), "craie": ("Amatic.ttf", "Craie", "Poppins-Regular.ttf", False, 1.28),
+    "journal_intime": ("IndieFlower.ttf", "Journal intime", "Poppins-Regular.ttf", False, 1.1), "retro_script": ("Yellowtail.ttf", "Rétro script", "Poppins-Regular.ttf", False, 1.12),
+    "pinceau": ("Kaushan.ttf", "Pinceau", "Poppins-Regular.ttf", False, 1.0), "lettre": ("Marck.ttf", "Lettre", "Poppins-Regular.ttf", False, 1.2),
+    # Fun et rétro
+    "lobster": ("Lobster.ttf", "Diner", "Poppins-Medium.ttf", False, 1.0), "arcade": ("Righteous.ttf", "Arcade", "Poppins-Medium.ttf", False, 1.02),
+    "disco": ("Monoton.ttf", "Disco", "Poppins-Medium.ttf", True, 0.82), "bloc": ("RubikMono.ttf", "Bloc", "Poppins-Medium.ttf", True, 0.88),
+    "seventies": ("Shrikhand.ttf", "Seventies", "Poppins-Medium.ttf", False, 1.04), "titan": ("TitanOne.ttf", "Titan", "Poppins-Medium.ttf", False, 0.97),
+    "bd": ("LuckiestGuy.ttf", "BD", "Poppins-Medium.ttf", True, 0.9), "pixel": ("PressStart.ttf", "Pixel", "Poppins-Medium.ttf", False, 0.7),
+    "large": ("Unbounded.ttf", "Large", "Poppins-Medium.ttf", False, 0.92), "cartoon": ("Rammetto.ttf", "Cartoon", "Poppins-Medium.ttf", False, 0.88),
+    "enseigne": ("CarterOne.ttf", "Enseigne", "Poppins-Medium.ttf", False, 0.98), "gonfle": ("BagelFat.ttf", "Gonflé", "Poppins-Medium.ttf", False, 1.02),
+    "chango": ("Chango.ttf", "Gras rétro", "Poppins-Medium.ttf", False, 0.9),
+}
+for _id, (_f, _n, _t, _maj, _fac) in _PLUS.items():
+    TYPOS[_id] = (_f, None, _t, _maj, _fac, "VV " + _f[:-4])
+    NOMS_TYPOS[_id] = _n
+# Styles et leurs sous-styles (ordre d'affichage dans le studio)
+STYLES_TYPO = [
+    ("moderne", "Moderne", ["moderne", "geometrique", "minimal", "epure", "futuriste", "pro", "startup", "editorial", "urbain", "lisible", "arty", "neutre", "amical", "rond", "sobre"]),
+    ("impact", "Impact", ["impact", "affiche", "brut", "gros_titre", "gothique", "stade", "sport", "energie", "slab", "massif", "journal", "pochoir", "urbain_neon"]),
+    ("elegant", "Élégant", ["elegant", "classique", "retro", "luxe", "livre", "doux_retro", "couture", "mode", "antique", "litteraire", "magazine", "vintage", "contraste"]),
+    ("italique", "Italique", ["italique", "italique_luxe", "italique_fin", "italique_rond"]),
+    ("doux", "Doux", ["douce", "calin", "bulle", "ludique", "aerien", "simple", "rond_net", "bonbon", "gourmand"]),
+    ("manuscrit", "Manuscrit", ["manuscrit", "signature", "danse", "satin", "calligraphie", "carnet", "feutre", "marqueur", "fil", "craie", "journal_intime", "retro_script", "pinceau", "lettre"]),
+    ("fun", "Fun et rétro", ["lobster", "arcade", "disco", "bloc", "seventies", "titan", "bd", "pixel", "large", "cartoon", "enseigne", "gonfle", "chango"]),
+]
+STYLE_DE_TYPO = {t: s for s, _, ids in STYLES_TYPO for t in ids}
+# Polices aux jambages très hauts ou très bas
+INTERLIGNES = {"signature": 1.55, "manuscrit": 1.1, "affiche": 1.05, "carnet": 1.3, "feutre": 1.25, "cartoon": 1.3, "ludique": 1.22,
+               "fil": 1.3, "calligraphie": 1.3, "satin": 1.25, "retro_script": 1.22, "danse": 1.2, "lettre": 1.22, "pinceau": 1.22,
+               "massif": 1.2, "disco": 1.2, "craie": 1.05, "gothique": 1.02, "energie": 1.0, "pixel": 1.45, "enseigne": 1.22, "seventies": 1.22}
+CASSES = ("auto", "majuscules", "normal")
+
+
+def reglages_typo(p: dict) -> dict:
+    """Taille du titre et du texte (en %) et casse choisies pour un projet."""
+    r = p.get("typo_reglages") or {}
+    def pc(v):
+        try:
+            return max(60, min(160, int(v)))
+        except (TypeError, ValueError):
+            return 100
+    return {"titre": pc(r.get("titre", 100)), "texte": pc(r.get("texte", 100)), "casse": r.get("casse") if r.get("casse") in CASSES else "auto"}
+
+
+def typo_projet(p: dict) -> dict:
+    return {"id": p.get("typo") if p.get("typo") in TYPOS else "moderne", **reglages_typo(p)}
+
+
+def _typo(typo) -> dict:
+    """Typographie résolue : police, majuscules, facteurs de taille (titre et texte) et interligne."""
+    t = typo if isinstance(typo, dict) else {"id": typo}
+    cle = t.get("id") if t.get("id") in TYPOS else "moderne"
+    f_titre, poids, f_texte, maj, facteur, famille = TYPOS[cle]
+    casse = t.get("casse", "auto")
+    maj = True if casse == "majuscules" else False if casse == "normal" else maj
+    k_titre, k_texte = (t.get("titre") or 100) / 100, (t.get("texte") or 100) / 100
+    return {"cle": cle, "police": f_titre + (f"@{poids}" if poids else ""), "texte": f_texte, "maj": maj, "facteur": facteur * k_titre,
+            "k_titre": k_titre, "k_texte": k_texte, "famille": famille,
+            "interligne": INTERLIGNES.get(cle, 1.12 if maj else 1.18)}
 POSITIONS = ("haut", "centre", "bas")
 # Mot mis en valeur comme dans le modèle : police d'accent et couleur
 STYLES_ACCENT = {"italique": "PlayfairDisplay-Bold.ttf", "manuscrit": "Caveat-Bold.ttf", "couleur": None}
@@ -493,6 +586,8 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         p["style"] = "ma_voix"
     if p.get("typo") not in TYPOS:
         p["typo"] = "moderne"
+    if isinstance(champs.get("typo_reglages"), dict):
+        p["typo_reglages"] = reglages_typo({"typo_reglages": {**reglages_typo(p), **champs["typo_reglages"]}})
     sauve(esp, p)
     return p
 
@@ -505,7 +600,7 @@ _EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿️‍\U000E0000-\U000E007F]+"
 
 def propre(t: str) -> str:
     """Retire les emojis (absents de la police) et les espaces superflus."""
-    return re.sub(r"[ \t]+", " ", _EMOJI.sub("", t or "")).strip()
+    return re.sub(r"[ \t]+", " ", _EMOJI.sub("", t or "").replace("…", "...")).strip()
 
 
 def _police(graisse: str, taille: int):
@@ -548,20 +643,30 @@ def _ajuste(dessin, texte, graisse, largeur, hauteur, maxi, mini, interligne=1.1
         taille -= 4
 
 
+def insecables(t: str) -> str:
+    """Typographie française : « ? », « ! », « : », « ; » et « » » ne partent jamais seuls à la ligne."""
+    return re.sub(r"« ", "«\u00a0", re.sub(r" ([?!:;»])", "\u00a0\\1", t))
+
+
+def _mots(t: str) -> list[str]:
+    return [m for m in re.split(r"[ \t\n]+", t) if m]
+
+
 def _jetons(titre: str, accent: str) -> list[tuple[str, bool]]:
     """Mots du titre, ceux de l'expression d'accent étant marqués (comparaison sans tenir compte de la casse)."""
+    titre = insecables(titre)
     if accent:
         k = titre.lower().find(accent.lower())
         if k >= 0:
             av, ac, ap = titre[:k], titre[k:k + len(accent)], titre[k + len(accent):]
-            jetons = [(m, False) for m in av.split()] + [(m, True) for m in ac.split()]
+            jetons = [(m, False) for m in _mots(av)] + [(m, True) for m in _mots(ac)]
             # ponctuation collée à l'expression (« crois. ») : elle reste accrochée au dernier mot, dans son style
             colle = re.match(r"^[^\s]+", ap)
             if colle and jetons:
                 jetons[-1] = (jetons[-1][0] + colle.group(0), jetons[-1][1])
                 ap = ap[colle.end():]
-            return jetons + [(m, False) for m in ap.split()]
-    return [(m, False) for m in titre.split()]
+            return jetons + [(m, False) for m in _mots(ap)]
+    return [(m, False) for m in _mots(titre)]
 
 
 def _compose(d, jetons, police_titre, police_accent, largeur, hauteur, maxi, mini, interligne):
@@ -610,14 +715,14 @@ FILIGRANE = "Fait avec " + os.getenv("NOM_PRODUIT", "Veille virale")
 
 
 def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: str, taille=CARROUSEL, reel: bool = False,
-          typo: str = "moderne", filigrane: bool = False):
+          typo="moderne", filigrane: bool = False):
     """Dessine une slide. Avec image : texte en bas sur un dégradé. Sans image : fond uni du thème."""
     from PIL import Image, ImageDraw
     th = theme if isinstance(theme, dict) else THEMES.get(theme, THEMES["sombre"])
     l, h = taille
     marge = int(l * 0.085)
-    f_titre, poids, f_texte, majuscules, facteur, _ = TYPOS.get(typo, TYPOS["moderne"])
-    police_titre = f_titre + (f"@{poids}" if poids else "")
+    ty = _typo(typo)
+    police_titre, f_texte, majuscules, facteur = ty["police"], ty["texte"], ty["maj"], ty["facteur"]
     titre, texte = propre(slide_.get("titre", "")), propre(slide_.get("texte", ""))
     if majuscules:
         titre = titre.upper()
@@ -642,14 +747,15 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
         accent_txt = accent_txt.upper()
     police_accent = STYLES_ACCENT.get(style_acc) if accent_txt else None
     couleur_acc = accent if style_acc == "couleur" else ((255, 233, 199) if sur_photo else accent) if accent_txt else couleur
-    h_titre_max = int(h * (0.42 if premiere else 0.30))
+    h_titre_max = int(h * (0.42 if premiere else 0.30) * max(1.0, min(1.4, ty["k_titre"])))
     maxi = int((104 if premiere else (82 if sur_photo else 96)) * facteur)
-    interligne = INTERLIGNES.get(typo, 1.12 if majuscules else 1.18)
+    interligne = ty["interligne"]
     lignes_t, ht, taille_t, espace = _compose(d, _jetons(titre, accent_txt), police_titre, police_accent, largeur, h_titre_max,
                                               maxi, int(46 * facteur), interligne)
     pol_x, lignes_x, hx, taille_x = (None, [], 0, 0)
     if texte:
-        pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, f_texte, largeur, int(h * 0.26), 46, 30, 1.32)
+        kx = ty["k_texte"]
+        pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, f_texte, largeur, int(h * 0.26 * max(1.0, min(1.4, kx))), int(46 * kx), int(30 * kx), 1.32)
     ecart = int(taille_t * 0.55) if texte else 0
     bloc = ht + ecart + hx + int(h * 0.025)
     y = {"haut": int(h * 0.17), "centre": (h - bloc) // 2, "bas": h - int(h * 0.12) - bloc}[position]
@@ -735,14 +841,14 @@ def couverture(p: dict, fond_img: Path | None, style: str | None = None, texte: 
     from PIL import Image, ImageDraw
     style = style or p.get("couv_style") or "hook"
     titre = propre(texte if texte is not None else (p.get("couv_texte") or p.get("hook") or ""))
-    theme, typo = theme_de(p), p.get("typo", "moderne")
+    theme, typo = theme_de(p), typo_projet(p)
     if style == "hook":
         return slide({"titre": titre, "texte": ""}, 0, 1, fond_img, theme, "", VERTICAL, reel=True, typo=typo)
     th = theme if isinstance(theme, dict) else THEMES.get(theme, THEMES["sombre"])
     l, h = VERTICAL
-    f_titre, poids, _, majuscules, facteur, _ = TYPOS.get(typo, TYPOS["moderne"])
-    police = f_titre + (f"@{poids}" if poids else "")
-    interligne = INTERLIGNES.get(typo, 1.1 if majuscules else 1.16)
+    ty = _typo(typo)
+    police, majuscules, facteur = ty["police"], ty["maj"], ty["facteur"]
+    interligne = INTERLIGNES.get(ty["cle"], 1.1 if majuscules else 1.16)
     if majuscules:
         titre = titre.upper()
     haut, bas = ZONE_GRILLE
@@ -933,10 +1039,13 @@ def sous_titres(fichier: Path, dossier_: Path) -> list[tuple[float, float, str]]
     return res
 
 
-def fichier_ass(hook: str, duree_hook: float, blocs: list, chemin: Path, typo: str = "moderne"):
-    _, _, _, majuscules, facteur, famille = TYPOS.get(typo, TYPOS["moderne"])
+def fichier_ass(hook: str, duree_hook: float, blocs: list, chemin: Path, typo="moderne"):
+    ty = _typo(typo)
+    majuscules, facteur, famille = ty["maj"], ty["facteur"], ty["famille"]
+    facteur_sous = facteur / ty["k_titre"] * ty["k_texte"]
     if majuscules:
         hook = hook.upper()
+    hook = insecables(hook)
     entete = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -951,7 +1060,7 @@ Style: Sous,{famille},{taille_sous},&H00FFFFFF,&H000000FF,&H00000000,&H78000000,
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-""".replace("{famille}", famille).replace("{taille_hook}", str(int(74 * facteur))).replace("{taille_sous}", str(int(82 * facteur)))
+""".replace("{famille}", famille).replace("{taille_hook}", str(int(74 * facteur))).replace("{taille_sous}", str(int(82 * facteur_sous)))
     lignes = []
     if hook:
         lignes.append(f"Dialogue: 1,{_t(0)},{_t(duree_hook)},Hook,,0,0,0,,{{\\fad(0,250)}}{_ass_txt(hook)}")
@@ -1006,7 +1115,7 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
             log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée : pas de sous-titres")
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Sous-titres impossibles ({str(e)[:120]}) : le Reel est monté sans")
-    fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", p.get("typo", "moderne"))
+    fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", typo_projet(p))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
     tm = TONEMAP if _hdr(src) else ""
@@ -1050,7 +1159,7 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
     for i, s in enumerate(slides):
         img = images[i]
         slide(s, i, len(slides), img, theme_de(p), p.get("pseudo", ""), VERTICAL, reel=True,
-              typo=p.get("typo", "moderne")).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
+              typo=typo_projet(p)).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
     liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {SLIDE_DIAPORAMA_S}\n" for i in range(len(slides)))
     liste_ += f"file 'plans/{len(slides) - 1:02d}.jpg'\n"
     (d / "plans.txt").write_text(liste_, encoding="utf-8")
@@ -1087,7 +1196,7 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
             for i, s in enumerate(p["slides"]):
                 nom = f"slide_{i + 1:02d}.jpg"
                 img = images[i]
-                slide(s, i, n, img, theme_de(p), p.get("pseudo", ""), typo=p.get("typo", "moderne"), filigrane=filigrane).save(
+                slide(s, i, n, img, theme_de(p), p.get("pseudo", ""), typo=typo_projet(p), filigrane=filigrane).save(
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
         elif p.get("video"):
@@ -1179,7 +1288,7 @@ def apercu(esp: Espace, sid: str, i: int, filigrane: bool = False) -> bytes:
     p = charge(esp, sid)
     d = dossier(esp, sid)
     p["couleurs"] = couleurs_marque(esp.lit_config()) if p.get("theme") == "marque" else p.get("couleurs")
-    theme, typo, pseudo = theme_de(p), p.get("typo", "moderne"), p.get("pseudo", "")
+    theme, typo, pseudo = theme_de(p), typo_projet(p), p.get("pseudo", "")
     if p["type"] == "reel" and p.get("video"):
         cadre = d / "apercu_cadre.jpg"
         src = d / "sources" / p["video"]

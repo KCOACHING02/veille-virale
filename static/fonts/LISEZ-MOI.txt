@@ -14,3 +14,13 @@ Toutes sont distribuées sous licence SIL Open Font License 1.1 (https://openfon
 - Pacifico — Vernon Adams
 Les versions grasses de Montserrat, Space Grotesk, Quicksand, Playfair Display et Caveat
 sont des instances fixes tirées des polices variables officielles (Google Fonts).
+
+Palette étendue du studio (Google Fonts, figées en gras, allégées au latin et renommées « VV … » pour le montage des Reels) :
+Licence SIL Open Font License 1.1 : Outfit, Sora, Manrope, Plus Jakarta Sans, DM Sans, Urbanist, Lexend, Syne, Inter, Figtree,
+Rubik, Work Sans, Oswald, League Gothic, Big Shoulders Display, Barlow Condensed, Teko, Alfa Slab One, Bowlby One, Fjalla One,
+Staatliches, Bungee, Cormorant Garamond, Libre Baskerville, Fraunces, Prata, Bodoni Moda, Cinzel, Lora, Playfair Display Italic,
+Instrument Serif, Young Serif, Gloock, Nunito, Fredoka, Baloo 2, Comfortaa, Varela Round, M PLUS Rounded 1c, Sniglet,
+Dancing Script, Great Vibes, Kalam, Shadows Into Light, Sacramento, Amatic SC, Indie Flower, Kaushan Script, Marck Script,
+Lobster, Righteous, Monoton, Rubik Mono One, Shrikhand, Titan One, Press Start 2P, Unbounded, Rammetto One, Carter One,
+Bagel Fat One, Chango.
+Licence Apache 2.0 (https://www.apache.org/licenses/LICENSE-2.0) : Chewy, Satisfy, Permanent Marker, Yellowtail, Luckiest Guy.

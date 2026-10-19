@@ -849,7 +849,9 @@ def _options_studio_couv():
 
 def _options_studio():
     return {"styles": [{"id": k, "nom": v[0], "aide": v[1]} for k, v in studio.STYLES.items()],
-            "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5]} for k, v in studio.TYPOS.items()],
+            "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5], "fichier": v[0], "style": studio.STYLE_DE_TYPO.get(k, "moderne"),
+                       "maj": v[3]} for s_, _, ids in studio.STYLES_TYPO for k in ids for v in [studio.TYPOS[k]]],
+            "styles_typo": [{"id": s_, "nom": n} for s_, n, _ in studio.STYLES_TYPO],
             "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
             "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv()}
 
