@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -152,7 +153,7 @@ def post_instagram(it: dict) -> Post | None:
         legende=it.get("caption") or "",
         likes=entier(it.get("likesCount")),
         commentaires=entier(it.get("commentsCount")),
-        vues=entier(it.get("videoPlayCount") or it.get("videoViewCount")),
+        vues=entier(it.get("videoPlayCount") or it.get("igPlayCount") or it.get("videoViewCount")),
         video_url=it.get("videoUrl"),
         cover_url=it.get("displayUrl") or (it.get("images") or [None])[0],
         duree_s=it.get("videoDuration"),
@@ -209,12 +210,30 @@ def collecte_instagram(comptes: list[str], jours: int, max_par_compte: int, cfg:
         return []
     if ACTOR_REELS_ECO:
         try:
-            items = apify_run(ACTOR_REELS_ECO, {
-                # « posts » : Reels ET carrousels (avec l'image de chaque slide), même prix que les Reels seuls
-                "directUrls": [c.strip("@") for c in comptes], "resultsType": "posts", "resultsLimit": max_par_compte,
-                "onlyPostsNewerThan": f"{jours} days", "skipPinnedPosts": True, "selectedFields": CHAMPS_REELS,
-            }, token)
-            posts = [p for p in map(post_instagram, items) if p]
+            # Deux passes en parallèle (coût négligeable : ~0,05 $ / 1 000 éléments) :
+            #  - « reels » : seul mode où Instagram donne le nombre de vues (videoPlayCount) ;
+            #  - « posts » : pour les carrousels (avec l'image de chaque slide), qui n'existent pas en mode « reels ».
+            def passe(mode):
+                return apify_run(ACTOR_REELS_ECO, {
+                    "directUrls": [c.strip("@") for c in comptes], "resultsType": mode, "resultsLimit": max_par_compte,
+                    "onlyPostsNewerThan": f"{jours} days", "skipPinnedPosts": True, "selectedFields": CHAMPS_REELS,
+                }, token)
+            with ThreadPoolExecutor(max_workers=2) as ex:
+                f_reels, f_posts = ex.submit(passe, "reels"), ex.submit(passe, "posts")
+                try:
+                    reels = [p for p in map(post_instagram, f_reels.result()) if p]
+                except Exception as e:  # noqa: BLE001
+                    log(f"  Vues des Reels indisponibles ({str(e)[:100]})")
+                    reels = []
+                try:
+                    autres = [p for p in map(post_instagram, f_posts.result()) if p]
+                except Exception as e:  # noqa: BLE001
+                    log(f"  Carrousels indisponibles ({str(e)[:100]})")
+                    autres = []
+            for p in reels:
+                p.format = "Reel"
+            vus = {p.id for p in reels}
+            posts = reels + [p for p in autres if p.id not in vus and (p.format != "Reel" or not reels)]
             if posts:
                 return posts
             log(f"  Collecteur économique sans résultat pour {', '.join(comptes)} : repli sur le collecteur standard")
