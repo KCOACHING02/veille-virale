@@ -852,7 +852,8 @@ def _options_studio():
             "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5], "fichier": v[0], "style": studio.STYLE_DE_TYPO.get(k, "moderne"),
                        "maj": v[3]} for s_, _, ids in studio.STYLES_TYPO for k in ids for v in [studio.TYPOS[k]]],
             "styles_typo": [{"id": s_, "nom": n} for s_, n, _ in studio.STYLES_TYPO],
-            "modeles": [{"id": k, "nom": m["nom"], "note": bool(m.get("note")), "titre": "#%02x%02x%02x" % m["titre"], "texte": "#%02x%02x%02x" % m["texte"]}
+            "familles_modeles": [{"id": f, "nom": n, "pastille": c} for f, n, c in studio.SS.FAMILLES],
+            "modeles": [{"id": k, "nom": m["nom"], "note": bool(m.get("note")), "couleur": m.get("couleur", "blanc"), "titre": "#%02x%02x%02x" % m["titre"], "texte": "#%02x%02x%02x" % m["texte"]}
                         for k, m in studio.SS.MODELES.items()],
             "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
             "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv()}

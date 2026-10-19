@@ -422,6 +422,10 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-puces button small{font-size:12px;color:var(--ink-3)}
 .st-puces button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft)}
 .st-typos button{min-width:112px}
+.st-fam-modeles{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.st-fam-modeles button{white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.st-fam-modeles i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex-shrink:0}
+.st-mod-nb{float:right;font-size:12px;color:var(--ink-3)}
 .st-modeles{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:330px;overflow-y:auto;padding:2px}
 .st-modeles button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:5px;cursor:pointer;display:grid;gap:4px;text-align:center;color:var(--ink-2)}
 .st-modeles button[aria-pressed=true]{border-color:var(--glow);box-shadow:0 0 0 2px var(--glow-soft)}
@@ -2132,12 +2136,16 @@ function blocModeles(p) {
   const mods = S.optionsStudio?.modeles || [];
   if (!mods.length) return "";
   const m = mods.find(x => x.id === p.modele);
-  return `<p class="aide">Style du carrousel</p>
-    <div class="st-modeles" role="group" aria-label="Style du carrousel">
-      <button type="button" data-modele="" aria-pressed="${!p.modele}"><span class="st-mod-classique" style="${(() => { const mq = S.optionsStudio?.marque, c = p.theme === "marque" && mq ? [mq.fond, mq.texte] : ({clair: ["#F6F4F8", "#271B2D"], rose: ["#FF4F79", "#FFFFFF"]}[p.theme] || ["#271B2D", "#FFFFFF"]); return `background:${esc(c[0])};color:${esc(c[1])}`; })()}">Aa</span><small>Classique</small></button>
-      ${mods.map(x => `<button type="button" data-modele="${x.id}" aria-pressed="${p.modele === x.id}"><img loading="lazy" src="/api/studio/modeles/${x.id}.jpg" alt=""><small>${esc(x.nom)}</small></button>`).join("")}
-    </div>
-    ${m ? `<p class="aide st-mod-aide">Fond, couleurs, police et décors du style « ${esc(m.nom)} ». Dans chaque slide : un <b>surtitre</b> (ex. « à faire »)${m.note ? " et une <b>note manuscrite</b> entourée" : ""}, si tu veux.</p>` : ""}`;
+  const fams = S.optionsStudio?.familles_modeles || [], fam = S.familleModele || m?.couleur || "blanc";
+  return `<p class="aide">Style du carrousel <span class="st-mod-nb">${mods.length} styles</span></p>
+    <div class="seg st-fam-modeles" role="tablist" aria-label="Couleur du style">${fams.map(f => `<button type="button" role="tab" data-fam-modele="${f.id}" aria-pressed="${f.id === fam}"><i style="background:${esc(f.pastille)}"></i>${esc(f.nom)}</button>`).join("")}</div>
+    <div class="st-modeles" id="st-modeles" role="group" aria-label="Style du carrousel">${grilleModeles(p, fam)}</div>
+    ${m ? `<p class="aide st-mod-aide">Style choisi : <b>${esc(m.nom)}</b>. Fond, couleurs, police et décors. Dans chaque slide : un <b>surtitre</b> (ex. « à faire »)${m.note ? " et une <b>note manuscrite</b>" : ""}, si tu veux.</p>` : ""}`;
+}
+function grilleModeles(p, fam) {
+  const mods = (S.optionsStudio?.modeles || []).filter(x => x.couleur === fam);
+  return `<button type="button" data-modele="" aria-pressed="${!p.modele}"><span class="st-mod-classique" style="${(() => { const mq = S.optionsStudio?.marque, c = p.theme === "marque" && mq ? [mq.fond, mq.texte] : ({clair: ["#F6F4F8", "#271B2D"], rose: ["#FF4F79", "#FFFFFF"]}[p.theme] || ["#271B2D", "#FFFFFF"]); return `background:${esc(c[0])};color:${esc(c[1])}`; })()}">Aa</span><small>Classique</small></button>
+      ${mods.map(x => `<button type="button" data-modele="${x.id}" aria-pressed="${p.modele === x.id}"><img loading="lazy" src="/api/studio/modeles/${x.id}.jpg" alt=""><small>${esc(x.nom)}</small></button>`).join("")}`;
 }
 function blocCouleursTexte(p, avecVideo) {
   const ct = p.couleurs_texte || {}, m = (S.optionsStudio?.modeles || []).find(x => x.id === p.modele);
@@ -2151,9 +2159,14 @@ function blocCouleursTexte(p, avecVideo) {
     ${ligne("titre", reelVideo ? "Hook" : "Titre")}${ligne("texte", reelVideo ? "Sous-titres" : "Texte")}`;
 }
 function brancheLook(p, el) {
-  $$("[data-modele]", el).forEach(b => b.onclick = async () => {
+  const choixModele = () => $$("[data-modele]", el).forEach(b => b.onclick = async () => {
     await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {modele: b.dataset.modele}}); renduProjet();
     toast(b.dataset.modele ? "Style appliqué : police et couleurs restent modifiables" : "Style classique"); });
+  choixModele();
+  const ongletFam = $("[data-fam-modele][aria-pressed=true]", el); if (ongletFam) ongletFam.parentElement.scrollLeft = ongletFam.offsetLeft - 8;
+  $$("[data-fam-modele]", el).forEach(b => b.onclick = () => {
+    S.familleModele = b.dataset.famModele; $$("[data-fam-modele]", el).forEach(x => x.setAttribute("aria-pressed", x === b));
+    $("#st-modeles").innerHTML = grilleModeles(p, S.familleModele); choixModele(); });
   let tm;
   const enregistre = (k, v, rendu) => {
     p.couleurs_texte = {...(p.couleurs_texte || {}), [k]: v};
