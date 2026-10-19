@@ -77,7 +77,15 @@ def idees(esp: Espace, cfg: dict, demo: bool = False) -> dict:
     r = idees_produits(cfg, _voix(esp, cfg), contexte(esp, cfg))
     if r.get("erreur"):
         raise RuntimeError(r["erreur"])
-    for i in r.get("idees") or []:
+    r["idees"] = [i for i in _liste(r.get("idees")) if isinstance(i, dict) and i.get("titre")]
+    if not r["idees"]:
+        raise RuntimeError("Claude n'a pas proposé d'idées : réessaie dans un instant.")
+    for i in r["idees"]:
+        i["plan"] = [str(x) for x in _liste(i.get("plan"))]
+        try:
+            i["prix_conseille"] = int(i.get("prix_conseille") or 0)
+        except (TypeError, ValueError):
+            i["prix_conseille"] = 0
         i["mot_cle"] = re.sub(r"[^A-Z0-9]", "", (i.get("mot_cle") or "").upper())[:20]
     return r
 
@@ -108,6 +116,9 @@ def guide(esp: Espace, cfg: dict, uid: int, pid: str, plan: list[str] | None = N
         contenu = ecrit_guide(cfg, _voix(esp, cfg), p, contexte(esp, cfg))
         if contenu.get("erreur"):
             raise RuntimeError(contenu["erreur"])
+    contenu = normalise_guide(contenu, p)
+    if not contenu["parties"]:
+        raise RuntimeError("Claude n'a pas renvoyé le contenu du guide : réessaie dans un instant.")
     log("Je mets le guide en page…")
     nom = uuid.uuid4().hex + ".pdf"
     sortie = bq.dossier(uid) / "fichiers" / nom
@@ -131,6 +142,43 @@ def guide(esp: Espace, cfg: dict, uid: int, pid: str, plan: list[str] | None = N
     return {"fichier_nom": titre_fichier + ".pdf", "pages": len(contenu.get("parties") or []) + 3}
 
 
+def _liste(v):
+    """Claude renvoie parfois un tableau sous forme de texte JSON, ou une liste à puces en texte."""
+    if isinstance(v, str):
+        t = v.strip()
+        if t.startswith("[") or t.startswith("{"):
+            try:
+                return _liste(json.loads(t))
+            except ValueError:
+                pass
+        return [x.strip(" -•*\t") for x in t.splitlines() if x.strip(" -•*\t")]
+    if isinstance(v, dict):
+        return [v]
+    return list(v or [])
+
+
+def normalise_guide(c, produit: dict) -> dict:
+    """Rend le contenu du guide toujours exploitable par la mise en page, quelle que soit la forme renvoyée."""
+    if isinstance(c, str):
+        try:
+            c = json.loads(c)
+        except ValueError:
+            c = {"introduction": c}
+    c = c if isinstance(c, dict) else {}
+    texte = lambda v: v if isinstance(v, str) else ("\n\n".join(map(str, v)) if isinstance(v, list) else str(v or ""))  # noqa: E731
+    parties = []
+    for x in _liste(c.get("parties") or c.get("chapitres")):
+        if isinstance(x, str):
+            titre, _, corps = x.partition("\n")
+            parties.append({"titre": titre.strip()[:120], "texte": corps.strip(), "a_retenir": []})
+        elif isinstance(x, dict):
+            parties.append({"titre": texte(x.get("titre") or x.get("title"))[:160], "texte": texte(x.get("texte") or x.get("contenu") or x.get("content")),
+                            "a_retenir": [str(y) for y in _liste(x.get("a_retenir") or x.get("points"))]})
+    return {"titre": texte(c.get("titre")) or produit.get("titre") or "", "sous_titre": texte(c.get("sous_titre")) or produit.get("sous_titre") or "",
+            "introduction": texte(c.get("introduction")), "parties": [p for p in parties if p["titre"] or p["texte"]],
+            "conclusion": texte(c.get("conclusion")), "appel_action": texte(c.get("appel_action"))}
+
+
 def sequence(esp: Espace, cfg: dict, uid: int, demo: bool = False) -> dict:
     page = bq.lit_page(uid)
     log("J'écris ta séquence d'e-mails…")
@@ -150,7 +198,14 @@ def sequence(esp: Espace, cfg: dict, uid: int, demo: bool = False) -> dict:
     if r.get("erreur"):
         raise RuntimeError(r["erreur"])
     ids = {p["id"] for p in produits}
-    for e in r.get("emails") or []:
+    r["emails"] = [e for e in _liste(r.get("emails")) if isinstance(e, dict) and (e.get("texte") or e.get("sujet"))]
+    if not r["emails"]:
+        raise RuntimeError("Claude n'a pas écrit la séquence : réessaie dans un instant.")
+    for e in r["emails"]:
+        try:
+            e["delai_jours"] = int(e.get("delai_jours") or 0)
+        except (TypeError, ValueError):
+            e["delai_jours"] = 0
         if e.get("produit") not in ids:
             e["produit"] = ""
     return r
