@@ -186,6 +186,11 @@ INTERLIGNES = {"signature": 1.55, "manuscrit": 1.1, "affiche": 1.05, "carnet": 1
 CASSES = ("auto", "majuscules", "normal")
 
 
+def pseudo_visible(p: dict) -> str:
+    """Le @ n'apparaît sur les visuels que si l'utilisatrice l'a demandé."""
+    return p.get("pseudo", "") if p.get("afficher_pseudo") else ""
+
+
 def reglages_typo(p: dict) -> dict:
     """Taille du titre et du texte (en %) et casse choisies pour un projet."""
     r = p.get("typo_reglages") or {}
@@ -570,7 +575,7 @@ def retire_fichier(esp: Espace, sid: str, nom: str) -> dict:
 
 def modifie(esp: Espace, sid: str, champs: dict) -> dict:
     p = charge(esp, sid)
-    for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre", "script", "style", "typo"):
+    for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre", "script", "style", "typo", "afficher_pseudo"):
         if k in champs:
             p[k] = champs[k]
     # Couverture du Reel : style, texte, image (moment de la vidéo ou une des photos)
@@ -904,19 +909,13 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
     # Compteur, pseudo, invitation à faire glisser
     petit = _police("Medium", 30)
     haut = int(h * (0.09 if reel else 0.045))  # en Reel, on laisse la place à l'interface d'Instagram
-    if n > 1 and not reel and th.get("compteur", True):
-        cpt = f"{i + 1}/{n}"
-        d.text((l - marge - d.textlength(cpt, font=petit), haut), cpt, font=petit, fill=couleur2)
     if pseudo:
         d.text((marge, haut), "@" + pseudo.lstrip("@"), font=petit, fill=couleur2)
-    if n > 1 and not derniere and not reel and not note_txt:
-        g, c_g = "Glisse", (accent if not sur_photo else couleur)
-        y_g = h - int(h * 0.065)
-        x_fleche = l - marge - 34
-        d.text((x_fleche - 14 - d.textlength(g, font=petit), y_g), g, font=petit, fill=c_g)
-        y_m = y_g + 22  # flèche dessinée (la police n'a pas le caractère →)
-        d.line([(x_fleche, y_m), (x_fleche + 30, y_m)], fill=c_g, width=4)
-        d.line([(x_fleche + 19, y_m - 11), (x_fleche + 31, y_m), (x_fleche + 19, y_m + 11)], fill=c_g, width=4, joint="curve")
+    if n > 1 and not derniere and not reel and not note_txt:  # flèche seule pour inviter à faire glisser
+        c_g = accent if not sur_photo else couleur
+        x_f, y_m = l - marge - 56, h - int(h * 0.065) + 22
+        d.line([(x_f, y_m), (x_f + 54, y_m)], fill=c_g, width=5)
+        d.line([(x_f + 38, y_m - 15), (x_f + 55, y_m), (x_f + 38, y_m + 15)], fill=c_g, width=5, joint="curve")
     if filigrane:  # formule gratuite : discret, en bas à gauche (« Glisse » est en bas à droite)
         fil = _police("Medium", 24)
         d.text((marge, h - int(h * 0.065) + 4), FILIGRANE, font=fil, fill=couleur2)
@@ -927,7 +926,7 @@ def vignette_modele(mid: str, largeur: int = 270) -> bytes:
     """Aperçu d'un style de carrousel sur un exemple de slide (mis en cache)."""
     import io
     cache = DATA / "cache" / "modeles"
-    f = cache / f"{mid}-{largeur}-v1.jpg"
+    f = cache / f"{mid}-{largeur}-v2.jpg"
     if f.exists():
         return f.read_bytes()
     m = SS.MODELES[mid]
@@ -1044,7 +1043,7 @@ def couverture(p: dict, fond_img: Path | None, style: str | None = None, texte: 
         d.rounded_rectangle([marge, haut + 70, marge + d.textlength(kicker, font=petit) + 40, haut + 128], radius=29, fill=accent)
         d.text((marge + 20, haut + 78), kicker, font=petit, fill=(255, 255, 255) if sum(accent) < 600 else (30, 20, 30))
         bloc_texte(marge, haut + 160, l - 2 * marge, 560, 132, (255, 255, 255), centre=False, ombre=True)
-        if p.get("pseudo"):
+        if pseudo_visible(p):
             pol = _police("Medium", 34)
             d.text((marge, bas - 110), "@" + p["pseudo"].lstrip("@"), font=pol, fill=(255, 255, 255))
     elif style == "etiquette":
@@ -1314,7 +1313,7 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
     plans.mkdir()
     for i, s in enumerate(slides):
         img = images[i]
-        slide(s, i, len(slides), img, theme_de(p), p.get("pseudo", ""), VERTICAL, reel=True,
+        slide(s, i, len(slides), img, theme_de(p), pseudo_visible(p), VERTICAL, reel=True,
               typo=typo_projet(p)).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
     liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {SLIDE_DIAPORAMA_S}\n" for i in range(len(slides)))
     liste_ += f"file 'plans/{len(slides) - 1:02d}.jpg'\n"
@@ -1352,7 +1351,7 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
             for i, s in enumerate(p["slides"]):
                 nom = f"slide_{i + 1:02d}.jpg"
                 img = images[i]
-                slide(s, i, n, img, theme_de(p), p.get("pseudo", ""), typo=typo_projet(p), filigrane=filigrane).save(
+                slide(s, i, n, img, theme_de(p), pseudo_visible(p), typo=typo_projet(p), filigrane=filigrane).save(
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
         elif p.get("video"):
@@ -1444,7 +1443,7 @@ def apercu(esp: Espace, sid: str, i: int, filigrane: bool = False) -> bytes:
     p = charge(esp, sid)
     d = dossier(esp, sid)
     p["couleurs"] = couleurs_marque(esp.lit_config()) if p.get("theme") == "marque" else p.get("couleurs")
-    theme, typo, pseudo = theme_de(p), typo_projet(p), p.get("pseudo", "")
+    theme, typo, pseudo = theme_de(p), typo_projet(p), pseudo_visible(p)
     if p["type"] == "reel" and p.get("video"):
         cadre = d / "apercu_cadre.jpg"
         src = d / "sources" / p["video"]

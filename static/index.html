@@ -2084,7 +2084,7 @@ function sauveProjet(immediat) {
   clearTimeout(S.minuteurStudio);
   const go = async () => {
     const p = S.projet; if (!p || !$("#st-legende")) return;
-    const corps = {legende: $("#st-legende").value, pseudo: $("#st-pseudo").value.trim().replace(/^@/, "")};
+    const corps = {legende: $("#st-legende").value, pseudo: $("#st-pseudo").value.trim().replace(/^@/, ""), afficher_pseudo: !!$("#st-aff-pseudo")?.checked};
     if ($(".st-slide") || p.type === "carrousel") corps.slides = slidesDuDom();
     if ($("#st-hook")) corps.hook = $("#st-hook").value;
     if ($("#st-script")) corps.script = $("#st-script").value;
@@ -2319,7 +2319,8 @@ function renduProjet() {
           <p class="aide" style="margin-top:14px">Couleurs</p>
           <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(themesStudio()).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${!p.modele && p.theme === k}"><span class="st-fond ${k}" ${fondTheme(k)}></span>${n}</button>`).join("")}${S.optionsStudio?.marque ? "" : `<button type="button" class="lien" onclick="ouvreAssistant('marque', true)" style="font-size:13px">+ Mes couleurs</button>`}</div>
           ${blocCouleursTexte(p, avecVideo)}
-          <div class="champ" style="margin-top:14px"><label for="st-pseudo">Ton @ affiché sur les visuels</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte (laisser vide pour ne rien afficher)"></div>
+          <label class="coche" style="margin-top:14px"><input type="checkbox" id="st-aff-pseudo" ${p.afficher_pseudo ? "checked" : ""}> Afficher mon @ sur les visuels</label>
+          <div class="champ" id="st-pseudo-champ" ${p.afficher_pseudo ? "" : "hidden"}><label for="st-pseudo">Ton @</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte"></div>
         </div>
         <div class="st-bloc">
           <h3>4. La légende</h3>
@@ -2346,6 +2347,7 @@ function renduProjet() {
   $$("[data-theme]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {theme: b.dataset.theme}}); renduProjet(); });
   brancheTypo(p, el);
   brancheLook(p, el);
+  $("#st-aff-pseudo", el)?.addEventListener("change", e => { $("#st-pseudo-champ").hidden = !e.target.checked; sauveProjet(true); });
   $$("[data-style]", el).forEach(b => b.onclick = async () => {
     $$("[data-style]", el).forEach(x => x.setAttribute("aria-pressed", x === b));
     S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {style: b.dataset.style}});
