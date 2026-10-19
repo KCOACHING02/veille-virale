@@ -236,10 +236,15 @@ def collecte_instagram(comptes: list[str], jours: int, max_par_compte: int, cfg:
                 p.format = "Reel"
             vus = {p.id for p in reels}
             posts = reels + [p for p in autres if p.id not in vus and (p.format != "Reel" or not reels)]
-            if posts:
+            if posts or os.getenv("APIFY_SECOURS") != "1":
+                if not posts:
+                    log(f"  Aucune publication récente trouvée pour {', '.join('@' + c.strip('@') for c in comptes)} (compte privé, inexistant ou inactif)")
                 return posts
             log(f"  Collecteur économique sans résultat pour {', '.join(comptes)} : repli sur le collecteur standard")
         except Exception as e:  # noqa: BLE001
+            if os.getenv("APIFY_SECOURS") != "1":
+                log(f"  Collecte impossible pour {', '.join('@' + c.strip('@') for c in comptes)} ({str(e)[:100]})")
+                return []
             log(f"  Collecteur économique indisponible ({str(e)[:100]}) : repli sur le collecteur standard")
     items = apify_run(cfg["apify"]["actor_instagram"], {
         "directUrls": [f"https://www.instagram.com/{c.strip('@')}/" for c in comptes],
@@ -369,8 +374,9 @@ def collecte_concurrents(cfg: dict, token: str) -> list[Post]:
 def collecte_hashtags(cfg: dict, token: str) -> list[Post]:
     d = cfg["decouverte"]
     posts = []
-    tags_ig = [t.strip("#") for t in d.get("hashtags_instagram") or []]
-    tags_tt = [t.strip("#") for t in d.get("hashtags_tiktok") or []]
+    tags_ig = [t.strip("#") for t in d.get("hashtags_instagram") or []][:3]  # borné : collecteur standard, coûteux
+    tags_tt = [t.strip("#") for t in d.get("hashtags_tiktok") or []][:3]
+    d = {**d, "posts_par_hashtag": min(int(d.get("posts_par_hashtag") or 20), 20)}
     if tags_ig:
         log(f"Découverte Instagram : {len(tags_ig)} hashtag(s)")
         items = apify_run(cfg["apify"]["actor_instagram"], {

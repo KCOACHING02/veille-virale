@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import concurrent.futures as cf
 import time
 from pathlib import Path
@@ -122,24 +123,45 @@ OUTIL_MECANIQUES = {
 # ------------------------------------------------------------
 #  Coût Claude (estimé d'après les jetons consommés ; tarif à ajuster si besoin)
 # ------------------------------------------------------------
-PRIX_ENTREE_M, PRIX_SORTIE_M = 2.0, 10.0   # $ par million de jetons
-_JETONS = {"in": 0, "out": 0}
+PRIX_ENTREE_M, PRIX_SORTIE_M = 2.0, 10.0   # $ par million de jetons (modèle principal)
+PRIX_MODELES = {"haiku": (0.10, 0.50), "sonnet": (2.0, 10.0), "opus": (5.0, 25.0)}
+MODELE_LEGER = os.getenv("MODELE_LEGER", "claude-haiku-5-5")  # tâches simples : classements, hashtags
+_JETONS = {"in": 0, "out": 0, "usd": 0.0, "total_usd": 0.0}  # total_usd : jamais remis à zéro (coût des petites tâches)
 
 
 def cout_claude_reinitialise():
     _JETONS["in"] = _JETONS["out"] = 0
+    _JETONS["usd"] = 0.0
 
 
 def cout_claude() -> float:
-    return _JETONS["in"] / 1e6 * PRIX_ENTREE_M + _JETONS["out"] / 1e6 * PRIX_SORTIE_M
+    return _JETONS["usd"]
 
 
-def _compte(rep):
+def cout_total() -> float:
+    return _JETONS["total_usd"]
+
+
+def _prix(modele: str) -> tuple[float, float]:
+    m = (modele or "").lower()
+    for nom, prix in PRIX_MODELES.items():
+        if nom in m:
+            return prix
+    return PRIX_ENTREE_M, PRIX_SORTIE_M
+
+
+def _compte(rep, modele: str = ""):
+    """Additionne les jetons et le coût réel selon le modèle utilisé."""
     u = getattr(rep, "usage", None)
     if u:
-        _JETONS["in"] += (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0) \
+        entree = (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0) \
             + int((getattr(u, "cache_read_input_tokens", 0) or 0) * 0.1)
-        _JETONS["out"] += getattr(u, "output_tokens", 0) or 0
+        sortie = getattr(u, "output_tokens", 0) or 0
+        pe, ps = _prix(modele)
+        _JETONS["in"] += entree
+        _JETONS["out"] += sortie
+        _JETONS["usd"] += entree / 1e6 * pe + sortie / 1e6 * ps
+        _JETONS["total_usd"] += entree / 1e6 * pe + sortie / 1e6 * ps
 
 
 OUTIL_CARROUSEL = {
@@ -228,7 +250,7 @@ class IA:
         self.modele = cfg["claude"]["modele"]
         self.systeme = self._systeme(voix, apprentissages)
 
-    def _appel(self, outil: dict, contenu, max_tokens: int = 3000, systeme=None) -> dict:
+    def _appel(self, outil: dict, contenu, max_tokens: int = 3000, systeme=None, modele: str | None = None) -> dict:
         """
         Appel à Claude avec réponse structurée par l'outil `outil`.
         Le choix d'outil est laissé en « auto » (certains modèles refusent un outil imposé) et une consigne explicite
@@ -242,11 +264,11 @@ class IA:
         for essai in range(3):
             try:
                 rep = self.client.messages.create(
-                    model=self.modele, max_tokens=max_tokens, system=sys_,
+                    model=modele or self.modele, max_tokens=max_tokens, system=sys_,
                     tools=[outil], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": contenu}],
                 )
-                _compte(rep)
+                _compte(rep, modele or self.modele)
                 for bloc in rep.content:
                     if getattr(bloc, "type", "") == "tool_use":
                         return bloc.input
@@ -458,7 +480,7 @@ Remplis l'outil enregistrer_carrousel."""
             texte = "Donne le type de chacune de ces publications Instagram/TikTok, d'après sa légende (et son texte à l'écran s'il est connu).\n\n" + "\n\n".join(
                 f"id={p.id}\nformat: {p.format}\nlégende: {(p.legende or '')[:500]}" + (f"\ntexte à l'écran: {p.transcription[:200]}" if p.transcription else "")
                 for p in lot)
-            r = self._appel(OUTIL_TYPES, texte, max_tokens=3000, systeme="Tu es analyste de contenu social media.")
+            r = self._appel(OUTIL_TYPES, texte, max_tokens=3000, systeme="Tu es analyste de contenu social media.", modele=MODELE_LEGER)
             res.update({str(c["id"]): c["type"] for c in r.get("classement", []) if c.get("type") in TYPES_CONTENU})
         return res
 
@@ -467,7 +489,7 @@ Remplis l'outil enregistrer_carrousel."""
             return {}
         texte = "Classe chacun de ces Reels dans sa mécanique principale, d'après sa légende et sa transcription.\n\n" + "\n\n".join(
             f"id={p.id}\nlégende: {p.legende[:400]}\ntranscription: {p.transcription[:400]}" for p in posts)
-        res = self._appel(OUTIL_MECANIQUES, texte, max_tokens=4000, systeme="Tu es analyste de contenu social media.")
+        res = self._appel(OUTIL_MECANIQUES, texte, max_tokens=4000, systeme="Tu es analyste de contenu social media.", modele=MODELE_LEGER)
         return {c["id"]: c["mecanique"] for c in res.get("classement", [])}
 
 

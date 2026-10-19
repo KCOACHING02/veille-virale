@@ -44,7 +44,7 @@ commentaires:
 apprentissage:
   jours: 60
 decouverte:
-  actif: true
+  actif: false
   hashtags_instagram: []
   hashtags_tiktok: []
   posts_par_hashtag: 50

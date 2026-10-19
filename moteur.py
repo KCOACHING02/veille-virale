@@ -417,7 +417,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         if mode == "veille":
             if demo:
                 decouvertes = d.decouvertes()
-            elif cfg["decouverte"].get("actif") and token:
+            elif cfg["decouverte"].get("actif") and token and os.getenv("DECOUVERTE_HASHTAGS") == "1":
                 memo = esp.racine / "decouverte.json"
                 precedente = json.loads(memo.read_text(encoding="utf-8")) if memo.exists() else {}
                 age = (datetime.now() - datetime.fromisoformat(precedente["date"])).days if precedente.get("date") else 999

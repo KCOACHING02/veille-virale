@@ -230,8 +230,9 @@ def _mois():
 
 def usage(uid: int) -> dict:
     with _db() as c:
-        r = c.execute("SELECT analyses, adaptations, studio FROM usage WHERE uid=? AND mois=?", (uid, _mois())).fetchone()
-    return {"analyses": r["analyses"] if r else 0, "adaptations": r["adaptations"] if r else 0, "studio": (r["studio"] or 0) if r else 0}
+        r = c.execute("SELECT analyses, adaptations, studio, cout_usd FROM usage WHERE uid=? AND mois=?", (uid, _mois())).fetchone()
+    return {"analyses": r["analyses"] if r else 0, "adaptations": r["adaptations"] if r else 0, "studio": (r["studio"] or 0) if r else 0,
+            "cout_usd": (r["cout_usd"] or 0) if r else 0.0}
 
 
 def compte_usage(uid: int, analyses: int = 0, adaptations: int = 0, cout: float = 0.0, studio: int = 0):
@@ -319,6 +320,10 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> s
         return f"Il te reste {max(d['reste']['adaptations'], 0)} adaptations ce mois-ci, il en faut {adaptations}."
     if studio and d["reste"]["studio"] < studio:
         return f"Tu as utilisé tes {d['quotas']['studio_par_mois']} créations du mois au studio. Passe à la formule supérieure ou attends le mois prochain."
+    # Garde-fou : coût réel (collecte + IA) plafonné par formule et par mois (budget_usd dans plans.yaml)
+    budget = float(plans().get(plan_effectif(u), {}).get("budget_usd") or 0)
+    if (analyses or adaptations) and budget and usage(u["id"])["cout_usd"] >= budget:
+        return "Tu as atteint la limite d'utilisation de ta formule ce mois-ci. Passe à la formule supérieure ou attends le mois prochain."
     return None
 
 

@@ -11,6 +11,7 @@ essai:
   comptes_surveilles: 5
   studio_par_mois: 3           # carrousels et Reels montés
   veille_auto: false
+  budget_usd: 3             # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 # Formule gratuite : à la fin de l'essai (ou après une résiliation), le compte y passe automatiquement.
@@ -32,6 +33,7 @@ gratuit:
   filigrane: true               # « Fait avec Virallink » sur les carrousels
   mention_boutique: true        # « Créé avec Virallink » en bas de la boutique
   commission_boutique: 0        # % prélevé sur les ventes de la boutique (ex. 5) — à annoncer dans les CGV avant de l'activer
+  budget_usd: 0.5           # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 createur:
@@ -42,6 +44,7 @@ createur:
   comptes_surveilles: 10
   studio_par_mois: 20          # carrousels et Reels montés
   veille_auto: true
+  budget_usd: 12            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 pro:
@@ -52,6 +55,7 @@ pro:
   comptes_surveilles: 30
   studio_par_mois: 60          # carrousels et Reels montés
   veille_auto: true
+  budget_usd: 25            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 agence:
@@ -62,4 +66,5 @@ agence:
   comptes_surveilles: 100
   studio_par_mois: 200         # carrousels et Reels montés
   veille_auto: true
+  budget_usd: 60            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""

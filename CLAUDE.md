@@ -28,5 +28,6 @@ Application web par abonnement (Flask) qui repère les Reels et carrousels Insta
 ## Règles
 - UX (`static/index.html`) : sur téléphone, 5 onglets en bas (« Moi » regroupe résultats, profil, comptes, abonnement via `groupes()`). Suppressions avec `toastAnnuler(...)` plutôt que `confirm()`, chargements avec `squelette()`, boutique en mode simple par défaut (classe `avance` pour les options cachées, `BQ.avance`).
 - Ne jamais committer `.env`, `data/`, `rapports/`.
+- Coûts : plafond mensuel `budget_usd` par formule (`plans.yaml`, vérifié dans `abonnements.peut` sur `usage.cout_usd`) ; coût IA calculé selon le modèle (`ia._compte`, `PRIX_MODELES`), classements sur le modèle léger (`MODELE_LEGER`). Pas de repli vers le collecteur Instagram standard (54× plus cher) sauf `APIFY_SECOURS=1` ; découverte par hashtags coupée sauf `DECOUVERTE_HASHTAGS=1` (3 hashtags, 20 posts max).
 - Toute nouvelle consommation d'API doit respecter les quotas (`abonnements.peut`) et passer par la file de tâches.
 - Les textes générés ne doivent pas « sonner IA » ; respecter les interdits de la niche de chaque client.

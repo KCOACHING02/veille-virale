@@ -178,6 +178,8 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
             pass
         with (file_ or FILE):
             job["statut"] = "en cours"
+            import ia as _ia
+            cout_avant = _ia.cout_total()
             def hook(m):
                 job["logs"].append({"t": datetime.now().strftime("%H:%M:%S"), "m": m})
             hook.studio = FIL.studio = job["studio"]
@@ -194,6 +196,13 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
                 LOG_HOOKS.remove(hook)
                 if fichier:
                     fichier.unlink(missing_ok=True)
+                # coût IA des petites tâches (adaptation, assistant, boutique) : les analyses l'enregistrent elles-mêmes
+                cout = _ia.cout_total() - cout_avant
+                if persiste is None and cout > 0 and not en_demo():
+                    try:
+                        ab.compte_usage(uid, cout=cout)
+                    except Exception:  # noqa: BLE001
+                        pass
 
     threading.Thread(target=tourne, daemon=True).start()
     return jid
