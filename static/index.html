@@ -65,6 +65,8 @@ main{min-width:0;padding:20px 28px 80px}
 .resume b{font:700 34px/1 var(--display);font-stretch:75%;font-variant-numeric:tabular-nums}
 .resume span{font-size:13px;color:var(--ink-2);margin-top:4px}
 .resume .cible b{color:var(--ok)}
+.note-gratuit{width:100%;margin:0;font-size:14px;color:var(--ink-2);background:var(--sunk);border-radius:var(--r-m);padding:10px 14px}
+.note-gratuit a{color:var(--glow);font-weight:600}
 .sons-tendance{background:var(--sunk);border-radius:var(--r-m);padding:14px 16px;margin:0 0 20px}
 .sons-tendance h3{font-size:15px;margin:0 0 2px}
 .sons-tendance>p{font-size:13px;color:var(--ink-3);margin:0 0 10px}
@@ -353,6 +355,8 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-carte{background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
 .st-ouvre{border:0;padding:0;background:var(--sunk);cursor:pointer;position:relative;aspect-ratio:4/5;display:block}
 .st-ouvre img,.st-ouvre .ph{width:100%;height:100%;object-fit:cover;display:block}
+.st-haut{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.st-haut .st-quota{margin:0}
 .st-type,.st-statut{position:absolute;top:10px;font-size:12px;font-weight:600;border-radius:99px;padding:3px 9px;background:rgba(39,27,45,.75);color:#fff}
 .st-type{left:10px} .st-statut{right:10px}
 .st-statut.pret{background:var(--ok)} .st-statut.erreur{background:var(--warn)}
@@ -831,7 +835,7 @@ a.btn{text-decoration:none}
     <div class="barre">
       <h1 id="titre">Reels</h1>
       <select class="select" id="choix-analyse" aria-label="Analyse affichée"></select>
-      <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Nouvelle veille</button>
+      <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg><span id="ouvrir-nouvelle-txt">Nouvelle veille</span></button>
     </div>
     <div class="bandeau" id="bandeau-demo" hidden><b>Mode démo.</b> Les clés Apify et Claude ne sont pas configurées : les analyses utilisent des données fictives. Ajoute-les dans le fichier .env puis relance l'application.</div>
     <div id="job-haut"></div>
@@ -943,6 +947,7 @@ const S = { etat: null, analyse: null, vue: "accueil", filtre: "cdc", jobId: nul
 async function chargeEtat() {
   S.etat = await api("/api/etat");
   $("#bandeau-demo").hidden = !S.etat.demo;
+  $("#ouvrir-nouvelle-txt").textContent = S.etat.abonnement?.gratuit ? "Nouveau classement" : "Nouvelle veille";
   $("#etat-cles").innerHTML = S.etat.demo
     ? '<span class="pastille off"></span>Mode démo'
     : '<span class="pastille"></span>Apify et Claude connectés';
@@ -1067,7 +1072,9 @@ async function renduAccueil() {
       return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section>`;
   if (!S.etat.boutique) html += `<section class="bt-promo"><span class="ic">🛍️</span><div><b>Crée ta boutique en lien dans la bio</b><p>Tes liens, tes produits numériques, tes e-mails et ton kit média sur une seule page. 2 minutes, sans rien installer.</p></div><button class="btn prim" onclick="va('boutique')">Créer ma boutique</button></section>`;
   const ab = S.etat.abonnement;
-  if (ab?.statut === "essai" && ab.actif && ab.fin_essai) {
+  if (ab?.gratuit) {
+    html += `<p class="note-essai">Formule gratuite : tu vois les Reels viraux et leurs sons. Pour les adapter à ta niche, <a href="#" onclick="va('abonnement');return false">choisis une formule</a>.</p>`;
+  } else if (ab?.statut === "essai" && ab.actif && ab.fin_essai) {
     const j = Math.max(0, Math.ceil((new Date(ab.fin_essai) - Date.now()) / 864e5));
     html += `<p class="note-essai">Essai gratuit : encore ${j} jour${j > 1 ? "s" : ""}. <a href="#" onclick="va('abonnement');return false">Voir les formules</a></p>`;
   }
@@ -1153,6 +1160,8 @@ function renduReels() {
     <div><b>${ad}</b><span>adaptés pour toi</span></div>
     ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (Apify ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, Claude ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
     <span class="criteres">${texteSeuil(a.criteres)} et ≥ ${(a.criteres.taux_engagement_min*100).toLocaleString("fr-FR")} % d'engagement, ${a.criteres.mois} derniers mois</span>`;
+  if (a.classement_seul && !a.en_cours) $("#resume").insertAdjacentHTML("beforeend", `<p class="note-gratuit">Classement sans adaptation (formule gratuite) : ouvre un Reel pour voir son hook, sa légende et son son.
+    <a href="#" onclick="va('abonnement');return false">Passer à une formule</a> pour que chaque Reel soit adapté à ta niche, avec script, légende et messages privés.</p>`);
   const counts = {cdc, adaptes: ad, tous: a.posts.length};
   $$("#f-statut button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === S.filtre); $(".c", b).textContent = counts[b.dataset.v]; });
   $("#n-reels").textContent = cdc;
@@ -1484,12 +1493,14 @@ function analyseSaisie(txt, def) {
   return items;
 }
 function ouvreNouvelle(mode = "copie") {
-  const c = S.etat.criteres, o = S.etat.objectifs;
+  const c = S.etat.criteres, o = S.etat.objectifs, gratuit = !!S.etat?.abonnement?.gratuit;
+  if (gratuit) mode = "copie";  // formule gratuite : classement de comptes uniquement
   const nbWatch = (S.etat.comptes.instagram || []).length + (S.etat.comptes.tiktok || []).length;
   $("#feuille").innerHTML = `
-    <h2 id="m-titre">Nouvelle veille</h2>
-    <p class="sous">L'outil trouve les Reels et carrousels qui ont vraiment cartonné, les analyse et les adapte à ta niche.</p>
-    <div class="seg" id="m-mode" role="group" aria-label="Type d'analyse" style="margin-bottom:18px">
+    <h2 id="m-titre">${gratuit ? "Classement de comptes" : "Nouvelle veille"}</h2>
+    <p class="sous">${gratuit ? `Jusqu'à ${S.etat.abonnement.quotas.comptes_surveilles} comptes : tu vois leurs Reels et carrousels qui ont vraiment cartonné, leurs hooks et les sons tendance. L'adaptation à ta niche est réservée aux abonnées.`
+      : "L'outil trouve les Reels et carrousels qui ont vraiment cartonné, les analyse et les adapte à ta niche."}</p>
+    <div class="seg" id="m-mode" role="group" aria-label="Type d'analyse" style="margin-bottom:18px" ${gratuit ? "hidden" : ""}>
       <button type="button" data-v="copie" aria-pressed="${mode === "copie"}">Analyser et copier des comptes</button>
       <button type="button" data-v="veille" aria-pressed="${mode === "veille"}">Lancer ma veille de la semaine</button>
     </div>
@@ -1502,7 +1513,7 @@ function ouvreNouvelle(mode = "copie") {
           Un lien de Reel est toujours analysé, même s'il ne remplit pas les critères.</span>
         <div class="reconnus" id="m-reconnus"></div>
       </div>
-      <label class="coche"><input type="checkbox" id="m-ajout"> Ajouter ces comptes à ma veille de la semaine</label>
+      <label class="coche" ${gratuit ? "hidden" : ""}><input type="checkbox" id="m-ajout"> Ajouter ces comptes à ma veille de la semaine</label>
     </div>
     <div id="m-veille" ${mode === "veille" ? "" : "hidden"}>
       <p style="margin:0 0 16px">${nbWatch} compte${nbWatch > 1 ? "s" : ""} surveillé${nbWatch > 1 ? "s" : ""}. Résultat : un planning de ${o.reels_par_jour * o.jours_planifies} Reels (${o.reels_par_jour} par jour), adaptés et diversifiés.</p>
@@ -1515,7 +1526,7 @@ function ouvreNouvelle(mode = "copie") {
         <label class="champ" style="margin:0"><span class="aide">Période (mois)</span><input id="m-mois" type="number" min="1" max="12" value="${c.mois}"></label>
       </div>
     </details>
-    <div class="champ" id="m-nb-champ" ${mode === "copie" ? "" : "hidden"}><label for="m-nb">Nombre de publications à adapter</label><input id="m-nb" type="number" min="1" max="40" value="10" style="width:120px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px"><span class="aide">Les meilleures publications retenues. Tu pourras en adapter d'autres un par un depuis la galerie.</span></div>
+    <div class="champ" id="m-nb-champ" ${mode === "copie" && !gratuit ? "" : "hidden"}><label for="m-nb">Nombre de publications à adapter</label><input id="m-nb" type="number" min="1" max="40" value="10" style="width:120px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px"><span class="aide">Les meilleures publications retenues. Tu pourras en adapter d'autres un par un depuis la galerie.</span></div>
     <div id="m-erreur"></div>
     <div class="pied-modale pied-estim"><span id="m-estim" class="aide"></span><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-lancer">Lancer</button></div>`;
   const majReconnus = () => {
@@ -1540,6 +1551,7 @@ function ouvreNouvelle(mode = "copie") {
   $$("#m-mode button").forEach(b => b.onclick = () => {
     $$("#m-mode button").forEach(x => x.setAttribute("aria-pressed", x === b));
     $("#m-copie").hidden = $("#m-nb-champ").hidden = b.dataset.v !== "copie"; $("#m-veille").hidden = b.dataset.v !== "veille";
+    if (gratuit) $("#m-nb-champ").hidden = true;
     majEstim();
   });
   majEstim();
@@ -1639,9 +1651,16 @@ async function renduStudio() {
   S.optionsStudio = r;
   if (S.vue !== "studio" || S.projetId) return;
   const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} ce mois-ci sur ${r.quota}`} · retoucher et refaire une création ne compte pas.</p>`;
+  const gratuit = !!S.etat?.abonnement?.gratuit;
+  const nouveau = `<button class="btn${gratuit ? " prim" : ""}" id="st-vierge">+ Nouveau carrousel</button>`;
+  const brancheVierge = () => $("#st-vierge")?.addEventListener("click", async () => {
+    try { const x = await api("/api/studio", {method: "POST", body: {vierge: true}}); ouvreProjet(x.projet.id); }
+    catch (e) { if (!e.data?.quota) toast(e.message); } });
   if (!r.projets.length) {
-    el.innerHTML = `<div class="vide"><h2>Ton studio est vide</h2><p>Ouvre un Reel adapté dans la galerie et clique sur <b>Créer le contenu</b> :<br>tu choisis carrousel ou Reel, tu ajoutes tes photos ou ta vidéo, et tu récupères tout prêt à publier.</p>
-      <button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels adaptés</button></div>${quota}`;
+    el.innerHTML = gratuit ? `<div class="vide"><h2>Ton studio est vide</h2><p>Écris ton carrousel slide par slide, ajoute tes photos (ou celles de la banque d'images),<br>et récupère les slides prêtes à publier.</p>${nouveau}</div>${quota}`
+      : `<div class="vide"><h2>Ton studio est vide</h2><p>Ouvre un Reel adapté dans la galerie et clique sur <b>Créer le contenu</b> :<br>tu choisis carrousel ou Reel, tu ajoutes tes photos ou ta vidéo, et tu récupères tout prêt à publier.</p>
+      <button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels adaptés</button> ${nouveau}</div>${quota}`;
+    brancheVierge();
     return;
   }
   const vignette = p => {
@@ -1649,7 +1668,7 @@ async function renduStudio() {
     return img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
   };
   const STATUTS = {brouillon: "Brouillon", en_cours: "En cours…", pret: "Prêt", erreur: "À revoir"};
-  el.innerHTML = quota + `<div class="st-liste">${r.projets.map(p => `
+  el.innerHTML = `<div class="st-haut">${quota}${nouveau}</div>` + `<div class="st-liste">${r.projets.map(p => `
     <article class="st-carte">
       <button class="st-ouvre" data-projet="${p.id}" aria-label="Ouvrir ${esc(p.titre)}">
         ${vignette(p) ? `<img src="${vignette(p)}" alt="" loading="lazy">` : '<div class="ph"></div>'}
@@ -1660,6 +1679,7 @@ async function renduStudio() {
         <div class="st-actions">${p.zip ? `<a class="btn petit prim" href="/studio/${p.id}/sortie/${encodeURIComponent(p.zip)}?telecharger=1">Télécharger</a>` : ""}<button class="btn petit" data-projet="${p.id}">Ouvrir</button><button class="btn petit" data-suppr="${p.id}" aria-label="Supprimer">Supprimer</button></div>
       </div>
     </article>`).join("")}</div>`;
+  brancheVierge();
   $$("[data-projet]", el).forEach(b => b.onclick = () => ouvreProjet(b.dataset.projet));
   $$("[data-suppr]", el).forEach(b => b.onclick = async () => {
     if (!confirm("Supprimer cette création et ses fichiers ?")) return;
@@ -1784,9 +1804,11 @@ function renduProjet() {
         </div>
         <div class="st-bloc">
           <h3>2. Les textes</h3>
-          <p class="aide">Style d'écriture — toujours dans ta voix, seule la construction change.</p>
+          ${S.etat?.abonnement?.options?.ia === false ? `<p class="aide">Écris tes textes ci-dessous.${p.type === "reel" ? "" : " Avec une formule payante, Claude les écrit pour toi dans ta voix."}</p>`
+            : `<p class="aide">Style d'écriture — toujours dans ta voix, seule la construction change.</p>
           ${pucesStyles(S.optionsStudio || {styles: []}, p.style || "ma_voix")}${astuceVoix(S.optionsStudio || {voix_connue: true})}
-          <div class="st-outils"><button class="btn petit prim" id="st-ecrire" ${ecrit ? "disabled" : ""}>Réécrire dans ce style</button></div>
+          <div class="st-outils"><button class="btn petit prim" id="st-ecrire" ${ecrit ? "disabled" : ""}>Réécrire dans ce style</button></div>`}
+          ${S.etat?.abonnement?.options?.montage_reel === false && p.type === "reel" ? `<p class="note-gratuit" style="margin:10px 0">Le montage des Reels est réservé aux abonnées. En gratuit, crée des carrousels. <a href="#" onclick="va('abonnement');return false">Voir les formules</a></p>` : ""}
           <hr class="st-sep">
           ${p.type === "reel" && p.source?.son ? blocSon({son: p.source.son}) : ""}
           ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
@@ -2306,7 +2328,7 @@ const PAGES = {
       ${ligne("Critères de sélection", `${texteSeuil(a)}, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} % d'engagement, ${a.mois} derniers mois`, "criteres")}
       ${ligne("Comptes à copier", nbC ? `${nbC} compte${nbC > 1 ? "s" : ""}` : "<b>Aucun : ajoute au moins un compte</b>", "modeles")}
     </div>
-    ${S.etat?.abonnement?.veille_auto !== undefined ? `<label class="interrupteur"><input type="checkbox" id="w-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">Ton planning de la semaine est prêt à ton réveil.${S.etat.abonnement.plan === "essai" ? " Inclus dans les formules payantes." : ""}</span></span></label>` : ""}
+    ${S.etat?.abonnement?.veille_auto !== undefined ? `<label class="interrupteur"><input type="checkbox" id="w-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">Ton planning de la semaine est prêt à ton réveil.${["essai", "gratuit"].includes(S.etat.abonnement.plan) ? " Inclus dans les formules payantes." : ""}</span></span></label>` : ""}
     <p style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn prim" id="w-lancer" ${nbC ? "" : "disabled"}>Lancer ma première analyse</button><button class="btn" id="w-plus-tard">Je lancerai plus tard</button></p>`; },
 };
 const APRES = {
@@ -2398,7 +2420,7 @@ async function renduParametres() {
     ${r("Comptes à copier", `${nbC} compte(s), ${(p.hashtags.instagram || []).length + (p.hashtags.tiktok || []).length} hashtags`, "modeles")}
     ${r("Ta voix", esc(n.ton || "Non renseignée"), "voix")}
     </div>
-    <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || S.etat.abonnement.plan !== "essai" ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
+    <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || !["essai", "gratuit"].includes(S.etat.abonnement.plan) ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
     <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire le démarrage rapide</button></p>`;
   $$("[data-param]").forEach(b => b.onclick = () => ouvreAssistant(b.dataset.param, true));
   $("#p-auto").onchange = async e => { await api("/api/profil", {method: "PUT", body: {veille_auto: e.target.checked}}); await chargeEtat(); toast(e.target.checked ? "Veille automatique activée" : "Veille automatique désactivée"); };
@@ -2410,9 +2432,10 @@ async function renduAbonnement() {
   const barre = (t, u, q) => `<div><label><span>${t}</span><span>${u} / ${q}</span></label><div class="barre-ind ${u / q > .85 ? "flop" : "top"}"><i style="width:${Math.min(u / q, 1) * 100}%"></i></div></div>`;
   const fin = d.fin_essai ? new Date(d.fin_essai).toLocaleDateString("fr-FR", {day: "numeric", month: "long"}) : "";
   $("#abonnement").innerHTML = `
-    <div class="panneau"><h2>${esc(d.nom_plan)}${d.statut === "essai" ? (d.actif ? ` — jusqu'au ${fin}` : " — terminé") : d.statut === "actif" ? "" : " — " + esc(d.statut)}</h2>
-      <div class="conso">${barre("Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${barre("Reels adaptés ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois)}
-      <p style="margin:0;color:var(--ink-2);font-size:14px">Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés. ${d.veille_auto ? "Veille automatique du lundi incluse." : ""}</p></div>
+    <div class="panneau"><h2>${esc(d.nom_plan)}${d.gratuit ? "" : d.statut === "essai" ? (d.actif ? ` — jusqu'au ${fin}` : " — terminé") : d.statut === "actif" ? "" : " — " + esc(d.statut)}</h2>
+      ${d.gratuit ? `<p style="margin:0 0 12px;color:var(--ink-2)">${d.statut === "essai" ? "Ton essai est terminé, ton compte reste ouvert en formule gratuite. " : ""}Tu gardes ta boutique, les classements de comptes (sans adaptation) et ${d.quotas.studio_par_mois} carrousels par mois. Choisis une formule pour que chaque Reel viral soit adapté à ta niche.</p>` : ""}
+      <div class="conso">${barre(d.gratuit ? "Classements ce mois-ci" : "Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${d.quotas.adaptations_par_mois ? barre("Reels adaptés ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois) : ""}
+      <p style="margin:0;color:var(--ink-2);font-size:14px">${d.gratuit ? `Jusqu'à ${d.quotas.comptes_surveilles} comptes par classement.` : `Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés.`} ${d.veille_auto ? "Veille automatique du lundi incluse." : ""}</p></div>
       ${a.portail ? '<p style="margin:14px 0 0"><button class="btn" id="ab-portail">Gérer mon abonnement et mes factures</button></p>' : ""}</div>
     <div class="plans">${a.plans.map(p => `<div class="plan ${p.id === d.plan && d.statut === "actif" ? "actuel" : ""}">
       <h3>${esc(p.nom)}</h3><div class="prix">${p.prix_mensuel} €<small> / mois</small></div>

@@ -214,8 +214,11 @@ def ia_cout() -> float:
 # ------------------------------------------------------------
 def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None = None, nb_adapter: int | None = None,
              demo: bool = False, sans_ia: bool = False, depuis: str | None = None, max_adaptations: int | None = None,
-             aid: str | None = None) -> dict:
+             aid: str | None = None, classement_seul: bool = False) -> dict:
+    """classement_seul (formule gratuite) : collecte et classement des publications virales, sans vidéo lue ni adaptation par Claude."""
     cfg = applique_plafonds(cfg)
+    if classement_seul:
+        sans_ia, mode = True, "copie"
     debut = datetime.now()
     aid = aid or f"{debut:%Y%m%d-%H%M%S}-{mode}"
     o = cfg["objectifs"]
@@ -250,6 +253,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             "posts": [_post_vers_dict(p) for p in affiches],
             "voix_client": extra.get("voix_client", {}), "decouvertes": extra.get("decouvertes", []),
             "apprentissage": extra.get("apprentissage", {}), "fichiers": extra.get("fichiers", {}),
+            "classement_seul": bool(extra.get("classement_seul", classement_seul)),
         })
 
     from collecte import cout_apify, cout_apify_reinitialise
@@ -299,7 +303,9 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             pool = demandes + ok[:nb_adapter]
             if len(pool) < nb_adapter + len(demandes):
                 pool += reste[:nb_adapter + len(demandes) - len(pool)]
-        if max_adaptations is not None and len(pool) > max_adaptations:
+        if classement_seul:
+            pool = []  # aucune adaptation : seulement le classement et les sons
+        elif max_adaptations is not None and len(pool) > max_adaptations:
             pool = pool[:max(max_adaptations, 1)]  # on reste dans le quota restant de la formule
         tous = demandes + classes
         affiches = (demandes + [p for p in classes if p.criteres_ok] + pool + classes[:80])
@@ -344,7 +350,9 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         if a_ia:
             from ia import IA
             ia = IA(cfg)
-        if demo:
+        if classement_seul:
+            appr = {}
+        elif demo:
             appr = d.apprentissages()
         else:
             a_un_compte = any((cfg.get("mon_compte") or {}).values())
@@ -352,11 +360,13 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             import publications as pubs_mod
             appr = synthese(mes_posts, suivi_excel([esp.suivi]) + pubs_mod.pour_apprentissage(esp))
             appr = complete_avec_profil(esp, appr)
-        texte_voix = voix(cfg, esp.racine, appr.get("meilleures_legendes") or [])
+        texte_voix = "" if classement_seul else voix(cfg, esp.racine, appr.get("meilleures_legendes") or [])
 
         # ---------------- 5. Adaptation ----------------
         voix_client = {}
-        if demo and not a_ia:
+        if classement_seul:
+            pass
+        elif demo and not a_ia:
             import time as _t
             for i, p in enumerate(pool):
                 p.adaptation = d.adaptation(p, i)
@@ -410,12 +420,13 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         # ---------------- 8. Rapports et sauvegarde ----------------
         stats = stats_courantes()
         base = f"{'veille' if mode == 'veille' else 'copie'}_{debut:%Y-%m-%d_%H%M}"
-        rapports.export_excel(semaine, esp.rapports / f"{base}.xlsx", cfg, voix_client, decouvertes, appr)
-        rapports.export_html(semaine, cfg, esp.rapports / f"{base}.html", stats, voix_client, decouvertes, appr, esp.media)
-        enregistre(affiches, stats, en_cours=False, planning=planning, decouvertes=decouvertes,
+        if not classement_seul:
+            rapports.export_excel(semaine, esp.rapports / f"{base}.xlsx", cfg, voix_client, decouvertes, appr)
+            rapports.export_html(semaine, cfg, esp.rapports / f"{base}.html", stats, voix_client, decouvertes, appr, esp.media)
+        enregistre(affiches, stats, en_cours=False, planning=planning, decouvertes=decouvertes, classement_seul=classement_seul,
                    voix_client=voix_client if not voix_client.get("erreur") else {},
                    apprentissage={k: appr.get(k) for k in ("par_mecanique", "mecaniques_top", "mecaniques_flop", "nb_reels", "nb_suivi", "texte")},
-                   fichiers={"html": f"{base}.html", "xlsx": f"{base}.xlsx"})
+                   fichiers={} if classement_seul else {"html": f"{base}.html", "xlsx": f"{base}.xlsx"})
         analyse = charge(esp, aid)
         log(f"✅ Analyse terminée : {stats['adaptes']} Reels adaptés — coût réel Apify {stats['cout_apify_usd']:.2f} $, Claude ≈ {stats['cout_claude_usd']:.2f} $")
         return analyse

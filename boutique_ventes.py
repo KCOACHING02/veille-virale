@@ -501,7 +501,7 @@ def rendu_produit(page: dict, pseudo: str, p: dict, uid: int, message: str = "",
         avis_html = '<section class="avis" id="avis"><h2 class="t2" style="margin-top:0">Ce qu’elles en pensent</h2>' + "".join(un_avis(a) for a in sorted(avis, key=lambda a: a["date"], reverse=True)[:30]) + "</section>"
     corps = (f'{CSS_FICHE}<a class="retour" href="/@{pseudo}">← {E(page.get("nom") or "")}</a>{msg}<article class="fiche">{img}<h1>{E(p.get("titre") or "")}</h1>'
              f'{st}{note_html}<p class="px">{E(prix_txt(prix, devise))}{barre}</p>{compte}{action}{pack}'
-             f'<div class="desc">{E(p.get("description") or "")}</div>{avis_html}</article>{badge()}{SCRIPT_PRODUIT}')
+             f'<div class="desc">{E(p.get("description") or "")}</div>{avis_html}</article>{badge(page)}{SCRIPT_PRODUIT}')
     return document(page, pseudo, corps, f'{p.get("titre")} · {page.get("nom")}', (p.get("sous_titre") or p.get("description") or "")[:160],
                     image_og=_img(pseudo, p["image"]) if p.get("image") else "")
 
@@ -545,7 +545,7 @@ def rendu_merci(page: dict, pseudo: str, uid: int, vente: dict, demo: bool = Fal
              (" Tu reçois aussi la confirmation par e-mail." if vente.get("email") and "demo" not in vente["email"] else "") +
              (" (Achat simulé : mode démo.)" if demo else ""))
     corps = (f'<a class="retour" href="/@{pseudo}">← {E(page.get("nom") or "")}</a><div class="carte" style="text-align:center;padding:28px 20px">'
-             f'<h1 style="font-size:calc(var(--tt) * .8)">{E(titre)}</h1><p style="margin:0">{E(texte)}</p>{contenu}</div>{up}{badge()}')
+             f'<h1 style="font-size:calc(var(--tt) * .8)">{E(titre)}</h1><p style="margin:0">{E(texte)}</p>{contenu}</div>{up}{badge(page)}')
     return document(page, pseudo, CSS_FICHE + corps, titre)
 
 
@@ -561,4 +561,4 @@ def rendu_form_avis(page: dict, pseudo: str, p: dict, envoye: bool = False) -> s
                  '<textarea name="texte" rows="5" maxlength="800" placeholder="Ce que tu en as pensé, ce que ça t’a apporté…" '
                  'style="width:100%;color:var(--t);border:1.5px solid color-mix(in srgb,var(--t) 30%,transparent);background:transparent;border-radius:var(--rk);padding:12px 14px;font:inherit"></textarea></div>'
                  '<button class="bouton" style="width:100%;margin-top:12px">Publier mon avis</button></form>')
-    return document(page, pseudo, CSS_FICHE + f'<a class="retour" href="/@{pseudo}">← {E(page.get("nom") or "")}</a>' + corps + badge(), "Ton avis")
+    return document(page, pseudo, CSS_FICHE + f'<a class="retour" href="/@{pseudo}">← {E(page.get("nom") or "")}</a>' + corps + badge(page), "Ton avis")

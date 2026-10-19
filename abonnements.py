@@ -161,15 +161,33 @@ def usage_tous() -> dict:
     return res
 
 
+# Options des formules payantes (une formule peut en désactiver une dans plans.yaml, comme la formule gratuite)
+OPTIONS_DEFAUT = {"ia": True, "montage_reel": True, "suivi_publications": True, "sequences_emails": True,
+                  "filigrane": False, "mention_boutique": False}
+
+
+def plan_effectif(u: dict) -> str:
+    """Formule réellement appliquée : fin d'essai, résiliation ou impayé → formule gratuite (si elle existe)."""
+    p = plans()
+    expire = u["statut"] == "essai" and u.get("fin_essai") and u["fin_essai"] < datetime.now().isoformat()
+    if (expire or u["statut"] in ("resilie", "impaye")) and "gratuit" in p:  # « suspendu » (par l'admin) reste bloqué
+        return "gratuit"
+    return u["plan"] if u["plan"] in p else "essai"
+
+
 def droits(u: dict) -> dict:
     p = plans()
-    plan = p.get(u["plan"]) or p["essai"]
-    actif = u["statut"] in ("actif", "essai")
-    if u["statut"] == "essai" and u.get("fin_essai") and u["fin_essai"] < datetime.now().isoformat():
+    cle = plan_effectif(u)
+    plan = p[cle]
+    actif = cle == "gratuit" or u["statut"] in ("actif", "essai")
+    if cle != "gratuit" and u["statut"] == "essai" and u.get("fin_essai") and u["fin_essai"] < datetime.now().isoformat():
         actif = False
     us = usage(u["id"])
     return {
-        "plan": u["plan"], "nom_plan": plan["nom"], "statut": u["statut"], "actif": actif, "fin_essai": u.get("fin_essai"),
+        "plan": cle, "nom_plan": plan["nom"], "statut": u["statut"], "actif": actif, "fin_essai": u.get("fin_essai"),
+        "gratuit": bool(plan.get("gratuit")),
+        "options": {k: bool(plan.get(k, v)) for k, v in OPTIONS_DEFAUT.items()},
+        "commission_boutique": plan.get("commission_boutique"),
         "quotas": {**{k: plan[k] for k in ("analyses_par_mois", "adaptations_par_mois", "comptes_surveilles")},
                    "studio_par_mois": plan.get("studio_par_mois", 10)},
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
@@ -179,6 +197,23 @@ def droits(u: dict) -> dict:
     }
 
 
+MSG_ABONNEES = "Cette fonction est réservée aux abonnées : choisis une formule pour l'utiliser."
+MSG_OPTIONS = {
+    "ia": "L'adaptation à ta niche et l'écriture par l'IA sont réservées aux abonnées. Choisis une formule pour les débloquer.",
+    "montage_reel": "Le montage des Reels est réservé aux abonnées. En gratuit, tu peux créer des carrousels.",
+    "suivi_publications": "Le suivi automatique de tes Reels publiés est réservé aux abonnées.",
+    "sequences_emails": "Les séquences d'e-mails automatiques sont réservées aux abonnées.",
+}
+
+
+def reserve(u: dict, option: str) -> str | None:
+    """None si la formule de l'utilisateur inclut l'option, sinon le message à afficher."""
+    d = droits(u)
+    if not d["actif"]:
+        return "Ton abonnement n'est pas actif. Choisis une formule pour continuer."
+    return None if d["options"].get(option, True) else MSG_OPTIONS.get(option, MSG_ABONNEES)
+
+
 def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> str | None:
     """Renvoie None si c'est autorisé, sinon le message à afficher."""
     d = droits(u)
@@ -186,6 +221,8 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> s
         return "Ton essai est terminé ou ton abonnement n'est pas actif. Choisis une formule pour continuer."
     if analyses and d["reste"]["analyses"] < analyses:
         return f"Tu as utilisé tes {d['quotas']['analyses_par_mois']} analyses du mois. Passe à la formule supérieure ou attends le mois prochain."
+    if adaptations and d["quotas"]["adaptations_par_mois"] == 0:
+        return MSG_ABONNEES
     if adaptations and d["reste"]["adaptations"] < adaptations:
         return f"Il te reste {max(d['reste']['adaptations'], 0)} adaptations ce mois-ci, il en faut {adaptations}."
     if studio and d["reste"]["studio"] < studio:

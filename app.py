@@ -109,13 +109,23 @@ def est_admin(u: dict) -> bool:
 def droits(u: dict) -> dict:
     d = ab.droits(u)
     if est_admin(u):
-        d.update(actif=True, nom_plan="Administrateur", veille_auto=bool(u.get("veille_auto")),
+        d.update(actif=True, nom_plan="Administrateur", veille_auto=bool(u.get("veille_auto")), gratuit=False,
+                 options={**ab.OPTIONS_DEFAUT, "filigrane": False, "mention_boutique": False},
                  reste={"analyses": 9999, "adaptations": 9999, "studio": 9999})
     return d
 
 
 def refus(u: dict, analyses=0, adaptations=0, studio=0) -> str | None:
     return None if est_admin(u) else ab.peut(u, analyses, adaptations, studio)
+
+
+def reserve(u: dict, option: str) -> str | None:
+    """Fonction incluse dans la formule ? (formule gratuite : pas d'IA, pas de montage de Reel, pas de suivi…)"""
+    return None if est_admin(u) else ab.reserve(u, option)
+
+
+def bloque(msg: str):
+    return jsonify({"erreur": msg, "quota": True}), 402
 
 
 # ------------------------------------------------------------
@@ -426,9 +436,13 @@ def nouvelle():
     o = cfg["objectifs"]
     nb = int(c.get("nb") or 10) if mode == "copie" else int(o["reels_par_jour"] * o["jours_planifies"] * cfg["diversite"]["marge_candidats"] + .999)
     d = droits(u)
+    classement = not d["options"]["ia"]  # formule gratuite : classement des Reels viraux, sans adaptation
+    if classement and mode == "veille":
+        return bloque("La veille de la semaine (Reels trouvés et adaptés pour toi) est réservée aux abonnées. "
+                      "En gratuit, lance un classement de comptes : tu verras leurs Reels viraux et les sons tendance.")
     if mode == "copie":
         nb = max(1, min(nb, d["reste"]["adaptations"]))
-    msg = refus(u, analyses=1, adaptations=nb if mode == "copie" else o["reels_par_jour"] * o["jours_planifies"])
+    msg = refus(u, analyses=1) if classement else refus(u, analyses=1, adaptations=nb if mode == "copie" else o["reels_par_jour"] * o["jours_planifies"])
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     saisie = None
@@ -436,7 +450,10 @@ def nouvelle():
         saisie = moteur.parse_saisie(c.get("texte", ""), c.get("plateforme", "Instagram"))
         if not (saisie["comptes"] or saisie["posts"]):
             return jsonify({"erreur": "Aucun compte ni lien reconnu.", "ignores": saisie["ignores"]}), 400
-        if c.get("ajouter_a_veille") and saisie["comptes"]:
+        lim = d["quotas"]["comptes_surveilles"]
+        if classement and len(saisie["comptes"]) + len(saisie["posts"]) > lim:
+            return bloque(f"En gratuit, un classement porte sur {lim} comptes au maximum. Garde les {lim} qui t'intéressent le plus.")
+        if c.get("ajouter_a_veille") and saisie["comptes"] and not classement:
             moteur.ajoute_a_la_veille(esp, saisie["comptes"][: max(0, d["quotas"]["comptes_surveilles"] - _nb_comptes(cfg))])
     else:
         if not _nb_comptes(cfg):
@@ -446,8 +463,10 @@ def nouvelle():
         if c.get(k_in):
             cfg["analyse"][k_cfg] = conv(c[k_in])
     titre = "Veille de la semaine" if mode == "veille" else "Analyse de comptes"
+    if classement:
+        titre = "Classement de comptes"
     jid = lance_analyse(u["id"], titre, {"cfg": cfg, "mode": mode, "saisie": saisie, "nb_adapter": nb if mode == "copie" else None,
-                                         "demo": en_demo(), "max_adaptations": d["reste"]["adaptations"]})
+                                         "demo": en_demo(), "max_adaptations": d["reste"]["adaptations"], "classement_seul": classement})
     return jsonify({"job": jid, "saisie": saisie})
 
 
@@ -468,7 +487,7 @@ def estimation():
 def adapter(aid):
     if job_en_cours(g.u["id"]):
         return jsonify({"erreur": "Une tâche est déjà en cours."}), 409
-    msg = refus(g.u, adaptations=1)
+    msg = reserve(g.u, "ia") or refus(g.u, adaptations=1)
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
@@ -577,6 +596,9 @@ def maj_profil():
 @app.post("/api/assistant/mon-compte")
 @connecte
 def assistant_compte():
+    msg = reserve(g.u, "ia")
+    if msg:
+        return bloque(msg)
     if job_en_cours(g.u["id"]):
         return jsonify({"erreur": "Une tâche est déjà en cours."}), 409
     c = request.get_json(force=True)
@@ -592,7 +614,7 @@ def assistant_compte():
 @connecte
 def assistant_comptes():
     """Suggestions de comptes à copier, vérifiées par une vraie collecte (quelques centimes) : file de tâches + abonnement actif."""
-    msg = refus(g.u)
+    msg = reserve(g.u, "ia")
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     if job_en_cours(g.u["id"]):
@@ -607,6 +629,9 @@ def assistant_comptes():
 @app.post("/api/assistant/hashtags")
 @connecte
 def assistant_hashtags():
+    msg = reserve(g.u, "ia")
+    if msg:
+        return bloque(msg)
     cfg = g.esp.lit_config()
     c = request.get_json(force=True) or {}
     cfg["niche"].update({k: v for k, v in (c.get("niche") or {}).items() if v})
@@ -640,7 +665,8 @@ def publication_ajoute():
         pub = pubs.ajoute(g.esp, c.get("url", ""), inspiration)
     except ValueError as e:
         return jsonify({"erreur": str(e)}), 400
-    _lance_releve(g.u["id"])
+    if not reserve(g.u, "suivi_publications"):  # gratuit : le Reel est noté, mais sans relevé automatique (Apify)
+        _lance_releve(g.u["id"])
     return jsonify(pub)
 
 
@@ -665,6 +691,9 @@ def publication_supprime(pid):
 @app.post("/api/publications/maj")
 @connecte
 def publications_maj():
+    msg = reserve(g.u, "suivi_publications")
+    if msg:
+        return bloque(msg)
     if job_en_cours(g.u["id"]):
         return jsonify({"erreur": "Une tâche est déjà en cours."}), 409
     return jsonify({"job": _lance_releve(g.u["id"], forcer=True)})
@@ -687,7 +716,7 @@ def abonnement():
     p = ab.plans()
     return jsonify({"droits": droits(g.u), "stripe": ab.stripe_actif(), "demo": en_demo(),
                     "plans": [{"id": k, **{x: v[x] for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois", "comptes_surveilles", "veille_auto")}}
-                              for k, v in p.items() if k != "essai"],
+                              for k, v in p.items() if k not in ("essai", "gratuit")],
                     "portail": bool(g.u.get("stripe_client"))})
 
 
@@ -766,12 +795,20 @@ def studio_cree():
         return jsonify({"erreur": msg, "quota": True}), 402
     if job_en_cours(g.u["id"], studio_=True):
         return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    if c.get("vierge"):  # carrousel écrit par l'utilisatrice elle-même : aucun appel à Claude (formule gratuite comprise)
+        p = studio.cree_vierge(g.esp, g.esp.lit_config())
+        return jsonify({"projet": p, "job": None})
     try:
         post = next(p for p in moteur.charge(g.esp, c["analyse_id"])["posts"] if p["cle"] == c["cle"])
     except (FileNotFoundError, StopIteration, KeyError):
         return jsonify({"erreur": "Reel introuvable."}), 404
     if not (post.get("adaptation") and not post["adaptation"].get("erreur")):
         return jsonify({"erreur": "Adapte d'abord ce Reel."}), 400
+    # Sans IA (formule gratuite), seul un carrousel copié slide par slide d'un carrousel modèle se crée sans Claude
+    copie_sans_ia = c.get("type", "carrousel") == "carrousel" and bool(studio.slides_du_modele(post["adaptation"]))
+    msg = None if copie_sans_ia else reserve(g.u, "ia")
+    if msg:
+        return bloque(msg)
     cfg = g.esp.lit_config()
     p = studio.cree(g.esp, cfg, post, c.get("type", "carrousel"), c["analyse_id"], c.get("style") or "ma_voix")
     # Carrousel copié d'un carrousel modèle : les slides sont déjà adaptées une par une pendant la veille, rien à réécrire ;
@@ -840,7 +877,7 @@ def studio_ecrire(sid):
     _projet(sid)
     if job_en_cours(g.u["id"], studio_=True):
         return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
-    msg = refus(g.u)
+    msg = reserve(g.u, "ia")
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     return jsonify({"job": lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, g.esp.lit_config(), sid,
@@ -868,13 +905,17 @@ def studio_generer(sid):
     p = _projet(sid)
     if job_en_cours(g.u["id"], studio_=True):
         return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    if p["type"] == "reel":
+        msg = reserve(g.u, "montage_reel")
+        if msg:
+            return bloque(msg)
     deja = bool(p.get("genere_le"))  # régénérer après une retouche ne consomme pas de nouvelle création
     msg = None if deja else refus(g.u, studio=1)
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
     titre = "Création du carrousel" if p["type"] == "carrousel" else "Montage du Reel"
-    jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), file_=FILE_STUDIO,
+    jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), filigrane=droits(g.u)["options"]["filigrane"], file_=FILE_STUDIO,
                 apres=None if deja else _apres_studio(uid, sid))
     return jsonify({"job": jid})
 
@@ -966,7 +1007,7 @@ def studio_apercu(sid, i):
     _projet(sid)
     from flask import Response
     try:
-        return Response(studio.apercu(g.esp, sid, i), mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+        return Response(studio.apercu(g.esp, sid, i, filigrane=droits(g.u)["options"]["filigrane"]), mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
     except Exception:  # noqa: BLE001
         traceback.print_exc()
         abort(500)
@@ -991,6 +1032,16 @@ import re as _re  # noqa: E402
 
 import boutique as bq  # noqa: E402
 import boutique_ventes as bv  # noqa: E402
+
+
+def _droits_uid(uid: int) -> dict | None:
+    u = ab.get(uid)
+    return droits(u) if u else None
+
+
+# La boutique dépend de la formule de sa propriétaire : mention « Créé avec » et commission sur les ventes
+bq.AVEC_MARQUE = lambda uid: bool(((_droits_uid(uid) or {}).get("options") or {}).get("mention_boutique", True))
+bq.TAUX_COMMISSION = lambda uid: (_droits_uid(uid) or {}).get("commission_boutique")
 
 bq.init()
 NOM_IMAGE = _re.compile(r"^[0-9a-f]{12}\.(jpg|png)$")
@@ -1228,7 +1279,7 @@ def boutique_acheter(pseudo, pid):
     compte = (page.get("stripe") or {}).get("compte")
     if compte and (page.get("stripe") or {}).get("pret") and bq.stripe_actif():
         try:
-            return redirect(bq.session_achat(compte, p, url_site(), pseudo, prix, meta, email if _email_valide(email) else ""), 303)
+            return redirect(bq.session_achat(compte, p, url_site(), pseudo, prix, meta, email if _email_valide(email) else "", uid=uid), 303)
         except ValueError as e:
             return _html(bv.rendu_produit(page, pseudo, p, uid, f"Le paiement est momentanément indisponible ({e})."), 502)
     if en_demo():  # démo : achat simulé, sans paiement
@@ -1393,7 +1444,7 @@ def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False)
             libre = next((base[:26] + f"-{i}" for i in range(2, 50) if not bq.pseudo_libre(base[:26] + f"-{i}", uid)), "")
         suggestion = {"nom": ini["nom"], "bio": ini["bio"], "reseaux": ini["reseaux"], "pseudo": libre}
     return {"page": page, "pseudo": pseudo, "suggestion": suggestion, "url": f"{url_site()}/@{pseudo}" if pseudo else None,
-            "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission()}, "emails": emails.actif(),
+            "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission(g.u["id"])}, "emails": emails.actif(),
             "kit_chiffres": bq.chiffres_kit(prof) if prof else None, "options": _options_boutique()}
 
 
@@ -1756,7 +1807,7 @@ def boutique_idees():
     import boutique_ia
     if job_en_cours(g.u["id"], studio_=True):
         return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
-    msg = refus(g.u, adaptations=1)
+    msg = reserve(g.u, "ia") or refus(g.u, adaptations=1)
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
@@ -1770,7 +1821,7 @@ def boutique_guide(pid):
     import boutique_ia
     if job_en_cours(g.u["id"], studio_=True):
         return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
-    msg = refus(g.u, studio=1)
+    msg = reserve(g.u, "ia") or refus(g.u, studio=1)
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
@@ -1785,7 +1836,7 @@ def boutique_sequence_ecrire():
     import boutique_ia
     if job_en_cours(g.u["id"], studio_=True):
         return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
-    msg = refus(g.u, adaptations=1)
+    msg = reserve(g.u, "ia") or refus(g.u, adaptations=1)
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
@@ -1922,7 +1973,7 @@ def planificateur_emails():
             for uid in uids:
                 try:
                     u = ab.get(uid)
-                    if u and droits(u)["actif"]:
+                    if u and droits(u)["actif"] and droits(u)["options"]["sequences_emails"]:
                         bv.envoie_sequences(uid, url_site())
                 except Exception:  # noqa: BLE001
                     traceback.print_exc()
@@ -1937,7 +1988,7 @@ def planificateur():
             lundi = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
             for u in ab.tous():  # relevés des Reels publiés (J+2, J+7)
                 try:
-                    if droits(u)["actif"] and pubs.a_relever_esp(espace_client(u["id"])):
+                    if droits(u)["actif"] and droits(u)["options"]["suivi_publications"] and pubs.a_relever_esp(espace_client(u["id"])):
                         _lance_releve(u["id"])
                 except Exception:  # noqa: BLE001
                     traceback.print_exc()

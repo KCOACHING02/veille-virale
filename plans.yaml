@@ -13,6 +13,27 @@ essai:
   veille_auto: false
   stripe_price: ""
 
+# Formule gratuite : à la fin de l'essai (ou après une résiliation), le compte y passe automatiquement.
+# Elle ne consomme presque rien : classement des Reels viraux (sans adaptation ni vidéo lue), boutique, carrousels
+# écrits par la cliente elle-même (avec filigrane). Tout ce qui fait travailler Claude, Apify ou le montage est réservé aux abonnées.
+gratuit:
+  nom: "Gratuit"
+  prix_mensuel: 0
+  gratuit: true
+  analyses_par_mois: 3          # classements de comptes, sans adaptation
+  adaptations_par_mois: 0
+  comptes_surveilles: 3         # comptes par classement
+  studio_par_mois: 2            # carrousels avec ses propres textes
+  veille_auto: false
+  ia: false                     # adaptations, assistant, comptes suggérés, écriture par Claude
+  montage_reel: false           # montage des Reels (ffmpeg + transcription)
+  suivi_publications: false     # relevés automatiques des Reels publiés (Apify)
+  sequences_emails: false       # séquences d'e-mails automatiques de la boutique
+  filigrane: true               # « Fait avec Veille virale » sur les carrousels
+  mention_boutique: true        # « Créé avec Veille virale » en bas de la boutique
+  commission_boutique: 0        # % prélevé sur les ventes de la boutique (ex. 5) — à annoncer dans les CGV avant de l'activer
+  stripe_price: ""
+
 createur:
   nom: "Créateur"
   prix_mensuel: 39

@@ -10,6 +10,7 @@ Un projet = un dossier data/espaces/<id>/studio/<sid>/ (projet.json, sources/, s
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -191,6 +192,24 @@ def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, s
     }
     projet["style"] = style if style in STYLES else "ma_voix"
     projet["nb_photos"] = sum(1 for x in projet["slides"] if x.get("photo"))
+    sauve(esp, projet)
+    return projet
+
+
+def cree_vierge(esp: Espace, cfg: dict) -> dict:
+    """Carrousel vide, écrit par l'utilisatrice elle-même (aucun appel à Claude) : disponible en formule gratuite."""
+    cta = f"Commente {cfg['objectifs'].get('mot_cle_cta') or 'INFO'}"
+    sid = datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
+    projet = {
+        "id": sid, "cree": datetime.now().isoformat(timespec="minutes"), "type": "carrousel", "titre": "Nouveau carrousel",
+        "analyse_id": None, "cle": None, "compte": None, "miniature": None, "statut": "brouillon", "erreur": None,
+        "hook": "", "texte_ecran": "", "script": "", "cta": cta, "dm": [], "legende": "",
+        "slides": [{"titre": "", "texte": "", "photo": ""}, {"titre": "", "texte": "", "photo": ""},
+                   {"titre": "", "texte": "", "photo": ""}, {"titre": cta, "texte": "", "photo": ""}],
+        "images": [], "video": None, "theme": "sombre", "sous_titres": True, "source": {}, "nb_photos": 0, "copie_du_modele": False,
+        "style": "ma_voix", "typo": "moderne", "pseudo": (cfg.get("mon_compte") or {}).get("instagram") or "",
+        "fichiers": [], "zip": None, "vierge": True,
+    }
     sauve(esp, projet)
     return projet
 
@@ -539,8 +558,11 @@ def _degrade(taille, debut: float, alpha_max: int = 215):
     return noir
 
 
+FILIGRANE = "Fait avec " + os.getenv("NOM_PRODUIT", "Veille virale")
+
+
 def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: str, taille=CARROUSEL, reel: bool = False,
-          typo: str = "moderne"):
+          typo: str = "moderne", filigrane: bool = False):
     """Dessine une slide. Avec image : texte en bas sur un dégradé. Sans image : fond uni du thème."""
     from PIL import Image, ImageDraw
     th = THEMES.get(theme, THEMES["sombre"])
@@ -620,6 +642,9 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
         y_m = y_g + 22  # flèche dessinée (la police n'a pas le caractère →)
         d.line([(x_fleche, y_m), (x_fleche + 30, y_m)], fill=c_g, width=4)
         d.line([(x_fleche + 19, y_m - 11), (x_fleche + 31, y_m), (x_fleche + 19, y_m + 11)], fill=c_g, width=4, joint="curve")
+    if filigrane:  # formule gratuite : discret, en bas à gauche (« Glisse » est en bas à droite)
+        fil = _police("Medium", 24)
+        d.text((marge, h - int(h * 0.065) + 4), FILIGRANE, font=fil, fill=couleur2)
     return fond.convert("RGB")
 
 
@@ -841,7 +866,7 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
 # ------------------------------------------------------------
 #  Génération + package
 # ------------------------------------------------------------
-def genere(esp: Espace, sid: str, demo: bool = False) -> dict:
+def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -> dict:
     p = charge(esp, sid)
     d = dossier(esp, sid)
     sortie = d / "sortie"
@@ -860,7 +885,7 @@ def genere(esp: Espace, sid: str, demo: bool = False) -> dict:
             for i, s in enumerate(p["slides"]):
                 nom = f"slide_{i + 1:02d}.jpg"
                 img = images[i]
-                slide(s, i, n, img, p.get("theme", "sombre"), p.get("pseudo", ""), typo=p.get("typo", "moderne")).save(
+                slide(s, i, n, img, p.get("theme", "sombre"), p.get("pseudo", ""), typo=p.get("typo", "moderne"), filigrane=filigrane).save(
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
         elif p.get("video"):
@@ -945,7 +970,7 @@ def package(p: dict, d: Path, sortie: Path, fichiers: list[str]) -> str:
 # ------------------------------------------------------------
 #  Aperçu en direct (rendu léger, sans file de tâches : aucune API consommée)
 # ------------------------------------------------------------
-def apercu(esp: Espace, sid: str, i: int) -> bytes:
+def apercu(esp: Espace, sid: str, i: int, filigrane: bool = False) -> bytes:
     """Image JPEG de la slide i telle qu'elle sera créée (ou de la couverture du Reel monté sur la vidéo)."""
     import io
     p = charge(esp, sid)
@@ -964,7 +989,8 @@ def apercu(esp: Espace, sid: str, i: int) -> bytes:
         i = max(0, min(i, len(slides) - 1))
         images = attribue(slides, [d / "sources" / x for x in p["images"]])
         reel = p["type"] == "reel"
-        im = slide(slides[i], i, len(slides), images[i], theme, pseudo, VERTICAL if reel else CARROUSEL, reel=reel, typo=typo)
+        im = slide(slides[i], i, len(slides), images[i], theme, pseudo, VERTICAL if reel else CARROUSEL, reel=reel, typo=typo,
+                   filigrane=filigrane and not reel)
     im.thumbnail((540, 960))
     tampon = io.BytesIO()
     im.save(tampon, "JPEG", quality=82)

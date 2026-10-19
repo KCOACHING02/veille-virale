@@ -11,6 +11,7 @@ Application web par abonnement (Flask) qui repère les Reels et carrousels Insta
 ## Architecture
 - `app.py` : serveur, API JSON, file de tâches (une à la fois), veille automatique du lundi.
 - `abonnements.py` : utilisateurs SQLite (`data/app.db`), formules (`plans.yaml`), quotas, Stripe sans SDK.
+- Formule gratuite (`gratuit` dans `plans.yaml`) : fin d'essai, résiliation ou impayé y basculent automatiquement (`abonnements.plan_effectif`). Ses options (`ia`, `montage_reel`, `suivi_publications`, `sequences_emails`, `filigrane`, `mention_boutique`, `commission_boutique`) se vérifient avec `reserve(u, option)` dans `app.py` ; une analyse y est un simple classement (`moteur.executer(classement_seul=True)`).
 - `espace.py` : un dossier par client dans `data/espaces/<id>/` (config.yaml, historique, analyses, médias, suivi).
 - `moteur.py` : orchestration d'une analyse (`executer`), adaptation unitaire, assistant (analyse du compte, hashtags).
 - `collecte.py` (Apify ; Reels, carrousels, son utilisé), `video.py` (ffmpeg + Whisper), `suggestions.py` (comptes à copier proposés par Claude puis vérifiés par collecte), `banque.py` (images et vidéos libres de droits Pixabay ou Pexels, démo sans clé), `commentaires.py`, `ia.py` (tous les appels Claude, sorties forcées par outil), `selection.py`, `apprentissage.py`, `decouverte.py`, `rapports.py`.

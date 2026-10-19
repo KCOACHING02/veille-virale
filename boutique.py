@@ -117,17 +117,27 @@ def _ecrit(f: Path, donnees):
     tmp.replace(f)
 
 
+# Réglages qui dépendent de la formule de la propriétaire (fournis par app.py, qui connaît les abonnements)
+AVEC_MARQUE = lambda uid: True       # noqa: E731  mention « Créé avec Veille virale » (formule gratuite)
+TAUX_COMMISSION = lambda uid: None   # noqa: E731  % prélevé sur les ventes ; None = BOUTIQUE_COMMISSION
+
+
 def lit_page(uid: int) -> dict | None:
     p = _lit(dossier(uid) / "page.json", None)
     if p:
+        p.pop("_marque", None)
         p["design"] = {**DESIGN_DEFAUT, **(p.get("design") or {})}
         p.setdefault("produits", []); p.setdefault("blocs", []); p.setdefault("reseaux", {}); p.setdefault("kit", {})
+        try:
+            p["_marque"] = bool(AVEC_MARQUE(uid))
+        except Exception:  # noqa: BLE001
+            p["_marque"] = True
     return p
 
 
 def ecrit_page(uid: int, page: dict):
     page["maj"] = datetime.now().isoformat(timespec="seconds")
-    _ecrit(dossier(uid) / "page.json", page)
+    _ecrit(dossier(uid) / "page.json", {k: v for k, v in page.items() if k != "_marque"})
 
 
 def nouvel_id() -> str:
@@ -863,7 +873,10 @@ def classes_bouton(d: dict) -> str:
     return f'lb bs-{d["bouton_style"]} bf-{f}{" bf-clip" if f in FORMES_DECOUPEES else ""} bh-{d.get("survol", "soulever")}'
 
 
-def badge() -> str:
+def badge(page: dict | None = None) -> str:
+    """Mention en bas de page : affichée en formule gratuite, retirée pour les abonnées."""
+    if page is not None and not page.get("_marque", True):
+        return ""
     return '<div class="marque"><a href="/" target="_blank" rel="noopener">Créé avec Veille virale</a></div>'
 
 
@@ -871,7 +884,7 @@ def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> 
     blocs = "".join(_bloc(b, page, pseudo) for b in page.get("blocs", []) if b.get("visible", True))
     if not blocs.strip() and apercu:
         blocs = '<p class="txt" style="opacity:.6">Ajoute tes liens et tes produits : ils apparaîtront ici.</p>'
-    corps = f'{_tete(page, pseudo)}<div class="blocs">{blocs}</div>{badge()}'
+    corps = f'{_tete(page, pseudo)}<div class="blocs">{blocs}</div>{badge(page)}'
     img = f"{url.rsplit('/@', 1)[0]}{_img(pseudo, page['photo'])}" if page.get("photo") and url else ""
     return document(page, pseudo, corps, page.get("nom") or pseudo, (page.get("bio") or "")[:160], apercu, img, url)
 
@@ -898,7 +911,7 @@ def rendu_produit(page: dict, pseudo: str, p: dict, message: str = "", vente_pos
     corps = (f'<a class="retour" href="/@{pseudo}">← {E(page.get("nom") or "")}</a>{msg}<article class="fiche">{img}<h1>{E(p.get("titre") or "")}</h1>'
              f'{st}'
              f'<p class="px">{E(prix_txt(p.get("prix", 0), p.get("devise", "eur")))}{barre}</p>{action}'
-             f'<div class="desc">{E(p.get("description") or "")}</div></article>{badge()}')
+             f'<div class="desc">{E(p.get("description") or "")}</div></article>{badge(page)}')
     return document(page, pseudo, corps, f'{p.get("titre")} · {page.get("nom")}', (p.get("sous_titre") or p.get("description") or "")[:160],
                     image_og=_img(pseudo, p["image"]) if p.get("image") else "")
 
@@ -906,7 +919,7 @@ def rendu_produit(page: dict, pseudo: str, p: dict, message: str = "", vente_pos
 def rendu_message(page: dict, pseudo: str, titre: str, texte: str, bouton: tuple[str, str] | None = None) -> str:
     b = f'<a class="bouton" style="display:block;text-align:center;text-decoration:none;margin-top:16px" href="{E(bouton[1])}">{E(bouton[0])}</a>' if bouton else ""
     corps = (f'<a class="retour" href="/@{pseudo}">← {E(page.get("nom") or "")}</a><div class="carte" style="text-align:center;padding:28px 20px">'
-             f'<h1 style="font-size:calc(var(--tt) * .8)">{E(titre)}</h1><p style="margin:0">{E(texte)}</p>{b}</div>{badge()}')
+             f'<h1 style="font-size:calc(var(--tt) * .8)">{E(titre)}</h1><p style="margin:0">{E(texte)}</p>{b}</div>{badge(page)}')
     return document(page, pseudo, corps, titre)
 
 
@@ -961,7 +974,7 @@ def rendu_kit(page: dict, pseudo: str, profil: dict | None) -> str:
     if contact and "@" in contact:
         morceaux.append(f'<a class="bouton" style="display:block;text-align:center;text-decoration:none;margin-top:22px" '
                         f'href="mailto:{E(contact)}">Me proposer une collaboration</a>')
-    corps = "".join(morceaux) + badge()
+    corps = "".join(morceaux) + badge(page)
     return document(page, pseudo, corps, f'Kit média · {page.get("nom")}', f'Audience et collaborations de {page.get("nom")}')
 
 
@@ -1097,14 +1110,17 @@ def etat_stripe(compte: str) -> dict:
             "nom": ((a.get("business_profile") or {}).get("name") or (a.get("settings") or {}).get("dashboard", {}).get("display_name") or "")}
 
 
-def commission() -> float:
+def commission(uid: int | None = None) -> float:
+    """% prélevé sur chaque vente : celui de la formule de la propriétaire (plans.yaml), sinon BOUTIQUE_COMMISSION."""
     try:
-        return max(0.0, min(30.0, float(os.getenv("BOUTIQUE_COMMISSION", "0"))))
-    except ValueError:
+        taux = TAUX_COMMISSION(uid) if uid is not None else None
+        return max(0.0, min(30.0, float(os.getenv("BOUTIQUE_COMMISSION", "0") if taux is None else taux)))
+    except (ValueError, TypeError):
         return 0.0
 
 
-def session_achat(compte: str, produit: dict, base: str, pseudo: str, montant: int | None = None, meta: dict | None = None, email: str = "") -> str:
+def session_achat(compte: str, produit: dict, base: str, pseudo: str, montant: int | None = None, meta: dict | None = None, email: str = "",
+                  uid: int | None = None) -> str:
     montant = int(produit["prix"] if montant is None else montant)
     data = {
         "mode": "payment", "line_items[0][quantity]": 1,
@@ -1122,7 +1138,7 @@ def session_achat(compte: str, produit: dict, base: str, pseudo: str, montant: i
             data[f"metadata[{k}]"] = str(v)[:400]
     if email:
         data["customer_email"] = email
-    c = commission()
+    c = commission(uid)
     if c:
         data["payment_intent_data[application_fee_amount]"] = int(montant * c / 100)
     return _stripe("POST", "/checkout/sessions", compte, **data)["url"]
