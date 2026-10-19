@@ -10,7 +10,7 @@ import secrets
 import sqlite3
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -52,7 +52,8 @@ def init():
                                 ("utilisateurs", "cgv_acceptees", "TEXT"), ("utilisateurs", "code_parrain", "TEXT"),
                                 ("utilisateurs", "parrain", "INTEGER"), ("utilisateurs", "mois_offerts", "INTEGER DEFAULT 0"),
                                 ("utilisateurs", "parrainage_recompense", "INTEGER DEFAULT 0"), ("utilisateurs", "synthese", "INTEGER DEFAULT 1"),
-                                ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0")):
+                                ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0"),
+                                ("utilisateurs", "debut_cycle", "TEXT")):
             try:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
             except sqlite3.OperationalError:
@@ -224,13 +225,47 @@ def tous() -> list[dict]:
 # ------------------------------------------------------------
 #  Droits et quotas
 # ------------------------------------------------------------
-def _mois():
-    return datetime.now().strftime("%Y-%m")
+MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def _jour_du_mois(annee: int, mois: int, jour: int) -> date:
+    """Le même jour le mois donné ; ramené au dernier jour si le mois est plus court (31 → 30 ou 28)."""
+    import calendar
+    while mois < 1:
+        annee, mois = annee - 1, mois + 12
+    while mois > 12:
+        annee, mois = annee + 1, mois - 12
+    return date(annee, mois, min(jour, calendar.monthrange(annee, mois)[1]))
+
+
+def periode(u: dict | None, jour_j: date | None = None) -> tuple[date, date]:
+    """
+    Période de décompte en cours : d'une date anniversaire à la suivante (abonnement souscrit le 10 → du 10 au 10).
+    Ancre : date de souscription (ou de renouvellement Stripe), sinon date d'inscription.
+    """
+    jour_j = jour_j or date.today()
+    ancre = (u or {}).get("debut_cycle") or (u or {}).get("cree") or jour_j.isoformat()
+    try:
+        j = date.fromisoformat(str(ancre)[:10]).day
+    except ValueError:
+        j = 1
+    debut = _jour_du_mois(jour_j.year, jour_j.month, j)
+    if debut > jour_j:
+        debut = _jour_du_mois(jour_j.year, jour_j.month - 1, j)
+    return debut, _jour_du_mois(debut.year, debut.month + 1, j)
+
+
+def date_fr(d: date) -> str:
+    return f"{d.day}{'er' if d.day == 1 else ''} {MOIS_FR[d.month - 1]}"
+
+
+def _cle_periode(uid: int) -> str:
+    return periode(get(uid))[0].isoformat()
 
 
 def usage(uid: int) -> dict:
     with _db() as c:
-        r = c.execute("SELECT analyses, adaptations, studio, cout_usd FROM usage WHERE uid=? AND mois=?", (uid, _mois())).fetchone()
+        r = c.execute("SELECT analyses, adaptations, studio, cout_usd FROM usage WHERE uid=? AND mois=?", (uid, _cle_periode(uid))).fetchone()
     return {"analyses": r["analyses"] if r else 0, "adaptations": r["adaptations"] if r else 0, "studio": (r["studio"] or 0) if r else 0,
             "cout_usd": (r["cout_usd"] or 0) if r else 0.0}
 
@@ -239,17 +274,18 @@ def compte_usage(uid: int, analyses: int = 0, adaptations: int = 0, cout: float 
     with _verrou, _db() as c:
         c.execute("INSERT INTO usage(uid, mois, analyses, adaptations, cout_usd, studio) VALUES (?,?,?,?,?,?) "
                   "ON CONFLICT(uid, mois) DO UPDATE SET analyses=analyses+?, adaptations=adaptations+?, cout_usd=cout_usd+?, studio=studio+?",
-                  (uid, _mois(), analyses, adaptations, cout, studio, analyses, adaptations, cout, studio))
+                  (uid, _cle_periode(uid), analyses, adaptations, cout, studio, analyses, adaptations, cout, studio))
 
 
 def usage_tous() -> dict:
     """{uid: {"mois": {...}, "total_cout": x}} pour le tableau de bord administrateur."""
     res: dict = {}
+    cles = {u["id"]: periode(u)[0].isoformat() for u in tous()}
     with _db() as c:
         for r in c.execute("SELECT uid, mois, analyses, adaptations, cout_usd FROM usage"):
             d = res.setdefault(r["uid"], {"mois": {"analyses": 0, "adaptations": 0, "cout_usd": 0.0}, "total_cout": 0.0})
             d["total_cout"] += r["cout_usd"] or 0
-            if r["mois"] == _mois():
+            if r["mois"] == cles.get(r["uid"]):
                 d["mois"] = {"analyses": r["analyses"], "adaptations": r["adaptations"], "cout_usd": r["cout_usd"] or 0}
     return res
 
@@ -285,6 +321,7 @@ def droits(u: dict) -> dict:
                    "studio_par_mois": plan.get("studio_par_mois", 10)},
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
         "usage": {k: us[k] for k in ("analyses", "adaptations", "studio")},  # le coût réel reste côté administrateur
+        "renouvellement": periode(u)[1].isoformat(), "renouvellement_fr": date_fr(periode(u)[1]),
         "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"],
                   "studio": plan.get("studio_par_mois", 10) - us["studio"]},
     }
@@ -313,24 +350,28 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> s
     if not d["actif"]:
         return "Ton essai est terminé ou ton abonnement n'est pas actif. Choisis une formule pour continuer."
     if analyses and d["reste"]["analyses"] < analyses:
-        return f"Tu as utilisé tes {d['quotas']['analyses_par_mois']} analyses du mois. Passe à la formule supérieure ou attends le mois prochain."
+        return f"Tu as utilisé tes {d['quotas']['analyses_par_mois']} analyses de la période. {_suite(u, d)}"
     if adaptations and d["quotas"]["adaptations_par_mois"] == 0:
         return MSG_ABONNEES
     if adaptations and d["reste"]["adaptations"] < adaptations:
-        return f"Il te reste {max(d['reste']['adaptations'], 0)} adaptations ce mois-ci, il en faut {adaptations}."
+        return f"Il te reste {max(d['reste']['adaptations'], 0)} adaptation(s) jusqu'au {d['renouvellement_fr']}, il en faut {adaptations}. {_suite(u, d)}"
     if studio and d["reste"]["studio"] < studio:
-        return f"Tu as utilisé tes {d['quotas']['studio_par_mois']} créations du mois au studio. Passe à la formule supérieure ou attends le mois prochain."
+        return f"Tu as utilisé tes {d['quotas']['studio_par_mois']} créations de la période au studio. {_suite(u, d)}"
     # Garde-fou : coût réel (collecte + IA) plafonné par formule et par mois (budget_usd dans plans.yaml)
     budget = float(plans().get(plan_effectif(u), {}).get("budget_usd") or 0)
     if (analyses or adaptations) and budget and usage(u["id"])["cout_usd"] >= budget:
-        actuel = plans().get(plan_effectif(u), {})
-        sup = sorted((p for k, p in plans().items() if not p.get("gratuit") and float(p.get("prix_mensuel") or 0) > float(actuel.get("prix_mensuel") or 0)),
-                     key=lambda p: float(p.get("prix_mensuel") or 0))
-        if sup:
-            return (f"Tu as atteint la limite d'usage de ta formule ce mois-ci. Passe à la formule {sup[0]['nom']} "
-                    "pour continuer tout de suite, ou attends le 1er du mois prochain.")
-        return "Tu as atteint la limite d'usage de ta formule ce mois-ci. Elle se remet à zéro le 1er du mois prochain."
+        return f"Tu as atteint la limite d'usage de ta formule pour cette période. {_suite(u, d)}"
     return None
+
+
+def _suite(u: dict, d: dict) -> str:
+    """Proposer la formule supérieure (s'il y en a une), sinon la date de remise à zéro."""
+    actuel = plans().get(plan_effectif(u), {})
+    sup = sorted((p for p in plans().values() if not p.get("gratuit") and p.get("prix_mensuel")
+                  and float(p["prix_mensuel"]) > float(actuel.get("prix_mensuel") or 0)), key=lambda p: float(p["prix_mensuel"]))
+    if sup:
+        return f"Passe à la formule {sup[0]['nom']} pour continuer tout de suite, ou attends le {d['renouvellement_fr']}."
+    return f"Tes compteurs repartent à zéro le {d['renouvellement_fr']}."
 
 
 # ------------------------------------------------------------
@@ -384,7 +425,7 @@ def webhook(charge_utile: bytes, signature: str) -> str:
     typ = ev["type"]
     if typ == "checkout.session.completed":
         uid = int(obj.get("client_reference_id") or obj["metadata"]["uid"])
-        maj(uid, plan=obj["metadata"].get("plan", "createur"), statut="actif", a_paye=1,
+        maj(uid, plan=obj["metadata"].get("plan", "createur"), statut="actif", a_paye=1, debut_cycle=date.today().isoformat(),
             stripe_client=obj.get("customer"), stripe_abonnement=obj.get("subscription"))
         recompense_parrain(uid)
     elif typ in ("customer.subscription.updated", "customer.subscription.deleted"):
@@ -397,5 +438,9 @@ def webhook(charge_utile: bytes, signature: str) -> str:
             plan = next((k for k, v in plans().items() if v.get("stripe_price") and v["stripe_price"] == prix), None)
             if plan:
                 champs["plan"] = plan
+            # Date de début de la période facturée : les compteurs suivent exactement la facturation
+            debut = obj.get("current_period_start") or (((obj.get("items") or {}).get("data") or [{}])[0].get("current_period_start"))
+            if debut:
+                champs["debut_cycle"] = datetime.fromtimestamp(int(debut)).date().isoformat()
             maj(uid, **champs)
     return typ

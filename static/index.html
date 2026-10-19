@@ -1329,7 +1329,7 @@ const limites = p => [
   `<b>${p.comptes_surveilles}</b> comptes surveillés`,
   p.studio_par_mois ? `<b>${p.studio_par_mois}</b> créations au studio par mois` : "",
   p.veille_auto ? "Veille automatique chaque lundi" : ""].filter(Boolean).map(x => `<li>${x}</li>`).join("");
-const CE_QUI_COMPTE = "Une veille utilise 1 analyse et 7 adaptations (les 7 meilleures publications sont écrites pour toi d'office). Chaque publication que tu fais adapter ensuite utilise 1 adaptation. Un carrousel, un Reel monté ou un guide PDF utilise 1 création ; retoucher ou refaire une création ne compte pas. Les compteurs repartent à zéro le 1er de chaque mois.";
+const CE_QUI_COMPTE = "Une veille utilise 1 analyse et 7 adaptations (les 7 meilleures publications sont écrites pour toi d'office). Chaque publication que tu fais adapter ensuite utilise 1 adaptation. Un carrousel, un Reel monté ou un guide PDF utilise 1 création ; retoucher ou refaire une création ne compte pas. Les compteurs repartent à zéro chaque mois à la date anniversaire de ton abonnement (abonnée le 10, remise à zéro le 10 du mois suivant).";
 const hookPrincipal = ad => (ad && (ad.hook_viral || (ad.hooks_adaptes || [])[0])) || "";
 // Titre d'une publication, adaptée ou non (veille : seules les meilleures sont adaptées d'office)
 const titrePost = p => hookPrincipal(p.adaptation) || (p.legende || "").split("\n")[0].slice(0, 120) || "@" + p.compte;
@@ -2002,7 +2002,7 @@ async function renduStudio() {
   const r = await api("/api/studio");
   S.optionsStudio = r;
   if (S.vue !== "studio" || S.projetId) return;
-  const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} ce mois-ci sur ${r.quota}`} · retoucher et refaire une création ne compte pas.</p>`;
+  const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} sur ${r.quota}${S.etat?.abonnement?.renouvellement_fr ? ` jusqu'au ${esc(S.etat.abonnement.renouvellement_fr)}` : ""}`} · retoucher et refaire une création ne compte pas.</p>`;
   const gratuit = !!S.etat?.abonnement?.gratuit;
   const nouveau = `<button class="btn${gratuit ? " prim" : ""}" id="st-vierge">+ Nouveau carrousel</button>`;
   const brancheVierge = () => $("#st-vierge")?.addEventListener("click", async () => {
@@ -3033,8 +3033,8 @@ async function renduAbonnement() {
   $("#abonnement").innerHTML = `
     <div class="panneau"><h2>${esc(d.nom_plan)}${d.gratuit ? "" : d.statut === "essai" ? (d.actif ? ` — jusqu'au ${fin}` : " — terminé") : d.statut === "actif" ? "" : " — " + esc(d.statut)}</h2>
       ${d.gratuit ? `<p style="margin:0 0 12px;color:var(--ink-2)">${d.statut === "essai" ? "Ton essai est terminé, ton compte reste ouvert en formule gratuite. " : ""}Tu gardes ta boutique, les classements de comptes (sans adaptation) et ${d.quotas.studio_par_mois} carrousels par mois. Choisis une formule pour que chaque Reel viral soit adapté à ta niche.</p>` : ""}
-      <div class="conso">${barre(d.gratuit ? "Classements ce mois-ci" : "Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${d.quotas.adaptations_par_mois ? barre("Publications adaptées ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois) : ""}${barre("Créations au studio ce mois-ci", d.usage.studio, d.quotas.studio_par_mois)}
-      <p style="margin:0;color:var(--ink-2);font-size:14px">${d.gratuit ? `Jusqu'à ${d.quotas.comptes_surveilles} comptes par classement.` : `Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés.`} ${d.veille_auto ? "Veille automatique du lundi incluse." : ""} Remise à zéro le 1er du mois.</p>
+      <div class="conso">${barre(d.gratuit ? "Classements" : "Veilles et analyses", d.usage.analyses, d.quotas.analyses_par_mois)}${d.quotas.adaptations_par_mois ? barre("Publications adaptées", d.usage.adaptations, d.quotas.adaptations_par_mois) : ""}${barre("Créations au studio", d.usage.studio, d.quotas.studio_par_mois)}
+      <p style="margin:0;color:var(--ink-2);font-size:14px">${d.gratuit ? `Jusqu'à ${d.quotas.comptes_surveilles} comptes par classement.` : `Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés.`} ${d.veille_auto ? "Veille automatique du lundi incluse." : ""} Prochaine remise à zéro des compteurs : <b>le ${esc(d.renouvellement_fr)}</b>.</p>
       <details class="planning-info" style="margin:12px 0 0"><summary>Comment sont comptées les limites ?</summary><p>${CE_QUI_COMPTE}</p></details></div>
       ${a.portail ? '<p style="margin:14px 0 0"><button class="btn" id="ab-portail">Gérer mon abonnement et mes factures</button></p>' : ""}</div>
     <div class="panneau parrainage" id="ab-parrainage"></div>

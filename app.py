@@ -823,7 +823,8 @@ def choisir_plan():
         except ValueError as e:
             return jsonify({"erreur": str(e)}), 400
     if en_demo():  # sans Stripe, en démo : changement direct pour tester
-        ab.maj(g.u["id"], plan=plan, statut="actif", a_paye=1)
+        nouveau = {} if g.u["statut"] == "actif" else {"debut_cycle": datetime.now().date().isoformat()}  # le cycle démarre à la souscription
+        ab.maj(g.u["id"], plan=plan, statut="actif", a_paye=1, **nouveau)
         ab.recompense_parrain(g.u["id"])
         return jsonify({"ok": True, "simule": True})
     return jsonify({"erreur": "Le paiement n'est pas encore configuré (STRIPE_SECRET_KEY)."}), 400
