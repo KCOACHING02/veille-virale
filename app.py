@@ -970,6 +970,7 @@ def studio_fichier(sid, dossier_, nom):
 import re as _re  # noqa: E402
 
 import boutique as bq  # noqa: E402
+import boutique_ventes as bv  # noqa: E402
 
 bq.init()
 NOM_IMAGE = _re.compile(r"^[0-9a-f]{12}\.(jpg|png)$")
@@ -1001,12 +1002,27 @@ def _html(contenu: str, code: int = 200):
     return Response(contenu, code, mimetype="text/html")
 
 
+def _src(pseudo: str) -> str:
+    """Source de la visite : paramètre ?src= (lien suivi, QR code, e-mail…) ou cookie posé lors de la première visite."""
+    return bv.source_propre(request.args.get("src") or request.form.get("src") or request.cookies.get("vvs_" + pseudo.lower()))
+
+
+def _avec_cookie(rep, pseudo: str):
+    s = bv.source_propre(request.args.get("src"))
+    if s:
+        rep.set_cookie("vvs_" + pseudo.lower(), s, max_age=30 * 86400, samesite="Lax", secure=request.is_secure)
+    return rep
+
+
 @app.get("/@<pseudo>")
 def boutique_publique(pseudo):
     uid, page = _vitrine(pseudo)
     if session.get("uid") != uid:
         bq.compte(uid, "vue")
-    return _html(bq.rendu_page(page, pseudo.lower(), url=f"{url_site()}/@{pseudo.lower()}"))
+        if request.args.get("src"):
+            bv.compte_source(uid, _src(pseudo), "vues")
+    page["_avis"] = bv.resume_avis(uid)
+    return _avec_cookie(_html(bq.rendu_page(page, pseudo.lower(), url=f"{url_site()}/@{pseudo.lower()}")), pseudo)
 
 
 @app.get("/@<pseudo>/i/<nom>")
@@ -1029,6 +1045,16 @@ def boutique_clic(pseudo, bid):
     return redirect(u, 302)
 
 
+@app.get("/@<pseudo>/m/<mot>")
+def boutique_mot_cle(pseudo, mot):
+    """Lien court d'un mot-clé (« commente GUIDE ») : mène au produit et compte la source."""
+    uid, page = _vitrine(pseudo)
+    p = bv.produit_par_mot(page, mot)
+    if not p:
+        return redirect(f"/@{pseudo.lower()}", 302)
+    return redirect(f"/@{pseudo.lower()}/p/{p['id']}?src=mot-{bv.source_propre(mot.lower()) or 'x'}", 302)
+
+
 def _produit(page, pid):
     p = next((x for x in page["produits"] if x.get("id") == pid and x.get("visible", True)), None)
     if not p:
@@ -1042,8 +1068,13 @@ def boutique_produit(pseudo, pid):
     p = _produit(page, pid)
     if session.get("uid") != uid:
         bq.compte(uid, "produits", pid)
+        if request.args.get("src"):
+            bv.compte_source(uid, _src(pseudo), "vues")
     msg = "Paiement annulé : tu n'as pas été débitée." if request.args.get("annule") else ""
-    return _html(bq.rendu_produit(page, pseudo.lower(), p, msg, _vente_possible(page)))
+    if request.args.get("pris"):
+        msg = "Ce créneau vient d'être réservé par quelqu'un d'autre : choisis-en un autre."
+    rep = _html(bv.rendu_produit(page, pseudo.lower(), p, uid, msg, _vente_possible(page), request.args.get("code", ""), _src(pseudo)))
+    return _avec_cookie(rep, pseudo)
 
 
 @app.get("/@<pseudo>/p/<pid>/ouvrir")
@@ -1061,24 +1092,53 @@ def _email_valide(e: str) -> bool:
     return bool(_re.fullmatch(r"[^@\s]{1,64}@[^@\s]{1,190}\.[a-zA-Z]{2,}", e or ""))
 
 
-def _livre_gratuit(uid, page, pseudo, p, email, prenom=""):
-    """Produit gratuit : inscription + lien de téléchargement immédiat (et par e-mail)."""
-    bq.ajoute_inscrit(uid, email, prenom, "produit : " + (p.get("titre") or ""))
-    v = bq.enregistre_vente(uid, p, email, 0, p.get("devise", "eur"), "gratuit-" + p["id"] + "-" + email)
+def _livre(uid, page, pseudo, p, email, prenom="", montant=0, devise="eur", session_id="", src="", code="", rdv=None, nouvelle_cliente=True):
+    """Enregistre la vente (ou le cadeau), envoie l'accès par e-mail et prévient la vendeuse. Renvoie la vente."""
+    v = bq.enregistre_vente(uid, p, email, montant, devise, session_id or f"gratuit-{p['id']}-{email}-{(rdv or {}).get('id', '')}",
+                            src=src, code=code, rdv=(rdv or {}).get("id"), prenom=prenom)
+    if not v["nouvelle"]:
+        return v
     lien = f"{url_site()}/@{pseudo}/merci?j={v['jeton']}"
-    if v["nouvelle"]:
-        bq.mail_livraison(page, p, email, lien, True)
-    return lien
+    if email and "demo" not in email:
+        if p.get("type") == "rdv" and rdv:
+            bq.mail_rdv(page, p, email, lien, bv.date_fr(bv._date(rdv["debut"])))
+        else:
+            bq.mail_livraison(page, p, email, lien, not montant)
+        if nouvelle_cliente:
+            if bq.ajoute_inscrit(uid, email, prenom, ("achat : " if montant else "cadeau : ") + (p.get("titre") or "")):
+                bv.compte_source(uid, src, "inscrits")
+    if montant:
+        bv.compte_source(uid, src, "ventes", montant)
+        bv.utilise_code(uid, code)
+    proprio = ab.get(uid)
+    if proprio and (montant or p.get("type") == "rdv"):
+        quand = f" pour le {bv.date_fr(bv._date(rdv['debut']))}" if rdv else ""
+        bq.mail_vente(proprio["email"], page, p, montant, devise, (email or "une cliente") + quand)
+    return v
 
 
 @app.post("/@<pseudo>/p/<pid>/obtenir")
 def boutique_obtenir(pseudo, pid):
     uid, page = _vitrine(pseudo)
     p = _produit(page, pid)
+    pseudo = pseudo.lower()
     email = (request.form.get("email") or "").strip().lower()
-    if p.get("prix") or not _email_valide(email):
+    prenom = (request.form.get("prenom") or "").strip()[:60]
+    code = (request.form.get("code") or "").strip().upper()
+    prix = bv.prix_effectif(p)["prix"]
+    if prix and code:
+        prix, err = bv.code_valide(page, p, code, prix)
+        if err:
+            return jsonify({"erreur": err}), 400
+    if prix or not _email_valide(email):
         return jsonify({"erreur": "Indique une adresse e-mail valide."}), 400
-    return jsonify({"url": _livre_gratuit(uid, page, pseudo.lower(), p, email, (request.form.get("prenom") or "").strip())})
+    rdv = None
+    if p.get("type") == "rdv":
+        rdv = bv.reserve_rdv(uid, p, request.form.get("creneau", ""), email, prenom, confirme=True)
+        if not rdv:
+            return jsonify({"erreur": "Ce créneau n'est plus disponible : recharge la page et choisis-en un autre."}), 409
+    v = _livre(uid, page, pseudo, p, email, prenom, src=_src(pseudo), code=code, rdv=rdv)
+    return jsonify({"url": f"{url_site()}/@{pseudo}/merci?j={v['jeton']}"})
 
 
 @app.post("/@<pseudo>/inscription")
@@ -1089,9 +1149,12 @@ def boutique_inscription(pseudo):
         return jsonify({"erreur": "Indique une adresse e-mail valide."}), 400
     b = next((x for x in page["blocs"] if x.get("id") == request.form.get("bloc") and x.get("type") == "capture"), {})
     p = next((x for x in page["produits"] if x.get("id") == b.get("produit") and not x.get("prix")), None)
-    if p and (p.get("fichier") or p.get("lien")):
-        return jsonify({"url": _livre_gratuit(uid, page, pseudo.lower(), p, email)})
-    bq.ajoute_inscrit(uid, email, "", b.get("titre") or "formulaire")
+    src = _src(pseudo)
+    if p and (p.get("fichier") or p.get("lien") or p.get("type") == "pack"):
+        v = _livre(uid, page, pseudo.lower(), p, email, src=src)
+        return jsonify({"url": f"{url_site()}/@{pseudo.lower()}/merci?j={v['jeton']}"})
+    if bq.ajoute_inscrit(uid, email, (request.form.get("prenom") or "").strip(), b.get("titre") or "formulaire"):
+        bv.compte_source(uid, src, "inscrits")
     return jsonify({"message": b.get("merci") or "C'est noté, merci ! À très vite dans ta boîte mail."})
 
 
@@ -1100,18 +1163,57 @@ def boutique_acheter(pseudo, pid):
     uid, page = _vitrine(pseudo)
     p = _produit(page, pid)
     pseudo = pseudo.lower()
-    if not p.get("prix"):
-        return redirect(f"/@{pseudo}/p/{pid}")
+    f = request.form
+    prix = bv.prix_effectif(p)["prix"]
+    code = (f.get("code") or "").strip().upper()
+    # Offre complémentaire après un achat : prix spécial, valable 2 h avec le jeton de la première commande
+    jeton_up = f.get("upsell", "")
+    if jeton_up:
+        v0 = bq.vente_par_jeton(uid, jeton_up)
+        source = next((x for x in page["produits"] if v0 and x["id"] == v0["produit"]), None)
+        up = (source or {}).get("upsell") or {}
+        frais = v0 and (datetime.now() - datetime.fromisoformat(v0["date"][:16])).total_seconds() < 7200
+        if not (v0 and up.get("produit") == p["id"] and frais):
+            return redirect(f"/@{pseudo}/p/{pid}")
+        prix = int(up.get("prix") or 0)
+    elif code and prix:
+        prix, err = bv.code_valide(page, p, code, prix)
+        if err:
+            return _html(bv.rendu_produit(page, pseudo, p, uid, err, _vente_possible(page), "", _src(pseudo)), 400)
+    email = (f.get("email") or "").strip().lower()
+    prenom = (f.get("prenom") or "").strip()[:60]
+    est_rdv = p.get("type") == "rdv"
+    if est_rdv and not _email_valide(email):
+        return _html(bv.rendu_produit(page, pseudo, p, uid, "Indique ton e-mail pour recevoir la confirmation.", _vente_possible(page)), 400)
+    if not prix:  # gratuit grâce au code ou à l'offre : livraison directe, sans paiement
+        if not _email_valide(email):
+            email = (bq.vente_par_jeton(uid, jeton_up) or {}).get("email", "") if jeton_up else ""
+        rdv = bv.reserve_rdv(uid, p, f.get("creneau", ""), email, prenom, confirme=True) if est_rdv else None
+        if est_rdv and not rdv:
+            return redirect(f"/@{pseudo}/p/{pid}?pris=1", 303)
+        v = _livre(uid, page, pseudo, p, email, prenom, src=_src(pseudo), code=code, rdv=rdv)
+        return redirect(f"/@{pseudo}/merci?j={v['jeton']}", 303)
+    rdv = None
+    if est_rdv:
+        rdv = bv.reserve_rdv(uid, p, f.get("creneau", ""), email, prenom, confirme=False)
+        if not rdv:
+            return redirect(f"/@{pseudo}/p/{pid}?pris=1", 303)
+    if not email and jeton_up:
+        email = (bq.vente_par_jeton(uid, jeton_up) or {}).get("email", "")
+    meta = {"src": _src(pseudo), "code": code, "rdv": (rdv or {}).get("id"), "prenom": prenom}
     compte = (page.get("stripe") or {}).get("compte")
     if compte and (page.get("stripe") or {}).get("pret") and bq.stripe_actif():
         try:
-            return redirect(bq.session_achat(compte, p, url_site(), pseudo), 303)
+            return redirect(bq.session_achat(compte, p, url_site(), pseudo, prix, meta, email if _email_valide(email) else ""), 303)
         except ValueError as e:
-            return _html(bq.rendu_produit(page, pseudo, p, f"Le paiement est momentanément indisponible ({e})."), 502)
+            return _html(bv.rendu_produit(page, pseudo, p, uid, f"Le paiement est momentanément indisponible ({e})."), 502)
     if en_demo():  # démo : achat simulé, sans paiement
-        v = bq.enregistre_vente(uid, p, "acheteuse@demo.fr", p["prix"], p.get("devise", "eur"), "demo-" + uuid.uuid4().hex)
+        if rdv:
+            bv.confirme_rdv(uid, rdv["id"])
+        v = _livre(uid, page, pseudo, p, email or "acheteuse@demo.fr", prenom, prix, p.get("devise", "eur"), "demo-" + uuid.uuid4().hex,
+                   src=meta["src"], code=code, rdv=rdv)
         return redirect(f"/@{pseudo}/merci?j={v['jeton']}&demo=1", 303)
-    return _html(bq.rendu_produit(page, pseudo, p, "Ce produit n'est pas encore disponible à l'achat."), 409)
+    return _html(bv.rendu_produit(page, pseudo, p, uid, "Ce produit n'est pas encore disponible à l'achat."), 409)
 
 
 @app.get("/@<pseudo>/merci")
@@ -1129,25 +1231,15 @@ def boutique_merci(pseudo):
         if not r or not p:
             return _html(bq.rendu_message(page, pseudo, "Paiement en attente", "Ton paiement n'est pas encore confirmé. "
                                           "Si tu as été débitée, tu recevras ton accès par e-mail dans quelques minutes."), 202)
-        v = bq.enregistre_vente(uid, p, r["email"], r["montant"], r["devise"], request.args["s"])
-        if v["nouvelle"]:
-            lien = f"{url_site()}/@{pseudo}/merci?j={v['jeton']}"
-            if r["email"]:
-                bq.mail_livraison(page, p, r["email"], lien, False)
-                bq.ajoute_inscrit(uid, r["email"], "", "achat : " + (p.get("titre") or ""))
-            proprio = ab.get(uid)
-            if proprio:
-                bq.mail_vente(proprio["email"], page, p, r["montant"], r["devise"], r["email"] or "une cliente")
+        meta = r.get("meta") or {}
+        rdv = bv.confirme_rdv(uid, meta["rdv"]) if meta.get("rdv") else None
+        v = _livre(uid, page, pseudo, p, r["email"], meta.get("prenom", ""), r["montant"], r["devise"], request.args["s"],
+                   src=bv.source_propre(meta.get("src")), code=meta.get("code", ""), rdv=rdv)
     elif request.args.get("j"):
         v = bq.vente_par_jeton(uid, request.args["j"])
     if not v:
         return _html(bq.rendu_message(page, pseudo, "Lien expiré", "Ce lien n'est plus valable. Écris-nous et on te renvoie ton accès."), 404)
-    p = next((x for x in page["produits"] if x.get("id") == v["produit"]), None) or {"titre": "ton produit"}
-    gratuit = not v.get("montant")
-    titre = "C'est à toi !" if gratuit else "Merci pour ton achat !"
-    texte = (f"« {p.get('titre')} » est prêt. " + ("Tu reçois aussi le lien par e-mail." if v.get("email") and "demo" not in v["email"] else "")
-             + (" (Achat simulé : mode démo.)" if request.args.get("demo") else ""))
-    return _html(bq.rendu_message(page, pseudo, titre, texte, ("Télécharger" if p.get("fichier") else "Accéder", f"/@{pseudo}/telecharger/{v['jeton']}")))
+    return _html(bv.rendu_merci(page, pseudo, uid, v, bool(request.args.get("demo"))))
 
 
 @app.get("/@<pseudo>/telecharger/<jeton>")
@@ -1158,6 +1250,9 @@ def boutique_telecharger(pseudo, jeton):
     if not v:
         abort(404)
     p = next((x for x in page["produits"] if x.get("id") == v["produit"]), None)
+    if p and p.get("type") == "pack":  # un produit précis du pack
+        cible = request.args.get("p")
+        p = next((x for x in page["produits"] if x["id"] == cible and cible in (p.get("inclus") or [])), None)
     if not p:
         abort(404)
     if p.get("fichier") and (bq.dossier(uid) / "fichiers" / p["fichier"]).exists():
@@ -1167,6 +1262,43 @@ def boutique_telecharger(pseudo, jeton):
     if u:
         return redirect(u, 302)
     abort(404)
+
+
+@app.get("/@<pseudo>/rdv/<rid>.ics")
+def boutique_rdv_ics(pseudo, rid):
+    uid, page = _vitrine(pseudo)
+    r = next((x for x in bv.lit_rdv(uid) if x["id"] == rid and x.get("jeton") == request.args.get("j")), None)
+    p = next((x for x in page["produits"] if r and x["id"] == r["produit"]), None)
+    if not r or not p:
+        abort(404)
+    from flask import Response
+    return Response(bv.ics(page, r, p), mimetype="text/calendar", headers={"Content-Disposition": "attachment; filename=rendez-vous.ics"})
+
+
+@app.route("/@<pseudo>/avis/<jeton>", methods=["GET", "POST"])
+def boutique_avis(pseudo, jeton):
+    uid, page = _vitrine(pseudo)
+    v = bq.vente_par_jeton(uid, jeton)
+    p = next((x for x in page["produits"] if v and x["id"] == v["produit"]), None)
+    if not v or not p:
+        return _html(bq.rendu_message(page, pseudo.lower(), "Lien expiré", "Ce lien pour donner ton avis n'est plus valable."), 404)
+    if request.method == "POST":
+        try:
+            note = int(request.form.get("note", 5))
+        except ValueError:
+            note = 5
+        bv.ajoute_avis(uid, v, note, request.form.get("prenom", ""), request.form.get("texte", ""))
+        return _html(bv.rendu_form_avis(page, pseudo.lower(), p, envoye=True))
+    if any(a.get("vente") == v["id"] for a in bv.lit_avis(uid)):
+        return _html(bv.rendu_form_avis(page, pseudo.lower(), p, envoye=True))
+    return _html(bv.rendu_form_avis(page, pseudo.lower(), p))
+
+
+@app.get("/@<pseudo>/stop/<jeton>")
+def boutique_stop(pseudo, jeton):
+    uid, page = _vitrine(pseudo)
+    bv.desinscrit(uid, jeton)
+    return _html(bq.rendu_message(page, pseudo.lower(), "C'est fait", "Tu ne recevras plus d'e-mails de cette page."))
 
 
 @app.get("/@<pseudo>/kit")
@@ -1219,6 +1351,8 @@ def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False)
             pass
     if page:
         page = {**page, "stripe": {"pret": bool(st.get("pret")), "relie": bool(st.get("compte"))}}
+        page.setdefault("sequence", bv.sequence_defaut(page))
+        page.setdefault("promos", [])
     prof = _profil_compte(uid)
     suggestion = None
     if not page:
@@ -1229,7 +1363,7 @@ def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False)
             libre = next((base[:26] + f"-{i}" for i in range(2, 50) if not bq.pseudo_libre(base[:26] + f"-{i}", uid)), "")
         suggestion = {"nom": ini["nom"], "bio": ini["bio"], "reseaux": ini["reseaux"], "pseudo": libre}
     return {"page": page, "pseudo": pseudo, "suggestion": suggestion, "url": f"{url_site()}/@{pseudo}" if pseudo else None,
-            "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission()},
+            "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission()}, "emails": emails.actif(),
             "kit_chiffres": bq.chiffres_kit(prof) if prof else None, "options": _options_boutique()}
 
 
@@ -1264,6 +1398,7 @@ def boutique_cree():
             page["photo"] = c["photo"]
         if c.get("theme") in bq.THEMES:
             page["design"] = bq.applique_theme(page["design"], c["theme"])
+        page.setdefault("sequence", bv.sequence_defaut(page))
         bq.ecrit_page(uid, page)
     return jsonify(_etat_boutique(uid, page))
 
@@ -1306,6 +1441,31 @@ def _produit_propre(p: dict, ancien: dict | None) -> dict:
         r["prix"] = 50  # minimum Stripe : 0,50 €
     r["devise"] = p.get("devise") if p.get("devise") in ("eur", "usd", "chf", "cad", "gbp") else "eur"
     r["image"] = p["image"] if isinstance(p.get("image"), str) and NOM_IMAGE.match(p["image"]) else ""
+    r["type"] = p.get("type") if p.get("type") in ("telechargement", "rdv", "pack") else "telechargement"
+    r["mot_cle"] = _re.sub(r"[^A-Z0-9]", "", str(p.get("mot_cle") or "").upper())[:20]
+    r["inclus"] = [str(i)[:12] for i in (p.get("inclus") or []) if isinstance(i, str)][:20] if r["type"] == "pack" else []
+    try:
+        r["promo_prix"] = max(0, int(p.get("promo_prix") or 0))
+    except (TypeError, ValueError):
+        r["promo_prix"] = 0
+    if 0 < r["promo_prix"] < 50:
+        r["promo_prix"] = 50
+    r["promo_fin"] = str(p.get("promo_fin") or "")[:25] if r["promo_prix"] else ""
+    u = p.get("upsell") if isinstance(p.get("upsell"), dict) else {}
+    try:
+        r["upsell"] = {"produit": str(u.get("produit") or "")[:12], "prix": max(0, int(u.get("prix") or 0))} if u.get("produit") else {}
+    except (TypeError, ValueError):
+        r["upsell"] = {}
+    if r["type"] == "rdv":
+        c = p.get("rdv") if isinstance(p.get("rdv"), dict) else {}
+        def entier(k, mini, maxi, defaut):
+            try:
+                return max(mini, min(maxi, int(c.get(k, defaut))))
+            except (TypeError, ValueError):
+                return defaut
+        r["rdv"] = {"duree": entier("duree", 10, 240, 30), "delai_h": entier("delai_h", 0, 240, 12), "horizon_j": entier("horizon_j", 1, 90, 21),
+                    "jours": sorted({int(j) for j in (c.get("jours") or []) if str(j).isdigit() and 0 <= int(j) <= 6}) or [0, 1, 2, 3, 4],
+                    "plages": str(c.get("plages") or "09:00-12:00, 14:00-18:00")[:120], "lieu": str(c.get("lieu") or "")[:300]}
     # le fichier ne vient jamais du navigateur : il est attaché par l'envoi dédié
     r["fichier"], r["fichier_nom"] = (ancien or {}).get("fichier", ""), (ancien or {}).get("fichier_nom", "")
     if p.get("retirer_fichier"):
@@ -1347,12 +1507,41 @@ def boutique_maj():
                                       for t in (k.get("tarifs") or [])[:12] if isinstance(t, dict)],
                            "chiffres_perso": [{"libelle": str(t.get("libelle") or "")[:40], "valeur": str(t.get("valeur") or "")[:20]}
                                               for t in (k.get("chiffres_perso") or [])[:6] if isinstance(t, dict)]}
+        if isinstance(c.get("promos"), list):
+            anciens = {x.get("code"): x for x in page.get("promos") or []}
+            promos = []
+            for x in c["promos"][:30]:
+                code = _re.sub(r"[^A-Z0-9_-]", "", str(x.get("code") or "").upper())[:24]
+                if not code:
+                    continue
+                try:
+                    valeur = max(0, int(x.get("valeur") or 0))
+                    maxi = max(0, int(x.get("max") or 0))
+                except (TypeError, ValueError):
+                    continue
+                typ = "montant" if x.get("type") == "montant" else "pourcent"
+                promos.append({"code": code, "type": typ, "valeur": min(valeur, 100) if typ == "pourcent" else valeur, "max": maxi,
+                               "fin": str(x.get("fin") or "")[:25], "produits": [str(i)[:12] for i in x.get("produits") or []][:60],
+                               "utilisations": (anciens.get(code) or {}).get("utilisations", 0)})
+            page["promos"] = promos
+        if isinstance(c.get("sequence"), dict):
+            q = c["sequence"]
+            actif = bool(q.get("actif"))
+            ancien = page.get("sequence") or {}
+            page["sequence"] = {
+                "actif": actif, "depuis": ancien.get("depuis") if ancien.get("actif") and actif else (datetime.now().astimezone().isoformat(timespec="minutes") if actif else ""),
+                "emails": [{"delai_jours": max(0, min(90, int(e.get("delai_jours") or 0))) if str(e.get("delai_jours") or 0).isdigit() else 0,
+                            "sujet": str(e.get("sujet") or "")[:150], "texte": str(e.get("texte") or "")[:5000], "produit": str(e.get("produit") or "")[:12]}
+                           for e in (q.get("emails") or [])[:10] if isinstance(e, dict)]}
+        if isinstance(c.get("sources_noms"), dict):
+            page["sources_noms"] = {bv.source_propre(k): str(v)[:80] for k, v in list(c["sources_noms"].items())[:200] if bv.source_propre(k)}
         if "publie" in c:
             page["publie"] = bool(c["publie"])
         bq.ecrit_page(uid, page)
     if c.get("nettoyer"):
         bq.nettoie_images(uid, page)
-    return jsonify({"ok": True, "design": page["design"], "produits": page["produits"], "blocs": page["blocs"]})
+    return jsonify({"ok": True, "design": page["design"], "produits": page["produits"], "blocs": page["blocs"], "promos": page.get("promos") or [],
+                    "sequence": page.get("sequence")})
 
 
 @app.post("/api/boutique/apercu")
@@ -1456,8 +1645,138 @@ def boutique_fichier_produit(pid):
 @app.get("/api/boutique/stats")
 @connecte
 def boutique_stats():
+    uid = g.u["id"]
+    page = bq.lit_page(uid)
+    if not page:
+        return jsonify({})
+    s = bq.stats(uid, page)
+    src = (bq._lit(bq.dossier(uid) / "stats.json", {}).get("sources") or {})
+    s["sources"] = sorted(({"id": k, "nom": bv.nom_source(page, k), **v} for k, v in src.items()), key=lambda x: (-x.get("ca", 0), -x.get("vues", 0)))[:40]
+    return jsonify(s)
+
+
+@app.get("/api/boutique/rdv")
+@connecte
+def boutique_rdv_liste():
+    uid = g.u["id"]
+    page = bq.lit_page(uid) or {"produits": []}
+    titres = {p["id"]: p.get("titre") for p in page["produits"]}
+    maint = bv.maintenant() - timedelta(hours=2)
+    l = [{**{k: r.get(k) for k in ("id", "debut", "duree", "email", "prenom", "statut")}, "produit": titres.get(r["produit"], "Rendez-vous"),
+          "quand": bv.date_fr(bv._date(r["debut"]))} for r in bv.lit_rdv(uid) if r.get("statut") == "confirme" and bv._date(r["debut"]) > maint]
+    return jsonify({"rdv": sorted(l, key=lambda r: r["debut"])})
+
+
+@app.delete("/api/boutique/rdv/<rid>")
+@connecte
+def boutique_rdv_annule(rid):
+    uid = g.u["id"]
+    r = next((x for x in bv.lit_rdv(uid) if x["id"] == rid), None)
+    if not r:
+        abort(404)
+    bv.annule_rdv(uid, rid)
+    page = bq.lit_page(uid)
+    if r.get("email") and "demo" not in r["email"]:
+        import emails
+        emails.envoie(r["email"], "Ton rendez-vous est annulé", bq._gabarit(page, "Rendez-vous annulé",
+                      f"<p>Ton rendez-vous du {bv.date_fr(bv._date(r['debut']))} a dû être annulé. Choisis un autre créneau quand tu veux : "
+                      f"{url_site()}/@{bq.pseudo_de(uid)}</p><p>Si tu avais payé, tu seras remboursée.</p>"))
+    return jsonify({"ok": True})
+
+
+@app.get("/api/boutique/avis")
+@connecte
+def boutique_avis_liste():
+    uid = g.u["id"]
+    page = bq.lit_page(uid) or {"produits": []}
+    titres = {p["id"]: p.get("titre") for p in page["produits"]}
+    return jsonify({"avis": [{**a, "produit_titre": titres.get(a["produit"], "Produit supprimé")} for a in reversed(bv.lit_avis(uid))]})
+
+
+@app.patch("/api/boutique/avis/<aid>")
+@connecte
+def boutique_avis_modere(aid):
+    c = request.get_json(force=True)
+    bv.modere_avis(g.u["id"], aid, visible=bool(c.get("visible")), supprimer=bool(c.get("supprimer")))
+    return jsonify({"ok": True})
+
+
+@app.get("/api/boutique/qr.<ext>")
+@connecte
+def boutique_qr(ext):
+    from flask import Response
+    pseudo = bq.pseudo_de(g.u["id"])
+    if not pseudo or ext not in ("png", "svg"):
+        abort(404)
+    url = f"{url_site()}/@{pseudo}?src=qr"
+    c = request.args.get("c", "#000000")
+    f = request.args.get("f", "#FFFFFF")
+    c = c if bq.COULEUR.match(c) else "#000000"
+    f = f if bq.COULEUR.match(f) else "#FFFFFF"
+    data = bv.qr_png(url, c, f) if ext == "png" else bv.qr_svg(url, c, f)
+    return Response(data, mimetype="image/png" if ext == "png" else "image/svg+xml",
+                    headers={"Content-Disposition": f"inline; filename=qr-{pseudo}.{ext}"} if not request.args.get("dl") else
+                    {"Content-Disposition": f"attachment; filename=qr-{pseudo}.{ext}"})
+
+
+# ---- Claude au service de la boutique (file du studio, quotas de la formule)
+@app.post("/api/boutique/idees")
+@connecte
+def boutique_idees():
+    import boutique_ia
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    msg = refus(g.u, adaptations=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    uid = g.u["id"]
+    return jsonify({"job": lance(uid, "Idées de produits", boutique_ia.idees, g.esp, g.esp.lit_config(), demo=en_demo(), file_=FILE_STUDIO,
+                                 apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
+
+
+@app.post("/api/boutique/produits/<pid>/guide")
+@connecte
+def boutique_guide(pid):
+    import boutique_ia
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    msg = refus(g.u, studio=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    uid = g.u["id"]
+    plan = [str(x)[:200] for x in (request.get_json(silent=True) or {}).get("plan") or []][:10]
+    return jsonify({"job": lance(uid, "Écriture du guide", boutique_ia.guide, g.esp, g.esp.lit_config(), uid, pid, plan, demo=en_demo(),
+                                 base=url_site(), file_=FILE_STUDIO, apres=lambda _: ab.compte_usage(uid, studio=1))})
+
+
+@app.post("/api/boutique/sequence/ecrire")
+@connecte
+def boutique_sequence_ecrire():
+    import boutique_ia
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    msg = refus(g.u, adaptations=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    uid = g.u["id"]
+    return jsonify({"job": lance(uid, "Séquence d'e-mails", boutique_ia.sequence, g.esp, g.esp.lit_config(), uid, demo=en_demo(), file_=FILE_STUDIO,
+                                 apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
+
+
+@app.post("/api/boutique/sequence/test")
+@connecte
+def boutique_sequence_test():
+    import emails
     page = bq.lit_page(g.u["id"])
-    return jsonify(bq.stats(g.u["id"], page) if page else {})
+    c = request.get_json(force=True)
+    i = int(c.get("i") or 0)
+    e = ((page or {}).get("sequence") or {}).get("emails") or []
+    if not page or i >= len(e):
+        return jsonify({"erreur": "Enregistre d'abord l'e-mail."}), 400
+    sujet, h = bv._mail_sequence(page, url_site(), bq.pseudo_de(g.u["id"]), {"prenom": g.u.get("prenom") or "", "jeton": "test"}, e[i])
+    if not emails.envoie(g.u["email"], "[Test] " + sujet, h):
+        return jsonify({"erreur": "Les e-mails ne sont pas encore configurés (clé Resend absente)."}), 400
+    return jsonify({"ok": True, "email": g.u["email"]})
 
 
 @app.get("/api/boutique/inscrits.csv")
@@ -1563,6 +1882,24 @@ def admin_modifie(uid):
 # ------------------------------------------------------------
 #  Veille automatique : chaque lundi matin pour les formules qui l'incluent
 # ------------------------------------------------------------
+def planificateur_emails():
+    """Séquences d'e-mails des boutiques et demandes d'avis (toutes les 10 minutes)."""
+    while True:
+        time.sleep(600)
+        try:
+            with ab._db() as c:
+                uids = [r["uid"] for r in c.execute("SELECT uid FROM boutiques").fetchall()]
+            for uid in uids:
+                try:
+                    u = ab.get(uid)
+                    if u and droits(u)["actif"]:
+                        bv.envoie_sequences(uid, url_site())
+                except Exception:  # noqa: BLE001
+                    traceback.print_exc()
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+
+
 def planificateur():
     while True:
         try:
@@ -1603,6 +1940,7 @@ def main():
     reprend_analyses()
     if not args.sans_planificateur:
         threading.Thread(target=planificateur, daemon=True).start()
+        threading.Thread(target=planificateur_emails, daemon=True).start()
     print(f"Données : {DATA}")
     if os.getenv("RAILWAY_ENVIRONMENT") and not os.getenv("RAILWAY_VOLUME_MOUNT_PATH") and not os.getenv("DATA_DIR"):
         print("⚠️  Aucun volume Railway détecté : les comptes seront effacés à chaque mise à jour.")

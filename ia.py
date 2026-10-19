@@ -504,3 +504,116 @@ def propose_comptes(cfg: dict, deja: list[str]) -> list[dict]:
         except ValueError:
             c = []
     return [x for x in c or [] if isinstance(x, dict) and x.get("pseudo")]
+
+
+# ------------------------------------------------------------
+#  Boutique : idées de produits, guide PDF, séquence d'e-mails (dans la voix de la marque)
+# ------------------------------------------------------------
+OUTIL_IDEES_PRODUITS = {
+    "name": "proposer_produits",
+    "description": "Idées de produits numériques à vendre ou offrir dans la boutique en lien dans la bio.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"idees": {"type": "array", "description": "3 idées, de la plus facile à lancer à la plus ambitieuse.", "items": {
+            "type": "object", "properties": {
+                "type": {"type": "string", "enum": ["guide", "checklist", "template", "mini-formation", "appel", "pack"],
+                         "description": "Nature du produit."},
+                "titre": {"type": "string", "description": "Titre vendeur, concret, sans superlatif creux (moins de 8 mots)."},
+                "sous_titre": {"type": "string", "description": "La promesse en une ligne : pour qui, quel résultat."},
+                "description": {"type": "string", "description": "Fiche produit prête à publier : 4 à 8 lignes courtes, ce qu'il y a dedans (tirets), pour qui c'est. Ton de la marque, rien qui sonne publicité ou IA."},
+                "prix_conseille": {"type": "integer", "description": "Prix conseillé en centimes d'euro. 0 pour un aimant à e-mails gratuit."},
+                "pourquoi": {"type": "string", "description": "Pourquoi ce produit, en 1-2 phrases, en s'appuyant sur les données fournies (Reels qui marchent, douleurs de la cible, questions récurrentes)."},
+                "plan": {"type": "array", "items": {"type": "string"}, "description": "Sommaire : 4 à 7 parties."},
+                "mot_cle": {"type": "string", "description": "Mot-clé à faire commenter sous les Reels pour recevoir ce produit (un mot, MAJUSCULES, sans accent)."},
+                "bouton": {"type": "string", "description": "Texte du bouton d'achat (2 à 5 mots)."}},
+            "required": ["type", "titre", "sous_titre", "description", "prix_conseille", "pourquoi", "plan", "mot_cle", "bouton"]}}},
+        "required": ["idees"],
+    },
+}
+
+OUTIL_GUIDE = {
+    "name": "ecrire_guide",
+    "description": "Contenu complet d'un guide PDF court et utile.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "titre": {"type": "string"}, "sous_titre": {"type": "string"},
+            "introduction": {"type": "string", "description": "3 à 5 phrases, à la 2e personne, dans la voix de la marque."},
+            "parties": {"type": "array", "description": "4 à 7 parties.", "items": {"type": "object", "properties": {
+                "titre": {"type": "string"},
+                "texte": {"type": "string", "description": "2 à 4 paragraphes courts séparés par une ligne vide. Concret, actionnable, exemples précis."},
+                "a_retenir": {"type": "array", "items": {"type": "string"}, "description": "2 à 4 points à retenir ou étapes, une ligne chacun."}},
+                "required": ["titre", "texte", "a_retenir"]}},
+            "conclusion": {"type": "string", "description": "2 à 4 phrases."},
+            "appel_action": {"type": "string", "description": "Invitation finale vers l'offre de la marque (sans pression), 1 à 2 phrases."},
+        },
+        "required": ["titre", "sous_titre", "introduction", "parties", "conclusion", "appel_action"],
+    },
+}
+
+OUTIL_SEQUENCE = {
+    "name": "ecrire_sequence",
+    "description": "Séquence d'e-mails envoyée automatiquement aux nouvelles inscrites.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"emails": {"type": "array", "description": "3 à 4 e-mails.", "items": {"type": "object", "properties": {
+            "delai_jours": {"type": "integer", "description": "Jours après l'inscription (0 = tout de suite)."},
+            "sujet": {"type": "string", "description": "Objet court, naturel, qu'on ouvrirait (pas de majuscules partout, pas d'emoji en début)."},
+            "texte": {"type": "string", "description": "Corps de l'e-mail : 4 à 10 lignes courtes, tutoiement si c'est le ton de la marque. Peut contenir {prenom}."},
+            "produit": {"type": "string", "description": "Identifiant du produit à mettre en avant avec un bouton (parmi ceux fournis), ou vide."}},
+            "required": ["delai_jours", "sujet", "texte", "produit"]}}},
+        "required": ["emails"],
+    },
+}
+
+
+def _ia_simple(cfg: dict) -> "IA":
+    ia = IA.__new__(IA)
+    import anthropic
+    ia.client, ia.cfg, ia.modele, ia.systeme = anthropic.Anthropic(), cfg, cfg["claude"]["modele"], ""
+    return ia
+
+
+def _systeme_marque(cfg: dict, voix: str, role: str) -> list:
+    n = cfg["niche"]
+    blocs = [{"type": "text", "text": f"""{role}
+
+Marque : {n.get('nom', '')}
+Niche : {(n.get('description') or '').strip()}
+Client idéal : {n.get('cible', '')}
+Ses problèmes : {'; '.join(n.get('douleurs') or []) or 'non précisés'}
+Ton : {n.get('ton', '')}
+Offre actuelle : {n.get('offre', '')}
+Interdits : {(n.get('interdits') or '').strip()}
+Langue : {n.get('langue', 'français')}
+
+Règles : écris comme la marque parle à une amie, phrases courtes, rien qui sonne publicité ou texte écrit par une IA
+(pas de « plongeons », « découvrez », « ultime », « incontournable », pas de listes d'adjectifs). Aucune promesse de résultat
+chiffrée ou médicale. Respect strict des interdits."""}]
+    if voix.strip():
+        blocs.append({"type": "text", "text": "VOIX DE LA MARQUE — exemples réels de ses textes, à imiter (ton, vocabulaire, longueur, emojis) :\n\n" + voix.strip()[:6000]})
+    return blocs
+
+
+def idees_produits(cfg: dict, voix: str, contexte: str) -> dict:
+    return _ia_simple(cfg)._appel(OUTIL_IDEES_PRODUITS, "Données sur le compte et la niche :\n\n" + contexte +
+                                  "\n\nPropose 3 produits numériques adaptés : au moins un gratuit pour récolter des e-mails, au moins un payant.",
+                                  max_tokens=3500, systeme=_systeme_marque(cfg, voix, "Tu es stratège en produits numériques pour créatrices de contenu."))
+
+
+def ecrit_guide(cfg: dict, voix: str, produit: dict, contexte: str) -> dict:
+    texte = (f"Écris le guide « {produit.get('titre')} » ({produit.get('sous_titre') or ''}).\n"
+             f"Fiche produit : {produit.get('description') or ''}\n"
+             f"Plan souhaité : {' / '.join(produit.get('plan') or []) or 'à toi de le construire'}\n\n"
+             f"Ce qui intéresse l'audience (données réelles) :\n{contexte}\n\n"
+             "Le guide doit être vraiment utile, concret, lisible en 10 minutes sur téléphone.")
+    return _ia_simple(cfg)._appel(OUTIL_GUIDE, texte, max_tokens=7000, systeme=_systeme_marque(cfg, voix, "Tu écris des guides pratiques pour une créatrice de contenu."))
+
+
+def ecrit_sequence(cfg: dict, voix: str, produits: list[dict], boutique: str) -> dict:
+    liste = "\n".join(f"- id {p['id']} : {p.get('titre')} ({'gratuit' if not p.get('prix') else str(p['prix'] / 100) + ' €'}) — {p.get('sous_titre') or ''}"
+                      for p in produits) or "aucun produit"
+    texte = (f"Boutique : {boutique}\nProduits :\n{liste}\n\nÉcris la séquence de bienvenue des nouvelles inscrites : "
+             "1) bienvenue + ce qu'elles vont recevoir, 2) un conseil utile sans rien vendre, 3) une histoire ou un témoignage qui amène "
+             "doucement au produit payant le plus adapté, 4) éventuellement une dernière relance courte. Pas de pression, pas de fausse urgence.")
+    return _ia_simple(cfg)._appel(OUTIL_SEQUENCE, texte, max_tokens=3500, systeme=_systeme_marque(cfg, voix, "Tu écris des e-mails pour une créatrice de contenu."))

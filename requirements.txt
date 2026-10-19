@@ -10,3 +10,5 @@ flask>=3.0
 waitress
 Pillow
 pillow-heif
+reportlab
+segno

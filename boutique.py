@@ -626,7 +626,7 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 .pimg{{position:relative;flex-shrink:0;display:block}}
 .pimg img,.pimg .pas-img{{display:block;width:86px;height:86px;object-fit:cover;background:var(--a);border-radius:calc(var(--rk) * .7)}}
 .prod b{{display:block;font-size:15.5px;line-height:1.3}}.prod small{{display:block;opacity:.75;font-size:13px;margin-top:2px}}
-.ptxt{{min-width:0}}
+.ptxt{{min-width:0}}.pnote{{margin-top:2px}}
 .px{{display:inline-block;margin-top:6px;font-weight:700;color:var(--a);font-size:14.5px}}
 .px s{{opacity:.55;font-weight:500;margin-left:6px;color:inherit}}
 .pp-etiquette{{background:var(--a);color:var(--ac);padding:3px 12px 3px 18px;clip-path:polygon(11px 0,100% 0,100% 100%,11px 100%,0 50%);font-size:13.5px}}
@@ -750,15 +750,22 @@ def _youtube(u: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _carte_produit(p: dict, pseudo: str, d: dict, vue: str) -> str:
+def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None = None) -> str:
+    from boutique_ventes import prix_effectif
+    pe = prix_effectif(p)
     forme = f'pi-{d.get("image_forme", "carre")}'
     img = f'<img class="{forme}" src="{_img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span class="pas-img {forme}"></span>'
-    barre = f'<s>{E(prix_txt(p["prix_barre"], p.get("devise", "eur")))}</s>' if p.get("prix_barre") and p["prix_barre"] > p.get("prix", 0) else ""
+    barre = f'<s>{E(prix_txt(pe["barre"], p.get("devise", "eur")))}</s>' if pe["barre"] else ""
+    n = (notes or {}).get(p["id"])
     st = f'<small>{E(p["sous_titre"])}</small>' if p.get("sous_titre") else ""
+    if n:
+        st += f'<small class="pnote"><span style="color:var(--a)">★</span> {str(n[0]).replace(".", ",")} ({n[1]})</small>'
+    if pe["fin"]:
+        st += '<small class="pnote" style="color:var(--a);font-weight:700">Offre limitée</small>'
     style_prix = d.get("prix_style", "texte")
     if style_prix == "pastille" and vue in ("mini", "zigzag"):
         style_prix = "bouton"
-    px = f'<span class="px pp-{style_prix}">{E(prix_txt(p.get("prix", 0), p.get("devise", "eur")))}{barre}</span>'
+    px = f'<span class="px pp-{style_prix}">{E(prix_txt(pe["prix"], p.get("devise", "eur")))}{barre}</span>'
     dans_image, sous_titre = (px, "") if style_prix == "pastille" else ("", px)
     return (f'<a class="prod carte" href="/@{pseudo}/p/{p["id"]}"><span class="pimg">{img}{dans_image}</span>'
             f'<div class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{sous_titre}</div></a>')
@@ -785,14 +792,14 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
                 f'allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe>') if vid else ""
     if t == "produit":
         p = prods.get(b.get("produit"))
-        return f'<div class="produits v-vitrine">{_carte_produit(p, pseudo, d, "vitrine")}</div>' if p else ""
+        return f'<div class="produits v-vitrine">{_carte_produit(p, pseudo, d, "vitrine", page.get("_avis"))}</div>' if p else ""
     if t == "produits":
         liste = [prods[i] for i in (b.get("ids") or [p["id"] for p in page["produits"]]) if i in prods]
         if not liste:
             return ""
         titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
         v = d["produits_vue"]
-        return f'{titre}<div class="produits v-{v}">{"".join(_carte_produit(p, pseudo, d, v) for p in liste)}</div>'
+        return f'{titre}<div class="produits v-{v}">{"".join(_carte_produit(p, pseudo, d, v, page.get("_avis")) for p in liste)}</div>'
     if t == "capture":
         txt = f'<p>{E(b["texte"])}</p>' if b.get("texte") else ""
         btn = E(b.get("bouton") or "Je m’inscris")
@@ -1007,7 +1014,8 @@ def ajoute_inscrit(uid: int, email: str, prenom: str = "", source: str = "") -> 
         l = _lit(f, [])
         if any(x["email"] == email for x in l):
             return False
-        l.append({"email": email, "prenom": prenom[:60], "source": source, "date": datetime.now().isoformat(timespec="minutes")})
+        l.append({"email": email, "prenom": prenom[:60], "source": source, "date": datetime.now().astimezone().isoformat(timespec="minutes"),
+                  "jeton": secrets.token_urlsafe(12), "etape": 0})
         _ecrit(f, l)
     return True
 
@@ -1022,7 +1030,7 @@ def inscrits_csv(uid: int) -> str:
     return "﻿" + out.getvalue()
 
 
-def enregistre_vente(uid: int, produit: dict, email: str, montant: int, devise: str, session_id: str) -> dict:
+def enregistre_vente(uid: int, produit: dict, email: str, montant: int, devise: str, session_id: str, **extra) -> dict:
     """Idempotent (une session Stripe = une vente). Renvoie la vente avec son jeton de téléchargement."""
     f = dossier(uid) / "ventes.json"
     with verrou(uid):
@@ -1032,7 +1040,8 @@ def enregistre_vente(uid: int, produit: dict, email: str, montant: int, devise: 
             return {**v, "nouvelle": False}
         v = {"id": nouvel_id(), "date": datetime.now().isoformat(timespec="minutes"), "produit": produit["id"], "email": email,
              "montant": montant, "devise": devise, "session": session_id, "jeton": secrets.token_urlsafe(24),
-             "expire": (datetime.now() + timedelta(days=30)).isoformat(timespec="minutes"), "telechargements": 0}
+             "expire": (datetime.now() + timedelta(days=30)).isoformat(timespec="minutes"), "telechargements": 0,
+             **{k: v for k, v in extra.items() if v}}
         l.append(v)
         _ecrit(f, l)
     return {**v, "nouvelle": True}
@@ -1095,11 +1104,12 @@ def commission() -> float:
         return 0.0
 
 
-def session_achat(compte: str, produit: dict, base: str, pseudo: str) -> str:
+def session_achat(compte: str, produit: dict, base: str, pseudo: str, montant: int | None = None, meta: dict | None = None, email: str = "") -> str:
+    montant = int(produit["prix"] if montant is None else montant)
     data = {
         "mode": "payment", "line_items[0][quantity]": 1,
         "line_items[0][price_data][currency]": produit.get("devise", "eur"),
-        "line_items[0][price_data][unit_amount]": int(produit["prix"]),
+        "line_items[0][price_data][unit_amount]": montant,
         "line_items[0][price_data][product_data][name]": (produit.get("titre") or "Produit")[:250],
         "success_url": f"{base}/@{pseudo}/merci?s={{CHECKOUT_SESSION_ID}}",
         "cancel_url": f"{base}/@{pseudo}/p/{produit['id']}",
@@ -1107,9 +1117,14 @@ def session_achat(compte: str, produit: dict, base: str, pseudo: str) -> str:
     }
     if produit.get("sous_titre"):
         data["line_items[0][price_data][product_data][description]"] = produit["sous_titre"][:300]
+    for k, v in (meta or {}).items():
+        if v:
+            data[f"metadata[{k}]"] = str(v)[:400]
+    if email:
+        data["customer_email"] = email
     c = commission()
     if c:
-        data["payment_intent_data[application_fee_amount]"] = int(produit["prix"] * c / 100)
+        data["payment_intent_data[application_fee_amount]"] = int(montant * c / 100)
     return _stripe("POST", "/checkout/sessions", compte, **data)["url"]
 
 
@@ -1118,7 +1133,8 @@ def verifie_session(compte: str, sid: str) -> dict | None:
     if s.get("payment_status") != "paid":
         return None
     return {"email": (s.get("customer_details") or {}).get("email") or s.get("customer_email") or "",
-            "montant": s.get("amount_total") or 0, "devise": s.get("currency") or "eur", "produit": (s.get("metadata") or {}).get("produit")}
+            "montant": s.get("amount_total") or 0, "devise": s.get("currency") or "eur", "produit": (s.get("metadata") or {}).get("produit"),
+            "meta": s.get("metadata") or {}}
 
 
 # ------------------------------------------------------------
@@ -1140,6 +1156,14 @@ def mail_livraison(page: dict, produit: dict, email: str, lien: str, gratuit: bo
     corps = (f"<p>{'Voici' if gratuit else 'Merci pour ton achat ! Voici'} <b>{E(produit.get('titre') or '')}</b>.</p>"
              "<p>Le lien reste valable 30 jours. Garde cet e-mail précieusement.</p>")
     emails.envoie(email, f"Ton accès : {produit.get('titre')}", _gabarit(page, "C'est à toi !", corps, ("Télécharger", lien)))
+
+
+def mail_rdv(page: dict, produit: dict, email: str, lien: str, quand: str):
+    import emails
+    lieu = E((produit.get("rdv") or {}).get("lieu") or "")
+    corps = (f"<p>Ton rendez-vous <b>{E(produit.get('titre') or '')}</b> est confirmé :</p><p style='font-size:17px'><b>{E(quand)}</b> (heure de Paris)</p>"
+             f"{f'<p>{lieu}</p>' if lieu else ''}<p>Ajoute-le à ton agenda depuis la page de confirmation.</p>")
+    emails.envoie(email, f"C'est réservé : {produit.get('titre')}", _gabarit(page, "À très vite !", corps, ("Voir ma réservation", lien)))
 
 
 def mail_vente(email_vendeuse: str, page: dict, produit: dict, montant: int, devise: str, acheteur: str):
