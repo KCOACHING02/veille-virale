@@ -209,7 +209,26 @@ main{min-width:0;padding:20px 28px 80px}
 .liste{margin:0;padding-left:18px} .liste li{margin-bottom:5px}
 .com{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
 .com span{color:var(--ink-3);white-space:nowrap;margin-left:auto}
-.actions-t{display:flex;flex-wrap:wrap;gap:8px;padding:12px 22px;border-top:1px solid var(--line);background:var(--surface)}
+.et-c{border:1px solid var(--line);border-radius:16px;background:var(--surface);margin:0 0 14px;overflow:hidden}
+.et-t{display:flex;gap:12px;align-items:flex-start;padding:14px 16px 4px}
+.et-t h3{margin:2px 0 2px!important;font-size:16px}
+.et-t p{margin:0;color:var(--ink-3);font-size:13.5px}
+.et-n{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--glow);color:var(--glow-ink,#fff);display:grid;place-items:center;font-weight:700;font-size:14px}
+.et-corps{padding:8px 16px 16px}
+.et-corps h4{margin:14px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3)}
+.et-corps .son{margin:6px 0 4px}
+.aide-et{margin:6px 0 0;color:var(--ink-3);font-size:13.5px}
+.variantes{margin-top:10px}.variantes summary{cursor:pointer;color:var(--ink-2);font-weight:600;font-size:14px;padding:8px 0;list-style-position:inside}
+.pertinence{margin:0 0 12px;color:var(--ink-3);font-size:13.5px}
+.tout-copier{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:4px 0 8px;text-align:center}.tout-copier .btn{justify-content:center;min-height:46px}.tout-copier span{color:var(--ink-3);font-size:13px}
+.actions-t{display:flex;flex-wrap:wrap;gap:8px;padding:12px 22px;border-top:1px solid var(--line);background:var(--surface);position:relative}
+.actions-t .grand{flex:1;justify-content:center;min-height:46px;font-size:15px}
+.btn.carre{width:46px;min-height:46px;justify-content:center;padding:0;font-size:20px;line-height:1}
+.menu-plus{position:relative}
+.menu-liste{position:absolute;right:0;bottom:calc(100% + 8px);min-width:240px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:6px;z-index:5;display:flex;flex-direction:column}
+.menu-liste[hidden]{display:none}
+.menu-liste>*{display:block;text-align:left;padding:12px 14px;border:0;background:none;border-radius:10px;color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer;text-decoration:none}
+.menu-liste>*:hover,.menu-liste>*:focus-visible{background:var(--sunk)}
 .publie-form{display:flex;flex-wrap:wrap;gap:8px;width:100%;align-items:center}
 .publie-form input{flex:1;min-width:220px;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:8px 12px}
 .publie-form .aide{width:100%;font-size:12.5px;color:var(--ink-3)}
@@ -302,6 +321,19 @@ td.num{font-variant-numeric:tabular-nums}
 .ajout input{flex:1 1 200px;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;opacity:0;transition:.2s;z-index:50;font-size:14px;pointer-events:none}
 .toast.vu{opacity:1;transform:translateX(-50%)}
+.toast{display:flex;align-items:center;gap:14px;max-width:calc(100vw - 32px)}
+.toast.action{pointer-events:auto;padding:8px 8px 8px 16px}
+.toast-annuler{border:0;background:rgba(255,255,255,.16);color:inherit;font:inherit;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer}
+@media (prefers-color-scheme:dark){.toast-annuler{background:rgba(0,0,0,.12)}}
+@media (max-width:860px){.toast{bottom:calc(78px + env(safe-area-inset-bottom))}}
+.sq-c{background:linear-gradient(90deg,var(--sunk),var(--line),var(--sunk));background-size:200% 100%;animation:sq 1.2s linear infinite;border-radius:8px;height:13px;margin:8px 0}
+.sq-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.sq-carte{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px}
+.sq-img{height:auto;aspect-ratio:4/5;margin:0 0 10px;border-radius:12px}
+.sq-lignes{padding:10px 0}.sq-lignes .sq-c{height:16px;margin:14px 0}
+@media (max-width:860px){.sq-grille{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.st-barre{width:min(320px,100%);height:8px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.st-barre i{display:block;height:100%;background:var(--glow);border-radius:99px;transition:width 1.4s linear}
 .mini-job{display:flex;align-items:center;gap:10px;background:var(--glow-soft);border-radius:12px;padding:8px 12px;font-size:14px;cursor:pointer;border:0;width:100%;text-align:left}
 .spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--glow);border-right-color:transparent;animation:t .8s linear infinite;flex-shrink:0}
 @keyframes t{to{transform:rotate(1turn)}}
@@ -324,6 +356,16 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .hero p{color:#D8CEDD;margin:0 0 18px;max-width:60ch}
 .hero .actions{display:flex;gap:10px;flex-wrap:wrap}
 .hero .btn.clair{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
+.hero-jour h2{font-size:clamp(22px,2.8vw,32px)}
+.vign-hero{width:120px;aspect-ratio:9/16;border-radius:14px;overflow:hidden;border:0;padding:0;background:#3a2c42;cursor:pointer}
+.vign-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-pied{margin:16px 0 0!important;font-size:13.5px;color:#BFB3C6!important}.hero-pied a{color:#fff}
+.squelette-hero{min-height:220px}
+.sq{background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.14),rgba(255,255,255,.06));background-size:200% 100%;animation:sq 1.2s linear infinite;border-radius:8px}
+.sq-vign{width:120px;aspect-ratio:9/16;border-radius:14px}.sq-l{height:14px;margin:8px 0}.sq-t{height:34px;margin:10px 0;width:90%}
+@keyframes sq{to{background-position:-200% 0}}
+.plus-accueil{margin-top:4px}.plus-accueil>summary{cursor:pointer;list-style:none;text-align:center;padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--ink-2);font-weight:600;margin-bottom:18px}
+.plus-accueil>summary::-webkit-details-marker{display:none}.plus-accueil[open]>summary{margin-bottom:22px}
 .ic-hero{width:76px;height:76px;border-radius:22px;background:rgba(255,79,121,.16);color:#FF4F79;display:grid;place-items:center;font:800 34px/1 var(--display)}
 .anneau{--p:0;width:96px;height:96px;border-radius:50%;background:conic-gradient(#FF4F79 calc(var(--p)*1%),rgba(255,255,255,.12) 0);display:grid;place-items:center;position:relative;transition:background .4s}
 .anneau::before{content:"";position:absolute;inset:8px;border-radius:50%;background:#271B2D}
@@ -352,7 +394,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .crea b{font-size:13.5px;padding:0 10px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .crea small{color:var(--ink-3);font-size:12px;padding:0 10px}
 .note-essai{color:var(--ink-3);font-size:14px} .note-essai a{color:var(--glow)}
-@media (max-width:860px){.hero{grid-template-columns:1fr;padding:22px;gap:14px}.ic-hero,.anneau{width:64px;height:64px;font-size:26px}.anneau b{font-size:20px}.etapes-s{grid-template-columns:repeat(2,1fr)}.du-jour{grid-template-columns:1fr}.crea-recentes{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:860px){.hero-jour{grid-template-columns:96px 1fr!important;align-items:start}.vign-hero,.sq-vign{width:96px}.hero-jour .actions{grid-column:1/-1}.hero{grid-template-columns:1fr;padding:22px;gap:14px}.ic-hero,.anneau{width:64px;height:64px;font-size:26px}.anneau b{font-size:20px}.etapes-s{grid-template-columns:repeat(2,1fr)}.du-jour{grid-template-columns:1fr}.crea-recentes{grid-template-columns:repeat(2,1fr)}}
 
 /* ---------- Sous-navigation et filtres ---------- */
 .sous-nav{margin:0 0 16px}
@@ -518,6 +560,8 @@ a.btn{text-decoration:none}
   .rail{overflow-x:auto;justify-content:flex-start;gap:2px}
   .nav{flex-direction:column;gap:2px;font-size:11px;padding:6px 4px;flex:1 0 64px;align-items:center;white-space:nowrap}
   .nav .long{display:none} .nav .court{display:inline}
+  .nav-bureau{display:none}
+  .rail{overflow-x:visible}.nav{flex:1 1 0;min-width:0;min-height:52px}
   .a-mobile-etape{display:block}
   .nav[aria-current="page"]{box-shadow:none;background:var(--sunk)}
   main{padding:14px 16px 96px}
@@ -759,6 +803,11 @@ a.btn{text-decoration:none}
 .st-couv-apercus{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;max-width:420px}
 .st-couv-apercus figure{margin:0;text-align:center}.st-couv-apercus img{width:100%;border-radius:12px;display:block;background:var(--sunk);box-shadow:var(--shadow)}
 .st-couv-apercus figcaption{font-size:12.5px;color:var(--ink-3);margin-top:6px}
+.bt-simple .avance{display:none!important}
+.bt-mode{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);cursor:pointer;padding:6px 10px;border:1px solid var(--line);border-radius:99px;background:var(--surface)}
+.bt-mode input{accent-color:var(--glow)}
+.bt-plus-options{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:18px;border:1px dashed var(--line);border-radius:16px;margin-top:6px}
+.bt-plus-options span{color:var(--ink-3);font-size:13.5px}
 .bt-saut{position:sticky;top:0;z-index:6;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;background:var(--paper);padding:6px 0 10px;margin-top:-6px}
 .bt-saut button{flex-shrink:0;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-2)}
 .bt-saut button:hover{color:var(--ink);border-color:var(--ink-3)}
@@ -791,7 +840,7 @@ a.btn{text-decoration:none}
 .icone-btn:hover{background:var(--sunk);color:var(--ink)}
 .icone-btn svg{width:18px;height:18px}
 /* Blocs */
-.bt-blocs{display:grid;gap:8px}
+.bt-blocs{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
 .bt-bloc{border:1px solid var(--line);border-radius:14px;background:var(--surface)}
 .bt-bloc.cache{opacity:.55}
 .bt-bloc-tete{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px}
@@ -895,8 +944,8 @@ a.btn{text-decoration:none}
     <button class="nav" data-vue="reels" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg><span class="long">Mes Reels</span><span class="court">Reels</span><span class="n" id="n-reels"></span></button>
     <button class="nav" data-vue="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Studio</button>
     <button class="nav" data-vue="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 2 3s2-1.3 2-3c0 1.7 1.3 3 3 3s3-1.3 3-3M9.5 20v-5h5v5"/></svg><span class="long">Ma boutique</span><span class="court">Boutique</span></button>
-    <button class="nav" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
-    <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Réglages</button>
+    <button class="nav nav-bureau" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
+    <button class="nav" data-vue="parametres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="long">Réglages</span><span class="court">Moi</span></button>
     <div class="bas">
       <div class="utilisateur" id="utilisateur"></div>
       <button class="btn petit" id="installer-app" hidden onclick="installeApp()" style="margin:0 0 10px">📲 Installer l'application</button>
@@ -959,7 +1008,7 @@ a.btn{text-decoration:none}
 
     <!-- RÉSULTATS -->
     <section data-section="boutique" hidden><div id="boutique"></div></section>
-    <section data-section="resultats" hidden><div id="resultats"></div></section>
+    <section data-section="resultats" hidden><div class="sous-nav" data-groupe="parametres"></div><div id="resultats"></div></section>
 
     <!-- PARAMÈTRES -->
     <section data-section="parametres" hidden><div class="sous-nav" data-groupe="parametres"></div><div id="parametres"></div></section>
@@ -1011,7 +1060,28 @@ const api = async (url, opts = {}) => {
   if (!r.ok) throw Object.assign(new Error(j.erreur || "Erreur " + r.status), {data: j});
   return j;
 };
-const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("vu"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("vu"), 2200); };
+const toast = (m, opts = {}) => { const t = $("#toast");
+  t.innerHTML = `<span>${esc(m)}</span>${opts.annuler ? '<button class="toast-annuler" type="button">Annuler</button>' : ""}`;
+  t.classList.toggle("action", !!opts.annuler); t.classList.add("vu"); clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove("vu"), opts.duree || 2400); };
+// Suppression avec « Annuler » pendant 5 s au lieu d'une demande de confirmation
+function toastAnnuler(m, annuler, confirmer, duree = 5000, extra = {}) {
+  finaliseAnnulable();
+  const ctx = {confirmer, fait: false, ...extra};
+  S.annulable = ctx; toast(m, {annuler: true, duree});
+  $("#toast .toast-annuler").onclick = () => { if (ctx.fait) return; ctx.fait = true; clearTimeout(ctx.timer); S.annulable = null; annuler(); toast("Annulé ✓"); };
+  ctx.timer = setTimeout(() => finaliseAnnulable(ctx), duree);
+}
+function finaliseAnnulable(ctx = S.annulable) {
+  if (!ctx || ctx.fait) return; ctx.fait = true; clearTimeout(ctx.timer);
+  if (S.annulable === ctx) S.annulable = null;
+  try { ctx.confirmer?.(); } catch {}
+}
+addEventListener("pagehide", () => finaliseAnnulable());
+// Squelettes de chargement
+const squelette = (type = "cartes", n = 6) => type === "cartes"
+  ? `<div class="sq-grille" aria-busy="true" aria-label="Chargement">${Array.from({length: n}, () => '<div class="sq-carte"><div class="sq-c sq-img"></div><div class="sq-c" style="width:70%"></div><div class="sq-c" style="width:45%"></div></div>').join("")}</div>`
+  : `<div class="sq-lignes" aria-busy="true" aria-label="Chargement">${Array.from({length: n}, (_, i) => `<div class="sq-c" style="width:${[92, 76, 84, 60, 88, 70][i % 6]}%"></div>`).join("")}</div>`;
 const ICONES = {
   Instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>',
   TikTok: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.3 2.2 1.7 3.8 4 4v3.1c-1.5 0-2.9-.4-4-1.2V15a6 6 0 11-6-6c.3 0 .7 0 1 .1v3.2a2.9 2.9 0 10 2 2.7V3h3z"/></svg>'
@@ -1050,10 +1120,15 @@ async function chargeAnalyse(id) {
 
 // ---------------------------------------------------------------- Navigation
 const TITRES = {boutique: "Ma boutique", accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
+const titreDe = vue => MOBILE.matches && groupeDe(vue) === "parametres" ? "Moi" : TITRES[vue];
 // Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
 const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]],
                  parametres: [["parametres", "Mon profil"], ["comptes", "Comptes surveillés"], ["abonnement", "Abonnement"]]};
-const groupeDe = vue => Object.keys(GROUPES).find(g => GROUPES[g].some(([v]) => v === vue)) || vue;
+// Sur téléphone, la barre du bas n'a que 5 entrées : « Moi » regroupe résultats, profil, comptes et abonnement
+const MOBILE = matchMedia("(max-width:860px)");
+const groupes = () => MOBILE.matches ? {...GROUPES, parametres: [["resultats", "Résultats"], ["parametres", "Profil"], ["comptes", "Comptes"], ["abonnement", "Abonnement"]]} : GROUPES;
+const groupeDe = vue => Object.keys(groupes()).find(g => groupes()[g].some(([v]) => v === vue)) || vue;
+MOBILE.addEventListener?.("change", () => S.etat && va(S.vue, true));
 // ---- Historique du navigateur : le bouton « précédent » revient à l'écran précédent de l'outil au lieu d'en sortir
 function pousseHistorique(extra = {}) {
   if (S.ignorePop) { S.pousseApres = extra; return; }   // un retour arrière est en cours : on attend qu'il soit fini
@@ -1068,12 +1143,13 @@ function va(vue, depuisHistorique) {
   const g = groupeDe(vue);
   $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === g ? "page" : "false"));
   $$("[data-section]").forEach(s => s.hidden = s.dataset.section !== vue);
-  $("#titre").textContent = vue === "accueil" ? `Bonjour${S.etat?.utilisateur?.prenom ? " " + S.etat.utilisateur.prenom : ""}` : TITRES[vue];
+  $("#titre").textContent = vue === "accueil" ? `Bonjour${S.etat?.utilisateur?.prenom ? " " + S.etat.utilisateur.prenom : ""}` : titreDe(vue);
   const avecVeille = ["reels", "planning"].includes(vue);
   $("#choix-analyse").hidden = !avecVeille || $("#choix-analyse").options.length < 2;
   $("#ouvrir-nouvelle").hidden = !avecVeille;
-  $$(`[data-section="${vue}"] .sous-nav`).forEach(el => el.innerHTML = `<div class="seg" role="tablist">${GROUPES[g].map(([v, t]) =>
-    `<button role="tab" aria-pressed="${v === vue}" onclick="va('${v}')">${t}</button>`).join("")}</div>`);
+  const onglets = groupes()[g];
+  $$(`[data-section="${vue}"] .sous-nav`).forEach(el => { el.hidden = !onglets; el.innerHTML = onglets ? `<div class="seg" role="tablist">${onglets.map(([v, t]) =>
+    `<button role="tab" aria-pressed="${v === vue}" onclick="va('${v}')">${t}</button>`).join("")}</div>` : ""; });
   window.scrollTo(0, 0);
   rendu();
 }
@@ -1103,11 +1179,40 @@ function heroAccueil() {
   const ad = a.posts.filter(adapte).length, ret = a.posts.filter(p => p.criteres_ok || p.demande).length;
   const age = (Date.now() - new Date(a.date)) / 864e5, date = new Date(a.date).toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long"});
   const vieille = age > 6 && a.mode === "veille";
+  if (!vieille && ad) return `<div class="hero hero-jour squelette-hero" id="hero-jour" aria-busy="true"><div class="sq sq-vign"></div><div><div class="sq sq-l" style="width:40%"></div><div class="sq sq-t"></div><div class="sq sq-l" style="width:70%"></div></div></div>`;
   return `<div class="hero"><div class="ic-hero">✓</div><div><span class="sur">${a.mode === "veille" ? "Veille du " : "Analyse du "}${date}</span>
     <h2>${vieille ? "Une nouvelle semaine commence" : `${ad} publication${ad > 1 ? "s" : ""} prête${ad > 1 ? "s" : ""} à reproduire`}</h2>
     <p>${vieille ? "Ta dernière veille date de plus d'une semaine. Relance-la pour trouver les Reels qui viennent d'exploser." : `${ret} publication${ret > 1 ? "s ont" : " a"} vraiment cartonné sur ${nbLong(a.stats.videos)} passées au crible${(() => { const c = a.posts.filter(p => adapte(p) && estCarrousel(p)).length; return c ? `, dont ${c} carrousel${c > 1 ? "s" : ""}` : ""; })()}. Chacune est adaptée à ta niche, dans son format d'origine.`}</p>
     <div class="actions">${vieille ? `<button class="btn prim" onclick="lanceVeilleDirecte()">Lancer la veille de la semaine</button><button class="btn clair" onclick="va('reels')">Revoir mes Reels</button>`
       : `<button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels</button>${a.planning?.length ? `<button class="btn clair" onclick="va('planning')">Mon planning</button>` : ""}`}</div></div></div>`;
+}
+// La seule chose à faire maintenant : le prochain contenu à créer, ou à publier
+function carteAujourdhui(st) {
+  const a = S.analyse, projets = st?.projets || [], pubs = S.pubs || [];
+  const publie = p => pubs.some(x => x.inspiration?.cle === p.cle);
+  const projet = p => projets.find(x => x.cle === p.cle && x.statut !== "erreur");
+  const jour = JOURS[(new Date().getDay() + 6) % 7];
+  const prevus = (a.planning || []).map(k => a.posts.find(p => p.cle === k)).filter(p => p && p.creneau?.startsWith(jour));
+  const meilleurs = a.posts.filter(adapte).sort((x, y) => (y.adaptation.pertinence || 0) - (x.adaptation.pertinence || 0));
+  const ad = meilleurs.length;
+  const aFinir = [...prevus, ...meilleurs].find(p => projet(p)?.statut === "pret" && !publie(p));
+  const aCreer = [...prevus, ...meilleurs].find(p => !projet(p) && !publie(p));
+  const vign = p => `<button class="vign-hero" data-cle="${esc(p.cle)}" aria-label="Voir le Reel d'origine">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}</button>`;
+  const pied = `<p class="hero-pied">${ad} publication${ad > 1 ? "s" : ""} prête${ad > 1 ? "s" : ""} cette semaine · <a href="#" onclick="S.filtre='adaptes';va('reels');return false">Voir mes Reels</a>${a.planning?.length ? ` · <a href="#" onclick="va('planning');return false">Mon planning</a>` : ""}</p>`;
+  if (aFinir && !(aCreer && prevus.includes(aCreer) && !prevus.includes(aFinir))) {
+    S.cleDuJour = aFinir.cle; const pj = projet(aFinir);
+    return `<div class="hero hero-jour">${vign(aFinir)}<div><span class="sur">À faire aujourd'hui · Publier</span><h2>${esc(hookPrincipal(aFinir.adaptation))}</h2>
+      <p>Ton ${pj.type === "reel" ? "Reel" : "carrousel"} est prêt. Télécharge-le, publie-le, puis dis-le moi pour suivre ses vues.</p>
+      <div class="actions"><button class="btn prim" onclick="ouvreProjet('${esc(pj.id)}')">Ouvrir mon contenu</button><button class="btn clair" onclick="ouvreReel('${esc(aFinir.cle)}')">J'ai publié</button></div>${pied}</div></div>`;
+  }
+  if (aCreer) {
+    S.cleDuJour = aCreer.cle; const prevu = prevus.includes(aCreer);
+    return `<div class="hero hero-jour">${vign(aCreer)}<div><span class="sur">À faire aujourd'hui${prevu && aCreer.creneau ? " · " + esc(aCreer.creneau.replace(jour, "").trim() || aCreer.creneau) : ""}</span><h2>${esc(hookPrincipal(aCreer.adaptation))}</h2>
+      <p>Inspiré d'un ${estCarrousel(aCreer) ? "carrousel" : "Reel"} de @${esc(aCreer.compte)}${aCreer.vues ? ` (${nb(aCreer.vues)} vues)` : ""}. Tout est déjà écrit : il ne reste qu'à le fabriquer.</p>
+      <div class="actions"><button class="btn prim" data-studio-acc="${esc(aCreer.cle)}">Créer le contenu</button><button class="btn clair" data-cle="${esc(aCreer.cle)}">Lire le script</button></div>${pied}</div></div>`;
+  }
+  S.cleDuJour = null;
+  return `<div class="hero hero-jour"><div class="ic-hero">🎉</div><div><span class="sur">Aujourd'hui</span><h2>Tout est fait pour cette semaine</h2><p>Chaque contenu prêt a été créé ou publié. Bravo ! Ta prochaine veille arrive lundi.</p><div class="actions"><button class="btn prim" onclick="va('resultats')">Voir mes résultats</button></div></div></div>`;
 }
 async function renduAccueil() {
   const el = $("#accueil"), a = S.analyse, bi = S.bilan || {};
@@ -1119,6 +1224,7 @@ async function renduAccueil() {
   const crees = (st?.projets || []).filter(p => p.statut === "pret" && new Date(p.cree) > semaine).length;
   const veilleOk = a && (Date.now() - new Date(a.date)) / 864e5 <= 6;
   const ad = a ? a.posts.filter(adapte).length : 0;
+  if ($("#hero-jour")) $("#hero-jour").outerHTML = carteAujourdhui(st);
   const etape = (fait, n, titre, detail, action) => `<button class="etape-s ${fait ? "fait" : ""}" ${action ? `onclick="${action}"` : "disabled"}>
       <span class="num">${fait ? "✓" : n}</span><b>${titre}</b><small>${detail}</small></button>`;
   let html = `<section class="bloc-accueil"><h2>Ta semaine</h2><div class="etapes-s">
@@ -1131,8 +1237,8 @@ async function renduAccueil() {
   if (a) {
     const jour = JOURS[(new Date().getDay() + 6) % 7];
     const prevus = (a.planning || []).map(k => a.posts.find(p => p.cle === k)).filter(p => p && p.creneau?.startsWith(jour));
-    const liste = prevus.length ? prevus : a.posts.filter(adapte).sort((x, y) => (y.adaptation.pertinence || 0) - (x.adaptation.pertinence || 0)).slice(0, 3);
-    if (liste.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>${prevus.length ? `Au programme aujourd'hui` : "À tourner en priorité"}</h2><button class="lien" onclick="va('${prevus.length ? "planning" : "reels"}')">${prevus.length ? "Toute la semaine" : "Tous mes Reels"} →</button></div>
+    const liste = (prevus.length ? prevus : a.posts.filter(adapte).sort((x, y) => (y.adaptation.pertinence || 0) - (x.adaptation.pertinence || 0)).slice(0, 4)).filter(p => p.cle !== S.cleDuJour).slice(0, 3);
+    if (liste.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>${prevus.length ? `Aussi au programme aujourd'hui` : "Ensuite, à tourner"}</h2><button class="lien" onclick="va('${prevus.length ? "planning" : "reels"}')">${prevus.length ? "Toute la semaine" : "Tous mes Reels"} →</button></div>
       <div class="du-jour">${liste.map(p => { const publie = (S.pubs || []).some(x => x.inspiration?.cle === p.cle);
         return `<article class="carte-jour">
           <button class="vign" data-cle="${esc(p.cle)}" aria-label="Ouvrir">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}</button>
@@ -1163,6 +1269,9 @@ async function renduAccueil() {
     const j = Math.max(0, Math.ceil((new Date(ab.fin_essai) - Date.now()) / 864e5));
     html += `<p class="note-essai">Essai gratuit : encore ${j} jour${j > 1 ? "s" : ""}. <a href="#" onclick="va('abonnement');return false">Voir les formules</a></p>`;
   }
+  // Sur téléphone, tout ce qui suit « Ta semaine » est replié pour garder l'action du jour en vue
+  const coupe = html.indexOf('<section', html.indexOf('</section>'));
+  if (coupe > 0 && MOBILE.matches) html = html.slice(0, coupe) + `<details class="plus-accueil"><summary>Voir le reste : programme, créations${S.etat.boutique ? ", boutique" : ""}</summary>${html.slice(coupe)}</details>`;
   $("#accueil-suite").innerHTML = html;
   $$("[data-studio-acc]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); choisirFormat(b.dataset.studioAcc); });
 }
@@ -1284,7 +1393,7 @@ function copiable(texte, grand) {
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-copie]"); if (!b) return;
   const el = b.parentElement.cloneNode(true); $$("button", el).forEach(x => x.remove());
-  navigator.clipboard.writeText(el.textContent.trim()).then(() => { b.textContent = "Copié"; setTimeout(() => b.textContent = "Copier", 1400); });
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => { b.textContent = "✓ Copié"; toast("Copié ✓"); setTimeout(() => b.textContent = "Copier", 1400); });
 });
 const classeType = t => "t-" + (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
 const pastilleType = p => p.type_contenu ? `<span class="type-c ${classeType(p.type_contenu)}">${esc(p.type_contenu)}</span>` : "";
@@ -1322,19 +1431,15 @@ function ouvreReel(cle, onglet) {
     <div class="onglets" role="tablist">${onglets.map(o => `<button role="tab" aria-selected="${o === onglet}" data-onglet="${o}">${LIB_ONGLETS[o] || o}</button>`).join("")}</div>
     <div class="t-corps">${corpsOnglet(p, onglet)}</div>
     <div class="actions-t">
-      ${(() => { const pub = (S.pubs || []).find(x => x.inspiration?.cle === p.cle);
-        const creer = adapte(p) ? `<button class="btn ${pub ? "" : "prim"}" data-studio="${esc(p.cle)}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Créer le contenu</button>` : "";
-        return pub ? `<button class="btn prim" onclick="fermeTiroir();va('resultats')">✓ Publié — voir les résultats</button>${creer}`
-                   : adapte(p) ? `${creer}<button class="btn" data-publie="${esc(p.cle)}">J'ai publié</button>` : ""; })()}
-      ${p.url ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Voir l'original</a>` : ""}
-      ${adapte(p) ? `<button class="btn" data-adapter="${esc(p.cle)}">Refaire l'adaptation</button>` : ""}
+      ${actionsReel(p)}
       <form class="publie-form" id="publie-form" hidden>
         <input id="publie-url" type="url" placeholder="Colle le lien de ton Reel publié (instagram.com/reel/…)" aria-label="Lien de ton Reel publié">
         <button class="btn prim">Suivre ce Reel</button>
         <span class="aide">Les vues et commentaires seront relevés automatiquement maintenant, à J+2 et à J+7.</span>
       </form>
     </div>`;
-  $("[data-publie]", t)?.addEventListener("click", () => { $("#publie-form").hidden = false; $("#publie-url").focus(); });
+  $$("[data-publie]", t).forEach(b => b.addEventListener("click", () => { fermeMenus(); $("#publie-form").hidden = false; $("#publie-url").focus(); }));
+  if (!S.optionsStudio && !S.chargeStudioTiroir) { S.chargeStudioTiroir = 1; api("/api/studio").then(st => { S.optionsStudio = st; if (S.ouvert === cle) ouvreReel(cle, onglet); }).catch(() => {}); }
   $("#publie-form", t).onsubmit = async e => { e.preventDefault();
     try { await api("/api/publications", {method: "POST", body: {analyse_id: S.analyse.id, cle: p.cle, url: $("#publie-url").value}});
       await chargePubs(); toast("C'est noté : ce Reel est suivi"); ouvreReel(cle, onglet);
@@ -1344,6 +1449,30 @@ function ouvreReel(cle, onglet) {
   $$("[data-studio]", t).forEach(b => b.addEventListener("click", () => choisirFormat(p.cle)));
   t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
 }
+// Pied de la fiche : une seule grande action, le reste dans le menu « ⋯ »
+const ICO_CREER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>';
+function actionsReel(p) {
+  const pub = (S.pubs || []).find(x => x.inspiration?.cle === p.cle);
+  const proj = (S.optionsStudio?.projets || []).filter(x => x.cle === p.cle && x.statut !== "erreur")[0];
+  const ok = adapte(p), menu = [];
+  let principal = "";
+  if (pub) principal = `<button class="btn prim grand" onclick="fermeTiroir();va('resultats')">✓ Publié : voir les résultats</button>`;
+  else if (proj) principal = `<button class="btn prim grand" onclick="fermeTiroir();ouvreProjet('${esc(proj.id)}')">${ICO_CREER}Ouvrir mon contenu</button><button class="btn" data-publie>J'ai publié</button>`;
+  else if (ok) principal = `<button class="btn prim grand" data-studio="${esc(p.cle)}">${ICO_CREER}Créer le contenu</button>`;
+  if (ok && (pub || proj)) menu.push(`<button role="menuitem" data-studio="${esc(p.cle)}">Créer une autre version</button>`);
+  if (ok && !pub && !proj) menu.push(`<button role="menuitem" data-publie>J'ai déjà publié ce contenu</button>`);
+  if (p.url) menu.push(`<a role="menuitem" href="${esc(p.url)}" target="_blank" rel="noopener">Voir le post original</a>`);
+  if (ok) menu.push(`<button role="menuitem" data-adapter="${esc(p.cle)}">Refaire l'adaptation</button>`);
+  if (!principal) return p.url ? `<a class="btn grand" href="${esc(p.url)}" target="_blank" rel="noopener">Voir le post original</a>` : "";
+  return principal + (menu.length ? `<div class="menu-plus"><button class="btn carre" data-menu-plus aria-haspopup="menu" aria-expanded="false" aria-label="Plus d'actions">⋯</button><div class="menu-liste" role="menu" hidden>${menu.join("")}</div></div>` : "");
+}
+function fermeMenus() { $$(".menu-liste").forEach(m => { m.hidden = true; m.previousElementSibling?.setAttribute("aria-expanded", "false"); }); }
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-menu-plus]");
+  if (b) { const m = b.nextElementSibling, ouvrir = m.hidden; fermeMenus(); m.hidden = !ouvrir; b.setAttribute("aria-expanded", ouvrir); return; }
+  if (!e.target.closest(".menu-liste") || e.target.closest("[role=menuitem]")) setTimeout(fermeMenus, 0);
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") fermeMenus(); });
 // Aide « que faire ici ? » en haut de chaque onglet (masquable, mémorisée dans le navigateur)
 function guide(id, titre, etapes) {
   try { if (localStorage.getItem("guide-" + id)) return ""; } catch {}
@@ -1399,34 +1528,66 @@ function urlEmbed(p) {
   if (m) return `https://www.tiktok.com/embed/v2/${m[1]}`;
   return null;
 }
+const etapeC = (n, titre, aide, contenu) => `<section class="et-c"><div class="et-t"><span class="et-n">${n}</span><div><h3>${titre}</h3>${aide ? `<p>${aide}</p>` : ""}</div></div><div class="et-corps">${contenu}</div></section>`;
+function texteComplet(p) {
+  const ad = p.adaptation || {}, l = [];
+  const hook = ad.hook_viral || (ad.hooks_adaptes || [])[0];
+  if (hook) l.push("HOOK\n" + hook);
+  if ((ad.slides_modele || []).length && estCarrousel(p)) l.push("SLIDES\n" + ad.slides_modele.map((x, i) => `${i + 1}. ${x.adapte}${x.photo ? `  [photo : ${x.photo}]` : ""}`).join("\n"));
+  else {
+    if (ad.idee_visuelle) l.push("3 PREMIÈRES SECONDES\n" + ad.idee_visuelle);
+    if (ad.texte_ecran_adapte) l.push("TEXTE À L'ÉCRAN\n" + ad.texte_ecran_adapte);
+    if (ad.script_reel) l.push("SCRIPT\n" + ad.script_reel);
+  }
+  if (ad.legende_reprise || ad.legende_adaptee) l.push("LÉGENDE\n" + (ad.legende_reprise || ad.legende_adaptee));
+  return l.join("\n\n");
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-tout-copier]"); if (!b) return;
+  const p = S.analyse?.posts.find(x => x.cle === b.dataset.toutCopier); if (!p) return;
+  navigator.clipboard.writeText(texteComplet(p)).then(() => { b.textContent = "✓ Tout est copié"; toast("Copié : colle-le dans tes notes"); setTimeout(() => b.textContent = "Tout copier d'un coup", 1800); });
+});
 function corpsOnglet(p, o) {
   const ad = p.adaptation || {};
   if (o === "Vidéo") return `
     <div class="lecteur"><iframe src="${esc(urlEmbed(p))}" title="Vidéo originale de @${esc(p.compte)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
     <p class="aide" style="text-align:center">La vidéo ne s'affiche pas ? Elle a peut-être été supprimée ou rendue privée. <a href="${esc(p.url)}" target="_blank" rel="noopener">L'ouvrir sur ${esc(p.plateforme)}</a></p>`;
+  const pert = `<p class="pertinence">Transposabilité à ta niche <span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
+  const variantes = (titre, liste) => liste.length ? `<details class="variantes"><summary>${titre} (${liste.length})</summary><div class="hooks">${liste.map(h => copiable(h)).join("")}</div></details>` : "";
+  const legendes = () => {
+    const principale = ad.legende_reprise || ad.legende_adaptee;
+    return `${copiable(principale)}${ad.legende_reprise && ad.legende_reprise !== p.legende ? '<p class="aide-et">Traduite fidèlement de l\'original.</p>' : ""}
+      ${ad.legende_reprise && ad.legende_adaptee ? variantes("Variante adaptée à ta niche", [ad.legende_adaptee]) : ""}`;
+  };
+  const toutCopier = `<div class="tout-copier"><button class="btn prim" data-tout-copier="${esc(p.cle)}">Tout copier d'un coup</button><span>Hook, ${estCarrousel(p) ? "slides" : "texte à l'écran, script"} et légende, prêts à coller dans tes notes.</span></div>`;
   if (o === "Adaptation" && estCarrousel(p) && (ad.slides_modele || []).length) return `
-    <div class="bandeau-studio"><div><b>Reproduis ce carrousel</b><span>Les ${ad.slides_modele.length} slides sont réécrites pour toi. Il te faut ${ad.slides_modele.filter(x => x.photo).length} photo${ad.slides_modele.filter(x => x.photo).length > 1 ? "s" : ""}.</span></div><button class="btn prim" data-studio="${esc(p.cle)}">Créer ce carrousel</button></div>
-    <h3>Slide par slide</h3>
-    <ol class="slides-modele">${ad.slides_modele.map((x, i) => `<li><span class="n">${i + 1}</span><div>
+    ${pert}
+    ${etapeC(1, "Tes slides", `${ad.slides_modele.length} slides réécrites pour toi. Il te faut ${ad.slides_modele.filter(x => x.photo).length} photo${ad.slides_modele.filter(x => x.photo).length > 1 ? "s" : ""}.`, `
+      <ol class="slides-modele">${ad.slides_modele.map((x, i) => `<li><span class="n">${i + 1}</span><div>
       ${copiable(x.adapte)}
       ${x.original ? `<p class="orig">Original : ${esc(x.original)}</p>` : ""}
       ${x.photo ? `<p class="photo">📷 ${esc(x.photo)}</p>` : '<p class="photo">Fond uni, sans photo</p>'}</div></li>`).join("")}</ol>
-    ${ad.style_visuel ? `<h3>Style du modèle</h3><p>${esc(ad.style_visuel)}</p>` : ""}
-    ${ad.legende_reprise ? `<h3>Légende à reprendre${ad.legende_reprise !== p.legende ? " (traduite)" : ""}</h3>${copiable(ad.legende_reprise)}` : ""}
-    <h3>${ad.legende_reprise ? "Légende adaptée (variante)" : "Légende"}</h3>${copiable(ad.legende_adaptee)}
-    <h3>Autres hooks possibles</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
-    <h3>Transposabilité à ta niche</h3><p><span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
-  if (o === "Adaptation") return `
-    ${blocSon(p)}
-    ${ad.hook_viral ? `<h3>Hook viral à reprendre${ad.langue_originale && ad.hook_viral !== ad.hook_original ? ` (traduit de l'${esc(ad.langue_originale)})` : ""}</h3><div class="hooks">${copiable(ad.hook_viral)}</div>
-      ${ad.hook_viral !== ad.hook_original ? `<p style="margin:6px 0 0;color:var(--ink-3);font-size:13.5px">Original : ${esc(ad.hook_original)}</p>` : ""}` : ""}
-    ${ad.legende_reprise ? `<h3>Légende à reprendre${ad.legende_reprise !== p.legende ? " (traduite)" : ""}</h3>${copiable(ad.legende_reprise)}` : ""}
-    <h3>${ad.hook_viral ? "Variantes adaptées à ta niche" : "Tes hooks"}</h3><div class="hooks">${(ad.hooks_adaptes || []).map(h => copiable(h)).join("")}</div>
-    ${ad.texte_ecran_adapte ? `<h3>Texte à l'écran</h3>${copiable(ad.texte_ecran_adapte)}` : ""}
-    <h3>Script du Reel</h3>${copiable(ad.script_reel)}
-    <div class="deux"><div><h3>Format</h3><p>${esc(ad.format_conseille)}</p></div><div><h3>3 premières secondes</h3><p>${esc(ad.idee_visuelle)}</p></div></div>
-    <h3>${ad.legende_reprise ? "Légende adaptée (variante)" : "Légende"}</h3>${copiable(ad.legende_adaptee)}
-    <h3>Transposabilité à ta niche</h3><p><span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
+      ${ad.style_visuel ? `<p class="aide-et"><b>Style du modèle :</b> ${esc(ad.style_visuel)}</p>` : ""}
+      ${variantes("Autres hooks possibles pour la 1re slide", ad.hooks_adaptes || [])}`)}
+    ${etapeC(2, "Ta légende", "À coller sous ton carrousel.", legendes())}
+    ${toutCopier}`;
+  if (o === "Adaptation") {
+    const hook = ad.hook_viral || (ad.hooks_adaptes || [])[0] || "";
+    const autres = ad.hook_viral ? (ad.hooks_adaptes || []) : (ad.hooks_adaptes || []).slice(1);
+    return `
+    ${pert}
+    ${etapeC(1, "Ton hook", ad.hook_viral ? `Celui qui a fait exploser le Reel${ad.langue_originale && ad.hook_viral !== ad.hook_original ? `, traduit de l'${esc(ad.langue_originale)}` : ""}. Dis-le dans la première seconde.` : "À dire dans la première seconde.", `
+      ${copiable(hook)}
+      ${ad.hook_viral && ad.hook_viral !== ad.hook_original ? `<p class="aide-et">Original : ${esc(ad.hook_original)}</p>` : ""}
+      ${variantes(ad.hook_viral ? "Variantes adaptées à ta niche" : "Autres hooks", autres)}`)}
+    ${etapeC(2, "Ton tournage", "Ce qu'on voit, ce qu'on entend, ce que tu dis.", `
+      ${blocSon(p)}
+      <div class="deux"><div><h4>3 premières secondes</h4><p>${esc(ad.idee_visuelle)}</p></div><div><h4>Format</h4><p>${esc(ad.format_conseille)}</p></div></div>
+      ${ad.texte_ecran_adapte ? `<h4>Texte à l'écran</h4>${copiable(ad.texte_ecran_adapte)}` : ""}
+      <h4>Script</h4>${copiable(ad.script_reel)}`)}
+    ${etapeC(3, "Ta légende", "À coller sous ton Reel au moment de publier.", legendes())}
+    ${toutCopier}`;
+  }
   if (o === "Séquence DM") return `
     <h3>Appel à l'action</h3>${copiable(ad.cta_conversation)}
     <h3>Messages privés</h3>
@@ -1510,6 +1671,7 @@ function renduVoix() {
 async function chargePubs() { try { const r = await api("/api/publications"); S.pubs = r.publications; S.bilan = r.bilan; } catch { S.pubs = S.pubs || []; } }
 async function renduResultats() {
   const el = $("#resultats");
+  if (!el.innerHTML.trim()) el.innerHTML = squelette("lignes", 6);
   await chargePubs();
   const ap = S.analyse?.apprentissage, pubsL = S.pubs || [], bi = S.bilan || {};
   const der = p => p.releves?.length ? p.releves[p.releves.length - 1] : {};
@@ -1555,7 +1717,7 @@ async function renduResultats() {
   el.innerHTML = html;
   $("#pub-ajout").onsubmit = async e => { e.preventDefault(); try { await api("/api/publications", {method: "POST", body: {url: $("#pub-url").value}}); toast("Reel ajouté au suivi"); renduResultats(); } catch (err) { toast(err.message); } };
   $("#pub-maj")?.addEventListener("click", async () => { try { const r = await api("/api/publications/maj", {method: "POST"}); toast("Mise à jour lancée"); suisJob(r.job, false, async () => { toast("Chiffres mis à jour"); renduResultats(); }); } catch (err) { toast(err.message); } });
-  $$("[data-pub]", el).forEach(i => i.onchange = async () => { try { await api("/api/publications/" + i.dataset.pub, {method: "PATCH", body: {[i.dataset.champ]: i.value}}); await chargePubs(); toast("Enregistré"); } catch (err) { toast(err.message); } });
+  $$("[data-pub]", el).forEach(i => i.onchange = async () => { try { await api("/api/publications/" + i.dataset.pub, {method: "PATCH", body: {[i.dataset.champ]: i.value}}); await chargePubs(); toast("Enregistré ✓"); } catch (err) { toast(err.message); } });
   $$("[data-retire-pub]", el).forEach(b => b.onclick = async () => { await api("/api/publications/" + b.dataset.retirePub, {method: "DELETE"}); renduResultats(); });
 }
 
@@ -1793,6 +1955,7 @@ async function choisirFormat(cle) {
 async function renduStudio() {
   const el = $("#studio");
   if (S.projetId) return renduProjet();
+  if (!S.optionsStudio?.projets) el.innerHTML = squelette("cartes", 4);
   const r = await api("/api/studio");
   S.optionsStudio = r;
   if (S.vue !== "studio" || S.projetId) return;
@@ -1831,9 +1994,10 @@ async function renduStudio() {
     </article>`).join("")}</div>`;
   brancheVierge();
   $$("[data-projet]", el).forEach(b => b.onclick = () => ouvreProjet(b.dataset.projet));
-  $$("[data-suppr]", el).forEach(b => b.onclick = async () => {
-    if (!confirm("Supprimer cette création et ses fichiers ?")) return;
-    await api("/api/studio/" + b.dataset.suppr, {method: "DELETE"}); renduStudio();
+  $$("[data-suppr]", el).forEach(b => b.onclick = () => {
+    const sid = b.dataset.suppr, carte = b.closest("article"); if (carte) carte.hidden = true;
+    toastAnnuler("Création supprimée", () => { if (carte) carte.hidden = false; },
+      () => fetch("/api/studio/" + sid, {method: "DELETE", keepalive: true}).then(() => { if (S.optionsStudio) S.optionsStudio.projets = (S.optionsStudio.projets || []).filter(x => x.id !== sid); }));
   });
 }
 async function ouvreProjet(sid, depuisHistorique) {
@@ -2036,7 +2200,7 @@ function renduProjet() {
             <div class="ap-cadre ${p.type}"><img id="st-apercu" alt="Aperçu de la slide"><span class="ap-charge" id="ap-charge"></span></div>
             ${n > 1 ? `<div class="ap-nav"><button class="btn petit" id="ap-prec" aria-label="Slide précédente">←</button><button class="btn petit" id="ap-suiv" aria-label="Slide suivante">→</button></div>` : ""}</div>`; })() : ""}
         <div class="st-bloc st-final" id="st-final">
-          ${enCours ? `<div class="st-attente"><span class="spin gros"></span><b id="st-phrase">${esc(tache?.phrase || "Création en cours…")}</b><p class="aide">Tu peux continuer à naviguer : je te préviens quand c'est prêt.</p></div>`
+          ${enCours ? `<div class="st-attente"><span class="spin gros"></span><b id="st-phrase">${esc(tache?.phrase || "Création en cours…")}</b>${tache ? (() => { const pr = progStudio(tache); return `<div class="st-barre" id="st-barre" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pr.pct}"><i style="width:${pr.pct}%"></i></div><span class="aide" id="st-reste">${pr.texte}</span>`; })() : ""}<p class="aide">Tu peux continuer à naviguer : je te préviens quand c'est prêt.</p></div>`
             : p.statut === "erreur" ? `<p class="erreur">${esc(p.erreur || "La création a échoué.")}</p><button class="btn prim large" id="st-generer">Réessayer</button>`
             : resultat || `<h3>Prêt à créer ?</h3><p class="aide">${p.type === "carrousel" ? `${p.slides.length} slides, ${p.images.length} photo${p.images.length > 1 ? "s" : ""}.` : avecVideo ? "Ta vidéo sera recadrée en 9:16 avec le hook et les sous-titres." : p.images.length ? `Diaporama de ${p.slides.length} plans avec tes photos.` : "Ajoute ta vidéo ou des photos."}</p>
               <button class="btn prim large" id="st-generer" ${p.type === "reel" && !avecVideo && !p.images.length && !p.slides.length ? "disabled" : ""}>${p.type === "carrousel" ? "Créer mon carrousel" : avecVideo ? "Monter mon Reel" : "Créer mon diaporama"}</button>
@@ -2192,6 +2356,20 @@ async function genereProjet() {
     S.tacheStudio = {id: r.job, sid: S.projet.id, titre: "Création", phrase: "Je m'en occupe…"}; renduProjet(); suisTacheStudio(r.job);
   } catch (e) { toast(e.message); }
 }
+// Barre de progression estimée : durée typique selon la tâche, avance plus lentement en fin de course
+function progStudio(t) {
+  if (!t) return null;
+  t.debut ||= Date.now();
+  const titre = t.titre || "", reel = S.projet?.type === "reel" && S.projet?.video;
+  const tau = /slides|écriture/i.test(titre) ? 12 : /images/i.test(titre) ? 9 : reel ? 35 : 8;
+  const ecoule = (Date.now() - t.debut) / 1000, pct = Math.min(96, Math.round(100 * (1 - Math.exp(-ecoule / tau))));
+  const reste = Math.max(0, Math.round(tau * 3 - ecoule));
+  return {pct, texte: pct >= 90 || reste < 5 ? "Presque fini…" : reste < 60 ? `Encore ${Math.max(5, Math.round(reste / 5) * 5)} s environ` : `Encore ${Math.round(reste / 60)} min environ`};
+}
+function majBarreStudio() {
+  const pr = progStudio(S.tacheStudio); if (!pr || !$("#st-barre")) return;
+  $("#st-barre i").style.width = pr.pct + "%"; $("#st-reste").textContent = pr.texte;
+}
 function suisTacheStudio(jid) {
   clearInterval(S.pollStudio);
   const sid = S.projetId;
@@ -2200,6 +2378,7 @@ function suisTacheStudio(jid) {
     const dernier = (j.logs || []).slice(-1)[0];
     if (S.tacheStudio) { S.tacheStudio.titre = j.titre; if (dernier) S.tacheStudio.phrase = dernier.m.replace(/^[\s✅⚠️]+/u, ""); }
     if ($("#st-phrase") && dernier) $("#st-phrase").textContent = S.tacheStudio.phrase;
+    majBarreStudio();
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.pollStudio); S.tacheStudio = null;
       if (j.statut === "erreur") toast("Studio : " + j.erreur);
@@ -2810,7 +2989,7 @@ async function chargeBoutique(stripe) {
 async function renduBoutique() {
   const el = $("#boutique");
   if (!BQ.etat) {
-    el.innerHTML = '<p class="vide" style="padding:30px 0">Chargement de ta boutique…</p>';
+    el.innerHTML = squelette("lignes", 6);
     try { await chargeBoutique(); } catch (e) { el.innerHTML = `<p class="vide">${esc(e.message)}</p>`; return; }
   }
   chargePolicesEditeur();
@@ -3001,15 +3180,26 @@ function remplitThemes(zone, ambiance, actif, palette) {
 
 // ---------------------------------------------------------------- Éditeur
 const ONGLETS_BQ = [["contenu", "Contenu"], ["design", "Design"], ["produits", "Produits"], ["emails", "E-mails"], ["kit", "Kit média"], ["stats", "Statistiques"]];
+const ONGLETS_AVANCES = ["emails", "kit"];
+// Mode simple par défaut : l'essentiel seulement. Le mode avancé (mémorisé dans le navigateur) montre toutes les options.
+BQ.avance = (() => { try { return localStorage.getItem("bt-avance") === "1"; } catch { return false; } })();
+function basculeAvance(v) {
+  BQ.avance = v; try { localStorage.setItem("bt-avance", v ? "1" : "0"); } catch {}
+  if (!v && ONGLETS_AVANCES.includes(BQ.onglet)) BQ.onglet = "contenu";
+  renduEditeur($("#boutique")); toast(v ? "Mode avancé : toutes les options sont visibles" : "Mode simple : l'essentiel seulement");
+}
 function renduEditeur(el) {
   const p = BQ.page, url = BQ.etat.url;
+  if (ONGLETS_AVANCES.includes(BQ.onglet) && !BQ.avance) { BQ.avance = true; try { localStorage.setItem("bt-avance", "1"); } catch {} }
+  el.classList.toggle("bt-simple", !BQ.avance);
   el.innerHTML = `
     <div class="bt-haut">
       <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button><button class="btn petit" id="bt-qr" title="QR code">QR</button></div>
       <label class="bt-publie"><input type="checkbox" id="bt-publie" ${p.publie ? "checked" : ""}><span>${p.publie ? "En ligne" : "Brouillon"}</span></label>
+      <label class="bt-mode" title="Afficher toutes les options"><input type="checkbox" id="bt-avance" ${BQ.avance ? "checked" : ""}><span>Mode avancé</span></label>
       <span class="bt-statut" id="bt-statut"></span>
     </div>
-    <div class="seg bt-onglets" role="tablist">${ONGLETS_BQ.map(([k, t]) => `<button role="tab" aria-pressed="${k === BQ.onglet}" data-onglet="${k}">${t}</button>`).join("")}</div>
+    <div class="seg bt-onglets" role="tablist">${ONGLETS_BQ.filter(([k]) => BQ.avance || !ONGLETS_AVANCES.includes(k)).map(([k, t]) => `<button role="tab" aria-pressed="${k === BQ.onglet}" data-onglet="${k}">${t}</button>`).join("")}</div>
     <div class="bt-grille"><div id="bt-panneau"></div>
       <aside class="bt-droite"><div class="bt-tel"><iframe id="bt-ap" title="Aperçu de ta page"></iframe></div>
         <div class="seg bt-ap-nav" id="bt-ap-nav"></div></aside></div>
@@ -3020,6 +3210,7 @@ function renduEditeur(el) {
   $("#bt-publie").onchange = e => { p.publie = e.target.checked; e.target.nextElementSibling.textContent = p.publie ? "En ligne" : "Brouillon";
     $(".bt-url .pastille").classList.toggle("off", !p.publie); sauveBoutique(true); toast(p.publie ? "Ta page est en ligne" : "Ta page est masquée"); };
   $("#bt-qr").onclick = ouvreQR;
+  $("#bt-avance").onchange = e => basculeAvance(e.target.checked);
   $("#bt-voir").onclick = () => { $("#bt-ap2").srcdoc = BQ.html; $("#bt-plein").classList.add("ouvert"); };
   $("#bt-fermer-ap").onclick = () => $("#bt-plein").classList.remove("ouvert");
   BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page";
@@ -3055,6 +3246,7 @@ function modifieBoutique(rendu) {
 }
 function sauveBoutique(immediat) {
   clearTimeout(BQ.tSauve);
+  if (S.annulable?.boutique && !S.annulable.fait) { S.annulable.fait = true; clearTimeout(S.annulable.timer); S.annulable = null; $("#toast").classList.remove("vu"); }
   const st = $("#bt-statut"); if (st) st.textContent = "Modifications en cours…";
   return new Promise(res => {
     BQ.tSauve = setTimeout(async () => {
@@ -3096,7 +3288,7 @@ function ongletContenu(z) {
         <label class="bt-depot">${p.couverture ? `<img src="${urlImg(p.couverture)}" alt="">` : "🖼️"}<span>${p.couverture ? "Changer l'image de couverture" : "Ajoute une image de couverture (sinon ta photo est utilisée)"}</span><input type="file" accept="image/*" data-envoi="couverture"></label>
         ${p.couverture ? `<button class="lien" data-retire="couverture" style="justify-self:start">Retirer la couverture</button>` : ""}</div>` : ""}
     </section>
-    <section class="bt-sec"><label class="bt-interr" style="padding:0"><span><b>Montrer ma boutique en exemple</b><br><small style="color:var(--ink-3)">Elle peut apparaître sur la page d'accueil de Veille virale (avec un lien vers elle) : de la visibilité en plus. Il faut une photo de profil.</small></span><input type="checkbox" id="bt-exemple" ${p.exemple ? "checked" : ""}></label></section>
+    <section class="bt-sec avance"><label class="bt-interr" style="padding:0"><span><b>Montrer ma boutique en exemple</b><br><small style="color:var(--ink-3)">Elle peut apparaître sur la page d'accueil de Veille virale (avec un lien vers elle) : de la visibilité en plus. Il faut une photo de profil.</small></span><input type="checkbox" id="bt-exemple" ${p.exemple ? "checked" : ""}></label></section>
     <section class="bt-sec"><h3>Réseaux sociaux</h3><p class="aide">Les icônes sous ton nom.</p>
       <div class="bt-reseaux">${Object.entries(res).map(([k, v]) => `<div class="bt-res">${svgRes(k)}<input data-r="${k}" value="${esc(v)}" placeholder="${esc(AIDE_RES[k] || "")}" aria-label="${esc(BQ.etat.options.reseaux[k])}"><button class="icone-btn" data-retire-res="${k}" aria-label="Retirer ${esc(BQ.etat.options.reseaux[k])}">✕</button></div>`).join("") || '<p class="aide" style="margin:0">Aucun réseau pour l\'instant.</p>'}</div>
       ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
@@ -3118,7 +3310,8 @@ function ongletContenu(z) {
     if (a === "haut" && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
     if (a === "bas" && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
     if (a === "voir") L[i].visible = L[i].visible === false;
-    if (a === "suppr") { if (!confirm("Supprimer ce bloc ?")) return; L.splice(i, 1); }
+    if (a === "suppr") { const [retire] = L.splice(i, 1); renduOnglet(); apercu();
+      return toastAnnuler("Bloc supprimé", () => { L.splice(i, 0, retire); renduOnglet(); apercu(); }, () => sauveBoutique(true), 5000, {boutique: true}); }
     if (a === "ouvrir") renduOnglet(); else modifieBoutique(true);
   });
 }
@@ -3287,14 +3480,14 @@ function ongletDesign(z) {
     verre: "background:rgba(255,255,255,.45)!important;border:1px solid rgba(255,255,255,.7)", flottant: "box-shadow:0 14px 18px -10px rgba(0,0,0,.55)", sans: "background:transparent!important"};
   const DECOR_EX = {aucun: "∅", etincelles: "✦ ✧", bulles: "◯", confettis: "🎉", coeurs: "♥ ♥", formes: "◇ ○"};
   z.innerHTML = `
-    <nav class="bt-saut">${[["th", "Thèmes"], ["en", "En-tête"], ["ph", "Photo"], ["fo", "Fond"], ["co", "Couleurs"], ["ty", "Typo"], ["bo", "Boutons"], ["pr", "Produits"], ["de", "Décor"]].map(([i, l]) => `<button data-saut="bt-s-${i}">${l}</button>`).join("")}</nav>
+    <nav class="bt-saut">${[["th", "Thèmes"], ["en", "En-tête", 1], ["ph", "Photo"], ["fo", "Fond", 1], ["co", "Couleurs"], ["ty", "Typo", 1], ["bo", "Boutons"], ["pr", "Produits", 1], ["de", "Décor", 1]].map(([i, l, av]) => `<button data-saut="bt-s-${i}" ${av ? 'class="avance"' : ""}>${l}</button>`).join("")}</nav>
     <section class="bt-sec" id="bt-s-th"><h3>Thèmes <button class="btn petit" id="bt-surprise" style="margin-left:auto">🎲 Surprends-moi</button></h3><p class="aide">Un look complet en un clic. Tout reste modifiable en dessous.</p>
       <div class="seg" style="margin-bottom:12px;max-width:100%;overflow-x:auto">${o.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
       <p class="aide" style="margin:-4px 0 6px">${o.themes.filter(t => t.ambiance === amb).length} thèmes ${({Classique: "classiques", Vibrant: "vibrants", Cosy: "cosy", Audacieux: "audacieux", "Créatif": "créatifs"})[amb] || ""} · fais défiler <span style="float:right"><button class="btn petit" data-defile="-1" aria-label="Thèmes précédents">←</button> <button class="btn petit" data-defile="1" aria-label="Thèmes suivants">→</button></span></p>
       <div class="bt-themes" id="bt-themes"></div>
       ${BQ.palettes || BQ.page.photo ? `<p class="bt-sous-titre">✨ Couleurs tirées de ta photo</p><div class="bt-palettes" id="bt-palettes">${(BQ.palettes || []).map((p, i) => paletteHTML(p, i)).join("") || '<span class="aide">Calcul…</span>'}</div>` : ""}
     </section>
-    <section class="bt-sec" id="bt-s-en"><h3>En-tête</h3><p class="aide">La disposition du haut de ta page.</p>
+    <section class="bt-sec avance" id="bt-s-en"><h3>En-tête</h3><p class="aide">La disposition du haut de ta page.</p>
       <div class="bt-choix">${Object.entries(o.entetes).map(([k, l]) => opt("entete", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${d.accent.slice(0, 7)}">${SCHEMAS_ENTETE[k]}</svg>`, l)).join("")}</div>
     </section>
     <section class="bt-sec" id="bt-s-ph"><h3>Photo de profil</h3>
@@ -3303,7 +3496,7 @@ function ongletDesign(z) {
       <p class="bt-sous-titre">Taille</p>${curseur("photo_taille", 64, 200, " px")}
       <label class="bt-interr"><span>Contour coloré</span><input type="checkbox" data-d="photo_contour" ${d.photo_contour ? "checked" : ""}></label>
     </section>
-    <section class="bt-sec" id="bt-s-fo"><h3>Fond</h3>
+    <section class="bt-sec avance" id="bt-s-fo"><h3>Fond</h3>
       <div class="bt-choix">${Object.entries(o.fonds).map(([k, l]) => opt("fond_type", k, apercuFond(k, d), l)).join("")}</div>
       ${d.fond_type === "motif" ? `<p class="bt-sous-titre">Motif</p><div class="bt-rangee">${Object.entries(o.motifs).map(([k, l]) => `<button class="btn petit" data-dset="motif" data-v="${k}" aria-pressed="${d.motif === k}" style="${d.motif === k ? "border-color:var(--ink);font-weight:700" : ""}">${l}</button>`).join("")}</div>` : ""}
       ${d.fond_type === "image" ? `<p class="bt-sous-titre">Image de fond</p><label class="bt-depot">${d.fond_image ? `<img src="${urlImg(d.fond_image)}" alt="">` : "🖼️"}<span>${d.fond_image ? "Changer l'image" : "Choisis une image (paysage, texture, ta photo…)"}</span><input type="file" accept="image/*" data-envoi="fond_image"></label>
@@ -3313,9 +3506,9 @@ function ongletDesign(z) {
     <section class="bt-sec" id="bt-s-co"><h3>Couleurs</h3>
       <p class="bt-sous-titre" style="margin-top:0">En-tête</p><div class="bt-couleurs">${couleur("texte", "Texte et icônes")}${couleur("accent", "Couleur d'accent")}</div>
       <p class="bt-sous-titre">Boutons de liens</p><div class="bt-couleurs">${couleur("bouton_fond", "Fond")}${couleur("bouton_texte", "Texte")}${couleur("bouton_ombre", "Ombre ou bordure")}</div>
-      <p class="bt-sous-titre">Cartes (produits, formulaire)</p><div class="bt-couleurs">${couleur("bloc_fond", "Fond")}${couleur("bloc_texte", "Texte")}</div>
+      <div class="avance"><p class="bt-sous-titre">Cartes (produits, formulaire)</p><div class="bt-couleurs">${couleur("bloc_fond", "Fond")}${couleur("bloc_texte", "Texte")}</div></div>
     </section>
-    <section class="bt-sec" id="bt-s-ty"><h3>Typographie</h3>
+    <section class="bt-sec avance" id="bt-s-ty"><h3>Typographie</h3>
       <p class="bt-sous-titre" style="margin-top:0">Titres</p>
       <div class="bt-polices">${o.polices.map(p => `<button class="bt-police" data-dset="police_titre" data-v="${esc(p.nom)}" aria-pressed="${d.police_titre === p.nom}"><b style="font-family:'${esc(p.nom)}'">Aa Bb</b><small>${esc(p.nom)}</small></button>`).join("")}</div>
       <p class="bt-sous-titre">Taille du nom</p>
@@ -3328,15 +3521,15 @@ function ongletDesign(z) {
       <div class="bt-choix larges">${Object.entries(o.boutons).map(([k, l]) => optP("bouton_style", k, exBtn(k, d.bouton_forme), l)).join("")}</div>
       <p class="bt-sous-titre">Forme</p>
       <div class="bt-choix larges">${Object.entries(o.formes_bouton).map(([k, l]) => optP("bouton_forme", k, exBtn(d.bouton_style, k), l)).join("")}</div>
-      <p class="bt-sous-titre">Arrondi des coins</p>${curseur("rayon", 0, 40, " px")}
+      <div class="avance"><p class="bt-sous-titre">Arrondi des coins</p>${curseur("rayon", 0, 40, " px")}
       <button class="btn petit" data-dset="rayon" data-v="999">Bords ronds au maximum</button>
       <p class="bt-sous-titre">Taille</p>${puces("bouton_taille", o.tailles_bouton)}
       <p class="bt-sous-titre">Texte</p>${puces("alignement", o.alignements)}
       <p class="bt-sous-titre">Effet au survol</p>${puces("survol", o.survols)}
       <p class="bt-sous-titre">Animation du lien mis en avant</p>${puces("animation", o.animations)}
-      <label class="bt-interr" style="margin-top:8px"><span>Apparition en douceur des blocs</span><input type="checkbox" data-d="apparition" ${d.apparition ? "checked" : ""}></label>
+      <label class="bt-interr" style="margin-top:8px"><span>Apparition en douceur des blocs</span><input type="checkbox" data-d="apparition" ${d.apparition ? "checked" : ""}></label></div>
     </section>
-    <section class="bt-sec" id="bt-s-pr"><h3>Produits</h3><p class="aide">La présentation de ta boutique.</p>
+    <section class="bt-sec avance" id="bt-s-pr"><h3>Produits</h3><p class="aide">La présentation de ta boutique.</p>
       <p class="bt-sous-titre" style="margin-top:0">Disposition</p>
       <div class="bt-choix">${Object.entries(o.vues_produits).map(([k, l]) => opt("produits_vue", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${c7("accent")}">${SCHEMAS_VUES[k]}</svg>`, l)).join("")}</div>
       <p class="bt-sous-titre">Forme des images</p>
@@ -3346,9 +3539,10 @@ function ongletDesign(z) {
       <p class="bt-sous-titre">Cadre des cartes</p>
       <div class="bt-choix">${Object.entries(o.cadres_carte).map(([k, l]) => optP("carte_cadre", k, `<i style="display:block;width:52px;height:40px;border-radius:8px;background:${d.bloc_fond};${CADRE_EX[k]}"></i>`, l)).join("")}</div>
     </section>
-    <section class="bt-sec" id="bt-s-de"><h3>Décor</h3><p class="aide">Une touche animée en arrière-plan, discrète.</p>
+    <section class="bt-sec avance" id="bt-s-de"><h3>Décor</h3><p class="aide">Une touche animée en arrière-plan, discrète.</p>
       <div class="bt-choix">${Object.entries(o.decors).map(([k, l]) => optP("decor", k, `<span style="font-size:22px;color:${c7("accent")};letter-spacing:4px;${k === "bulles" ? "filter:blur(1.5px)" : ""}">${DECOR_EX[k]}</span>`, l)).join("")}</div>
-    </section>`;
+    </section>
+    ${BQ.avance ? "" : `<div class="bt-plus-options"><b>Envie d'aller plus loin ?</b><span>En-tête, fond, typographie, présentation des produits, décor animé, arrondis, effets au survol…</span><button class="btn" onclick="basculeAvance(true)">Voir toutes les options</button></div>`}`;
   remplitThemes($("#bt-themes"), amb, d.theme, null);
   lieChamps(z);
   z.querySelectorAll("[data-amb]").forEach(b => b.onclick = () => { BQ.ambiance = b.dataset.amb; renduOnglet(); });
@@ -3568,9 +3762,10 @@ function editeProduit(i, lancerGuide) {
       } catch (e) { toast(e.message); guideEnCours = false; if ($("#pr-guide")) { $("#pr-guide").disabled = false; $("#pr-guide").textContent = "Réessayer"; } }
     });
     $("#pr-suppr")?.addEventListener("click", async () => {
-      if (!confirm("Supprimer ce produit ?")) return;
+      const avantP = [...p.produits], avantB = [...p.blocs];
       p.produits.splice(i, 1); p.blocs = p.blocs.filter(b => !(b.type === "produit" && b.produit === x.id));
-      BQ.vueAp = "page"; fermeModale(); modifieBoutique(true); toast("Produit supprimé");
+      BQ.vueAp = "page"; fermeModale(); renduOnglet(); apercu();
+      toastAnnuler("Produit supprimé", () => { p.produits = avantP; p.blocs = avantB; renduOnglet(); apercu(); }, () => sauveBoutique(true), 5000, {boutique: true});
     });
     $("#pr-ok").onclick = async () => {
       lit();
@@ -3665,7 +3860,8 @@ function ongletEmails(z) {
     <button class="btn" id="sq-ajout">+ Un e-mail</button>`;
   $("#sq-actif").onchange = e => { q.actif = e.target.checked; sauveBoutique(true).then(() => renduOnglet()); toast(q.actif ? "Séquence activée" : "Séquence en pause"); };
   $("#sq-emails").oninput = $("#sq-emails").onchange = e => { const [i, k] = (e.target.dataset.sq || "").split(":"); if (!k) return; q.emails[+i][k] = k === "delai_jours" ? +e.target.value : e.target.value; sauveBoutique(); };
-  z.querySelectorAll("[data-sq-suppr]").forEach(b => b.onclick = () => { if (!confirm("Supprimer cet e-mail ?")) return; q.emails.splice(+b.dataset.sqSuppr, 1); sauveBoutique(true); renduOnglet(); });
+  z.querySelectorAll("[data-sq-suppr]").forEach(b => b.onclick = () => { const k = +b.dataset.sqSuppr, [retire] = q.emails.splice(k, 1); renduOnglet();
+    toastAnnuler("E-mail supprimé", () => { q.emails.splice(k, 0, retire); renduOnglet(); }, () => sauveBoutique(true), 5000, {boutique: true}); });
   z.querySelectorAll("[data-sq-test]").forEach(b => b.onclick = async () => {
     await sauveBoutique(true);
     try { const r = await api("/api/boutique/sequence/test", {method: "POST", body: {i: +b.dataset.sqTest}}); toast("Test envoyé à " + r.email); } catch (e) { toast(e.message); }

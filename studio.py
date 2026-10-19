@@ -138,7 +138,7 @@ def liste(esp: Espace) -> list[dict]:
     for f in sorted(r.glob("*/projet.json"), reverse=True) if r.exists() else []:
         try:
             p = json.loads(f.read_text(encoding="utf-8"))
-            res.append({k: p.get(k) for k in ("id", "cree", "titre", "type", "statut", "miniature", "compte", "fichiers", "zip")})
+            res.append({k: p.get(k) for k in ("id", "cree", "titre", "type", "statut", "miniature", "compte", "cle", "fichiers", "zip")})
         except ValueError:
             continue
     return sorted(res, key=lambda p: p.get("cree") or "", reverse=True)

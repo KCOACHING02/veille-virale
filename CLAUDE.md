@@ -25,6 +25,7 @@ Application web par abonnement (Flask) qui repère les Reels et carrousels Insta
 - `config.exemple.yaml` : modèle d'un nouvel espace client. `config.yaml` : usage local (CLI).
 
 ## Règles
+- UX (`static/index.html`) : sur téléphone, 5 onglets en bas (« Moi » regroupe résultats, profil, comptes, abonnement via `groupes()`). Suppressions avec `toastAnnuler(...)` plutôt que `confirm()`, chargements avec `squelette()`, boutique en mode simple par défaut (classe `avance` pour les options cachées, `BQ.avance`).
 - Ne jamais committer `.env`, `data/`, `rapports/`.
 - Toute nouvelle consommation d'API doit respecter les quotas (`abonnements.peut`) et passer par la file de tâches.
 - Les textes générés ne doivent pas « sonner IA » ; respecter les interdits de la niche de chaque client.
