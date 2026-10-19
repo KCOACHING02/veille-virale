@@ -3016,6 +3016,8 @@ function ongletProduits(z) {
   const type = x => x.type === "rdv" ? "📅 Rendez-vous" : x.type === "pack" ? `🎁 Pack de ${(x.inclus || []).length}` : x.fichier ? "📄 Téléchargement" : x.lien ? "🔗 Lien" : "⚠️ Rien à livrer";
   const promo = x => x.promo_prix && x.promo_fin && new Date(x.promo_fin) > new Date() ? `<span class="prix" style="background:var(--glow-soft);color:var(--glow)">⏳ ${euros(x.promo_prix)}</span>` : "";
   const aRdv = p.produits.some(x => x.type === "rdv");
+  const vides = p.produits.filter(x => x.visible !== false && x.type !== "rdv" && x.type !== "pack" && !x.fichier && !x.lien);
+  if (vides.length) bandeau += `<div class="bt-stripe info"><p><b>${vides.length === 1 ? "1 produit n'a" : vides.length + " produits n'ont"} rien à livrer</b> (${vides.map(x => esc(x.titre || "Sans titre")).join(", ")}) : ajoute le fichier, un lien ou fais écrire le guide par Claude. En attendant, ${vides.length === 1 ? "il s'affiche" : "ils s'affichent"} « bientôt disponible ».</p></div>`;
   z.innerHTML = `${bandeau}
     <section class="bt-sec bt-idees"><h3>✨ Quoi vendre ?</h3><p class="aide">Claude s'appuie sur ta niche, tes Reels qui marchent et ceux qui cartonnent dans ta veille pour te proposer 3 produits, avec la fiche prête et le prix conseillé.</p>
       <div id="bt-idees">${BQ.idees ? ideesHTML(BQ.idees) : `<button class="btn prim" id="bt-lance-idees">Trouve-moi quoi vendre</button>`}</div></section>

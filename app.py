@@ -1130,6 +1130,8 @@ def boutique_obtenir(pseudo, pid):
         prix, err = bv.code_valide(page, p, code, prix)
         if err:
             return jsonify({"erreur": err}), 400
+    if not bv.livrable(page, p):
+        return jsonify({"erreur": "Ce produit n'est pas encore disponible."}), 409
     if prix or not _email_valide(email):
         return jsonify({"erreur": "Indique une adresse e-mail valide."}), 400
     rdv = None
@@ -1150,7 +1152,7 @@ def boutique_inscription(pseudo):
     b = next((x for x in page["blocs"] if x.get("id") == request.form.get("bloc") and x.get("type") == "capture"), {})
     p = next((x for x in page["produits"] if x.get("id") == b.get("produit") and not x.get("prix")), None)
     src = _src(pseudo)
-    if p and (p.get("fichier") or p.get("lien") or p.get("type") == "pack"):
+    if p and bv.livrable(page, p):
         v = _livre(uid, page, pseudo.lower(), p, email, src=src)
         return jsonify({"url": f"{url_site()}/@{pseudo.lower()}/merci?j={v['jeton']}"})
     if bq.ajoute_inscrit(uid, email, (request.form.get("prenom") or "").strip(), b.get("titre") or "formulaire"):
@@ -1164,6 +1166,8 @@ def boutique_acheter(pseudo, pid):
     p = _produit(page, pid)
     pseudo = pseudo.lower()
     f = request.form
+    if not bv.livrable(page, p):
+        return _html(bv.rendu_produit(page, pseudo, p, uid, "Ce produit n'est pas encore disponible."), 409)
     prix = bv.prix_effectif(p)["prix"]
     code = (f.get("code") or "").strip().upper()
     # Offre complémentaire après un achat : prix spécial, valable 2 h avec le jeton de la première commande
@@ -1244,24 +1248,30 @@ def boutique_merci(pseudo):
 
 @app.get("/@<pseudo>/telecharger/<jeton>")
 def boutique_telecharger(pseudo, jeton):
-    uid = bq.uid_de(pseudo.lower())
+    pseudo = pseudo.lower()
+    uid = bq.uid_de(pseudo)
     page = bq.lit_page(uid) if uid else None
-    v = bq.vente_par_jeton(uid, jeton, consomme=True) if page else None
-    if not v:
+    if not page:
         abort(404)
+    v = bq.vente_par_jeton(uid, jeton, consomme=True)
+    if not v:
+        return _html(bq.rendu_message(page, pseudo, "Lien expiré", "Ce lien de téléchargement n'est plus valable (30 jours ou 20 téléchargements). "
+                                      "Réponds à l'e-mail reçu et on te renvoie ton accès."), 404)
     p = next((x for x in page["produits"] if x.get("id") == v["produit"]), None)
     if p and p.get("type") == "pack":  # un produit précis du pack
         cible = request.args.get("p")
         p = next((x for x in page["produits"] if x["id"] == cible and cible in (p.get("inclus") or [])), None)
     if not p:
-        abort(404)
+        return _html(bq.rendu_message(page, pseudo, "Produit introuvable", "Ce produit n'est plus proposé. Écris-nous et on t'aide."), 404)
     if p.get("fichier") and (bq.dossier(uid) / "fichiers" / p["fichier"]).exists():
         return send_from_directory(bq.dossier(uid) / "fichiers", p["fichier"], as_attachment=True,
                                    download_name=p.get("fichier_nom") or p["fichier"], max_age=0)
     u = bq.url_sure(p.get("lien"))
     if u:
         return redirect(u, 302)
-    abort(404)
+    # rien d'attaché pour l'instant : le lien reste valable, il marchera dès que le fichier sera ajouté
+    return _html(bq.rendu_message(page, pseudo, "Presque prêt", f"« {p.get('titre')} » est en cours de préparation. Ton lien reste valable : "
+                                  "réessaie un peu plus tard, ou garde l'e-mail reçu."), 404)
 
 
 @app.get("/@<pseudo>/rdv/<rid>.ics")

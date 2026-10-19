@@ -421,6 +421,16 @@ CSS_FICHE = """<style>
 </style>"""
 
 
+def livrable(page: dict, p: dict) -> bool:
+    """Le produit a bien quelque chose à livrer (fichier, lien, créneaux ou produits du pack)."""
+    if p.get("type") == "rdv":
+        return True
+    if p.get("type") == "pack":
+        prods = {x["id"]: x for x in page.get("produits", [])}
+        return any(livrable(page, prods[i]) for i in p.get("inclus") or [] if i in prods and prods[i].get("type") != "pack")
+    return bool(p.get("fichier") or p.get("lien"))
+
+
 def rendu_produit(page: dict, pseudo: str, p: dict, uid: int, message: str = "", vente_possible: bool = True, code: str = "", src: str = "") -> str:
     pe = prix_effectif(p)
     prix, devise = pe["prix"], p.get("devise", "eur")
@@ -451,7 +461,9 @@ def rendu_produit(page: dict, pseudo: str, p: dict, uid: int, message: str = "",
             creneaux_html = (f'<div id="creneaux" data-jours="{E(json.dumps(jours))}"><p style="margin:0 0 4px;font-weight:600">Choisis ton créneau '
                              f'<small style="font-weight:400;opacity:.7">({(p.get("rdv") or {}).get("duree", 30)} min, heure de Paris)</small></p>'
                              '<div class="jours"></div><div class="heures"></div></div><input type="hidden" name="creneau">')
-    if p.get("lien") and not p.get("fichier") and gratuit and p.get("type") not in ("rdv", "pack"):
+    if not livrable(page, p):
+        action = '<p class="note" style="font-size:15px">Ce produit sera disponible très bientôt.</p>'
+    elif p.get("lien") and not p.get("fichier") and gratuit and p.get("type") not in ("rdv", "pack"):
         action = f'<a class="bouton" style="display:block;text-align:center;text-decoration:none" href="/@{pseudo}/p/{p["id"]}/ouvrir" target="_blank" rel="noopener">{E(p.get("bouton") or "J’y vais")}</a>'
     elif est_rdv and not creneaux(uid, p):
         action = creneaux_html
