@@ -86,6 +86,9 @@ section.s{padding:84px 0}
 .tarif li{padding:5px 0 5px 24px;position:relative}
 .tarif li::before{content:"";position:absolute;left:2px;top:12px;width:12px;height:7px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
 .tarif .btn{margin-top:auto}
+.ce-qui-compte{max-width:720px;margin:22px auto 0;color:var(--ink-2);font-size:15px;text-align:left}
+.ce-qui-compte summary{cursor:pointer;font-weight:600;text-align:center}
+.ce-qui-compte p{margin:10px 0 0}
 /* FAQ */
 .faq{max-width:780px;margin-top:34px}
 details{border-bottom:1px solid var(--line);padding:18px 0}
@@ -172,6 +175,7 @@ footer .l span{margin-right:auto}
   <h2>Sans engagement, résiliable en un clic.</h2>
   <p class="intro" id="intro-tarifs">Commence par 7 jours gratuits, sans carte bancaire.</p>
   <div class="tarifs" id="tarifs-liste"></div>
+  <details class="ce-qui-compte"><summary>Comment sont comptées les limites ?</summary><p>Une veille utilise 1 analyse et 7 adaptations (les 7 meilleures publications sont écrites pour toi d'office). Chaque publication que tu fais adapter ensuite utilise 1 adaptation. Un carrousel, un Reel monté ou un guide PDF utilise 1 création ; retoucher ou refaire une création ne compte pas. Les compteurs repartent à zéro le 1er de chaque mois.</p></details>
 </div></section>
 
 <section class="s alt" id="faq"><div class="l">
@@ -210,6 +214,13 @@ fetch("/api/vitrines").then(r => r.json()).then(v => {
   const z = document.getElementById("vitrines"); z.hidden = false;
   z.innerHTML = v.vitrines.map(x => `<a class="vitrine" href="/@${encodeURIComponent(x.pseudo)}" target="_blank" rel="noopener"><div class="tel-v"><iframe loading="lazy" tabindex="-1" title="${esc(x.nom)}" src="/@${encodeURIComponent(x.pseudo)}"></iframe></div>${esc(x.nom)}</a>`).join("");
 }).catch(() => {});
+const prixFr = x => Number(x).toLocaleString("fr-FR", {minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2});
+const limites = p => [
+  `<b>${p.analyses_par_mois}</b> veilles ou analyses par mois`,
+  `<b>${p.adaptations_par_mois}</b> publications adaptées à ta niche par mois`,
+  `<b>${p.comptes_surveilles}</b> comptes surveillés`,
+  p.studio_par_mois ? `<b>${p.studio_par_mois}</b> créations au studio par mois` : "",
+  p.veille_auto ? "Veille automatique chaque lundi" : ""].filter(Boolean).map(x => `<li>${x}</li>`).join("");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 fetch("/api/formules").then(r => r.json()).then(f => {
   const jours = f.essai_jours + (parrain ? 30 : 0);
@@ -220,14 +231,8 @@ fetch("/api/formules").then(r => r.json()).then(f => {
     <div class="tarif ${i === milieu ? "fort" : ""}">
       ${i === milieu ? '<span class="badge">Le plus choisi</span>' : ""}
       <h3>${esc(p.nom)}</h3>
-      <div class="prix">${p.prix_mensuel} €<small> / mois</small></div>
-      <ul>
-        <li>${p.comptes_surveilles} comptes surveillés</li>
-        <li>${p.adaptations_par_mois} Reels adaptés par mois</li>
-        <li>${p.analyses_par_mois} analyses par mois</li>
-        ${p.studio_par_mois ? `<li>${p.studio_par_mois} créations au studio</li>` : ""}
-        ${p.veille_auto ? "<li>Veille automatique chaque lundi</li>" : ""}
-      </ul>
+      <div class="prix">${prixFr(p.prix_mensuel)} €<small> / mois</small></div>
+      <ul>${limites(p)}</ul>
       <a class="btn ${i === milieu ? "prim" : ""}" href="/connexion">Essayer gratuitement</a>
     </div>`).join("");
 }).catch(() => {});

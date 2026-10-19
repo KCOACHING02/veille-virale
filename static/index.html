@@ -1322,6 +1322,14 @@ const estCarrousel = p => p.format === "Carrousel";
 const nbSlides = p => (p.medias || []).length || (p.adaptation?.slides_modele || []).length;
 const libFormat = p => estCarrousel(p) ? `Carrousel${nbSlides(p) ? " · " + nbSlides(p) + " slides" : ""}` : p.plateforme === "TikTok" ? "Vidéo" : "Reel";
 const texteSeuil = a => a.seuil_mode === "auto" ? `≥ ${String(a.seuil_multiple || 3).replace(".", ",")}× les vues habituelles du compte (min. ${nb(a.seuil_plancher || 30000)})` : `≥ ${nbLong(a.vues_min)} vues`;
+const prixFr = x => Number(x).toLocaleString("fr-FR", {minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2});
+const limites = p => [
+  `<b>${p.analyses_par_mois}</b> veilles ou analyses par mois`,
+  `<b>${p.adaptations_par_mois}</b> publications adaptées à ta niche par mois`,
+  `<b>${p.comptes_surveilles}</b> comptes surveillés`,
+  p.studio_par_mois ? `<b>${p.studio_par_mois}</b> créations au studio par mois` : "",
+  p.veille_auto ? "Veille automatique chaque lundi" : ""].filter(Boolean).map(x => `<li>${x}</li>`).join("");
+const CE_QUI_COMPTE = "Une veille utilise 1 analyse et 7 adaptations (les 7 meilleures publications sont écrites pour toi d'office). Chaque publication que tu fais adapter ensuite utilise 1 adaptation. Un carrousel, un Reel monté ou un guide PDF utilise 1 création ; retoucher ou refaire une création ne compte pas. Les compteurs repartent à zéro le 1er de chaque mois.";
 const hookPrincipal = ad => (ad && (ad.hook_viral || (ad.hooks_adaptes || [])[0])) || "";
 // Titre d'une publication, adaptée ou non (veille : seules les meilleures sont adaptées d'office)
 const titrePost = p => hookPrincipal(p.adaptation) || (p.legende || "").split("\n")[0].slice(0, 120) || "@" + p.compte;
@@ -1879,7 +1887,11 @@ function ouvreNouvelle(mode = "copie") {
       const e = await api("/api/estimation", {method: "POST", body: {mode: md, texte: $("#m-texte").value, plateforme: $("#m-pl").value, nb: +$("#m-nb").value, mois: +$("#m-mois").value}});
       if (!$("#m-estim")) return;
       $("#m-estim").innerHTML = (S.etat?.admin ? `Coût estimé : <b>≈ ${e.cout_usd.toLocaleString("fr-FR", {minimumFractionDigits: 2})} $</b>, ` : "") + `Durée : environ <b>${e.minutes} min</b>` +
-        (e.comptes_en_cache ? ` <span title="collectés il y a moins de 24 h">(${e.comptes_en_cache}/${e.comptes} compte${e.comptes > 1 ? "s" : ""} déjà en mémoire)</span>` : "");
+        (e.comptes_en_cache ? ` <span title="collectés il y a moins de 24 h">(${e.comptes_en_cache}/${e.comptes} compte${e.comptes > 1 ? "s" : ""} déjà en mémoire)</span>` : "") +
+        (() => { const ab = S.etat?.abonnement; if (!ab?.reste || S.etat?.admin) return "";
+          const gr = ab.gratuit;
+          return `<br>Utilise <b>1 ${gr ? "classement" : "analyse"}</b> (il t'en reste ${Math.max(ab.reste.analyses, 0)})` +
+            (gr ? "" : ` et jusqu'à <b>${e.reels} adaptation${e.reels > 1 ? "s" : ""}</b> (il t'en reste ${Math.max(ab.reste.adaptations, 0)})`) + "."; })();
     } catch { if ($("#m-estim")) $("#m-estim").textContent = ""; }
   }, 350); };
   $("#m-texte").oninput = () => { majReconnus(); majEstim(); }; $("#m-pl").onchange = () => { majReconnus(); majEstim(); };
@@ -3021,13 +3033,14 @@ async function renduAbonnement() {
   $("#abonnement").innerHTML = `
     <div class="panneau"><h2>${esc(d.nom_plan)}${d.gratuit ? "" : d.statut === "essai" ? (d.actif ? ` — jusqu'au ${fin}` : " — terminé") : d.statut === "actif" ? "" : " — " + esc(d.statut)}</h2>
       ${d.gratuit ? `<p style="margin:0 0 12px;color:var(--ink-2)">${d.statut === "essai" ? "Ton essai est terminé, ton compte reste ouvert en formule gratuite. " : ""}Tu gardes ta boutique, les classements de comptes (sans adaptation) et ${d.quotas.studio_par_mois} carrousels par mois. Choisis une formule pour que chaque Reel viral soit adapté à ta niche.</p>` : ""}
-      <div class="conso">${barre(d.gratuit ? "Classements ce mois-ci" : "Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${d.quotas.adaptations_par_mois ? barre("Reels adaptés ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois) : ""}
-      <p style="margin:0;color:var(--ink-2);font-size:14px">${d.gratuit ? `Jusqu'à ${d.quotas.comptes_surveilles} comptes par classement.` : `Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés.`} ${d.veille_auto ? "Veille automatique du lundi incluse." : ""}</p></div>
+      <div class="conso">${barre(d.gratuit ? "Classements ce mois-ci" : "Analyses ce mois-ci", d.usage.analyses, d.quotas.analyses_par_mois)}${d.quotas.adaptations_par_mois ? barre("Publications adaptées ce mois-ci", d.usage.adaptations, d.quotas.adaptations_par_mois) : ""}${barre("Créations au studio ce mois-ci", d.usage.studio, d.quotas.studio_par_mois)}
+      <p style="margin:0;color:var(--ink-2);font-size:14px">${d.gratuit ? `Jusqu'à ${d.quotas.comptes_surveilles} comptes par classement.` : `Jusqu'à ${d.quotas.comptes_surveilles} comptes surveillés.`} ${d.veille_auto ? "Veille automatique du lundi incluse." : ""} Remise à zéro le 1er du mois.</p>
+      <details class="planning-info" style="margin:12px 0 0"><summary>Comment sont comptées les limites ?</summary><p>${CE_QUI_COMPTE}</p></details></div>
       ${a.portail ? '<p style="margin:14px 0 0"><button class="btn" id="ab-portail">Gérer mon abonnement et mes factures</button></p>' : ""}</div>
     <div class="panneau parrainage" id="ab-parrainage"></div>
     <div class="plans">${a.plans.map(p => `<div class="plan ${p.id === d.plan && d.statut === "actif" ? "actuel" : ""}">
-      <h3>${esc(p.nom)}</h3><div class="prix">${p.prix_mensuel} €<small> / mois</small></div>
-      <ul><li>${p.adaptations_par_mois} Reels adaptés par mois</li><li>${p.analyses_par_mois} analyses par mois</li><li>${p.comptes_surveilles} comptes surveillés</li>${p.veille_auto ? "<li>Veille automatique chaque lundi</li>" : ""}</ul>
+      <h3>${esc(p.nom)}</h3><div class="prix">${prixFr(p.prix_mensuel)} €<small> / mois</small></div>
+      <ul>${limites(p)}</ul>
       ${p.id === d.plan && d.statut === "actif" ? '<button class="btn" disabled>Ta formule</button>' : `<button class="btn prim" data-plan="${p.id}">Choisir ${esc(p.nom)}</button>`}</div>`).join("")}</div>
     ${!a.stripe ? `<p style="color:var(--ink-3);font-size:13.5px;margin-top:14px">${a.demo ? "Paiement non configuré : en démo, le changement de formule est immédiat." : "Le paiement en ligne n'est pas encore activé."}</p>` : ""}`;
   renduParrainage();

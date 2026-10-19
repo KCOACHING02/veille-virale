@@ -805,7 +805,7 @@ def _lance_releve(uid: int, forcer: bool = False):
 def abonnement():
     p = ab.plans()
     return jsonify({"droits": droits(g.u), "stripe": ab.stripe_actif(), "demo": en_demo(),
-                    "plans": [{"id": k, **{x: v[x] for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois", "comptes_surveilles", "veille_auto")}}
+                    "plans": [{"id": k, **{x: v[x] for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois", "comptes_surveilles", "veille_auto", "studio_par_mois")}}
                               for k, v in p.items() if k not in ("essai", "gratuit")],
                     "portail": bool(g.u.get("stripe_client"))})
 

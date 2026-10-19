@@ -7,7 +7,7 @@ essai:
   prix_mensuel: 0
   duree_jours: 7
   analyses_par_mois: 3          # veilles + analyses de comptes
-  adaptations_par_mois: 35      # Reels adaptés par Claude (une veille en consomme ~14 à 21)
+  adaptations_par_mois: 35      # publications adaptées (une veille en consomme 7)
   comptes_surveilles: 5
   studio_par_mois: 3           # carrousels et Reels montés
   veille_auto: false
@@ -38,13 +38,13 @@ gratuit:
 
 createur:
   nom: "Créateur"
-  prix_mensuel: 39
+  prix_mensuel: 19.90
   analyses_par_mois: 8
-  adaptations_par_mois: 80
+  adaptations_par_mois: 50      # 4 veilles × 7 + ~22 à la demande
   comptes_surveilles: 10
   studio_par_mois: 20          # carrousels et Reels montés
   veille_auto: true
-  budget_usd: 12            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
+  budget_usd: 7             # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 pro:

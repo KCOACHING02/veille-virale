@@ -284,7 +284,7 @@ def droits(u: dict) -> dict:
         "quotas": {**{k: plan[k] for k in ("analyses_par_mois", "adaptations_par_mois", "comptes_surveilles")},
                    "studio_par_mois": plan.get("studio_par_mois", 10)},
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
-        "usage": us,
+        "usage": {k: us[k] for k in ("analyses", "adaptations", "studio")},  # le coût réel reste côté administrateur
         "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"],
                   "studio": plan.get("studio_par_mois", 10) - us["studio"]},
     }
@@ -323,7 +323,8 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> s
     # Garde-fou : coût réel (collecte + IA) plafonné par formule et par mois (budget_usd dans plans.yaml)
     budget = float(plans().get(plan_effectif(u), {}).get("budget_usd") or 0)
     if (analyses or adaptations) and budget and usage(u["id"])["cout_usd"] >= budget:
-        return "Tu as atteint la limite d'utilisation de ta formule ce mois-ci. Passe à la formule supérieure ou attends le mois prochain."
+        return ("Tu as atteint la limite d'usage raisonnable de ta formule ce mois-ci (elle n'est normalement jamais atteinte "
+                "dans les limites affichées). Elle se remet à zéro le 1er du mois ; écris-nous si tu as besoin d'un coup de pouce.")
     return None
 
 
