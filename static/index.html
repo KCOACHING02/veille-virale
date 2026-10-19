@@ -485,6 +485,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .depot:hover,.depot.survol{border-color:var(--glow);background:var(--glow-soft)}
 .depot svg{color:var(--glow)} .depot small{color:var(--ink-3);font-size:12.5px}
 .st-envoi{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--sunk)}
+.st-envoi-txt{display:block;margin-top:8px;font-size:13px;color:var(--ink-2);font-weight:600}
 .st-envoi i{display:block;height:100%;width:0;background:var(--glow);transition:width .2s}
 .st-medias{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:14px}
 .st-medias figure{margin:0;position:relative;border-radius:10px;overflow:hidden;background:var(--sunk);aspect-ratio:4/5}
@@ -2276,6 +2277,7 @@ function renduProjet() {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
             <span><b>Choisis tes fichiers</b> ou dépose-les ici</span><small>JPEG, PNG, HEIC${p.type === "reel" ? " · MP4, MOV jusqu'à 300 Mo et 3 min" : ""} · 10 photos max</small>
             <i class="st-envoi" id="st-envoi" hidden><i></i></i>
+            <span class="st-envoi-txt" id="st-envoi-txt" hidden></span>
           </label>
           ${avecVideo ? `<div class="st-video"><video src="${src(p.video)}" muted playsinline preload="metadata"></video><div><b>Ta vidéo</b><span>${p.video_duree ? Math.round(p.video_duree) + " s" : ""}${p.video_duree > 180 ? " · seules les 3 premières minutes seront gardées" : ""}</span></div><button class="btn petit" data-retire="${esc(p.video)}">Retirer</button></div>` : ""}
           ${p.images.length ? `<div class="st-medias">${p.images.map((n, i) => `<figure><img src="${src(n)}" alt="Photo ${i + 1}"><figcaption>${i + 1}</figcaption>
@@ -2472,17 +2474,31 @@ function brancheResultat(p) {
 }
 function envoieFichiers(fichiers, slideI) {
   if (!fichiers.length || !S.projet) return;
+  const total = fichiers.reduce((t, f) => t + f.size, 0);
+  if (total > 300 * 2 ** 20) return toast("Fichier trop lourd (300 Mo maximum). Sur iPhone, filme en 1080p ou raccourcis la vidéo.");
   const fd = new FormData(); fichiers.forEach(f => fd.append("fichiers", f));
+  const video = fichiers.some(f => f.type.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/i.test(f.name));
   const x = new XMLHttpRequest(), barre = $("#st-envoi") || document.createElement("i");
   barre.hidden = false; if (!barre.firstChild) barre.appendChild(document.createElement("i"));
-  x.upload.onprogress = e => { if (e.lengthComputable) $("i", barre).style.width = Math.round(100 * e.loaded / e.total) + "%"; };
+  const etat = $("#st-envoi-txt");
+  const affiche = t => { if (etat) { etat.hidden = !t; etat.textContent = t || ""; } };
+  affiche(video ? `Envoi de ta vidéo (${Math.round(total / 2 ** 20)} Mo)… garde cette page ouverte` : "Envoi…");
+  x.upload.onprogress = e => { if (!e.lengthComputable) return; const pc = Math.round(100 * e.loaded / e.total);
+    $("i", barre).style.width = pc + "%"; affiche(pc < 100 ? `Envoi${video ? " de ta vidéo" : ""} : ${pc} %` : "Vérification du fichier…"); };
+  const fin = () => { barre.hidden = true; affiche(""); };
   x.onload = () => {
     let j = {}; try { j = JSON.parse(x.responseText); } catch {}
-    if (x.status === 413) toast("Fichier trop lourd : 300 Mo maximum.");
+    if (x.status === 401) { location.href = "/connexion#connexion"; return; }
+    if (x.status >= 500 || (!j.projet && !j.erreurs && !j.erreur)) { fin(); return toast("Le serveur n'a pas pu recevoir le fichier. Réessaie dans un instant."); }
+    if (j.erreur) toast(j.erreur);
     else if (j.erreurs?.length) toast(j.erreurs[0]);
-    if (j.projet) { S.projet = j.projet; renduProjet(); } else barre.hidden = true;
+    fin();
+    if (j.projet) { S.projet = j.projet; }
+    if (j.job) { S.tacheStudio = {id: j.job, sid: S.projet.id, titre: "Préparation de ta vidéo", phrase: "Je prépare ta vidéo…"}; suisTacheStudio(j.job); }
+    if (j.projet) renduProjet();
   };
-  x.onerror = () => { toast("L'envoi a échoué, vérifie ta connexion."); barre.hidden = true; };
+  x.onerror = () => { fin(); toast("L'envoi a été coupé : vérifie ta connexion et réessaie (le Wi-Fi est plus sûr pour une vidéo)."); };
+  x.ontimeout = x.onerror;
   x.open("POST", `/api/studio/${S.projet.id}/fichiers${slideI != null ? "?slide=" + slideI : ""}`); x.send(fd);
 }
 async function genereProjet() {
@@ -2497,7 +2513,7 @@ function progStudio(t) {
   if (!t) return null;
   t.debut ||= Date.now();
   const titre = t.titre || "", reel = S.projet?.type === "reel" && S.projet?.video;
-  const tau = /slides|écriture/i.test(titre) ? 12 : /images/i.test(titre) ? 9 : reel ? 35 : 8;
+  const tau = /slides|écriture/i.test(titre) ? 12 : /images/i.test(titre) ? 9 : /préparation/i.test(titre) ? 30 : reel ? 35 : 8;
   const ecoule = (Date.now() - t.debut) / 1000, pct = Math.min(96, Math.round(100 * (1 - Math.exp(-ecoule / tau))));
   const reste = Math.max(0, Math.round(tau * 3 - ecoule));
   return {pct, texte: pct >= 90 || reste < 5 ? "Presque fini…" : reste < 60 ? `Encore ${Math.max(5, Math.round(reste / 5) * 5)} s environ` : `Encore ${Math.round(reste / 60)} min environ`};
@@ -2518,7 +2534,7 @@ function suisTacheStudio(jid) {
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.pollStudio); S.tacheStudio = null;
       if (j.statut === "erreur") toast("Studio : " + j.erreur);
-      else toast(/slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : "Ton contenu est prêt à publier");
+      else toast(/slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : /préparation/i.test(j.titre) ? "Ta vidéo est prête : tu peux monter ton Reel" : "Ton contenu est prêt à publier");
       if (S.vue === "studio" && S.projetId === sid) { S.projet = await api("/api/studio/" + sid); renduProjet(); }
     }
   }, 1500);

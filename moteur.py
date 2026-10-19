@@ -452,6 +452,8 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         return analyse
     finally:
         shutil.rmtree(travail, ignore_errors=True)
+        from ressources import libere_memoire
+        libere_memoire()
 
 
 # ------------------------------------------------------------
@@ -490,6 +492,8 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
         return analyse["posts"][idx]
     finally:
         shutil.rmtree(travail, ignore_errors=True)
+        from ressources import libere_memoire
+        libere_memoire()
 
 
 # ------------------------------------------------------------

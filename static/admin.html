@@ -73,7 +73,9 @@ async function charge() {
   D = await r.json();
   const k = D.kpi;
   $("#kpis").innerHTML = [[k.clients, "clients inscrits"], [k.payants, "clients payants"], [k.essais, "essais en cours"],
-    [k.mrr.toLocaleString("fr-FR") + " €", "revenu mensuel (abonnements actifs)"], [usd(k.cout_mois_usd), "coût Apify + Claude ce mois-ci"]]
+    [k.mrr.toLocaleString("fr-FR") + " €", "revenu mensuel (abonnements actifs)"], [usd(k.cout_mois_usd), "coût Apify + Claude ce mois-ci"],
+    ...(D.serveur?.total_mo ? [[`${(D.serveur.utilise_mo / 1024).toLocaleString("fr-FR", {maximumFractionDigits: 1})} / ${(D.serveur.total_mo / 1024).toLocaleString("fr-FR", {maximumFractionDigits: 1})} Go`, `disque utilisé${D.serveur.libre_mo < 300 ? " ⚠️ presque plein" : ""}`],
+      [`${(D.serveur.memoire_mo / 1024).toLocaleString("fr-FR", {maximumFractionDigits: 1})} Go`, `mémoire du serveur${D.serveur.memoire_mo <= 2048 ? " (petite machine : vidéos traitées une par une)" : ""}`]] : [])]
     .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
   const g = D.croissance || {};
   $("#croissance").innerHTML = [[g.conversion == null ? "—" : g.conversion + " %", "conversion essai → payant (inscrites depuis 14 j+)"],

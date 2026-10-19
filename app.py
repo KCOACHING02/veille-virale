@@ -52,6 +52,14 @@ app.json.sort_keys = False  # garde l'ordre voulu des options (thèmes, formes�
 DEMO_FORCE = False
 
 
+def trop_lourd(_e):
+    return jsonify({"erreur": "Fichier trop lourd (300 Mo maximum). Sur iPhone, filme en 1080p (Réglages → Appareil photo → Enregistrement vidéo) "
+                              "ou raccourcis la vidéo avant de l'envoyer."}), 413
+
+
+app.register_error_handler(413, trop_lourd)
+
+
 @app.before_request
 def vers_domaine_principal():
     """Ancienne adresse *.up.railway.app → nom de domaine (URL_PUBLIQUE), pour les pages consultées (GET).
@@ -935,14 +943,19 @@ def studio_import(sid):
     _projet(sid)
     erreurs, p = [], None
     slide_i = request.args.get("slide", type=int)
+    video = False
     for f in request.files.getlist("fichiers"):
         try:
             p = studio.ajoute_fichier(g.esp, sid, f.filename, f, slide_i)
+            video = video or Path(f.filename or "").suffix.lower() in studio.EXT_VIDEOS
         except ValueError as e:
             erreurs.append(str(e))
     p = p or studio.charge(g.esp, sid)
     p.pop("adaptation", None)
-    return jsonify({"projet": p, "erreurs": erreurs}), (400 if erreurs and not request.files else 200)
+    job = None
+    if video and p.get("video") and studio.video_a_optimiser(studio.dossier(g.esp, sid) / "sources" / p["video"]):
+        job = lance(g.u["id"], "Préparation de ta vidéo", studio.optimise_video, g.esp, sid, file_=FILE_STUDIO)
+    return jsonify({"projet": p, "erreurs": erreurs, "job": job}), (400 if erreurs and not request.files else 200)
 
 
 @app.delete("/api/studio/<sid>/fichiers/<nom>")
@@ -2195,6 +2208,7 @@ def admin_donnees():
                 "mrr": mrr, "cout_mois_usd": round(cout_mois, 2)},
         "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")), "banque": banque.active(),
                    "stripe": ab.stripe_actif(), "emails": emails.actif(), "demo": en_demo(), "url": url_site()},
+        "serveur": {"memoire_mo": __import__("ressources").memoire_mo(), **__import__("ressources").disque(DATA)},
     })
 
 

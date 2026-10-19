@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ressources import sacrifiable, travaux_video
 import concurrent.futures as cf
 import os
 import shutil
@@ -80,7 +81,7 @@ def images_cles(video: Path, dossier: Path, nb: int, d: float | None) -> list[Pa
         sortie = dossier / f"img_{i}.jpg"
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", str(video),
                         "-frames:v", "1", "-vf", "scale=540:-2", "-q:v", "5", str(sortie)],
-                       capture_output=True, timeout=60)
+                       capture_output=True, timeout=60, preexec_fn=sacrifiable)
         if sortie.exists() and sortie.stat().st_size > 0:
             chemins.append(sortie)
     return chemins
@@ -93,7 +94,7 @@ def audio(video: Path, dossier: Path, secondes: int | None = SECONDES_TRANSCRITE
     sortie = dossier / "audio.wav"
     limite = ["-t", str(secondes)] if secondes else []
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), *limite, "-vn", "-ac", "1", "-ar", "16000", str(sortie)],
-                   capture_output=True, timeout=180)
+                   capture_output=True, timeout=180, preexec_fn=sacrifiable)
     return sortie if sortie.exists() and sortie.stat().st_size > 1000 else None
 
 
@@ -215,7 +216,7 @@ def traite_videos(posts: list[Post], cfg: dict, token: str | None, dossier: Path
     fil = threading.Thread(target=transcripteur_en_continu, daemon=True) if transcrire else None
     if fil:
         fil.start()
-    with cf.ThreadPoolExecutor(max_workers=4) as ex:
+    with cf.ThreadPoolExecutor(max_workers=travaux_video()) as ex:  # 1 à la fois sur une petite machine
         for fut in cf.as_completed([ex.submit(prepare, p) for p in posts]):
             p, wav = fut.result()
             if wav and fil:

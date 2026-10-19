@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from espace import CODE, DATA, Espace
+from ressources import libere_memoire, petite_machine, sacrifiable
 from modele import log
 
 POLICES = CODE / "static" / "fonts"
@@ -578,6 +579,8 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
     for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre", "script", "style", "typo", "afficher_pseudo"):
         if k in champs:
             p[k] = champs[k]
+    if p.get("titre") in ("Nouveau carrousel", "Nouveau Reel"):  # titre par défaut qui suit le format choisi
+        p["titre"] = "Nouveau Reel" if p.get("type") == "reel" else "Nouveau carrousel"
     # Couverture du Reel : style, texte, image (moment de la vidéo ou une des photos)
     if champs.get("couv_style") in STYLES_COUV:
         p["couv_style"] = champs["couv_style"]
@@ -967,7 +970,7 @@ def image_couverture(p: dict, d: Path, temps: float | None = None, image: str | 
             vf = (TONEMAP + "format=yuvj420p,") if _hdr(src) else ""
             for filtre in (vf + "scale=1080:-2", "scale=1080:-2"):
                 subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", str(src), "-frames:v", "1", "-vf", filtre,
-                                "-q:v", "3", str(f)], capture_output=True, timeout=90)
+                                "-q:v", "3", str(f)], capture_output=True, timeout=90, preexec_fn=sacrifiable)
                 if f.exists():
                     break
         if f.exists():
@@ -1226,7 +1229,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 def _ffmpeg(args: list[str], cwd: Path, timeout: int = 1800):
     try:
-        r = subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", *args], cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", *args], cwd=str(cwd), capture_output=True, text=True, timeout=timeout,
+                           preexec_fn=sacrifiable)
     except subprocess.TimeoutExpired:
         raise RuntimeError("Le montage vidéo a pris trop de temps : essaie une vidéo plus courte.") from None
     if r.returncode != 0:
@@ -1237,8 +1241,80 @@ def _ffmpeg(args: list[str], cwd: Path, timeout: int = 1800):
         raise RuntimeError("Le montage vidéo a échoué : " + (lignes[-1][:200] if lignes else f"code {r.returncode}"))
 
 
-ENCODAGE = ["-c:v", "libx264", "-threads", "2", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
-LEGER = ["-threads", "2", "-filter_threads", "1"]  # limite la mémoire (vidéos 4K HDR des iPhone)
+_FILS = "1" if petite_machine() else "2"
+ENCODAGE = ["-c:v", "libx264", "-threads", _FILS, "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            *(["-x264-params", "rc-lookahead=8:sync-lookahead=0"] if petite_machine() else [])]
+LEGER = ["-threads", _FILS, "-filter_threads", "1"]  # limite la mémoire (vidéos 4K HDR des iPhone)
+
+
+def _sonde(f: Path) -> dict:
+    """Codec, cadence et taille d'une vidéo (ffprobe)."""
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name,avg_frame_rate",
+                              "-of", "csv=p=0", str(f)], capture_output=True, text=True, timeout=60).stdout.strip().split(",")
+        n, _, dnm = (out[1] if len(out) > 1 else "0/1").partition("/")
+        fps = float(n) / float(dnm or 1) if float(dnm or 1) else 0.0
+        return {"codec": out[0], "fps": fps}
+    except Exception:  # noqa: BLE001
+        return {"codec": "", "fps": 0.0}
+
+
+def video_a_optimiser(f: Path) -> bool:
+    """Vidéo lourde (4K, HDR, HEVC, 60 i/s, > 80 Mo) : on la ramène à une version légère une fois pour toutes,
+    pour que l'aperçu, la couverture et le montage restent rapides et ne saturent ni la mémoire ni le disque."""
+    try:
+        w, h = _dimensions(f)
+        s = _sonde(f)
+        return (max(w, h) > 1920 or _hdr(f) or s["codec"] not in ("h264",) or s["fps"] > 31
+                or f.stat().st_size > 80 * 2**20)
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def optimise_video(esp: Espace, sid: str) -> dict:
+    """Tâche de fond juste après l'import : version 1080p H.264 30 i/s en SDR, l'original est remplacé."""
+    p = charge(esp, sid)
+    d = dossier(esp, sid)
+    if not p.get("video"):
+        return p
+    src = d / "sources" / p["video"]
+    if not src.exists() or not video_a_optimiser(src):
+        return p
+    log("Je prépare ta vidéo (format léger pour le montage)…")
+    tmp = d / "sources" / "video_opt.mp4"
+    w, h = _dimensions(src)
+    taille = "scale=-2:'min(1920,ih)'" if h >= w else "scale='min(1920,iw)':-2"
+    vf = taille + ",fps='min(30,source_fps)'," + (TONEMAP if _hdr(src) else "") + "format=yuv420p"
+    son = ["-map", "0:a:0?", "-c:a", "aac", "-b:a", "128k"]
+    try:
+        _ffmpeg([*LEGER, "-i", str(src), "-map", "0:v:0", *son, "-t", str(DUREE_MAX_REEL + 5), "-vf", vf, "-sn", "-dn",
+                 *[x if x != "22" else "20" for x in ENCODAGE], str(tmp)], d)
+    except RuntimeError as e:
+        try:  # la cadence « source_fps » n'existe pas dans les vieux ffmpeg : nouvel essai simple
+            _ffmpeg([*LEGER, "-i", str(src), "-map", "0:v:0", *son, "-t", str(DUREE_MAX_REEL + 5),
+                     "-vf", vf.replace("fps='min(30,source_fps)'", "fps=30"), "-sn", "-dn", *ENCODAGE, str(tmp)], d)
+        except RuntimeError:
+            tmp.unlink(missing_ok=True)
+            log(f"  ⚠️  Préparation impossible ({str(e)[:100]}) : ta vidéo d'origine sera utilisée")
+            return p
+    duree_ = _duree(tmp)
+    if not duree_:
+        tmp.unlink(missing_ok=True)
+        return p
+    p = charge(esp, sid)  # relu : l'utilisatrice a pu modifier le projet pendant la préparation
+    if p.get("video") != src.name:
+        tmp.unlink(missing_ok=True)
+        return p
+    avant = src.stat().st_size
+    src.unlink(missing_ok=True)
+    final = d / "sources" / "video.mp4"
+    tmp.replace(final)
+    p["video"], p["video_duree"] = final.name, round(duree_, 1)
+    shutil.rmtree(d / "couv_cadres", ignore_errors=True)
+    (d / "apercu_cadre.jpg").unlink(missing_ok=True)
+    sauve(esp, p)
+    log(f"✅ Vidéo prête ({avant // 2**20} Mo → {final.stat().st_size // 2**20} Mo)")
+    return p
 
 
 def normalise(src: Path, d: Path) -> tuple[Path, Path | None]:
@@ -1270,6 +1346,7 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
             log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée : pas de sous-titres")
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Sous-titres impossibles ({str(e)[:120]}) : le Reel est monté sans")
+        libere_memoire()  # le modèle de transcription laisse la place au montage
     fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", typo_projet(p), _couleurs_texte(p))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
@@ -1449,7 +1526,7 @@ def apercu(esp: Espace, sid: str, i: int, filigrane: bool = False) -> bytes:
         src = d / "sources" / p["video"]
         if not cadre.exists() or cadre.stat().st_mtime < src.stat().st_mtime:
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "0.6", "-i", str(src), "-frames:v", "1",
-                            "-vf", "scale=1080:-2", str(cadre)], capture_output=True, timeout=60)
+                            "-vf", "scale=1080:-2", str(cadre)], capture_output=True, timeout=60, preexec_fn=sacrifiable)
         im = slide({"titre": p.get("hook") or "", "texte": ""}, 0, 1, cadre if cadre.exists() else None, theme, "", VERTICAL,
                    reel=True, typo=typo)
     else:

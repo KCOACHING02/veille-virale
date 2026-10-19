@@ -28,7 +28,7 @@ def _bruit(h: int, w: int, echelle: int, graine: int):
     return (a - a.mean()) / (a.std() + 1e-6)
 
 
-@lru_cache(maxsize=48)
+@lru_cache(maxsize=6)  # ~4 Mo par fond : peu en mémoire
 def _texture(nom: str, c1: tuple, c2: tuple, taille: tuple):
     import numpy as np
     from PIL import Image, ImageFilter

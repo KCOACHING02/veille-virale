@@ -21,6 +21,7 @@ Application web par abonnement (Flask) qui repère les Reels et carrousels Insta
 - `notifications.py` : notifications push (Web Push, clés VAPID dans `data/vapid.pem`, chiffrement aes128gcm sans dépendance) ; application installable (`/manifest.webmanifest`, `static/sw.js`, `static/icones/`). Parrainage dans `abonnements.py` (code, mois offerts), récapitulatif du lundi (`envoie_syntheses`), boutiques en exemple sur l'accueil (`/api/vitrines`).
 - `emails.py` (Resend, sans SDK), `legal.py` + `societe.yaml` (CGV, confidentialité, mentions légales), `static/admin.html` (tableau de bord, réservé à `ADMIN_EMAILS`).
 - `static/accueil.html` (page publique sur `/` quand on n'est pas connecté), `static/index.html` (application sur `/` ou `/app` : galerie, planning, studio, assistant, paramètres, abonnement) et `static/connexion.html` (inscription, connexion, mot de passe oublié) : HTML/CSS/JS sans framework.
+- `ressources.py` : adaptation à la taille du serveur (limite mémoire cgroup) : vidéos d'une veille traitées une par une sur une petite machine, modèle Whisper libéré après usage (`libere_memoire`), ffmpeg lancé avec `preexec_fn=sacrifiable` (tué en premier en cas de manque de mémoire). Vidéo importée dans le Studio ramenée en 1080p H.264 SDR par une tâche de fond (`studio.optimise_video`).
 - `static/fonts/` : Poppins (OFL), utilisée pour les textes incrustés.
 - `config.exemple.yaml` : modèle d'un nouvel espace client. `config.yaml` : usage local (CLI).
 
