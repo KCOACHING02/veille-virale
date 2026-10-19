@@ -28,8 +28,8 @@ def _editeur(s):
 SOUS_TRAITANTS = [
     ("Railway Corporation", "hébergement de l'application et des données", "États-Unis"),
     ("Stripe", "paiement et facturation des abonnements", "Irlande / États-Unis"),
-    ("Anthropic", "intelligence artificielle (analyse des vidéos et rédaction des adaptations)", "États-Unis"),
-    ("Apify", "collecte des publications publiques Instagram et TikTok", "République tchèque (UE)"),
+    ("Fournisseur d'intelligence artificielle", "moteur de Virall.ai (analyse des vidéos et rédaction des adaptations)", "États-Unis"),
+    ("Prestataire de collecte de données publiques", "collecte des publications publiques Instagram et TikTok", "Union européenne"),
     ("Resend", "envoi des e-mails du service", "États-Unis"),
     ("Google Fonts", "affichage des polices de caractères", "États-Unis"),
 ]

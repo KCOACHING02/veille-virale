@@ -408,7 +408,7 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
             slides = None
     slides = [x for x in (slides or []) if isinstance(x, dict) and (x.get("titre") or "").strip()]
     if not slides:
-        raise RuntimeError("Claude n'a pas proposé de slides : tes textes pré-remplis sont gardés, réessaie « Réécrire dans ce style ».")
+        raise RuntimeError("Virall.ai n'a pas proposé de slides : tes textes pré-remplis sont gardés, réessaie « Réécrire dans ce style ».")
     p = charge(esp, sid)  # relu : l'utilisateur a pu importer des fichiers pendant ce temps
     anciennes = p.get("slides") or []
     p["slides"] = [{"titre": x.get("titre", "").strip(), "texte": (x.get("texte") or "").strip(), "photo": (x.get("photo") or "").strip(),

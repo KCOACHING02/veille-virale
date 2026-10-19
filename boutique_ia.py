@@ -73,13 +73,13 @@ def idees(esp: Espace, cfg: dict, demo: bool = False) -> dict:
     if demo:
         return IDEES_DEMO
     from ia import idees_produits
-    log("Claude imagine tes produits…")
+    log("Virall.ai imagine tes produits…")
     r = idees_produits(cfg, _voix(esp, cfg), contexte(esp, cfg))
     if r.get("erreur"):
         raise RuntimeError(r["erreur"])
     r["idees"] = [i for i in _liste(r.get("idees")) if isinstance(i, dict) and i.get("titre")]
     if not r["idees"]:
-        raise RuntimeError("Claude n'a pas proposé d'idées : réessaie dans un instant.")
+        raise RuntimeError("Virall.ai n'a pas proposé d'idées : réessaie dans un instant.")
     for i in r["idees"]:
         i["plan"] = [str(x) for x in _liste(i.get("plan"))]
         try:
@@ -118,7 +118,7 @@ def guide(esp: Espace, cfg: dict, uid: int, pid: str, plan: list[str] | None = N
             raise RuntimeError(contenu["erreur"])
     contenu = normalise_guide(contenu, p)
     if not contenu["parties"]:
-        raise RuntimeError("Claude n'a pas renvoyé le contenu du guide : réessaie dans un instant.")
+        raise RuntimeError("Virall.ai n'a pas renvoyé le contenu du guide : réessaie dans un instant.")
     log("Je mets le guide en page…")
     nom = uuid.uuid4().hex + ".pdf"
     sortie = bq.dossier(uid) / "fichiers" / nom
@@ -200,7 +200,7 @@ def sequence(esp: Espace, cfg: dict, uid: int, demo: bool = False) -> dict:
     ids = {p["id"] for p in produits}
     r["emails"] = [e for e in _liste(r.get("emails")) if isinstance(e, dict) and (e.get("texte") or e.get("sujet"))]
     if not r["emails"]:
-        raise RuntimeError("Claude n'a pas écrit la séquence : réessaie dans un instant.")
+        raise RuntimeError("Virall.ai n'a pas écrit la séquence : réessaie dans un instant.")
     for e in r["emails"]:
         try:
             e["delai_jours"] = int(e.get("delai_jours") or 0)

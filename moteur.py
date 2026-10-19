@@ -168,7 +168,7 @@ def verifie_cle_claude(cfg: dict | None = None):
     except (anthropic.AuthenticationError, anthropic.PermissionDeniedError, anthropic.NotFoundError, anthropic.BadRequestError) as e:
         raise RuntimeError(explique_erreur(e)) from None
     except Exception as e:  # noqa: BLE001 — réseau, surcharge passagère : on n'empêche pas l'analyse
-        log(f"⚠️  Vérification de Claude impossible : {explique_erreur(e)}")
+        log(f"⚠️  Vérification de Virall.ai impossible : {explique_erreur(e)}")
 
 
 class AdaptationsCache:
@@ -447,7 +447,8 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
                    apprentissage={k: appr.get(k) for k in ("par_mecanique", "mecaniques_top", "mecaniques_flop", "nb_reels", "nb_suivi", "texte")},
                    fichiers={} if classement_seul else {"html": f"{base}.html", "xlsx": f"{base}.xlsx"})
         analyse = charge(esp, aid)
-        log(f"✅ Analyse terminée : {stats['adaptes']} Reels adaptés — coût réel Apify {stats['cout_apify_usd']:.2f} $, Claude ≈ {stats['cout_claude_usd']:.2f} $")
+        log(f"✅ Analyse terminée : {stats['adaptes']} Reels adaptés")
+        print(f"[coût] analyse {aid} : collecte {stats['cout_apify_usd']:.2f} $, IA ≈ {stats['cout_claude_usd']:.2f} $")
         return analyse
     finally:
         shutil.rmtree(travail, ignore_errors=True)
@@ -537,7 +538,7 @@ def analyse_mon_compte(esp: Espace, cfg: dict, instagram: str = "", tiktok: str 
         from collecte import profil_reseaux
         log("Lecture de ta bio…")
         bio = profil_reseaux(cfg, token, cfg["mon_compte"]["instagram"], cfg["mon_compte"]["tiktok"])
-        log("Claude analyse ton positionnement…")
+        log("Virall.ai analyse ton positionnement…")
         prop = None
     vues = [p.vues for p in posts if p.vues]
     er = [((p.likes or 0) + (p.commentaires or 0) + (p.partages or 0) + (p.enregistrements or 0)) / p.vues for p in posts if p.vues]

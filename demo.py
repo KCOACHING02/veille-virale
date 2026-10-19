@@ -130,7 +130,7 @@ def adaptation(p: Post, i: int) -> dict:
         "hook_original": "[démo] Si tu as le ventre gonflé tous les jours à 11h, ce n'est pas ce que tu crois.",
         "texte_ecran": "[démo] Ventre gonflé à 11h ?", "analyse_visuelle": "[démo] Face caméra, cuisine lumineuse, sous-titres jaunes.",
         "sujet": "[démo] Ventre gonflé le matin", "mecanique": mec,
-        "pourquoi_ca_marche": "[démo] Lance sans --demo avec ta clé Anthropic pour une vraie analyse.",
+        "pourquoi_ca_marche": "[démo] Exemple d'analyse : avec les vraies données, Virall.ai explique ici pourquoi le Reel a marché.",
         "structure": "0-3 s hook → 3-15 s erreur → 15-30 s solution → CTA",
         "langue_originale": "anglais", "hook_viral": "[démo] Ton ventre gonflé à 11 h ? Ce n'est pas ce que tu crois.",
         "legende_reprise": "[démo] Légende originale traduite fidèlement, avec ses emojis et ses hashtags 👇 #nutrition",

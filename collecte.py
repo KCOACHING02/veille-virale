@@ -46,8 +46,10 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
             continue
         if r.status_code >= 400:
             if "usage" in texte and ("limit" in texte or "exceed" in texte):
-                raise RuntimeError("Crédit Apify épuisé pour ce mois : passe au plan Starter sur apify.com (Billing) ou attends le renouvellement.")
-            raise RuntimeError(f"Apify {actor} : {r.status_code} {r.text[:300]}")
+                print("[collecte] crédit Apify épuisé (apify.com → Billing)")
+                raise RuntimeError("La collecte est momentanément indisponible (crédit épuisé côté serveur). Réessaie plus tard.")
+            print(f"[collecte] {actor} : {r.status_code} {r.text[:300]}")
+            raise RuntimeError(f"La collecte a échoué (code {r.status_code}). Réessaie dans quelques minutes.")
         break
     run = r.json()["data"]
     run_id, dataset_id = run["id"], run["defaultDatasetId"]
@@ -62,9 +64,9 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
         if s["status"] in ("FAILED", "ABORTED", "TIMED-OUT"):
             with _COUT_VERROU:
                 _COUT["usd"] += float(s.get("usageTotalUsd") or 0)
-            raise RuntimeError(f"Run Apify {actor} terminé en {s['status']}")
+            raise RuntimeError(f"La collecte s'est arrêtée ({s['status']}).")
         if time.time() > limite:
-            raise TimeoutError(f"Run Apify {actor} trop long (> {timeout_min} min)")
+            raise TimeoutError(f"La collecte prend trop de temps (> {timeout_min} min).")
         time.sleep(8)
 
     items, offset = [], 0
@@ -328,7 +330,7 @@ def collecte_comptes(comptes: list[tuple[str, str]], jours: int, maxi: int, cfg:
         log(f"Collecte : {len(comptes) - len(a_collecter)} compte(s) déjà collecté(s) il y a moins de {CACHE_HEURES} h, réutilisé(s)")
     if not a_collecter:
         return posts
-    log(f"Collecte de {len(a_collecter)} compte(s) en parallèle sur Apify…")
+    log(f"Collecte de {len(a_collecter)} compte(s) en parallèle…")
 
     def un(pl_c):
         pl, c = pl_c

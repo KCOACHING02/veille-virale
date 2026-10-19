@@ -171,17 +171,17 @@ OUTIL_CARROUSEL = {
 def explique_erreur(e) -> str:
     t = str(e)
     bas = t.lower()
+    print(f"[virall.ai] erreur du fournisseur d'IA : {t[:500]}")  # détail technique visible seulement dans les journaux du serveur
     if "credit balance" in bas or "billing" in bas or "insufficient" in bas:
-        return ("Pas de crédit sur l'organisation de ta clé Claude. Vérifie dans la console Claude (Facturation) que la clé "
-                "appartient bien à l'organisation qui a les 100 $ de crédits, sinon crée la clé dans la bonne organisation.")
+        return "Le service Virall.ai est momentanément indisponible (crédit épuisé côté serveur). Réessaie un peu plus tard."
     if "invalid x-api-key" in bas or "authentication" in bas or " 401" in t:
-        return "La clé Claude est refusée : invalide, incomplète ou supprimée. Remplace-la dans les variables Railway."
+        return "Le service Virall.ai est momentanément indisponible (clé du serveur refusée)."
     if "not_found" in bas or "model:" in bas or " 404" in t:
-        return f"Le modèle Claude configuré n'est pas disponible pour cette clé ({t[:160]})."
+        return f"Le modèle Virall.ai configuré n'est pas disponible ({t[:160]})."
     if "rate_limit" in bas or " 429" in t:
-        return "Trop de requêtes vers Claude en même temps (limite de débit). Relance dans quelques minutes."
+        return "Virall.ai reçoit trop de demandes en même temps. Relance dans quelques minutes."
     if "overloaded" in bas or " 529" in t:
-        return "Claude est momentanément surchargé. Relance dans quelques minutes."
+        return "Virall.ai est momentanément surchargé. Relance dans quelques minutes."
     return t[:300]
 
 
@@ -257,7 +257,7 @@ class IA:
                         return _json.loads(texte[debut:fin + 1])
                     except ValueError:
                         pass
-                raise ValueError("Claude n'a pas renvoyé de réponse structurée")
+                raise ValueError("Virall.ai n'a pas renvoyé de réponse exploitable")
             except Exception as e:  # noqa: BLE001
                 derniere = e
                 bas = str(e).lower()
@@ -418,7 +418,7 @@ Remplis l'outil enregistrer_carrousel."""
         return self._appel(OUTIL_CARROUSEL, texte, max_tokens=2000)
 
     def adapte_tous(self, posts: list[Post], apres_chaque=None):
-        log(f"Analyse et adaptation par Claude de {len(posts)} Reels…")
+        log(f"Analyse et adaptation par Virall.ai de {len(posts)} Reels…")
         with cf.ThreadPoolExecutor(max_workers=6) as ex:
             futures = {ex.submit(self.adapte, p): p for p in posts}
             for i, f in enumerate(cf.as_completed(futures), 1):

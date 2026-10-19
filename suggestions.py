@@ -26,7 +26,7 @@ def suggere(cfg: dict, token: str | None, demo: bool = False) -> list[dict]:
                  "exemple": "https://example.com/demo"} for i, v in enumerate((240000, 180000, 96000, 61000, 42000), 1)]
     from collecte import collecte_instagram
     from ia import propose_comptes
-    log("Claude cherche des comptes qui cartonnent dans ta niche…")
+    log("Virall.ai cherche des comptes qui cartonnent dans ta niche…")
     candidats = {}
     for x in propose_comptes(cfg, deja):
         ps = _propre(x["pseudo"])

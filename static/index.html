@@ -986,7 +986,7 @@ a.btn{text-decoration:none}
       <select class="select" id="choix-analyse" aria-label="Analyse affichée"></select>
       <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg><span id="ouvrir-nouvelle-txt">Nouvelle veille</span></button>
     </div>
-    <div class="bandeau" id="bandeau-demo" hidden><b>Mode démo.</b> Les clés Apify et Claude ne sont pas configurées : les analyses utilisent des données fictives. Ajoute-les dans le fichier .env puis relance l'application.</div>
+    <div class="bandeau" id="bandeau-demo" hidden><b>Mode démo.</b> Les analyses utilisent des données fictives.</div>
     <div id="job-haut"></div>
 
     <!-- ACCUEIL -->
@@ -1122,11 +1122,11 @@ async function chargeEtat() {
   $("#ouvrir-nouvelle-txt").textContent = S.etat.abonnement?.gratuit ? "Nouveau classement" : "Nouvelle veille";
   $("#etat-cles").innerHTML = S.etat.demo
     ? '<span class="pastille off"></span>Mode démo'
-    : '<span class="pastille"></span>Apify et Claude connectés';
+    : '<span class="pastille"></span>Virall.ai connecté';
   if (S.etat.job && !S.jobId) suisJob(S.etat.job.id, false);
   const u = S.etat.utilisateur, ab = S.etat.abonnement;
   $("#utilisateur").innerHTML = `<span>${esc(u.prenom || u.email)}${ab ? ` — ${esc(ab.nom_plan)}` : ""}</span><button onclick="deconnexion()">Se déconnecter</button>${S.etat.admin ? '<a class="lien-admin" href="/admin">Administration</a>' : ""}`;
-  $("#bandeau-demo").innerHTML = S.etat.demo ? "<b>Mode démo.</b> Les analyses utilisent des données fictives (clés Apify et Claude non configurées sur le serveur)." : "";
+  $("#bandeau-demo").innerHTML = S.etat.demo ? "<b>Mode démo.</b> Les analyses utilisent des données fictives." : "";
   if (ab && !ab.actif) { $("#bandeau-demo").hidden = false; $("#bandeau-demo").innerHTML = `<b>${ab.statut === "essai" ? "Ton essai gratuit est terminé." : "Ton abonnement n'est pas actif."}</b> <a href="#" onclick="va('abonnement');return false">Choisis une formule</a> pour lancer de nouvelles analyses.`; }
 }
 async function deconnexion() { await api("/api/deconnexion", {method: "POST"}); location.href = "/"; }
@@ -1393,7 +1393,7 @@ function renduReels() {
     <div><b>${nbLong(s.videos)}</b><span>publications passées au crible sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
     <div class="cible"><b>${cdc}</b><span>vraiment virale${cdc > 1 ? "s" : ""}</span></div>
     ${a.classement_seul ? "" : `<div><b>${ad}</b><span>prête${ad > 1 ? "s" : ""} à reproduire pour toi</span></div>`}
-    ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (Apify ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, Claude ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
+    ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (collecte ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, IA ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
     <p class="note-criteres"><b>Viral</b> = ${texteCriteres(a.criteres)}. <button class="lien" onclick="ouvreAssistant('criteres', true)">Modifier</button></p>`;
   if (criteresDifferents(a.criteres, S.etat?.criteres) && !a.en_cours) $("#resume").insertAdjacentHTML("beforeend", `<p class="note-criteres">Tu as changé tes critères depuis cette analyse (maintenant : ${texteCriteres(S.etat.criteres)}). Ils s'appliqueront à ta prochaine veille.${gratuit ? "" : ` <button class="lien" onclick="ouvreNouvelle('veille')">Relancer la veille maintenant</button>`}</p>`);
   const completes = a.posts.filter(p => adapte(p) && !p.criteres_ok && !p.demande).length;
@@ -1630,7 +1630,7 @@ function corpsOnglet(p, o) {
     ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
   return `
     ${ad.erreur ? `<p class="erreur" style="margin-bottom:14px">Dernière tentative d'adaptation : ${esc(ad.erreur)}</p>` : ""}
-    <div class="adapter-cta"><h2>Adapter ${estCarrousel(p) ? "ce carrousel" : "ce Reel"} à ta niche</h2><p>${estCarrousel(p) ? "Claude lit chaque slide et la réécrit pour toi, avec la photo à prévoir." : "Claude regarde la vidéo et écrit tes hooks, ton script, ta légende et ta séquence DM."}</p>
+    <div class="adapter-cta"><h2>Adapter ${estCarrousel(p) ? "ce carrousel" : "ce Reel"} à ta niche</h2><p>${estCarrousel(p) ? "Virall.ai lit chaque slide et la réécrit pour toi, avec la photo à prévoir." : "Virall.ai regarde la vidéo et écrit tes hooks, ton script, ta légende et ta séquence DM."}</p>
     <button class="btn prim" data-adapter="${esc(p.cle)}">Adapter ${estCarrousel(p) ? "ce carrousel" : "ce Reel"}</button></div>
     <h3>Légende originale</h3><div class="carte">${esc(p.legende) || "Sans légende"}</div>
     ${p.transcription ? `<h3>Transcription</h3><div class="carte">${esc(p.transcription)}</div>` : ""}`;
@@ -1973,7 +1973,7 @@ async function choisirFormat(cle) {
       S.projetId = r.projet.id; S.projet = r.projet;
       S.tacheStudio = r.job ? (r.projet.copie_du_modele && r.projet.type === "carrousel"
         ? {id: r.job, sid: r.projet.id, titre: "Choix des images", phrase: "Je choisis des images pour tes slides…"}
-        : {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Claude écrit tes textes…"}) : null;
+        : {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Virall.ai écrit tes textes…"}) : null;
       va("studio"); if (r.job) suisTacheStudio(r.job);
     } catch (e) { toast(e.message); b.disabled = false; b.textContent = (format === "carrousel" ? "Créer le carrousel" : "Créer le Reel") + " →"; }
   };
@@ -2283,7 +2283,7 @@ function renduProjet() {
         </div>
         <div class="st-bloc">
           <h3>2. Les textes</h3>
-          ${S.etat?.abonnement?.options?.ia === false ? `<p class="aide">Écris tes textes ci-dessous.${p.type === "reel" ? "" : " Avec une formule payante, Claude les écrit pour toi dans ta voix."}</p>`
+          ${S.etat?.abonnement?.options?.ia === false ? `<p class="aide">Écris tes textes ci-dessous.${p.type === "reel" ? "" : " Avec une formule payante, Virall.ai les écrit pour toi dans ta voix."}</p>`
             : `<p class="aide">Style d'écriture — toujours dans ta voix, seule la construction change.</p>
           ${pucesStyles(S.optionsStudio || {styles: []}, p.style || "ma_voix")}${astuceVoix(S.optionsStudio || {voix_connue: true})}
           <div class="st-outils"><button class="btn petit prim" id="st-ecrire" ${ecrit ? "disabled" : ""}>Réécrire dans ce style</button></div>`}
@@ -2293,7 +2293,7 @@ function renduProjet() {
           ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
             ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (ce que tu dis dans la vidéo)</label>` : ""}
             <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>` : ""}
-          ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Claude écrit tes slides…</p>` : `
+          ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Virall.ai écrit tes slides…</p>` : `
             ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
             <ol class="st-slides">${(() => { const att = attribueJS(p.slides, p.images); return p.slides.map((x, i) => `<li class="st-slide">
               <button type="button" class="st-vign" data-bq-slide="${i}" aria-label="Choisir l'image de la slide ${i + 1}">${att[i] ? `<img src="${src(att[i])}" alt="">` : `<span class="st-fond ${esc(p.theme)}${x.photo ? " attend" : ""}" ${fondTheme(p.theme)}>${x.photo ? "📷" : "+"}</span>`}<em>${att[i] ? "Changer" : "Image"}</em></button>
@@ -2360,7 +2360,7 @@ function renduProjet() {
   $$("[data-moins]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); const sl = S.projet.slides.filter((_, i) => i !== +b.dataset.moins); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: sl}}); renduProjet(); });
   $("#st-ecrire")?.addEventListener("click", async () => {
     if (p.slides.length && !confirm("Remplacer tes textes actuels (slides, légende" + (p.type === "reel" ? ", script" : "") + ") par une nouvelle version dans ce style ?")) return;
-    try { const r = await api(`/api/studio/${p.id}/ecrire`, {method: "POST"}); S.tacheStudio = {id: r.job, sid: p.id, titre: "Écriture des slides", phrase: "Claude écrit tes slides…"}; renduProjet(); suisTacheStudio(r.job); } catch (e) { toast(e.message); }
+    try { const r = await api(`/api/studio/${p.id}/ecrire`, {method: "POST"}); S.tacheStudio = {id: r.job, sid: p.id, titre: "Écriture des slides", phrase: "Virall.ai écrit tes slides…"}; renduProjet(); suisTacheStudio(r.job); } catch (e) { toast(e.message); }
   });
   $$("[data-retire]", el).forEach(b => b.onclick = async () => { S.projet = await api(`/api/studio/${p.id}/fichiers/${encodeURIComponent(b.dataset.retire)}`, {method: "DELETE"}); renduProjet(); });
   $$("[data-bouge]", el).forEach(b => b.onclick = async () => {
@@ -2582,12 +2582,12 @@ function etatAnalyse(j) {
     else if (/vidéos|Transcription|images clés|carrousel/i.test(m)) { phase = "videos"; phrase = "Je regarde les vidéos et je lis les carrousels…"; pct = Math.max(pct, 40); }
     else if (/Commentaires/i.test(m)) { phrase = "Je lis ce que dit leur audience…"; pct = Math.max(pct, 48); }
     else if (/Ton compte|Lecture de tes Reels|Lecture de ta bio/i.test(m)) { phrase = "J'étudie ce qui marche déjà sur ton compte…"; pct = Math.max(pct, 52); }
-    else if (/adaptation par Claude/i.test(m)) { phase = "adaptation"; enAdaptation = true; phrase = "J'écris tes hooks, tes scripts et tes messages…"; pct = Math.max(pct, 56); }
+    else if (/adaptation par Virall.ai/i.test(m)) { phase = "adaptation"; enAdaptation = true; phrase = "J'écris tes hooks, tes scripts et tes messages…"; pct = Math.max(pct, 56); }
     else if ((r = m.match(/^\s*(\d+)\/(\d+)$/)) && enAdaptation) { pct = Math.max(pct, 56 + 38 * r[1] / r[2]); phrase = `J'écris tes adaptations : ${r[1]} sur ${r[2]}…`; }
     else if (/voix du client/i.test(m)) { phrase = "Je résume ce que veut ton client idéal…"; pct = Math.max(pct, 95); }
     else if (/Découverte/i.test(m)) { phrase = "Je cherche de nouveaux comptes à surveiller…"; pct = Math.max(pct, 96); }
     else if (/Mise à jour de \d+ publication/i.test(m)) { phrase = "Je récupère les chiffres de tes Reels…"; pct = Math.max(pct, 40); }
-    else if (/Claude analyse ton positionnement/i.test(m)) { phrase = "Claude analyse ton positionnement…"; pct = Math.max(pct, 60); }
+    else if (/analyse ton positionnement/i.test(m)) { phrase = "Virall.ai analyse ton positionnement…"; pct = Math.max(pct, 60); }
   }
   if (j?.statut === "terminé") { pct = 100; phrase = "C'est prêt !"; }
   return {pct: Math.round(Math.min(pct, 100)), phrase, nbRepere};
@@ -2737,7 +2737,7 @@ function blocAnalyseCompte(prof) {
       <div><b>${nb(c.vues_max)}</b><span>ton record</span></div>
     </div>
     ${(prof.top || []).length ? `<div class="top-reels">${prof.top.map(t => `<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(t.legende)}">${t.miniature ? `<img src="/media/${encodeURIComponent(t.miniature)}" alt="">` : ""}<b>${nb(t.vues)}</b></a>`).join("")}</div>` : ""}
-    ${pr.description_niche ? `<div class="proposition"><h3>Ce que Claude comprend de ton compte</h3>
+    ${pr.description_niche ? `<div class="proposition"><h3>Ce que Virall.ai comprend de ton compte</h3>
       <dl><dt>Ton activité</dt><dd>${esc(pr.description_niche)}</dd><dt>Ton client idéal</dt><dd>${esc(pr.cible)}</dd><dt>Ton ton</dt><dd>${esc(pr.ton)}</dd>${pr.offre ? `<dt>Ton offre</dt><dd>${esc(pr.offre)}</dd>` : ""}</dl>
       <div class="conseils"><div><b>Ce qui marche</b><ul>${(pr.points_forts || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div><div><b>À améliorer</b><ul>${(pr.a_ameliorer || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
       ${W.edition ? `<p style="margin:14px 0 0"><button class="btn prim" id="w-utiliser">Utiliser ces informations</button></p>` : `<p class="pret-ok">✓ Ces informations pré-remplissent l'étape suivante. Clique sur « Continuer ».</p>`}</div>` : ""}
@@ -2748,7 +2748,7 @@ const PAGES = {
   marque: () => { const m = W.p.marque || {}, c = m.couleurs || {}, mf = m.mise_en_forme || [];
     const couleur = (k, nom, def) => `<label class="w-couleur"><input type="color" id="w-c-${k}" value="${esc(c[k] || def)}"><span>${nom}</span></label>`;
     return `<h2 id="a-titre">Ta marque</h2>
-    <p class="intro">Ta façon d'écrire et tes couleurs. Claude les applique à chaque script, légende et message, et le Studio les utilise pour tes carrousels et tes Reels.</p>
+    <p class="intro">Ta façon d'écrire et tes couleurs. Virall.ai les applique à chaque script, légende et message, et le Studio les utilise pour tes carrousels et tes Reels.</p>
     <h3 class="w-sous">Ton écriture</h3>
     <div class="f"><span class="lab">Tu t'adresses à ton audience…</span>${choix("w-adresse", [["tu", "En tutoyant"], ["vous", "En vouvoyant"]], m.adresse || "tu")}</div>
     <div class="f"><span class="lab">Les emojis</span>${choix("w-emojis", [["aucun", "Aucun"], ["peu", "Quelques-uns", "1 à 3 par légende"], ["beaucoup", "Beaucoup"]], m.emojis || "peu")}</div>
@@ -2788,7 +2788,7 @@ const PAGES = {
     <div class="f"><button type="button" class="btn" id="w-sugg">✨ Suggère-moi des comptes qui cartonnent</button><div id="w-sugg-res" style="margin-top:10px"></div></div>
     <p class="aide">Conseil : 5 à 10 comptes qui font régulièrement beaucoup de vues. Ta première veille prend 10 à 20 minutes, tu peux fermer la page.</p>`; },
   compte: () => `<h2 id="a-titre">Commençons par ton compte</h2>
-    <p class="intro">Claude lit tes derniers Reels pour comprendre ton positionnement, ce qui marche déjà chez toi et ton ton. Les étapes suivantes seront pré-remplies.</p>
+    <p class="intro">Virall.ai lit tes derniers Reels pour comprendre ton positionnement, ce qui marche déjà chez toi et ton ton. Les étapes suivantes seront pré-remplies.</p>
     <div class="duo"><div class="f"><label for="w-ig">Ton compte Instagram</label><input id="w-ig" placeholder="@toncompte" value="${esc(W.p.mon_compte.instagram || "")}"></div>
     <div class="f"><label for="w-tt">Ton compte TikTok</label><input id="w-tt" placeholder="@toncompte (facultatif)" value="${esc(W.p.mon_compte.tiktok || "")}"></div></div>
     <p><button class="btn" id="w-analyser">${W.p.profil_compte ? "Relancer l'analyse de mon compte" : "Analyser mon compte"}</button></p>
@@ -2797,8 +2797,8 @@ const PAGES = {
     const nom = n.nom || pr.nom_marque || "", desc = n.description || pr.description_niche || "", offre = n.offre || pr.offre || "";
     const pre = (!n.nom && pr.nom_marque) || (!n.description && pr.description_niche) || (!n.offre && pr.offre);
     return `<h2 id="a-titre">Ton activité</h2>
-    <p class="intro">${pre ? "Pré-rempli à partir de ta bio et de tes Reels : vérifie et ajuste." : "C'est ce qui permet à Claude de transposer les Reels des autres à ton univers."}</p>
-    ${pr.description_niche ? `<p style="margin:-12px 0 20px"><button class="btn petit" id="w-remplir">Remplir depuis mon compte</button> <span class="aide">remplace les champs par ce que Claude a lu sur ton profil</span></p>` : ""}
+    <p class="intro">${pre ? "Pré-rempli à partir de ta bio et de tes Reels : vérifie et ajuste." : "C'est ce qui permet à Virall.ai de transposer les Reels des autres à ton univers."}</p>
+    ${pr.description_niche ? `<p style="margin:-12px 0 20px"><button class="btn petit" id="w-remplir">Remplir depuis mon compte</button> <span class="aide">remplace les champs par ce que Virall.ai a lu sur ton profil</span></p>` : ""}
     <div class="f"><label for="w-nom">Nom de ta marque</label><input id="w-nom" value="${esc(nom)}" placeholder="Ex. Brille & Vibre"></div>
     <div class="f"><label for="w-desc">Ce que tu fais, pour qui, et quel résultat tu apportes</label><textarea id="w-desc" placeholder="Ex. J'aide les femmes actives de 30 à 50 ans à dégonfler et à retrouver de l'énergie, sans régime strict.">${esc(desc)}</textarea></div>
     <div class="f"><label for="w-offre">Ce vers quoi tu emmènes les gens</label><input id="w-offre" value="${esc(offre)}" placeholder="Ex. Ebook gratuit, puis accompagnement de 3 mois"><span class="aide">C'est ce que proposeront tes messages privés.</span></div>
@@ -2808,10 +2808,10 @@ const PAGES = {
     const pre = (!n.cible && pr.cible) || (!(n.douleurs || []).length && (pr.douleurs || []).length);
     return `<h2 id="a-titre">Ton client idéal</h2>
     <p class="intro">${pre ? "Pré-rempli à partir de ta bio et de tes Reels : vérifie et ajuste." : "Les hooks et les messages s'adressent à cette personne, avec ses mots à elle."}</p>
-    ${pr.cible ? `<p style="margin:-12px 0 20px"><button class="btn petit" id="w-remplir">Remplir depuis mon compte</button> <span class="aide">remplace les champs par ce que Claude a lu sur ton profil</span></p>` : ""}
+    ${pr.cible ? `<p style="margin:-12px 0 20px"><button class="btn petit" id="w-remplir">Remplir depuis mon compte</button> <span class="aide">remplace les champs par ce que Virall.ai a lu sur ton profil</span></p>` : ""}
     <div class="f"><label for="w-cible">Qui est-ce ?</label><input id="w-cible" value="${esc(cible)}" placeholder="Ex. Femme de 35 ans, maman, cadre, fatiguée des régimes"></div>
     <div class="f"><label for="w-douleurs">Ce qu'elle vit au quotidien</label><textarea id="w-douleurs" placeholder="Un problème par ligne">${esc(douleurs.join("\n"))}</textarea><span class="aide">Un problème par ligne. Les commentaires lus pendant les analyses viendront compléter cette liste.</span></div>
-    <div class="f"><label for="w-interdits">Ce que tu ne veux jamais dire</label><textarea id="w-interdits" style="min-height:70px">${esc(n.interdits)}</textarea><span class="aide">Promesses, sujets ou mots que Claude doit éviter.</span></div>`; },
+    <div class="f"><label for="w-interdits">Ce que tu ne veux jamais dire</label><textarea id="w-interdits" style="min-height:70px">${esc(n.interdits)}</textarea><span class="aide">Promesses, sujets ou mots que Virall.ai doit éviter.</span></div>`; },
   objectifs: () => { const o = W.p.objectifs; return `<h2 id="a-titre">Tes objectifs</h2>
     <p class="intro">Le planning et les appels à l'action sont construits autour de ces chiffres.</p>
     <div class="f"><span class="lab">Combien de Reels veux-tu publier par jour ?</span>${choix("w-rpj", [[1, "1 par jour", "7 par semaine"], [2, "2 par jour", "14 par semaine, recommandé"], [3, "3 par jour", "21 par semaine"]], o.reels_par_jour)}</div>
@@ -2845,7 +2845,7 @@ const PAGES = {
     const texte = W.p.voix || auto, preRempli = !W.p.voix && !!auto;
     return `<h2 id="a-titre">Ta voix</h2>
     <p class="intro">${preRempli ? "Pré-rempli à partir de tes Reels : vérifie, corrige ou complète. C'est ce qui permet aux scripts et aux légendes de sonner comme toi." : "Pour que les scripts et les légendes sonnent comme toi, et pas comme une IA."}</p>
-    ${guide.length ? `<div class="proposition" style="margin-bottom:20px"><h3>Ce que Claude a repéré dans ta façon d'écrire</h3>
+    ${guide.length ? `<div class="proposition" style="margin-bottom:20px"><h3>Ce que Virall.ai a repéré dans ta façon d'écrire</h3>
       <ul style="margin:0;padding-left:18px">${guide.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
       ${expr.length ? `<p style="margin:10px 0 0">${expr.map(x => `<span class="puce">${esc(x)}</span>`).join(" ")}</p>` : ""}</div>` : ""}
     <div class="f"><label for="w-ton">Ton ton en quelques mots</label><input id="w-ton" value="${esc(ton)}" placeholder="Ex. Chaleureux, direct, tutoiement, un peu d'humour"></div>
@@ -2919,7 +2919,7 @@ const APRES = {
         suisJob(r.job, false, async () => {
           W.p = await api("/api/profil"); W.p.mon_compte = {instagram: ig, tiktok: tt};
           const pr = W.p.profil_compte?.proposition;
-          if (pr && !W.edition) {  // démarrage : on reprend directement ce que Claude a compris du compte
+          if (pr && !W.edition) {  // démarrage : on reprend directement ce que Virall.ai a compris du compte
             const n = W.p.niche, corps = {niche: {nom: n.nom || pr.nom_marque, description: n.description || pr.description_niche, cible: n.cible || pr.cible,
               douleurs: (n.douleurs || []).length ? n.douleurs : pr.douleurs, ton: pr.ton || n.ton, offre: n.offre || pr.offre}};
             if (pr.hashtags?.length) corps.hashtags = {instagram: pr.hashtags, tiktok: pr.hashtags};
@@ -2981,7 +2981,7 @@ async function renduParametres() {
     ${r("Ce qu'on appelle « viral »", texteCriteres(a), "criteres")}
     ${r("Comptes à copier", `${nbC} compte(s), ${(p.hashtags.instagram || []).length + (p.hashtags.tiktok || []).length} hashtags`, "modeles")}
     ${r("Ta voix", esc(n.ton || "Non renseignée"), "voix")}
-    ${r("Ta marque (écriture et visuels)", (() => { const m = p.marque || {}; const bouts = [m.adresse === "vous" ? "vouvoiement" : m.adresse === "tu" ? "tutoiement" : "", m.emojis ? "emojis : " + m.emojis : "", m.longueur ? "légendes " + m.longueur + "s" : "", m.couleurs?.fond ? `<span class="pt-c" style="background:${esc(m.couleurs.fond)}"></span><span class="pt-c" style="background:${esc(m.couleurs.texte)}"></span><span class="pt-c" style="background:${esc(m.couleurs.accent)}"></span>` : ""].filter(Boolean); return bouts.length ? bouts.join(", ") : "Non renseignée : Claude écrit dans un format standard"; })(), "marque")}
+    ${r("Ta marque (écriture et visuels)", (() => { const m = p.marque || {}; const bouts = [m.adresse === "vous" ? "vouvoiement" : m.adresse === "tu" ? "tutoiement" : "", m.emojis ? "emojis : " + m.emojis : "", m.longueur ? "légendes " + m.longueur + "s" : "", m.couleurs?.fond ? `<span class="pt-c" style="background:${esc(m.couleurs.fond)}"></span><span class="pt-c" style="background:${esc(m.couleurs.texte)}"></span><span class="pt-c" style="background:${esc(m.couleurs.accent)}"></span>` : ""].filter(Boolean); return bouts.length ? bouts.join(", ") : "Non renseignée : Virall.ai écrit dans un format standard"; })(), "marque")}
     </div>
     <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || S.etat.abonnement.plan !== "essai" ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
     <label class="interrupteur"><input type="checkbox" id="p-synthese" ${p.synthese ? "checked" : ""}><span><b>Récapitulatif chaque lundi par e-mail</b><br><span style="color:var(--ink-3);font-size:13.5px">Ta veille, tes publications et ta boutique de la semaine en un coup d'œil.</span></span></label>
@@ -3708,7 +3708,7 @@ function apercuFond(k, d) {
 }
 
 // ---- Onglet Produits
-// Suit une tâche de fond (Claude, guide PDF…) jusqu'à la fin ; onLog reçoit la dernière ligne du journal
+// Suit une tâche de fond (Virall.ai, guide PDF…) jusqu'à la fin ; onLog reçoit la dernière ligne du journal
 async function attendsTache(jid, onLog) {
   for (;;) {
     await new Promise(r => setTimeout(r, 1200));
@@ -3735,9 +3735,9 @@ function ongletProduits(z) {
   const promo = x => x.promo_prix && x.promo_fin && new Date(x.promo_fin) > new Date() ? `<span class="prix" style="background:var(--glow-soft);color:var(--glow)">⏳ ${euros(x.promo_prix)}</span>` : "";
   const aRdv = p.produits.some(x => x.type === "rdv");
   const vides = p.produits.filter(x => x.visible !== false && x.type !== "rdv" && x.type !== "pack" && !x.fichier && !x.lien);
-  if (vides.length) bandeau += `<div class="bt-stripe info"><p><b>${vides.length === 1 ? "1 produit n'a" : vides.length + " produits n'ont"} rien à livrer</b> (${vides.map(x => esc(x.titre || "Sans titre")).join(", ")}) : ajoute le fichier, un lien ou fais écrire le guide par Claude. En attendant, ${vides.length === 1 ? "il s'affiche" : "ils s'affichent"} « bientôt disponible ».</p></div>`;
+  if (vides.length) bandeau += `<div class="bt-stripe info"><p><b>${vides.length === 1 ? "1 produit n'a" : vides.length + " produits n'ont"} rien à livrer</b> (${vides.map(x => esc(x.titre || "Sans titre")).join(", ")}) : ajoute le fichier, un lien ou fais écrire le guide par Virall.ai. En attendant, ${vides.length === 1 ? "il s'affiche" : "ils s'affichent"} « bientôt disponible ».</p></div>`;
   z.innerHTML = `${bandeau}
-    <section class="bt-sec bt-idees"><h3>✨ Quoi vendre ?</h3><p class="aide">Claude s'appuie sur ta niche, tes Reels qui marchent et ceux qui cartonnent dans ta veille pour te proposer 3 produits, avec la fiche prête et le prix conseillé.</p>
+    <section class="bt-sec bt-idees"><h3>✨ Quoi vendre ?</h3><p class="aide">Virall.ai s'appuie sur ta niche, tes Reels qui marchent et ceux qui cartonnent dans ta veille pour te proposer 3 produits, avec la fiche prête et le prix conseillé.</p>
       <div id="bt-idees">${BQ.idees ? ideesHTML(BQ.idees) : `<button class="btn prim" id="bt-lance-idees">Trouve-moi quoi vendre</button>`}</div></section>
     <button class="btn prim" id="bt-nouveau-prod" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px">+ Nouveau produit</button>
     <div class="bt-prods">${p.produits.map((x, i) => `<button class="bt-prod" data-prod="${i}">
@@ -3822,7 +3822,7 @@ function editeProduit(i, lancerGuide) {
       <div class="champ"><label>Ce que reçoit ta cliente</label>
         <div class="bt-puces">${[["fichier", "📄 Un fichier"], ["lien", "🔗 Un lien"], ["rdv", "📅 Un rendez-vous"], ["pack", "🎁 Un pack"]].map(([k, l]) => `<button type="button" data-liv="${k}" aria-pressed="${livraison === k}">${l}</button>`).join("")}</div></div>
       ${livraison === "fichier" ? `<label class="bt-depot" style="margin-bottom:8px">📄<span id="pr-fichier-nom">${esc(fichierEnvoye?.name || x.fichier_nom || "Choisis ton fichier (PDF, ZIP, vidéo, audio…)")}</span><input type="file" id="pr-fichier"></label>
-          <div class="bt-guide-ia"><div><b>✨ Pas encore de fichier ?</b><span>Claude écrit le guide dans ta voix et le met en page en PDF, à tes couleurs.</span></div><button type="button" class="btn petit prim" id="pr-guide">${x.fichier ? "Réécrire le guide" : "Écrire le guide"}</button></div>
+          <div class="bt-guide-ia"><div><b>✨ Pas encore de fichier ?</b><span>Virall.ai écrit le guide dans ta voix et le met en page en PDF, à tes couleurs.</span></div><button type="button" class="btn petit prim" id="pr-guide">${x.fichier ? "Réécrire le guide" : "Écrire le guide"}</button></div>
           <p class="aide" id="pr-guide-log" style="margin:6px 0 14px"></p>`
       : livraison === "lien" ? `<div class="champ"><input id="pr-lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="Lien de ta formation, Notion, Drive…"><span class="aide">Le lien est donné après le paiement (ou l'inscription si c'est gratuit).</span></div>`
       : livraison === "rdv" ? `<div class="bt-rdv-conf">
@@ -3907,7 +3907,7 @@ function editeProduit(i, lancerGuide) {
       lit();
       if (!x.titre) return toast("Donne un titre à ton produit");
       if (livraison === "lien" && !x.lien) return toast("Indique le lien que reçoit ta cliente");
-      if (livraison === "fichier" && !fichierEnvoye && !x.fichier) return toast("Ajoute le fichier, ou fais écrire le guide par Claude");
+      if (livraison === "fichier" && !fichierEnvoye && !x.fichier) return toast("Ajoute le fichier, ou fais écrire le guide par Virall.ai");
       if (livraison === "rdv" && !x.rdv.jours.length) return toast("Choisis au moins un jour");
       if (livraison === "pack" && x.inclus.length < 2) return toast("Choisis au moins deux produits pour le pack");
       if (x.promo_prix && (!x.promo_fin || x.promo_prix >= x.prix)) return toast("L'offre limitée demande un prix plus bas et une date de fin");
@@ -3982,7 +3982,7 @@ function ongletEmails(z) {
     ${BQ.etat.emails ? "" : `<div class="bt-stripe info"><p><b>Les e-mails ne partent pas encore :</b> l'envoi sera activé dès que Virallink aura configuré son service d'e-mails. Tu peux déjà préparer ta séquence.</p></div>`}
     <section class="bt-sec"><h3>Séquence de bienvenue</h3><p class="aide">Chaque nouvelle inscrite (formulaire, cadeau, achat) reçoit ces e-mails automatiquement, un par un. Lien de désinscription inclus.</p>
       <label class="bt-interr"><span><b>${q.actif ? "Séquence active" : "Séquence en pause"}</b><br><small style="color:var(--ink-3)">${q.actif ? "Seules les inscrites arrivées après l'activation la reçoivent." : "Active-la quand tes e-mails sont prêts."}</small></span><input type="checkbox" id="sq-actif" ${q.actif ? "checked" : ""}></label>
-      <button class="btn petit" id="sq-ia" style="margin-top:8px">✨ Écrire la séquence avec Claude</button> <span class="aide" id="sq-log"></span>
+      <button class="btn petit" id="sq-ia" style="margin-top:8px">✨ Écrire la séquence avec Virall.ai</button> <span class="aide" id="sq-log"></span>
     </section>
     <div id="sq-emails">${q.emails.map((e, i) => `<section class="bt-sec bt-mail">
       <div class="bt-rangee" style="justify-content:space-between"><b>E-mail ${i + 1}</b>
@@ -4004,14 +4004,14 @@ function ongletEmails(z) {
   });
   $("#sq-ajout").onclick = () => { const der = q.emails[q.emails.length - 1]; q.emails.push({delai_jours: der ? +der.delai_jours + 3 : 0, sujet: "", texte: "Coucou {prenom},\n\n", produit: ""}); sauveBoutique(true); renduOnglet(); };
   $("#sq-ia").onclick = async () => {
-    if (q.emails.some(e => e.texte.trim().length > 30) && !confirm("Remplacer tes e-mails actuels par ceux de Claude ?")) return;
+    if (q.emails.some(e => e.texte.trim().length > 30) && !confirm("Remplacer tes e-mails actuels par ceux de Virall.ai ?")) return;
     const b = $("#sq-ia"); b.disabled = true; b.innerHTML = spin(" Écriture…");
     try {
       const r = await api("/api/boutique/sequence/ecrire", {method: "POST"});
       const res = await attendsTache(r.job, m => { const l = $("#sq-log"); if (l) l.textContent = m; });
       q.emails = res.emails.map(e => ({delai_jours: e.delai_jours, sujet: e.sujet, texte: e.texte, produit: e.produit || ""}));
       await sauveBoutique(true); toast("Ta séquence est écrite : relis-la avant de l'activer"); renduOnglet();
-    } catch (e) { toast(e.message); b.disabled = false; b.textContent = "✨ Écrire la séquence avec Claude"; }
+    } catch (e) { toast(e.message); b.disabled = false; b.textContent = "✨ Écrire la séquence avec Virall.ai"; }
   };
 }
 
