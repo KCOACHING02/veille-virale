@@ -138,6 +138,20 @@ main{min-width:0;padding:20px 28px 80px}
 .pied{padding:11px 13px 13px;display:flex;flex-direction:column;gap:6px;flex:1}
 .pied .compte{font-weight:600;font-size:14px;display:flex;justify-content:space-between;gap:8px}
 .pied .compte span{color:var(--ink-3);font-weight:400;font-size:12.5px;white-space:nowrap}
+.types{display:flex;gap:5px;flex-wrap:wrap}
+.type-c{display:inline-block;font-size:11.5px;font-weight:600;border-radius:99px;padding:2px 8px;background:var(--sunk);color:var(--ink-2)}
+.type-c.t-educatif{background:#E3EEFF;color:#1D4FA3}
+.type-c.t-storytelling{background:#F6E6FF;color:#7A2E9E}
+.type-c.t-inspirant{background:#FFF1D6;color:#8A5300}
+.type-c.t-divertissant{background:#FFE3EC;color:#A3214B}
+.type-c.t-commercial{background:#DFF5E8;color:#1D6B3F}
+.type-c.t-preuve-sociale{background:#E2F6F6;color:#126466}
+.type-c.t-coulisses{background:#EFEDEA;color:#5B524B}
+@media (prefers-color-scheme:dark){.type-c[class*=" t-"]{background:var(--sunk);color:var(--ink)}}
+.badge.deja{background:rgba(39,27,45,.78);color:#fff;margin-left:4px}
+.planning-info{margin:0 0 16px}
+.planning-info summary{cursor:pointer;font-weight:600;color:var(--glow)}
+.planning-info p{margin:8px 0 0;color:var(--ink-2);font-size:14.5px}
 .pied .hook{font-size:13.5px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pied .hook.adapte{color:var(--ink)}
 .pied .hook.adapte::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--glow);margin-right:6px;vertical-align:1px}
@@ -880,6 +894,7 @@ a.btn{text-decoration:none}
         <div class="filtres-plus" id="filtres-plus" hidden>
         <select class="select" id="f-plateforme" aria-label="Plateforme"><option value="">Instagram et TikTok</option><option>Instagram</option><option>TikTok</option></select>
         <select class="select" id="f-compte" aria-label="Compte"></select>
+        <select class="select" id="f-type" aria-label="Type de contenu"><option value="">Tous les types</option><option>Éducatif</option><option>Storytelling</option><option>Inspirant</option><option>Divertissant</option><option>Commercial</option><option>Preuve sociale</option><option>Coulisses</option></select>
         <select class="select" id="f-tri" aria-label="Trier par">
           <option value="conv">Trier : potentiel de conversation</option>
           <option value="vues">Trier : vues</option>
@@ -1128,6 +1143,8 @@ function postsFiltres() {
   if (fmt) ps = ps.filter(p => fmt === "Carrousel" ? estCarrousel(p) : !estCarrousel(p));
   if (pl) ps = ps.filter(p => p.plateforme === pl);
   if (cpt) ps = ps.filter(p => p.plateforme + ":" + p.compte === cpt);
+  const typ = $("#f-type").value;
+  if (typ) ps = ps.filter(p => p.type_contenu === typ);
   if (q) ps = ps.filter(p => (p.legende + " " + p.compte + " " + JSON.stringify(p.adaptation || {})).toLowerCase().includes(q));
   const k = {vues: p => p.vues || 0, eng: p => p.taux_engagement || 0, viral: p => p.score_viral || 0, date: p => p.date || "",
              conv: p => (p.taux_commentaires || 0) * 4 + (p.taux_engagement || 0)}[tri];
@@ -1144,7 +1161,7 @@ function carte(p) {
     <div class="ecran">
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
       <div class="haut">
-        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">🔥 Viral</span>' : ""}${adapte(p) ? '<span class="badge pret">✨ Prêt pour toi</span>' : ""}${estCarrousel(p) ? `<span class="badge fmt">${esc(libFormat(p))}</span>` : ""}</span>
+        <span>${p.demande ? '<span class="badge dem">Demandé</span>' : p.criteres_ok ? '<span class="badge ok">🔥 Viral</span>' : ""}${adapte(p) ? '<span class="badge pret">✨ Prêt pour toi</span>' : ""}${!adapte(p) && p.deja_utilise ? `<span class="badge deja" title="Déjà dans ton planning de la semaine du ${esc(p.deja_utilise)}">Déjà proposé</span>` : ""}${estCarrousel(p) ? `<span class="badge fmt">${esc(libFormat(p))}</span>` : ""}</span>
         <span class="plat" title="${p.plateforme}">${ICONES[p.plateforme]}</span>
       </div>
       <div class="bas">
@@ -1160,6 +1177,7 @@ function carte(p) {
       </div>
     </div>
     <div class="pied">
+      ${p.type_contenu ? `<div class="types">${pastilleType(p)}${adapte(p) && p.adaptation?.mecanique ? `<span class="type-c">${esc(p.adaptation.mecanique)}</span>` : ""}</div>` : ""}
       <div class="compte">@${esc(p.compte)}<span>${p.date ? new Date(p.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}) : ""}</span></div>
       <div class="hook ${adapte(p) ? "adapte" : ""}">${esc(hook) || "<i>Sans légende</i>"}</div>
     </div>
@@ -1204,7 +1222,7 @@ function renduReels() {
   g.innerHTML = ps.length ? ps.map(carte).join("") : `<div class="vide"><h2>Aucun Reel ici</h2><p>${S.filtre === "cdc" ? "Aucun Reel de cette analyse n'atteint tes critères de viralité. Regarde l'onglet « Tout », assouplis tes critères (bouton Modifier ci-dessus) ou ajoute des comptes plus gros." : S.filtre === "adaptes" ? "Aucun Reel n'a encore été réécrit pour toi dans cette analyse. Ouvre un Reel viral et clique « Adapter ce Reel »." : "Change les filtres pour en voir davantage."}</p></div>`;
 }
 $$("#f-statut button").forEach(b => b.onclick = () => { S.filtre = b.dataset.v; S.filtreChoisi = true; renduReels(); });
-["#f-plateforme", "#f-compte", "#f-tri", "#f-format"].forEach(s => $(s).onchange = renduReels);
+["#f-plateforme", "#f-compte", "#f-tri", "#f-format", "#f-type"].forEach(s => $(s).onchange = renduReels);
 $("#f-plus").onclick = () => { const f = $("#filtres-plus"); f.hidden = !f.hidden; $("#f-plus").setAttribute("aria-expanded", !f.hidden); };
 $("#f-texte").oninput = renduReels;
 document.addEventListener("click", e => { const r = e.target.closest("[data-cle]"); if (r) ouvreReel(r.dataset.cle); });
@@ -1218,6 +1236,8 @@ document.addEventListener("click", e => {
   const el = b.parentElement.cloneNode(true); $$("button", el).forEach(x => x.remove());
   navigator.clipboard.writeText(el.textContent.trim()).then(() => { b.textContent = "Copié"; setTimeout(() => b.textContent = "Copier", 1400); });
 });
+const classeType = t => "t-" + (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+const pastilleType = p => p.type_contenu ? `<span class="type-c ${classeType(p.type_contenu)}">${esc(p.type_contenu)}</span>` : "";
 const LIB_ONGLETS = {"Adaptation": "Ton contenu", "Séquence DM": "Messages privés", "Analyse": "Pourquoi ça marche", "Original": "Le post original", "Vidéo": "Vidéo"};
 function ouvreReel(cle, onglet) {
   const p = S.analyse.posts.find(x => x.cle === cle); if (!p) return;
@@ -1233,6 +1253,7 @@ function ouvreReel(cle, onglet) {
         : p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="">` : '<div class="ph"></div>'}
       <div>
         <h2>@${esc(p.compte)}</h2>
+        ${p.type_contenu || p.criteres_ok ? `<div class="types" style="margin:2px 0 4px">${p.criteres_ok ? '<span class="type-c" style="background:var(--ok);color:#fff">🔥 Viral</span>' : ""}${pastilleType(p)}</div>` : ""}
         <div class="meta">${esc(libFormat(p))} ${p.plateforme}, ${date}${p.duree_s ? ", " + Math.round(p.duree_s) + " s" : ""}${p.creneau ? ` — prévu ${esc(p.creneau.toLowerCase())}` : ""}</div>
         ${estCarrousel(p) ? `<div class="chiffres">
           <div class="${p.criteres_ok ? "ok" : "ko"}"><b>${nbLong(p.interactions)}</b><span>j'aime + commentaires (min. ${nb(p.seuil_vues)} pour ce compte)</span></div>
@@ -1400,7 +1421,18 @@ function renduPlanning() {
     return;
   }
   const ps = a.planning.map(k => a.posts.find(p => p.cle === k)).filter(Boolean);
-  el.innerHTML = guide("planning", "Ton programme de la semaine", [
+  const viraux = a.posts.filter(p => p.criteres_ok && !p.demande), dansPlanning = ps.filter(p => p.criteres_ok).length;
+  const dejaVus = viraux.filter(p => p.deja_utilise && !a.planning.includes(p.cle)).length;
+  const melange = {}; ps.forEach(p => { if (p.type_contenu) melange[p.type_contenu] = (melange[p.type_contenu] || 0) + 1; });
+  const info = `<details class="planning-info"><summary>Comment ce planning est construit</summary>
+    <p>1. L'outil prend d'abord les publications <b>🔥 virales</b> que tu n'as pas encore eues dans un planning précédent (pour ne jamais te reproposer la même).<br>
+    2. S'il n'y en a pas assez, il complète avec les meilleures suivantes (beaucoup de vues et bon engagement, sans atteindre tous tes critères).<br>
+    3. Il garde les plus faciles à transposer à ta niche, favorise les mécaniques qui marchent sur ton compte et évite d'en répéter une trop souvent.<br>
+    4. Il les répartit à raison de ${a.objectifs.reels_par_jour || 2} par jour, sans deux mécaniques identiques d'affilée.</p>
+    <p><b>Cette semaine :</b> ${dansPlanning} contenu${dansPlanning > 1 ? "s" : ""} viral${dansPlanning > 1 ? "aux" : ""} sur ${ps.length}${dejaVus ? `, ${dejaVus} publication${dejaVus > 1 ? "s" : ""} virale${dejaVus > 1 ? "s" : ""} écartée${dejaVus > 1 ? "s" : ""} car déjà proposée${dejaVus > 1 ? "s" : ""} les semaines précédentes (badge « Déjà proposé » dans la galerie)` : ""}.
+    ${Object.keys(melange).length ? `<br><b>Répartition :</b> ${Object.entries(melange).sort((x, y) => y[1] - x[1]).map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ")}.` : ""}
+    ${dansPlanning < ps.length ? "<br>Pour avoir plus de contenus viraux, ajoute des comptes à surveiller (Réglages → Comptes surveillés)." : ""}</p></details>`;
+  el.innerHTML = info + guide("planning", "Ton programme de la semaine", [
       "Chaque jour, ouvre le contenu prévu (matin, puis soir).",
       "Clique <b>Créer le contenu</b> pour le fabriquer, puis publie-le sur Instagram.",
       "Clique <b>J'ai publié</b> : le contenu passe en vert ici et ses résultats sont suivis."]) +
@@ -1408,7 +1440,7 @@ function renduPlanning() {
   <div class="semaine">${JOURS.map(j => `<div class="jour"><h2>${j}</h2>${ps.filter(p => p.creneau.startsWith(j)).map(p => `
     <button class="creneau" data-cle="${esc(p.cle)}" ${(S.pubs || []).some(x => x.inspiration?.cle === p.cle) ? 'style="outline:2px solid var(--ok)"' : ""}>
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}
-      <div><small>${esc(p.creneau.replace(j, "").trim())}</small><p>${esc(hookPrincipal(p.adaptation))}</p><span class="mec">${esc(p.adaptation?.mecanique || "")}</span></div>
+      <div><small>${esc(p.creneau.replace(j, "").trim())}${p.criteres_ok ? " · 🔥 Viral" : ""}</small><p>${esc(hookPrincipal(p.adaptation))}</p><div class="types">${pastilleType(p)}<span class="mec" style="margin:0">${esc(p.adaptation?.mecanique || "")}</span></div></div>
     </button>`).join("")}</div>`).join("")}</div>`;
 }
 

@@ -310,6 +310,25 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         tous = demandes + classes
         affiches = (demandes + [p for p in classes if p.criteres_ok] + pool + classes[:80])
         affiches = list({cle(p): p for p in affiches}.values())[:MAX_AFFICHES]
+        if mode == "veille":  # posts écartés car déjà proposés dans un planning précédent : on l'affiche dans la galerie
+            for p in affiches:
+                p.deja_utilise = histo.date_utilisation(p)
+        # Type de contenu de chaque publication (éducatif, storytelling, commercial…) : un appel groupé, sur les légendes
+        if not classement_seul and (a_ia or demo):
+            try:
+                if demo and not a_ia:
+                    import random as _r
+                    from modele import TYPES_CONTENU
+                    for p in affiches:
+                        p.type_contenu = _r.Random(p.id).choice(TYPES_CONTENU)
+                else:
+                    from ia import IA as _IA
+                    types = _IA(cfg).classe_types(affiches[:120])  # au-delà, des posts peu utiles : coût inutile
+                    for p in affiches:
+                        p.type_contenu = types.get(str(p.id), "")
+                    log(f"Types de contenu identifiés pour {sum(1 for p in affiches if p.type_contenu)} publications")
+            except Exception as e:  # noqa: BLE001
+                log(f"⚠️  Types de contenu non identifiés : {e}")
         if demo:
             d.miniatures(affiches, travail / "media", esp.media)
         elif not depuis:

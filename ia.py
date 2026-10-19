@@ -8,7 +8,7 @@ import concurrent.futures as cf
 import time
 from pathlib import Path
 
-from modele import MECANIQUES, Post, log, nombre, pct
+from modele import MECANIQUES, TYPES_CONTENU, Post, log, nombre, pct
 
 # ------------------------------------------------------------
 #  Schémas de sortie (forcés via un outil : réponse toujours structurée)
@@ -87,6 +87,23 @@ OUTIL_VOIX_CLIENT = {
                                       "required": ["hook", "pourquoi"]}},
         },
         "required": ["questions", "douleurs", "objections", "expressions", "idees_reels"],
+    },
+}
+
+OUTIL_TYPES = {
+    "name": "classer_types",
+    "description": "Donne le type de chaque publication : le rôle qu'elle joue auprès de l'audience.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"classement": {"type": "array", "items": {"type": "object", "properties": {
+            "id": {"type": "string"},
+            "type": {"type": "string", "enum": TYPES_CONTENU, "description":
+                     "Éducatif : apprend quelque chose (astuces, erreurs, tutoriel). Storytelling : raconte une histoire vécue. "
+                     "Inspirant : motive, citation, transformation. Divertissant : humour, tendance, POV pour faire rire ou réagir. "
+                     "Commercial : met en avant une offre, un produit, un appel à acheter ou à s'inscrire. "
+                     "Preuve sociale : témoignage, résultat client, avant/après d'un client. Coulisses : quotidien, journée, envers du décor."}},
+            "required": ["id", "type"]}}},
+        "required": ["classement"],
     },
 }
 
@@ -398,6 +415,18 @@ Remplis l'outil enregistrer_carrousel."""
                  f"expressions typiques, et propose 6 idées de Reels en {n['langue']} qui y répondent (hooks dans le ton de la marque).\n\n"
                  + "\n".join(lignes[:600]))
         return self._appel(OUTIL_VOIX_CLIENT, texte, max_tokens=3000)
+
+    def classe_types(self, posts: list[Post]) -> dict[str, str]:
+        """Type de contenu de chaque publication (éducatif, storytelling, commercial…), par lots, d'après la légende."""
+        res: dict[str, str] = {}
+        for i in range(0, len(posts), 40):
+            lot = posts[i:i + 40]
+            texte = "Donne le type de chacune de ces publications Instagram/TikTok, d'après sa légende (et son texte à l'écran s'il est connu).\n\n" + "\n\n".join(
+                f"id={p.id}\nformat: {p.format}\nlégende: {(p.legende or '')[:500]}" + (f"\ntexte à l'écran: {p.transcription[:200]}" if p.transcription else "")
+                for p in lot)
+            r = self._appel(OUTIL_TYPES, texte, max_tokens=3000, systeme="Tu es analyste de contenu social media.")
+            res.update({str(c["id"]): c["type"] for c in r.get("classement", []) if c.get("type") in TYPES_CONTENU})
+        return res
 
     def classe_mecaniques(self, posts: list[Post]) -> dict[str, str]:
         if not posts:

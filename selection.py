@@ -126,6 +126,10 @@ class Historique:
     def deja_utilise(self, p: Post) -> bool:
         return f"{p.plateforme}:{p.id}" in self.data["posts"]
 
+    def date_utilisation(self, p: Post) -> str:
+        """Date (AAAA-MM-JJ) à laquelle ce post a été mis dans un planning, ou chaîne vide."""
+        return (self.data["posts"].get(f"{p.plateforme}:{p.id}") or {}).get("date", "")
+
     def mecaniques_recentes(self, semaines: int = 2) -> dict[str, int]:
         """Combien de fois chaque mécanique a été planifiée récemment."""
         seuil = (datetime.now() - timedelta(weeks=semaines)).strftime("%Y-%m-%d")

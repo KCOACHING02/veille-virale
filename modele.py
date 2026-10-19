@@ -21,6 +21,17 @@ MECANIQUES = [
     "Autre",
 ]
 
+# Type de contenu (le rôle du post auprès de l'audience), affiché en pastille dans la galerie et le planning
+TYPES_CONTENU = [
+    "Éducatif",
+    "Storytelling",
+    "Inspirant",
+    "Divertissant",
+    "Commercial",
+    "Preuve sociale",
+    "Coulisses",
+]
+
 
 @dataclass
 class Post:
@@ -56,6 +67,8 @@ class Post:
     creneau: str = ""
     demande: bool = False          # Reel donné explicitement par l'utilisateur
     adaptation: dict = field(default_factory=dict)
+    type_contenu: str = ""         # une valeur de TYPES_CONTENU (classé par Claude d'après la légende)
+    deja_utilise: str = ""         # date (AAAA-MM-JJ) à laquelle ce post a déjà été mis dans un planning
 
 
 def date_utc(v):
