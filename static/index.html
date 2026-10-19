@@ -422,7 +422,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-puces button small{font-size:12px;color:var(--ink-3)}
 .st-puces button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft)}
 .st-typos button{min-width:112px}
-.st-fam-modeles{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.st-fam-modeles{display:flex;flex-wrap:wrap;max-width:100%;margin-bottom:10px}
 .st-fam-modeles button{white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
 .st-fam-modeles i{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex-shrink:0}
 .st-mod-nb{float:right;font-size:12px;color:var(--ink-3)}
@@ -437,7 +437,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-couleur input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--surface);cursor:pointer}
 .st-pastille{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);cursor:pointer;padding:0}
 .st-grille>*{min-width:0}
-.st-typo .st-styles-typo{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.st-typo .st-styles-typo{display:flex;flex-wrap:wrap;max-width:100%;margin-bottom:10px}
 .st-typo .st-styles-typo button{white-space:nowrap}
 .st-typo .st-typos{max-height:264px;overflow-y:auto;padding:2px;display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
 .st-typo .st-typos button{min-width:0;margin:0}.st-typo .st-typos .apercu{white-space:nowrap;overflow:hidden}
@@ -2163,7 +2163,6 @@ function brancheLook(p, el) {
     await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {modele: b.dataset.modele}}); renduProjet();
     toast(b.dataset.modele ? "Style appliqué : police et couleurs restent modifiables" : "Style classique"); });
   choixModele();
-  const ongletFam = $("[data-fam-modele][aria-pressed=true]", el); if (ongletFam) ongletFam.parentElement.scrollLeft = ongletFam.offsetLeft - 8;
   $$("[data-fam-modele]", el).forEach(b => b.onclick = () => {
     S.familleModele = b.dataset.famModele; $$("[data-fam-modele]", el).forEach(x => x.setAttribute("aria-pressed", x === b));
     $("#st-modeles").innerHTML = grilleModeles(p, S.familleModele); choixModele(); });
@@ -2215,7 +2214,6 @@ function brancheTypo(p, el) {
   const choix = () => $$("[data-typo]", el).forEach(b => b.onclick = async () => {
     await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {typo: b.dataset.typo}}); renduProjet(); });
   choix();
-  const actif = $("[data-style-typo][aria-pressed=true]", el); if (actif) actif.parentElement.scrollLeft = actif.offsetLeft - 8;
   const choisie = $("#st-typos [aria-pressed=true]", el); if (choisie) choisie.parentElement.scrollTop = Math.max(0, choisie.offsetTop - choisie.parentElement.offsetTop - 70);
   $$("[data-style-typo]", el).forEach(b => b.onclick = () => {
     S.styleTypo = b.dataset.styleTypo; $$("[data-style-typo]", el).forEach(x => x.setAttribute("aria-pressed", x === b));
