@@ -29,6 +29,7 @@ import uuid
 from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
+from urllib.parse import quote
 
 try:
     from dotenv import load_dotenv
@@ -211,7 +212,11 @@ def connecte(f):
     def w(*a, **kw):
         u = ab.get(session.get("uid", 0))
         if not u:
-            return (jsonify({"erreur": "Session expirée, reconnecte-toi."}), 401) if request.path.startswith("/api/") else redirect("/connexion")
+            if request.path.startswith("/api/"):
+                return jsonify({"erreur": "Session expirée, reconnecte-toi."}), 401
+            # Après connexion, on revient à la page demandée (ex. lien d'un e-mail ouvert sur le téléphone)
+            suite = request.full_path.rstrip("?")
+            return redirect(f"/connexion?suite={quote(suite)}#connexion" if suite not in ("/", "/app") else "/connexion#connexion")
         g.u, g.esp = u, espace_client(u["id"])
         return f(*a, **kw)
     return w
@@ -842,6 +847,21 @@ def studio_ecrire(sid):
                                  demo=en_demo(), file_=FILE_STUDIO)})
 
 
+def _apres_studio(uid: int, sid: str):
+    """Première création d'un projet : compte le quota et prévient par e-mail (le montage peut prendre quelques minutes)."""
+    def fin(_):
+        ab.compte_usage(uid, studio=1)
+        u = ab.get(uid)
+        try:
+            p = studio.charge(espace_client(uid), sid)
+        except Exception:  # noqa: BLE001
+            return
+        if u and p.get("statut") == "pret":
+            emails.contenu_pret(u["email"], u.get("prenom") or "", p.get("type") or "", p.get("titre") or "",
+                                f"{url_site()}/app?projet={quote(sid)}")
+    return fin
+
+
 @app.post("/api/studio/<sid>/generer")
 @connecte
 def studio_generer(sid):
@@ -855,7 +875,7 @@ def studio_generer(sid):
     uid = g.u["id"]
     titre = "Création du carrousel" if p["type"] == "carrousel" else "Montage du Reel"
     jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), file_=FILE_STUDIO,
-                apres=None if deja else (lambda _: ab.compte_usage(uid, studio=1)))
+                apres=None if deja else _apres_studio(uid, sid))
     return jsonify({"job": jid})
 
 

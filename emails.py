@@ -83,3 +83,15 @@ def veille_prete(email: str, prenom: str, nb: int, url: str):
         f"<p><b>{nb} Reels viraux</b> ont été trouvés et adaptés à ta niche, avec ton planning de la semaine.</p>"
         "<p>Ouvre la galerie, choisis tes préférés et passe au tournage.</p>",
         ("Voir mes Reels", url)))
+
+
+def contenu_pret(email: str, prenom: str, type_: str, titre: str, url: str):
+    """Le studio a fini un Reel ou un carrousel : lien direct vers le contenu, à ouvrir sur le téléphone pour publier."""
+    p = html.escape(prenom or "")
+    quoi = "Ton Reel est monté" if type_ == "reel" else "Ton carrousel est prêt"
+    envoie(email, f"{quoi} : il n'y a plus qu'à publier", _gabarit(
+        f"{'Bonjour ' + p + ', ' if p else ''}{quoi[0].lower() + quoi[1:] if p else quoi}",
+        (f"<p><b>{html.escape(titre)}</b></p>" if titre else "")
+        + "<p>Ouvre ce lien <b>sur ton téléphone</b> : un bouton envoie le contenu directement dans Instagram, "
+          "un autre copie la légende. Le son à ajouter est indiqué juste en dessous.</p>",
+        ("Publier mon contenu", url)))

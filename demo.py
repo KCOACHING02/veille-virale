@@ -53,6 +53,8 @@ def posts_concurrents(comptes: list[tuple[str, str]] | None = None) -> list[Post
             )
             if p.format in ("Reel", "Vidéo"):
                 p.son = random.choice([{"titre": "[démo] Espresso", "artiste": "Sabrina Carpenter", "original": False, "url": "https://www.instagram.com/reels/audio/123/"},
+                                       {"titre": "[démo] Daylight", "artiste": "David Kushner", "original": False, "url": "https://www.instagram.com/reels/audio/456/"},
+                                       {"titre": "[démo] Lofi matin calme", "artiste": "", "original": False, "url": "https://www.instagram.com/reels/audio/789/"},
                                        {"titre": "Son original", "artiste": compte, "original": True, "url": ""}])
             if p.format == "Carrousel":  # comme sur Instagram : pas de vues publiques pour un carrousel
                 p.vues, p.partages, p.enregistrements, p.duree_s = None, None, None, None

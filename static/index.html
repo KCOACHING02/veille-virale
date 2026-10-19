@@ -65,6 +65,15 @@ main{min-width:0;padding:20px 28px 80px}
 .resume b{font:700 34px/1 var(--display);font-stretch:75%;font-variant-numeric:tabular-nums}
 .resume span{font-size:13px;color:var(--ink-2);margin-top:4px}
 .resume .cible b{color:var(--ok)}
+.sons-tendance{background:var(--sunk);border-radius:var(--r-m);padding:14px 16px;margin:0 0 20px}
+.sons-tendance h3{font-size:15px;margin:0 0 2px}
+.sons-tendance>p{font-size:13px;color:var(--ink-3);margin:0 0 10px}
+.sons-tendance ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.sons-tendance li{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.sons-tendance li div{min-width:0}
+.sons-tendance li b{display:block;overflow-wrap:anywhere}
+.sons-tendance li small{color:var(--ink-3);font-size:13px}
+.sons-tendance li a{color:var(--glow);font-weight:600;font-size:14px;white-space:nowrap}
 .criteres{font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;margin-left:auto}
 
 /* ---------- Filtres ---------- */
@@ -834,6 +843,7 @@ a.btn{text-decoration:none}
     <section data-section="reels" hidden>
       <div class="sous-nav" data-groupe="reels"></div>
       <div class="resume" id="resume"></div>
+      <div class="sons-tendance" id="sons-tendance" hidden></div>
       <div class="filtres">
         <div class="seg" id="f-statut" role="group" aria-label="Statut">
           <button data-v="cdc" aria-pressed="true">Retenus<span class="c"></span></button>
@@ -1133,9 +1143,10 @@ function renduReels() {
   if (!a) {
     $("#resume").innerHTML = "";
     g.innerHTML = `<div class="vide"><h2>Lance ta première analyse</h2><p>Colle des comptes Instagram ou TikTok à décortiquer, ou lance ta veille de la semaine.</p><button class="btn prim" onclick="ouvreNouvelle()">Nouvelle analyse</button></div>`;
-    $("#n-reels").textContent = ""; return;
+    $("#n-reels").textContent = ""; renduSonsTendance(null); return;
   }
   const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
+  renduSonsTendance(a);
   $("#resume").innerHTML = (a.en_cours ? `<p class="encours" style="width:100%;margin:0 0 4px"><span class="spin"></span>Analyse en cours : les Reels apparaissent au fur et à mesure (${s.adaptes} adapté${s.adaptes > 1 ? "s" : ""} pour l'instant).</p>` : "") + `
     <div><b>${nbLong(s.videos)}</b><span>publications analysées sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
     <div class="cible"><b>${cdc}</b><span>retenus (vraiment viraux)</span></div>
@@ -1216,6 +1227,26 @@ function ouvreReel(cle, onglet) {
   if (onglet === "Séquence DM") remplitLienBoutique(cle);
   $$("[data-studio]", t).forEach(b => b.addEventListener("click", () => choisirFormat(p.cle)));
   t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
+}
+function sonsTendance(posts) {
+  // Sons (hors son original) des Reels viraux, du plus utilisé au moins utilisé, puis par vues cumulées
+  const groupes = {};
+  posts.filter(p => (p.criteres_ok || p.demande) && p.son && p.son.titre && !p.son.original).forEach(p => {
+    const k = (p.son.url || `${p.son.titre}|${p.son.artiste}`).toLowerCase();
+    const g = groupes[k] ||= {son: p.son, n: 0, vues: 0, comptes: new Set()};
+    g.n++; g.vues += p.vues || 0; g.comptes.add(p.compte);
+  });
+  return Object.values(groupes).sort((a, b) => b.n - a.n || b.vues - a.vues).slice(0, 5);
+}
+function renduSonsTendance(a) {
+  const el = $("#sons-tendance"), sons = a ? sonsTendance(a.posts) : [];
+  el.hidden = !sons.length;
+  if (!sons.length) return;
+  el.innerHTML = `<h3>🎵 Sons des Reels viraux</h3>
+    <p>À ajouter dans Instagram au moment de publier. Un son repris par plusieurs comptes est une tendance en cours.</p>
+    <ol>${sons.map(g => `<li><div><b>${esc(g.son.titre)}${g.son.artiste ? ` — ${esc(g.son.artiste)}` : ""}</b>
+      <small>${g.n} Reel${g.n > 1 ? "s viraux" : " viral"}${g.comptes.size > 1 ? ` sur ${g.comptes.size} comptes` : ""}${g.vues ? ` · ${nbLong(g.vues)} vues` : ""}</small></div>
+      ${g.son.url ? `<a href="${esc(g.son.url)}" target="_blank" rel="noopener">Écouter</a>` : ""}</li>`).join("")}</ol>`;
 }
 function blocSon(p) {
   const so = p.son || {};
@@ -3416,7 +3447,8 @@ function ongletKit(z) {
   await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", location.pathname);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); va("abonnement"); }
   if (q.get("stripe")) { await chargeBoutique(true); BQ.onglet = "produits"; va("boutique"); toast(BQ.page?.stripe?.pret ? "Stripe est relié : tu peux vendre" : "Inscription Stripe à terminer"); }
-  if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
+  if (q.get("projet")) ouvreProjet(q.get("projet")).catch(() => toast("Ce contenu n'existe plus."));  // lien de l'e-mail « contenu prêt »
+  else if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
 })();
 </script>
 </body>
