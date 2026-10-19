@@ -13,3 +13,4 @@ pillow-heif
 reportlab
 segno
 cryptography
+numpy

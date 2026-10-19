@@ -19,7 +19,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from espace import CODE, Espace
+from espace import CODE, DATA, Espace
 from modele import log
 
 POLICES = CODE / "static" / "fonts"
@@ -27,6 +27,8 @@ CARROUSEL = (1080, 1350)
 VERTICAL = (1080, 1920)
 EXT_IMAGES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 EXT_VIDEOS = {".mp4", ".mov", ".m4v", ".webm"}
+import studio_styles as SS
+
 THEMES = {
     "sombre": {"fond": (39, 27, 45), "texte": (255, 255, 255), "accent": (255, 79, 121), "doux": (216, 206, 221)},
     "clair": {"fond": (246, 244, 248), "texte": (39, 27, 45), "accent": (255, 79, 121), "doux": (94, 81, 102)},
@@ -46,13 +48,31 @@ def couleurs_marque(cfg: dict) -> dict | None:
 
 
 def theme_de(p: dict):
-    """Thème à dessiner : un nom de THEMES, ou un dictionnaire de couleurs pour le thème « Ma marque »."""
+    """Thème à dessiner : un nom de THEMES, ou un dictionnaire (« Ma marque », style de carrousel, couleurs du texte choisies)."""
     c = p.get("couleurs")
-    if p.get("theme") == "marque" and c:
+    m = SS.MODELES.get(p.get("modele") or "")
+    if m:
+        th = {**m, "texte": m["titre"], "doux": m["texte"], "titre": m["titre"], "corps": m["texte"], "modele": p["modele"]}
+    elif p.get("theme") == "marque" and c:
         fond, texte = _rgb(c["fond"]), _rgb(c["texte"])
-        return {"fond": fond, "texte": texte, "accent": _rgb(c["accent"]),
-                "doux": tuple(round(t * 0.78 + f * 0.22) for t, f in zip(texte, fond))}
-    return p.get("theme") if p.get("theme") in THEMES else "sombre"
+        th = {"fond": fond, "texte": texte, "accent": _rgb(c["accent"]),
+              "doux": tuple(round(t * 0.78 + f * 0.22) for t, f in zip(texte, fond))}
+    else:
+        nom = p.get("theme") if p.get("theme") in THEMES else "sombre"
+        if not _couleurs_texte(p):
+            return nom
+        th = {**THEMES[nom], "nom": nom}
+    ct = _couleurs_texte(p)
+    if ct.get("titre"):
+        th["titre"] = th["photo_titre"] = _rgb(ct["titre"])
+    if ct.get("texte"):
+        th["corps"] = th["photo_texte"] = _rgb(ct["texte"])
+    return th
+
+
+def _couleurs_texte(p: dict) -> dict:
+    ct = p.get("couleurs_texte") or {}
+    return {k: v for k, v in ct.items() if k in ("titre", "texte") and HEX.match(str(v or ""))}
 
 
 def _defauts_marque(cfg: dict) -> dict:
@@ -572,7 +592,8 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         p["slides"] = [{"titre": str(s.get("titre", ""))[:200], "texte": str(s.get("texte", ""))[:400], "photo": garde(s, i, "photo", 300),
                         "recherche": garde(s, i, "recherche", 120), "image": garde(s, i, "image", 80),
                         "position": garde(s, i, "position", 10), "alignement": garde(s, i, "alignement", 10),
-                        "accent": garde(s, i, "accent", 120), "style_accent": garde(s, i, "style_accent", 12)}
+                        "accent": garde(s, i, "accent", 120), "style_accent": garde(s, i, "style_accent", 12),
+                        "surtitre": garde(s, i, "surtitre", 60), "note": garde(s, i, "note", 90)}
                        for i, s in enumerate(champs["slides"])][:10]
         for x in p["slides"]:
             if x["image"] not in p["images"]:
@@ -586,6 +607,18 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
         p["style"] = "ma_voix"
     if p.get("typo") not in TYPOS:
         p["typo"] = "moderne"
+    # Style de carrousel : fond, couleurs, typographie et décors d'un coup (les couleurs choisies à la main repartent de zéro)
+    if "modele" in champs:
+        mid = champs["modele"] if champs["modele"] in SS.MODELES else ""
+        p["modele"] = mid
+        if mid:
+            p["typo"] = SS.MODELES[mid]["typo"]
+            p["couleurs_texte"] = {}
+    if "theme" in champs and "modele" not in champs:
+        p["modele"] = ""
+    if isinstance(champs.get("couleurs_texte"), dict):
+        ct = {**(p.get("couleurs_texte") or {}), **champs["couleurs_texte"]}
+        p["couleurs_texte"] = {k: v for k, v in ct.items() if k in ("titre", "texte") and HEX.match(str(v or ""))}
     if isinstance(champs.get("typo_reglages"), dict):
         p["typo_reglages"] = reglages_typo({"typo_reglages": {**reglages_typo(p), **champs["typo_reglages"]}})
     sauve(esp, p)
@@ -614,6 +647,26 @@ def _police(graisse: str, taille: int):
         except Exception:  # noqa: BLE001
             pass
     return pol
+
+
+def fichier_police(x: str) -> str:
+    """Police désignée par un id de typographie (« feutre ») ou par un nom de fichier."""
+    return TYPOS[x][0] if x in TYPOS else x
+
+
+def _largeur(d, mot: str, f, serre: float = 0.0) -> float:
+    w = d.textlength(mot, font=f)
+    return w + serre * f.size * (len(mot) - 1) if serre and len(mot) > 1 else w
+
+
+def _ecrit(d, xy, mot: str, f, couleur, serre: float = 0.0):
+    """Écrit un mot, avec un approche de lettres resserrée (serre < 0) si demandé."""
+    if not serre or len(mot) < 2:
+        d.text(xy, mot, font=f, fill=couleur)
+        return
+    x, y = xy
+    for k, ch in enumerate(mot):
+        d.text((x + d.textlength(mot[:k], font=f) + serre * f.size * k, y), ch, font=f, fill=couleur)
 
 
 def _lignes(dessin, texte: str, police, largeur: int) -> list[str]:
@@ -669,7 +722,7 @@ def _jetons(titre: str, accent: str) -> list[tuple[str, bool]]:
     return [(m, False) for m in _mots(titre)]
 
 
-def _compose(d, jetons, police_titre, police_accent, largeur, hauteur, maxi, mini, interligne):
+def _compose(d, jetons, police_titre, police_accent, largeur, hauteur, maxi, mini, interligne, serre: float = 0.0):
     """Plus grande taille pour laquelle le titre (avec ses mots d'accent) tient dans la boîte : lignes de (mot, police, accent)."""
     taille = maxi
     while True:
@@ -678,7 +731,7 @@ def _compose(d, jetons, police_titre, police_accent, largeur, hauteur, maxi, min
         lignes, ligne, larg = [], [], 0
         for mot, acc in jetons:
             f = pol_a if (acc and pol_a) else pol
-            w = d.textlength(mot, font=f)
+            w = _largeur(d, mot, f, 0.0 if (acc and pol_a) else serre)
             if ligne and larg + espace + w > largeur:
                 lignes.append(ligne)
                 ligne, larg = [], 0
@@ -716,79 +769,147 @@ FILIGRANE = "Fait avec " + os.getenv("NOM_PRODUIT", "Veille virale")
 
 def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: str, taille=CARROUSEL, reel: bool = False,
           typo="moderne", filigrane: bool = False):
-    """Dessine une slide. Avec image : texte en bas sur un dégradé. Sans image : fond uni du thème."""
+    """Dessine une slide. Avec image : texte en bas sur un dégradé. Sans image : fond du thème ou du style de carrousel
+    (papier, kraft, carnet…), avec ses décors (numéro, surtitre, note manuscrite)."""
     from PIL import Image, ImageDraw
     th = theme if isinstance(theme, dict) else THEMES.get(theme, THEMES["sombre"])
+    modele = th.get("modele")
     l, h = taille
     marge = int(l * 0.085)
     ty = _typo(typo)
-    police_titre, f_texte, majuscules, facteur = ty["police"], ty["texte"], ty["maj"], ty["facteur"]
+    police_titre, majuscules, facteur = ty["police"], ty["maj"], ty["facteur"]
+    f_texte = fichier_police(th["texte_police"]) if th.get("texte_police") else ty["texte"]
+    serre = th.get("serre", 0.0) if modele and ty["cle"] == th.get("typo") else 0.0
+    if modele and ty["cle"] == th.get("typo"):
+        facteur *= th.get("k_titre", 1.0)
     titre, texte = propre(slide_.get("titre", "")), propre(slide_.get("texte", ""))
+    surtitre, note_txt = propre(slide_.get("surtitre", "")), propre(slide_.get("note", ""))
     if majuscules:
         titre = titre.upper()
     premiere, derniere = i == 0, i == n - 1
     if image and image.exists():
         fond = _couvre(Image.open(image).convert("RGB"), taille).convert("RGBA")
         fond.alpha_composite(_degrade(taille, 0.32 if (texte or premiere) else 0.45))
-        couleur, couleur2, accent = (255, 255, 255), (235, 228, 238), th["accent"] if theme != "rose" else (255, 79, 121)
+        couleur, couleur2 = th.get("photo_titre") or (255, 255, 255), th.get("photo_texte") or (235, 228, 238)
+        accent = th["accent"] if theme != "rose" else (255, 79, 121)
         sur_photo = True
     else:
-        fond = Image.new("RGBA", taille, th["fond"] + (255,))
-        couleur, couleur2, accent = th["texte"], th["doux"], th["accent"]
+        fond = SS.fond(th.get("texture") or "uni", th["fond"], th.get("fond2") or th["fond"], taille) if modele else Image.new("RGBA", taille, th["fond"] + (255,))
+        couleur, couleur2, accent = th.get("titre") or th["texte"], th.get("corps") or th["doux"], th["accent"]
         sur_photo = False
     d = ImageDraw.Draw(fond)
     largeur = l - 2 * marge
-    # Mise en page : celle du modèle si elle est connue, sinon texte en bas sur photo et centré sur fond uni
-    position = slide_.get("position") if slide_.get("position") in POSITIONS else ("bas" if sur_photo else "centre")
-    centre = slide_.get("alignement") == "centre"
+    # Mise en page : celle de la slide si elle est choisie, sinon celle du style, sinon texte en bas sur photo et centré sur fond uni
+    position = slide_.get("position") if slide_.get("position") in POSITIONS else (
+        "bas" if sur_photo and not modele else th.get("position") or ("bas" if sur_photo else "centre"))
+    alignement = slide_.get("alignement") if slide_.get("alignement") in ("gauche", "centre") else th.get("alignement", "gauche")
+    centre = alignement == "centre"
     style_acc = slide_.get("style_accent") if slide_.get("style_accent") in STYLES_ACCENT else ""
     accent_txt = propre(slide_.get("accent", ""))
     if majuscules:
         accent_txt = accent_txt.upper()
+    surligne = bool(th.get("surligne")) and style_acc == "couleur"
     police_accent = STYLES_ACCENT.get(style_acc) if accent_txt else None
-    couleur_acc = accent if style_acc == "couleur" else ((255, 233, 199) if sur_photo else accent) if accent_txt else couleur
+    couleur_acc = couleur if surligne else accent if style_acc == "couleur" else ((255, 233, 199) if sur_photo else accent) if accent_txt else couleur
     h_titre_max = int(h * (0.42 if premiere else 0.30) * max(1.0, min(1.4, ty["k_titre"])))
     maxi = int((104 if premiere else (82 if sur_photo else 96)) * facteur)
-    interligne = ty["interligne"]
+    interligne = ty["interligne"] - (0.08 if serre else 0)
     lignes_t, ht, taille_t, espace = _compose(d, _jetons(titre, accent_txt), police_titre, police_accent, largeur, h_titre_max,
-                                              maxi, int(46 * facteur), interligne)
+                                              maxi, int(46 * facteur), interligne, serre)
     pol_x, lignes_x, hx, taille_x = (None, [], 0, 0)
     if texte:
-        kx = ty["k_texte"]
+        kx = ty["k_texte"] * th.get("k_texte", 1.0)
         pol_x, lignes_x, hx, taille_x = _ajuste(d, texte, f_texte, largeur, int(h * 0.26 * max(1.0, min(1.4, kx))), int(46 * kx), int(30 * kx), 1.32)
+    # Numéro « (01) » (slides de contenu) et surtitre « à faire »
+    numero = ""
+    if th.get("numero") and n > 2 and not premiere and not (derniere and n > 3):
+        try:
+            numero = th["numero"].format(i)
+        except (ValueError, IndexError):
+            numero = str(i)
+    pol_num = _police("Medium", int(36 * ty["k_texte"])) if numero else None
+    h_num = int(pol_num.size * 1.9) if numero else 0
+    style_sur = th.get("surtitre", "petit")
+    pol_sur, h_sur = None, 0
+    if surtitre:
+        if style_sur == "grand":
+            pol_sur = _police(police_titre, int(taille_t * 1.3))
+            h_sur = int(pol_sur.size * 1.15)
+        else:
+            pol_sur = _police("Bold" if style_sur == "etiquette" else "Medium", int(30 * ty["k_texte"]))
+            h_sur = int(pol_sur.size * (2.3 if style_sur == "etiquette" else 1.9))
+    barre = th.get("barre", True) and not surtitre and not numero
     ecart = int(taille_t * 0.55) if texte else 0
-    bloc = ht + ecart + hx + int(h * 0.025)
-    y = {"haut": int(h * 0.17), "centre": (h - bloc) // 2, "bas": h - int(h * 0.12) - bloc}[position]
+    bloc = h_num + h_sur + ht + ecart + hx + int(h * 0.025)
+    y = {"haut": int(h * (0.2 if modele else 0.17)), "centre": (h - bloc) // 2, "bas": h - int(h * 0.12) - bloc}[position]
+    y = max(y, int(h * 0.1))
     if sur_photo and position != "bas":  # texte en haut ou au centre d'une photo : voile sombre léger pour la lisibilité
-        voile = Image.new("RGBA", taille, (15, 10, 18, 70 if position == "centre" else 0))
+        voile = Image.new("RGBA", taille, (15, 10, 18, (110 if modele else 70) if position == "centre" else 0))
         if position == "haut":
             voile = _degrade(taille, 0.0, 170).transpose(Image.FLIP_TOP_BOTTOM)
         fond.alpha_composite(voile)
         d = ImageDraw.Draw(fond)
-    # Barre d'accent au-dessus du titre (alignée comme le texte)
-    xb = (l - 86) // 2 if centre else marge
-    d.rounded_rectangle([xb, y - 34, xb + 86, y - 22], radius=6, fill=accent)
+
+    def x_de(larg):
+        return (l - larg) // 2 if centre else marge
+    if numero:
+        d.text((x_de(d.textlength(numero, font=pol_num)), y), numero, font=pol_num, fill=couleur2)
+        y += h_num
+    if surtitre:
+        if style_sur == "grand":
+            w = _largeur(d, surtitre, pol_sur, serre)
+            _ecrit(d, (x_de(w), y), surtitre, pol_sur, couleur, serre)
+        elif style_sur == "etiquette":
+            w = d.textlength(surtitre.upper(), font=pol_sur)
+            x = x_de(w + pol_sur.size * 1.2)
+            d.rounded_rectangle([x, y, x + w + pol_sur.size * 1.2, y + pol_sur.size * 1.7], radius=int(pol_sur.size * 0.85), fill=accent)
+            d.text((x + pol_sur.size * 0.6, y + pol_sur.size * 0.3), surtitre.upper(), font=pol_sur, fill=SS.lisible_sur(accent))
+        else:
+            ecart_l = int(pol_sur.size * 0.12)
+            w = d.textlength(surtitre.upper(), font=pol_sur) + ecart_l * len(surtitre)
+            _ecrit(d, (x_de(w), y), surtitre.upper(), pol_sur, accent if not sur_photo else couleur2, ecart_l / pol_sur.size)
+        y += h_sur
+    if barre:  # barre d'accent au-dessus du titre (alignée comme le texte)
+        xb = (l - 86) // 2 if centre else marge
+        d.rounded_rectangle([xb, y - 34, xb + 86, y - 22], radius=6, fill=accent)
     for ligne in lignes_t:
         larg = sum(w for _, _, _, w in ligne) + espace * (len(ligne) - 1)
-        x = (l - larg) // 2 if centre else marge
+        x = x_de(larg)
         for mot, f, acc, w in ligne:
-            d.text((x, y + (int(-taille_t * 0.06) if acc and police_accent else 0)), mot, font=f, fill=couleur_acc if acc else couleur)
+            if acc and surligne:  # mot surligné au feutre
+                d.rectangle([x - 6, y + taille_t * 0.42, x + w + 6, y + taille_t * 1.02], fill=accent)
+            _ecrit(d, (x, y + (int(-taille_t * 0.06) if acc and police_accent else 0)), mot, f, couleur_acc if acc else couleur,
+                   0.0 if (acc and police_accent) else serre)
             x += w + espace
         y += int(taille_t * interligne)
     y += ecart
     for ligne in lignes_x:
-        x = (l - d.textlength(ligne, font=pol_x)) // 2 if centre else marge
-        d.text((x, y), ligne, font=pol_x, fill=couleur2)
+        d.text((x_de(d.textlength(ligne, font=pol_x)), y), ligne, font=pol_x, fill=couleur2)
         y += int(taille_x * 1.32)
+    # Note manuscrite (entourée, post-it, flèche ou soulignée)
+    style_note = th.get("note") or "cercle"
+    if note_txt:
+        bas = h - int(h * (0.13 if reel else 0.06))
+        base_note = 44 * ty["k_texte"] * _typo(th.get("note_police") or "feutre")["facteur"]
+        for k in (1.0, 0.85, 0.72, 0.6):  # la note se fait plus petite s'il le faut pour tenir sous le texte
+            pol_note = _police(fichier_police(th.get("note_police") or "feutre"), int(base_note * k))
+            calque = SS.note(note_txt, style_note, pol_note, couleur, accent, th["fond"], int(l * 0.42))
+            cw, ch = calque.size
+            if bas - ch >= y - int(h * 0.01):
+                break
+        yn = max(min(max(y + int(h * 0.02), int(h * 0.55)), bas - ch), int(h * 0.1))
+        xn = l - marge - cw + 30 if not centre else (l - cw) // 2
+        fond.alpha_composite(calque, (int(max(0, xn)), int(max(0, yn))))
+        d = ImageDraw.Draw(fond)
     # Compteur, pseudo, invitation à faire glisser
     petit = _police("Medium", 30)
     haut = int(h * (0.09 if reel else 0.045))  # en Reel, on laisse la place à l'interface d'Instagram
-    if n > 1 and not reel:
+    if n > 1 and not reel and th.get("compteur", True):
         cpt = f"{i + 1}/{n}"
         d.text((l - marge - d.textlength(cpt, font=petit), haut), cpt, font=petit, fill=couleur2)
     if pseudo:
         d.text((marge, haut), "@" + pseudo.lstrip("@"), font=petit, fill=couleur2)
-    if n > 1 and not derniere and not reel:
+    if n > 1 and not derniere and not reel and not note_txt:
         g, c_g = "Glisse", (accent if not sur_photo else couleur)
         y_g = h - int(h * 0.065)
         x_fleche = l - marge - 34
@@ -800,6 +921,27 @@ def slide(slide_: dict, i: int, n: int, image: Path | None, theme: str, pseudo: 
         fil = _police("Medium", 24)
         d.text((marge, h - int(h * 0.065) + 4), FILIGRANE, font=fil, fill=couleur2)
     return fond.convert("RGB")
+
+
+def vignette_modele(mid: str, largeur: int = 270) -> bytes:
+    """Aperçu d'un style de carrousel sur un exemple de slide (mis en cache)."""
+    import io
+    cache = DATA / "cache" / "modeles"
+    f = cache / f"{mid}-{largeur}-v1.jpg"
+    if f.exists():
+        return f.read_bytes()
+    m = SS.MODELES[mid]
+    th = {**m, "texte": m["titre"], "doux": m["texte"], "titre": m["titre"], "corps": m["texte"], "modele": mid}
+    exemple = {"titre": "J'ai arrêté d'attendre de me sentir prête", "texte": "Si j'attendais d'être sûre à 100 %, je ne partirais jamais.",
+               "note": "commence avant d'être prête" if m.get("note") else "", "accent": "prête" if m.get("surligne") else "",
+               "style_accent": "couleur" if m.get("surligne") else ""}
+    im = slide(exemple, 1, 8, None, th, "", typo={"id": m["typo"]})
+    im.thumbnail((largeur, largeur * 2))
+    b = io.BytesIO()
+    im.save(b, "JPEG", quality=82)
+    cache.mkdir(parents=True, exist_ok=True)
+    f.write_bytes(b.getvalue())
+    return b.getvalue()
 
 
 # ------------------------------------------------------------
@@ -856,7 +998,7 @@ def couverture(p: dict, fond_img: Path | None, style: str | None = None, texte: 
     if fond_img and fond_img.exists():
         fond = _couvre(Image.open(fond_img).convert("RGB"), VERTICAL).convert("RGBA")
     else:
-        fond = Image.new("RGBA", VERTICAL, th["fond"] + (255,))
+        fond = SS.fond(th["texture"], th["fond"], th.get("fond2") or th["fond"], VERTICAL) if th.get("texture") else Image.new("RGBA", VERTICAL, th["fond"] + (255,))
     accent = th["accent"] if theme != "rose" else (255, 255, 255)
     d = ImageDraw.Draw(fond)
 
@@ -926,7 +1068,7 @@ def couverture(p: dict, fond_img: Path | None, style: str | None = None, texte: 
     elif style == "split":
         coupe = 1000
         haut_img = fond.crop((0, 0, l, coupe)) if fond_img else None
-        fond = Image.new("RGBA", VERTICAL, th["fond"] + (255,))
+        fond = SS.fond(th["texture"], th["fond"], th.get("fond2") or th["fond"], VERTICAL) if th.get("texture") else Image.new("RGBA", VERTICAL, th["fond"] + (255,))
         if haut_img is not None:
             fond.paste(_couvre(haut_img.convert("RGB"), (l, coupe)).convert("RGBA"), (0, 0))
         d = ImageDraw.Draw(fond)
@@ -1039,7 +1181,11 @@ def sous_titres(fichier: Path, dossier_: Path) -> list[tuple[float, float, str]]
     return res
 
 
-def fichier_ass(hook: str, duree_hook: float, blocs: list, chemin: Path, typo="moderne"):
+def _ass_couleur(c: tuple) -> str:
+    return "&H00%02X%02X%02X" % (c[2], c[1], c[0])
+
+
+def fichier_ass(hook: str, duree_hook: float, blocs: list, chemin: Path, typo="moderne", couleurs: dict | None = None):
     ty = _typo(typo)
     majuscules, facteur, famille = ty["maj"], ty["facteur"], ty["famille"]
     facteur_sous = facteur / ty["k_titre"] * ty["k_texte"]
@@ -1061,6 +1207,16 @@ Style: Sous,{famille},{taille_sous},&H00FFFFFF,&H000000FF,&H00000000,&H78000000,
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """.replace("{famille}", famille).replace("{taille_hook}", str(int(74 * facteur))).replace("{taille_sous}", str(int(82 * facteur_sous)))
+    couleurs = couleurs or {}
+    if couleurs.get("titre"):  # hook dans la couleur choisie, sur un cadre clair ou foncé selon ce qui reste lisible
+        c = _rgb(couleurs["titre"])
+        cadre = (39, 27, 45) if SS.lisible_sur(c) == (20, 20, 20) else (255, 255, 255)
+        entete = entete.replace("Style: Hook,{0},{1},&H002D1B27,&H000000FF,&H00FFFFFF,&H00FFFFFF".format(famille, int(74 * facteur)),
+                                "Style: Hook,{0},{1},{2},&H000000FF,{3},{3}".format(famille, int(74 * facteur), _ass_couleur(c), _ass_couleur(cadre)))
+    if couleurs.get("texte"):
+        c = _rgb(couleurs["texte"])
+        entete = entete.replace("Style: Sous,{0},{1},&H00FFFFFF".format(famille, int(82 * facteur_sous)),
+                                "Style: Sous,{0},{1},{2}".format(famille, int(82 * facteur_sous), _ass_couleur(c)))
     lignes = []
     if hook:
         lignes.append(f"Dialogue: 1,{_t(0)},{_t(duree_hook)},Hook,,0,0,0,,{{\\fad(0,250)}}{_ass_txt(hook)}")
@@ -1115,7 +1271,7 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
             log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée : pas de sous-titres")
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Sous-titres impossibles ({str(e)[:120]}) : le Reel est monté sans")
-    fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", typo_projet(p))
+    fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", typo_projet(p), _couleurs_texte(p))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
     tm = TONEMAP if _hdr(src) else ""

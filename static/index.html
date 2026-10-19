@@ -422,6 +422,16 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-puces button small{font-size:12px;color:var(--ink-3)}
 .st-puces button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft)}
 .st-typos button{min-width:112px}
+.st-modeles{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:330px;overflow-y:auto;padding:2px}
+.st-modeles button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:5px;cursor:pointer;display:grid;gap:4px;text-align:center;color:var(--ink-2)}
+.st-modeles button[aria-pressed=true]{border-color:var(--glow);box-shadow:0 0 0 2px var(--glow-soft)}
+.st-modeles img,.st-mod-classique{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:22px}
+.st-modeles small{font-size:12px;line-height:1.2}
+.st-mod-aide{margin:8px 0 0}
+.st-couleur{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}
+.st-couleur label{width:84px;font-size:13.5px;color:var(--ink-2)}
+.st-couleur input[type=color]{width:42px;height:34px;border:1px solid var(--line);border-radius:8px;padding:2px;background:var(--surface);cursor:pointer}
+.st-pastille{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);cursor:pointer;padding:0}
 .st-grille>*{min-width:0}
 .st-typo .st-styles-typo{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
 .st-typo .st-styles-typo button{white-space:nowrap}
@@ -2063,6 +2073,7 @@ function slidesDuDom() {
   return $$(".st-slide").map((x, i) => ({titre: $("[data-k=titre]", x).value, texte: $("[data-k=texte]", x).value, photo: S.projet?.slides?.[i]?.photo || "",
     recherche: S.projet?.slides?.[i]?.recherche || "", image: S.projet?.slides?.[i]?.image || "",
     position: $("[data-k=position]", x)?.value || "", alignement: $("[data-k=alignement]", x)?.value || "",
+    surtitre: $("[data-k=surtitre]", x)?.value || "", note: $("[data-k=note]", x)?.value || "",
     accent: $("[data-k=accent]", x)?.value || "", style_accent: $("[data-k=accent]", x)?.value ? ($("[data-k=style_accent]", x)?.value || "italique") : ""}));
 }
 function sauveProjet(immediat) {
@@ -2115,6 +2126,45 @@ function brancheCouverture(p) {
   $("#st-couv-t")?.addEventListener("input", e => { $("#st-couv-t-aff").textContent = (+e.target.value).toFixed(1).replace(".", ",") + " s"; clearTimeout(tm); tm = setTimeout(() => enregistre({couv_temps: +e.target.value}), 300); });
   S.majCouv = maj;
   maj();
+}
+// ---- Styles de carrousel (fond texturé, couleurs, typo et décors) et couleurs du texte
+function blocModeles(p) {
+  const mods = S.optionsStudio?.modeles || [];
+  if (!mods.length) return "";
+  const m = mods.find(x => x.id === p.modele);
+  return `<p class="aide">Style du carrousel</p>
+    <div class="st-modeles" role="group" aria-label="Style du carrousel">
+      <button type="button" data-modele="" aria-pressed="${!p.modele}"><span class="st-mod-classique" style="${(() => { const mq = S.optionsStudio?.marque, c = p.theme === "marque" && mq ? [mq.fond, mq.texte] : ({clair: ["#F6F4F8", "#271B2D"], rose: ["#FF4F79", "#FFFFFF"]}[p.theme] || ["#271B2D", "#FFFFFF"]); return `background:${esc(c[0])};color:${esc(c[1])}`; })()}">Aa</span><small>Classique</small></button>
+      ${mods.map(x => `<button type="button" data-modele="${x.id}" aria-pressed="${p.modele === x.id}"><img loading="lazy" src="/api/studio/modeles/${x.id}.jpg" alt=""><small>${esc(x.nom)}</small></button>`).join("")}
+    </div>
+    ${m ? `<p class="aide st-mod-aide">Fond, couleurs, police et décors du style « ${esc(m.nom)} ». Dans chaque slide : un <b>surtitre</b> (ex. « à faire »)${m.note ? " et une <b>note manuscrite</b> entourée" : ""}, si tu veux.</p>` : ""}`;
+}
+function blocCouleursTexte(p, avecVideo) {
+  const ct = p.couleurs_texte || {}, m = (S.optionsStudio?.modeles || []).find(x => x.id === p.modele);
+  const def = {titre: m?.titre || ({clair: "#271b2d"}[p.theme] || "#ffffff"), texte: m?.texte || ({clair: "#5e5166", rose: "#ffe3ea"}[p.theme] || "#d8cedd")};
+  const reelVideo = p.type === "reel" && avecVideo;
+  const ligne = (k, lab) => `<div class="st-couleur"><label for="st-c-${k}">${lab}</label>
+    <input type="color" id="st-c-${k}" data-couleur-texte="${k}" value="${esc(ct[k] || def[k])}">
+    ${["#ffffff", "#f4eedc", "#141414", "#ff4f79", "#ffe14d", "#d8b46a"].map(c => `<button type="button" class="st-pastille" data-pastille="${k}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join("")}
+    <button type="button" class="lien" data-auto="${k}" ${ct[k] ? "" : "hidden"}>Auto</button></div>`;
+  return `<p class="aide" style="margin-top:14px">Couleur du texte</p>
+    ${ligne("titre", reelVideo ? "Hook" : "Titre")}${ligne("texte", reelVideo ? "Sous-titres" : "Texte")}`;
+}
+function brancheLook(p, el) {
+  $$("[data-modele]", el).forEach(b => b.onclick = async () => {
+    await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {modele: b.dataset.modele}}); renduProjet();
+    toast(b.dataset.modele ? "Style appliqué : police et couleurs restent modifiables" : "Style classique"); });
+  let tm;
+  const enregistre = (k, v, rendu) => {
+    p.couleurs_texte = {...(p.couleurs_texte || {}), [k]: v};
+    clearTimeout(tm); tm = setTimeout(async () => {
+      try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {couleurs_texte: {[k]: v}}}); } catch (e) { return toast(e.message); }
+      if (rendu) renduProjet(); else { majApercu(); S.majCouv?.(); const a = $(`[data-auto="${k}"]`, el); if (a) a.hidden = !v; }
+    }, rendu ? 0 : 300);
+  };
+  $$("[data-couleur-texte]", el).forEach(i => i.oninput = () => enregistre(i.dataset.couleurTexte, i.value));
+  $$("[data-pastille]", el).forEach(b => b.onclick = () => { const i = $(`#st-c-${b.dataset.pastille}`); i.value = b.dataset.c; enregistre(b.dataset.pastille, b.dataset.c); });
+  $$("[data-auto]", el).forEach(b => b.onclick = () => enregistre(b.dataset.auto, "", true));
 }
 // ---- Typographie : styles → sous-styles, taille du titre et du texte, casse
 const regTypo = p => ({titre: 100, texte: 100, casse: "auto", ...(p.typo_reglages || {})});
@@ -2240,8 +2290,10 @@ function renduProjet() {
               <textarea data-k="texte" rows="2" aria-label="Texte de la slide ${i + 1}" placeholder="Texte (facultatif)">${esc(x.texte)}</textarea>
               <div class="st-mise">
                 <select data-k="position" aria-label="Position du texte"><option value="">Texte : auto</option>${[["haut", "en haut"], ["centre", "au centre"], ["bas", "en bas"]].map(([v, t]) => `<option value="${v}" ${x.position === v ? "selected" : ""}>Texte ${t}</option>`).join("")}</select>
-                <select data-k="alignement" aria-label="Alignement"><option value="gauche" ${x.alignement !== "centre" ? "selected" : ""}>Aligné à gauche</option><option value="centre" ${x.alignement === "centre" ? "selected" : ""}>Centré</option></select>
+                <select data-k="alignement" aria-label="Alignement"><option value="">Alignement : auto</option><option value="gauche" ${x.alignement === "gauche" ? "selected" : ""}>Aligné à gauche</option><option value="centre" ${x.alignement === "centre" ? "selected" : ""}>Centré</option></select>
                 <input data-k="accent" value="${esc(x.accent || "")}" placeholder="Mot mis en valeur" aria-label="Mot mis en valeur">
+                <input data-k="surtitre" value="${esc(x.surtitre || "")}" placeholder="Surtitre (ex. à faire)" aria-label="Surtitre au-dessus du titre" maxlength="60">
+                <input data-k="note" value="${esc(x.note || "")}" placeholder="Note manuscrite (facultatif)" aria-label="Note manuscrite" maxlength="90">
                 <select data-k="style_accent" aria-label="Style du mot mis en valeur">${[["italique", "Italique"], ["manuscrit", "Manuscrit"], ["couleur", "Couleur"]].map(([v, t]) => `<option value="${v}" ${(x.style_accent || "italique") === v ? "selected" : ""}>${t}</option>`).join("")}</select>
               </div>
               ${x.photo ? `<span class="st-photo-aide">📷 ${esc(x.photo)}</span>` : ""}</div>
@@ -2250,10 +2302,12 @@ function renduProjet() {
         </div>
         <div class="st-bloc">
           <h3>3. Le look</h3>
-          <p class="aide">Typographie</p>
+          ${slidesVisibles ? blocModeles(p) : ""}
+          <p class="aide" style="margin-top:14px">Typographie</p>
           ${blocTypo(p)}
           <p class="aide" style="margin-top:14px">Couleurs</p>
-          <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(themesStudio()).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${p.theme === k}"><span class="st-fond ${k}" ${fondTheme(k)}></span>${n}</button>`).join("")}${S.optionsStudio?.marque ? "" : `<button type="button" class="lien" onclick="ouvreAssistant('marque', true)" style="font-size:13px">+ Mes couleurs</button>`}</div>
+          <div class="st-themes" role="group" aria-label="Couleurs">${Object.entries(themesStudio()).map(([k, n]) => `<button data-theme="${k}" aria-pressed="${!p.modele && p.theme === k}"><span class="st-fond ${k}" ${fondTheme(k)}></span>${n}</button>`).join("")}${S.optionsStudio?.marque ? "" : `<button type="button" class="lien" onclick="ouvreAssistant('marque', true)" style="font-size:13px">+ Mes couleurs</button>`}</div>
+          ${blocCouleursTexte(p, avecVideo)}
           <div class="champ" style="margin-top:14px"><label for="st-pseudo">Ton @ affiché sur les visuels</label><input class="st-input" id="st-pseudo" value="${esc(p.pseudo || "")}" placeholder="moncompte (laisser vide pour ne rien afficher)"></div>
         </div>
         <div class="st-bloc">
@@ -2280,6 +2334,7 @@ function renduProjet() {
   $$("[data-type]", el).forEach(b => b.onclick = async () => { if (b.dataset.type === p.type) return; await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {type: b.dataset.type}}); renduProjet(); });
   $$("[data-theme]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {theme: b.dataset.theme}}); renduProjet(); });
   brancheTypo(p, el);
+  brancheLook(p, el);
   $$("[data-style]", el).forEach(b => b.onclick = async () => {
     $$("[data-style]", el).forEach(x => x.setAttribute("aria-pressed", x === b));
     S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {style: b.dataset.style}});

@@ -852,6 +852,8 @@ def _options_studio():
             "typos": [{"id": k, "nom": studio.NOMS_TYPOS[k], "police": v[5], "fichier": v[0], "style": studio.STYLE_DE_TYPO.get(k, "moderne"),
                        "maj": v[3]} for s_, _, ids in studio.STYLES_TYPO for k in ids for v in [studio.TYPOS[k]]],
             "styles_typo": [{"id": s_, "nom": n} for s_, n, _ in studio.STYLES_TYPO],
+            "modeles": [{"id": k, "nom": m["nom"], "note": bool(m.get("note")), "titre": "#%02x%02x%02x" % m["titre"], "texte": "#%02x%02x%02x" % m["texte"]}
+                        for k, m in studio.SS.MODELES.items()],
             "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
             "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv()}
 
@@ -1069,6 +1071,15 @@ def studio_banque_auto(sid):
         return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
     return jsonify({"job": lance(g.u["id"], "Choix des images", studio.remplit_banque, g.esp, sid, demo=en_demo(),
                                  toutes=bool((request.get_json(silent=True) or {}).get("toutes")), file_=FILE_STUDIO)})
+
+
+@app.get("/api/studio/modeles/<mid>.jpg")
+@connecte
+def studio_vignette_modele(mid):
+    from flask import Response
+    if mid not in studio.SS.MODELES:
+        abort(404)
+    return Response(studio.vignette_modele(mid), mimetype="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/api/studio/<sid>/apercu/<int:i>")
