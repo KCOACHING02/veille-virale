@@ -726,8 +726,9 @@ a.btn{text-decoration:none}
 .radar.arret .balayage{animation:none;opacity:.15}
 .radar-phrase{font:700 21px/1.25 var(--display);font-stretch:88%;margin:0;max-width:30ch}
 .radar-sous{color:var(--ink-2);margin:-8px 0 0;font-size:14.5px}
-.avance{width:100%;max-width:360px;height:6px;border-radius:6px;background:var(--sunk);overflow:hidden}
-.avance i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#FF4F79,#FF8FAA);transition:width .6s ease}
+/* Barre de progression (nom distinct de la classe « avance » des options avancées de la boutique) */
+.barre-progres{width:100%;max-width:360px;height:6px;border-radius:6px;background:var(--sunk);overflow:hidden}
+.barre-progres i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#FF4F79,#FF8FAA);transition:width .6s ease}
 .detail-lien{border:0;background:none;color:var(--ink-3);font-size:13px;text-decoration:underline;cursor:pointer;padding:0}
 @keyframes tourne{to{transform:rotate(1turn)}}
 @keyframes apparait{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
@@ -2777,7 +2778,7 @@ function montreProgression() {
       <div class="radar" id="p-radar"><div class="balayage"></div><div id="p-points"></div><div class="centre"><b id="p-pct">0<small> %</small></b></div></div>
       <p class="radar-phrase" id="p-phrase" aria-live="polite">Je prépare l'analyse…</p>
       <p class="radar-sous" id="p-sous">Tu peux fermer cette fenêtre : je continue et la galerie se remplit au fur et à mesure.</p>
-      <div class="avance"><i id="p-barre" style="width:0"></i></div>
+      <div class="barre-progres"><i id="p-barre" style="width:0"></i></div>
       <div id="p-erreur" style="width:100%"></div>
       <button class="detail-lien" id="p-detail-btn" type="button">Voir le détail</button>
       <div class="journal" id="p-journal" hidden style="width:100%;text-align:left"></div>
