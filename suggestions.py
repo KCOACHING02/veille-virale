@@ -24,7 +24,7 @@ def suggere(cfg: dict, token: str | None, demo: bool = False) -> list[dict]:
         return [{"plateforme": "Instagram", "compte": f"compte_demo_{i}", "pourquoi": "[démo] Carrousels « erreurs à éviter » très partagés",
                  "vues_mediane": v, "likes_median": v // 30, "publications": 12, "reels": 9, "carrousels": 3,
                  "exemple": "https://example.com/demo"} for i, v in enumerate((240000, 180000, 96000, 61000, 42000), 1)]
-    from collecte import collecte_instagram
+    from collecte import collecte_comptes
     from ia import propose_comptes
     log("Virall.ai cherche des comptes qui cartonnent dans ta niche…")
     candidats = {}
@@ -35,7 +35,9 @@ def suggere(cfg: dict, token: str | None, demo: bool = False) -> list[dict]:
     if not candidats:
         return []
     log(f"Je vérifie {len(candidats)} comptes (existence et audience réelle)…")
-    posts = collecte_instagram(list(candidats), 90, PUBLICATIONS_PAR_COMPTE, cfg, token)
+    # Un compte par collecte (comme la veille) : la limite de publications du collecteur porte sur l'ensemble d'une
+    # collecte, pas sur chaque compte. Les comptes déjà collectés depuis moins de 24 h sont réutilisés.
+    posts = collecte_comptes([("Instagram", ps) for ps in candidats], 90, PUBLICATIONS_PAR_COMPTE, cfg, token)
     par_compte: dict[str, list] = {}
     for p in posts:
         par_compte.setdefault(p.compte.lower(), []).append(p)
