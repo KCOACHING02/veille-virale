@@ -502,7 +502,7 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
     analyse = charge(esp, analyse_id)
     idx = next((i for i, x in enumerate(analyse["posts"]) if x["cle"] == cle_post), None)
     if idx is None:
-        raise KeyError("Reel introuvable dans cette analyse")
+        raise RuntimeError("Ce Reel est introuvable dans cette analyse : recharge la page.")
     p = _dict_vers_post(analyse["posts"][idx])
     travail = Path(tempfile.mkdtemp(prefix="veille1_"))
     try:

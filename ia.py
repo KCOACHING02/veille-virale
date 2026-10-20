@@ -243,6 +243,7 @@ def regles_marque(cfg: dict) -> str:
 #  Client
 # ------------------------------------------------------------
 class IA:
+    _lot = None  # traitement différé (adapte_tous_differe) ; défini ici aussi pour les objets créés sans __init__
     def __init__(self, cfg: dict, voix: str = "", apprentissages: str = ""):
         import anthropic
         self.client = anthropic.Anthropic()

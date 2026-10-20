@@ -218,7 +218,11 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
                     apres(job["resultat"])
                 job["statut"] = "terminé"
             except Exception as e:  # noqa: BLE001
-                job["statut"], job["erreur"] = "erreur", str(e)
+                # Erreurs de programmation : jamais affichées telles quelles aux clientes (détail dans les journaux)
+                technique = isinstance(e, (AttributeError, TypeError, NameError, KeyError, IndexError, ImportError, AssertionError))
+                job["statut"] = "erreur"
+                job["erreur"] = ("Un souci technique est survenu de notre côté. Réessaie dans un instant ; si ça recommence, "
+                                 "écris-nous à contact@virallink.fr.") if technique else str(e)
                 traceback.print_exc()
             finally:
                 LOG_HOOKS.remove(hook)
