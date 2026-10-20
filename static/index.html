@@ -863,6 +863,17 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-saut button:hover{color:var(--ink);border-color:var(--ink-3)}
 .bt-sec{scroll-margin-top:52px}
 .bt-puces{display:flex;flex-wrap:wrap;gap:6px}
+.bt-select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;color:var(--ink)}
+.bt-apparence{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.bt-apparence summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--glow)}
+.bt-items{display:grid;gap:8px;margin-bottom:8px}
+.bt-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px}
+.bt-item>div{display:grid;gap:6px}
+.bt-item input,.bt-item textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
+.bt-galerie{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin:6px 0}
+.bt-galerie span{position:relative}.bt-galerie img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+.bt-galerie span button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:12px;cursor:pointer}
+.bt-depot-carre{flex-direction:column;justify-content:center;aspect-ratio:1;padding:4px;gap:2px;font-size:12px}
 .bt-puces button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 13px;font-size:13.5px;cursor:pointer;color:var(--ink-2)}
 .bt-puces button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 .bt-rangee{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -3290,6 +3301,14 @@ const TYPES_BLOCS = {
   video: ["▶️", "Vidéo YouTube", "Lecture directement sur ta page"],
   titre: ["🔠", "Titre de section", "Pour organiser ta page"],
   texte: ["✍️", "Texte", "Un mot d'accueil, une citation…"],
+  image: ["🖼️", "Image", "Une photo pleine largeur, avec légende et lien"],
+  galerie: ["🎞️", "Galerie photos", "Grille, carrousel ou mosaïque"],
+  temoignages: ["💬", "Témoignages", "Les avis de tes clientes, en cartes"],
+  faq: ["❓", "Questions fréquentes", "Questions et réponses qui se déplient"],
+  compte: ["⏳", "Compte à rebours", "Pour une offre limitée ou un lancement"],
+  banniere: ["📣", "Bannière promo", "Un bandeau coloré, fixe ou qui défile, avec code promo"],
+  musique: ["🎵", "Musique", "Spotify, Apple Music, Deezer ou SoundCloud"],
+  separateur: ["〰️", "Séparateur", "Ligne, points, vague, étoiles ou espace"],
 };
 const euros = c => !c ? "Gratuit" : (c / 100).toLocaleString("fr-FR", {minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2}) + " €";
 const idCourt = () => Math.random().toString(16).slice(2, 10);
@@ -3461,7 +3480,7 @@ document.addEventListener("click", e => {
 // ---- Thèmes et palettes
 function themeApplique(design, id) {
   const t = BQ.etat.options.themes.find(x => x.id === id); if (!t) return design;
-  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue"];
+  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte"];
   const base = Object.fromEntries(Object.entries(BQ.etat.options.defaut).filter(([k]) => !garde.includes(k)));
   return {...design, ...base, fond2: t.design.fond2 || t.design.fond1, photo_contour: false, ...t.design, theme: id};
 }
@@ -3638,6 +3657,10 @@ function ongletContenu(z) {
 }
 function resumeBloc(b) {
   const prods = BQ.page.produits;
+  const nouveaux = {image: b.legende || "Image", galerie: `${(b.images || []).length} photo${(b.images || []).length > 1 ? "s" : ""}`,
+    temoignages: b.titre || "Témoignages", faq: b.titre || "Questions fréquentes", compte: b.titre || "Compte à rebours",
+    banniere: b.texte || "Bannière promo", musique: b.url ? "Lecteur de musique" : "Colle le lien du morceau", separateur: "Séparateur"};
+  if (nouveaux[b.type]) return nouveaux[b.type];
   return ({lien: b.titre || prods.find(x => x.id === b.produit)?.titre || b.url || "Nouveau lien", titre: b.texte || "Titre", texte: (b.texte || "Texte").slice(0, 60), video: b.url || "Colle le lien YouTube",
     produit: prods.find(x => x.id === b.produit)?.titre || "Choisis le produit", produits: b.titre || "Ma boutique",
     capture: b.titre || "Reste en contact", kit: b.titre || "Kit média"})[b.type];
@@ -3656,7 +3679,40 @@ function blocHTML(b, i) {
     </div>${ouvert ? `<div class="bt-bloc-corps">${corpsBloc(b, i)}</div>` : ""}</div>`;
 }
 function champB(i, k, label, val, attrs = "") { return `<div class="champ"><label>${label}</label><input data-b="${i}" data-bk="${k}" value="${esc(val || "")}" ${attrs}></div>`; }
-function corpsBloc(b, i) {
+function corpsBloc(b, i) { return corpsBlocContenu(b, i) + apparenceBloc(b, i); }
+
+// Apparence propre au bloc : largeur (côte à côte), hauteur (bento), couleurs, forme, taille, alignement, police
+function apparenceBloc(b, i) {
+  if (["separateur"].includes(b.type) && !BQ.avance) return "";
+  const o = BQ.etat.options, d = BQ.page.design, st = b.style || {}, mp = d.mise_en_page || "colonne";
+  const LARG = {plein: "Pleine", deux_tiers: "2/3", demi: "Moitié", tiers: "Tiers"};
+  const defL = mp === "bento" && ["lien", "produit", "image", "compte", "musique", "kit"].includes(b.type) ? "demi" : "plein";
+  const larg = b.largeur || defL;
+  const puce = (k, v, l, actif) => `<button type="button" data-bap="${k}" data-v="${v}" data-i="${i}" aria-pressed="${actif}">${l}</button>`;
+  const coul = (k, l) => `<label class="bt-couleur">${l}<input type="color" data-b="${i}" data-bs="${k}" value="${(st[k] || (k === "fond" ? (b.type === "lien" ? d.bouton_fond : d.bloc_fond) : (b.type === "lien" ? d.bouton_texte : d.bloc_texte))).slice(0, 7)}"></label>`;
+  const optsPolice = `<option value="">Police de la page</option>` + o.polices.map(p => `<option value="${esc(p.nom)}" ${st.police === p.nom ? "selected" : ""} style="font-family:'${esc(p.nom)}'">${esc(p.nom)}</option>`).join("");
+  const perso = st.fond || st.texte || st.forme || st.bouton || st.taille || st.police || st.align;
+  return `<details class="bt-apparence" ${BQ.apparenceOuverte === b.id ? "open" : ""} data-app="${esc(b.id)}"><summary>🎨 Apparence de ce bloc${perso || b.largeur || b.hauteur ? " · personnalisée" : ""}</summary>
+    <p class="bt-sous-titre">Largeur</p><div class="bt-puces">${Object.entries(LARG).map(([v, l]) => puce("largeur", v, l, larg === v)).join("")}</div>
+    <p class="aide" style="margin:4px 0 0">Deux blocs « Moitié » (ou trois « Tiers ») qui se suivent se placent côte à côte.</p>
+    ${mp === "bento" ? `<p class="bt-sous-titre">Hauteur de la tuile</p><div class="bt-puces">${puce("hauteur", "normale", "Normale", b.hauteur !== "haute")}${puce("hauteur", "haute", "Haute", b.hauteur === "haute")}</div>` : ""}
+    <p class="bt-sous-titre">Couleurs</p><div class="bt-couleurs">${coul("fond", "Fond")}${coul("texte", "Texte")}</div>
+    ${b.type === "lien" ? `<p class="bt-sous-titre">Forme du bouton</p><select class="bt-select" data-b="${i}" data-bs="forme"><option value="">Comme les autres boutons</option>${Object.entries(o.formes_bouton).map(([k, l]) => `<option value="${k}" ${st.forme === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+      <p class="bt-sous-titre">Style du bouton</p><select class="bt-select" data-b="${i}" data-bs="bouton"><option value="">Comme les autres boutons</option>${Object.entries(o.boutons).map(([k, l]) => `<option value="${k}" ${st.bouton === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+      <p class="bt-sous-titre">Taille</p><div class="bt-puces">${puce("taille", "", "Comme les autres", !st.taille)}${Object.entries(o.tailles_bouton).map(([v, l]) => puce("taille", v, l, st.taille === v)).join("")}</div>` : ""}
+    ${["lien", "titre", "texte"].includes(b.type) ? `<p class="bt-sous-titre">Alignement</p><div class="bt-puces">${puce("align", "", "Comme la page", !st.align)}${Object.entries(o.alignements).map(([v, l]) => puce("align", v, l, st.align === v)).join("")}</div>` : ""}
+    <p class="bt-sous-titre">Police</p><select class="bt-select" data-b="${i}" data-bs="police">${optsPolice}</select>
+    ${perso ? `<p style="margin:12px 0 0"><button type="button" class="lien" data-bap="reinit" data-i="${i}">Revenir au style de la page</button></p>` : ""}
+  </details>`;
+}
+function listeItems(b, i, champs, ajout) {
+  return `<div class="bt-items">${(b.items || []).map((x, j) => `<div class="bt-item"><div>${champs.map(([k, l, long]) => long
+      ? `<textarea data-b="${i}" data-it="${j}" data-ik="${k}" placeholder="${esc(l)}" maxlength="1500" style="min-height:64px">${esc(x[k] || "")}</textarea>`
+      : `<input data-b="${i}" data-it="${j}" data-ik="${k}" value="${esc(x[k] || "")}" placeholder="${esc(l)}" maxlength="200">`).join("")}</div>
+      <button type="button" class="icone-btn" data-it-suppr="${i}:${j}" aria-label="Retirer">✕</button></div>`).join("")}</div>
+    <button type="button" class="btn petit" data-it-ajout="${i}">+ ${ajout}</button>`;
+}
+function corpsBlocContenu(b, i) {
   const prods = BQ.page.produits;
   const optsProd = (sel, gratuits) => `<option value="">${gratuits ? "Aucun cadeau" : "Choisis…"}</option>` + prods.filter(p => !gratuits || !p.prix).map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.titre || "Sans titre")}</option>`).join("");
   switch (b.type) {
@@ -3683,6 +3739,25 @@ function corpsBloc(b, i) {
       + `<div class="champ"><label>Cadeau envoyé à l'inscription (produit gratuit)</label><select data-b="${i}" data-bk="produit">${optsProd(b.produit, true)}</select><span class="aide">Ton guide gratuit est livré tout de suite et par e-mail.</span></div>`
       + champB(i, "merci", "Message après l'inscription", b.merci, 'maxlength="200" placeholder="C\'est noté, merci !"');
     case "kit": return champB(i, "titre", "Titre", b.titre) + champB(i, "texte", "Sous-titre", b.texte);
+    case "image": return `<div class="champ"><label>Image</label><label class="bt-depot">${b.image ? `<img src="${urlImg(b.image)}" alt="">` : "🖼️"}<span>${b.image ? "Changer l'image" : "Choisir une image"}</span><input type="file" accept="image/*" data-envoi-bloc="${i}"></label></div>`
+      + champB(i, "legende", "Légende (facultatif)", b.legende, 'maxlength="200"') + champB(i, "url", "Lien au clic (facultatif)", b.url, 'inputmode="url" autocapitalize="off" placeholder="ton-site.fr"');
+    case "galerie": return champB(i, "titre", "Titre (facultatif)", b.titre, 'maxlength="120"')
+      + `<div class="bt-galerie">${(b.images || []).map((n, j) => `<span><img src="${urlImg(n)}" alt=""><button type="button" data-gal-suppr="${i}:${j}" aria-label="Retirer">✕</button></span>`).join("")}
+        <label class="bt-depot bt-depot-carre">➕<span>Ajouter</span><input type="file" accept="image/*" multiple data-envoi-galerie="${i}"></label></div>
+        <p class="bt-sous-titre">Disposition</p><select class="bt-select" data-b="${i}" data-bk="disposition">${Object.entries(BQ.etat.options.dispositions_galerie || {}).map(([k, l]) => `<option value="${k}" ${(b.disposition || "grille") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    case "temoignages": return champB(i, "titre", "Titre (facultatif)", b.titre, 'maxlength="120"') + listeItems(b, i, [["texte", "Son avis, en quelques mots", true], ["nom", "Son prénom"]], "Un témoignage");
+    case "faq": return champB(i, "titre", "Titre (facultatif)", b.titre, 'maxlength="120"') + listeItems(b, i, [["q", "La question"], ["r", "La réponse", true]], "Une question");
+    case "compte": return champB(i, "titre", "Titre", b.titre, 'maxlength="120"') + champB(i, "texte", "Texte (facultatif)", b.texte, 'maxlength="300"')
+      + `<div class="champ"><label>Fin de l'offre</label><input type="datetime-local" data-b="${i}" data-bk="fin" value="${esc(b.fin || "")}"></div>`
+      + `<div class="champ"><label>Le bouton mène à</label><select data-b="${i}" data-bk="produit" data-rerendu="1"><option value="">Une adresse web (ou pas de bouton)</option>${prods.map(p => `<option value="${p.id}" ${p.id === b.produit ? "selected" : ""}>💳 ${esc(p.titre || "Sans titre")}</option>`).join("")}</select></div>`
+      + (b.produit ? "" : champB(i, "url", "Adresse du bouton (facultatif)", b.url, 'inputmode="url" autocapitalize="off"'))
+      + champB(i, "bouton", "Texte du bouton", b.bouton, 'maxlength="60"');
+    case "banniere": return champB(i, "texte", "Texte", b.texte, 'maxlength="120" placeholder="-20 % sur tout cette semaine"') + champB(i, "code", "Code promo (facultatif)", b.code, 'maxlength="40"')
+      + champB(i, "url", "Lien au clic (facultatif)", b.url, 'inputmode="url" autocapitalize="off"')
+      + `<label class="bt-interr"><span>Texte qui défile</span><input type="checkbox" data-b="${i}" data-bk="defilement" ${b.defilement ? "checked" : ""}></label>`;
+    case "musique": return champB(i, "url", "Lien du morceau, de l'album ou de la playlist", b.url, 'inputmode="url" autocapitalize="off" placeholder="https://open.spotify.com/track/…"')
+      + '<p class="aide" style="margin:6px 0 0">Spotify, Apple Music, Deezer ou SoundCloud : copie le lien depuis le bouton « Partager » de l\'application.</p>';
+    case "separateur": return `<div class="champ"><label>Forme</label><select data-b="${i}" data-bk="forme">${Object.entries(BQ.etat.options.separateurs || {}).map(([k, l]) => `<option value="${k}" ${(b.forme || "ligne") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>`;
   }
   return "";
 }
@@ -3702,6 +3777,13 @@ function choisirTypeBloc() {
     if (t === "produits") nb.titre = "Ma boutique";
     if (t === "kit") Object.assign(nb, {titre: "Kit média", texte: "Mes chiffres et collaborations"});
     if (t === "produit") nb.produit = BQ.page.produits[0]?.id || "";
+    if (t === "temoignages") Object.assign(nb, {titre: "Elles en parlent", items: [{texte: "", nom: ""}]});
+    if (t === "faq") Object.assign(nb, {titre: "Questions fréquentes", items: [{q: "", r: ""}]});
+    if (t === "galerie") Object.assign(nb, {images: [], disposition: "grille"});
+    if (t === "compte") { const f = new Date(Date.now() + 3 * 864e5); f.setHours(23, 59, 0, 0);
+      Object.assign(nb, {titre: "Offre limitée", texte: "", fin: new Date(f - f.getTimezoneOffset() * 6e4).toISOString().slice(0, 16), bouton: "J'en profite"}); }
+    if (t === "banniere") Object.assign(nb, {texte: "", defilement: true});
+    if (t === "separateur") nb.forme = "ligne";
     BQ.page.blocs.push(nb); BQ.ouvertBloc = nb.id;
     fermeModale(); modifieBoutique(true);
     setTimeout(() => $(`.bt-bloc:last-child input, .bt-bloc:last-child textarea`)?.focus(), 80);
@@ -3717,7 +3799,13 @@ function lieChamps(z) {
     if (x.dataset.p) p[x.dataset.p] = x.value;
     else if (x.dataset.r) p.reseaux[x.dataset.r] = x.value;
     else if (x.dataset.b) {
-      const b = p.blocs[+x.dataset.b]; b[x.dataset.bk] = x.type === "checkbox" ? x.checked : x.value;
+      const b = p.blocs[+x.dataset.b];
+      if (x.dataset.bs) {  // apparence propre au bloc
+        b.style = {...(b.style || {})}; if (x.value) b.style[x.dataset.bs] = x.value; else delete b.style[x.dataset.bs];
+        return modifieBoutique(e.type === "change" && x.tagName === "SELECT");
+      }
+      if (x.dataset.it !== undefined) { b.items[+x.dataset.it][x.dataset.ik] = x.value; return modifieBoutique(); }
+      b[x.dataset.bk] = x.type === "checkbox" ? x.checked : x.value;
       if (x.dataset.rerendu) return modifieBoutique(true);  // ex. bouton → produit : le champ « Adresse » disparaît
       const r = x.closest(".bt-bloc")?.querySelector(".res b"); if (r) r.textContent = resumeBloc(b) + (b.en_avant ? " ✨" : "");
     } else if (x.dataset.d) {
@@ -3748,9 +3836,40 @@ function lieChamps(z) {
     try { const r = await envoieImageBoutique(f, "vignette"); p.blocs[+inp.dataset.envoiBloc].image = r.nom; modifieBoutique(true); } catch (e) { toast(e.message); }
   });
   z.querySelectorAll("[data-retire-img]").forEach(b => b.onclick = () => { delete p.blocs[+b.dataset.retireImg].image; modifieBoutique(true); });
+  // Apparence des blocs, listes (témoignages, FAQ) et galerie
+  z.querySelectorAll("details.bt-apparence").forEach(dt => dt.ontoggle = () => { BQ.apparenceOuverte = dt.open ? dt.dataset.app : null; });
+  z.querySelectorAll("[data-bap]").forEach(btn => btn.onclick = () => {
+    const b = p.blocs[+btn.dataset.i], k = btn.dataset.bap, v = btn.dataset.v;
+    if (k === "largeur") b.largeur = v; else if (k === "hauteur") b.hauteur = v === "haute" ? "haute" : undefined;
+    else if (k === "reinit") delete b.style;
+    else { b.style = {...(b.style || {})}; if (v) b.style[k] = v; else delete b.style[k]; }
+    BQ.apparenceOuverte = b.id; modifieBoutique(true);
+  });
+  z.querySelectorAll("[data-it-ajout]").forEach(btn => btn.onclick = () => { const b = p.blocs[+btn.dataset.itAjout];
+    b.items = [...(b.items || []), b.type === "faq" ? {q: "", r: ""} : {texte: "", nom: ""}]; modifieBoutique(true); });
+  z.querySelectorAll("[data-it-suppr]").forEach(btn => btn.onclick = () => { const [i, j] = btn.dataset.itSuppr.split(":").map(Number);
+    p.blocs[i].items.splice(j, 1); modifieBoutique(true); });
+  z.querySelectorAll("[data-gal-suppr]").forEach(btn => btn.onclick = () => { const [i, j] = btn.dataset.galSuppr.split(":").map(Number);
+    p.blocs[i].images.splice(j, 1); modifieBoutique(true); });
+  z.querySelectorAll("input[type=file][data-envoi-galerie]").forEach(inp => inp.onchange = async () => {
+    const b = p.blocs[+inp.dataset.envoiGalerie], fichiers = [...inp.files].slice(0, 24 - (b.images || []).length);
+    if (!fichiers.length) return; toast(`Envoi de ${fichiers.length} photo${fichiers.length > 1 ? "s" : ""}…`);
+    for (const f of fichiers) { try { const r = await envoieImageBoutique(f, "galerie"); b.images = [...(b.images || []), r.nom]; } catch (e) { toast(e.message); } }
+    modifieBoutique(true);
+  });
 }
 
 // ---- Onglet Design
+const SCHEMAS_MEP = {
+  colonne: '<circle cx="30" cy="12" r="7"/><rect x="18" y="23" width="24" height="4" rx="2"/><rect x="8" y="33" width="44" height="8" rx="4" opacity=".55"/><rect x="8" y="45" width="44" height="8" rx="4" opacity=".55"/><rect x="8" y="57" width="44" height="8" rx="4" opacity=".55"/>',
+  bento: '<rect x="4" y="4" width="52" height="16" rx="5"/><rect x="4" y="24" width="25" height="22" rx="5" opacity=".6"/><rect x="31" y="24" width="25" height="10" rx="4" opacity=".45"/><rect x="31" y="36" width="25" height="10" rx="4" opacity=".75"/><rect x="4" y="50" width="16" height="20" rx="4" opacity=".45"/><rect x="22" y="50" width="34" height="20" rx="5" opacity=".6"/>',
+  magazine: '<rect x="4" y="3" width="52" height="2"/><rect x="4" y="9" width="44" height="9" rx="1"/><rect x="4" y="21" width="30" height="3" rx="1" opacity=".55"/><rect x="4" y="28" width="52" height="18" opacity=".45"/><rect x="4" y="51" width="52" height="1"/><rect x="4" y="55" width="36" height="3" rx="1" opacity=".7"/><rect x="4" y="62" width="52" height="1"/><rect x="4" y="66" width="30" height="3" rx="1" opacity=".7"/>',
+};
+const DESC_MEP = {
+  colonne: "Colonne : tes liens empilés, centrés. Simple et efficace.",
+  bento: "Bento : des tuiles de tailles variées, comme l'écran d'accueil d'une application. Choisis la largeur et la hauteur de chaque bloc dans Contenu.",
+  magazine: "Magazine : ton nom en très grand, une photo pleine largeur, des liens en liste numérotée comme un sommaire. Très « marque ».",
+};
 const SCHEMAS_ENTETE = {
   minimal: '<circle cx="30" cy="22" r="10"/><rect x="16" y="38" width="28" height="5" rx="2"/><rect x="12" y="50" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="61" width="36" height="7" rx="3" opacity=".5"/>',
   banniere: '<rect x="0" y="0" width="60" height="22" opacity=".45"/><circle cx="30" cy="22" r="9"/><rect x="16" y="36" width="28" height="5" rx="2"/><rect x="12" y="50" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="61" width="36" height="7" rx="3" opacity=".5"/>',
@@ -3814,10 +3933,18 @@ function ongletDesign(z) {
     verre: "background:rgba(255,255,255,.45)!important;border:1px solid rgba(255,255,255,.7)", flottant: "box-shadow:0 14px 18px -10px rgba(0,0,0,.55)", sans: "background:transparent!important"};
   const DECOR_EX = {aucun: "∅", etincelles: "✦ ✧", bulles: "◯", confettis: "🎉", coeurs: "♥ ♥", formes: "◇ ○"};
   z.innerHTML = `
-    <nav class="bt-saut">${[["th", "Thèmes"], ["en", "En-tête", 1], ["ph", "Photo"], ["fo", "Fond", 1], ["co", "Couleurs"], ["ty", "Typo", 1], ["bo", "Boutons"], ["pr", "Produits", 1], ["de", "Décor", 1]].map(([i, l, av]) => `<button data-saut="bt-s-${i}" ${av ? 'class="avance"' : ""}>${l}</button>`).join("")}</nav>
+    <nav class="bt-saut">${[["mp", "Mise en page"], ["th", "Thèmes"], ["en", "En-tête", 1], ["ph", "Photo"], ["fo", "Fond", 1], ["co", "Couleurs"], ["ty", "Typo", 1], ["bo", "Boutons"], ["pr", "Produits", 1], ["de", "Décor", 1]].map(([i, l, av]) => `<button data-saut="bt-s-${i}" ${av ? 'class="avance"' : ""}>${l}</button>`).join("")}</nav>
+    <section class="bt-sec" id="bt-s-mp"><h3>Mise en page</h3><p class="aide">La structure de ta page, bien plus qu'une liste de liens. Les couleurs et les formes se règlent en dessous.</p>
+      <div class="bt-choix larges">${Object.keys(o.mises_en_page || {}).map(k => opt("mise_en_page", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${c7("accent")}">${SCHEMAS_MEP[k]}</svg>`, o.mises_en_page[k])).join("")}</div>
+      <p class="aide" style="margin:8px 0 0">${DESC_MEP[d.mise_en_page] || ""}</p>
+      <p class="bt-sous-titre">Espace entre les blocs</p>${puces("espacement", {serre: "Serré", normal: "Normal", aere: "Aéré", large: "Très aéré"})}
+      <p class="bt-sous-titre">Taille du texte</p>${puces("taille_texte", {s: "Petite", m: "Normale", l: "Grande", xl: "Très grande"})}
+      <p class="bt-sous-titre">Largeur de la page sur ordinateur</p>${puces("largeur_page", {etroite: "Étroite", normale: "Normale", large: "Large", pleine: "Très large"})}
+      <p class="aide" style="margin:10px 0 0">Astuce : dans <b>Contenu</b>, ouvre un bloc et choisis sa <b>largeur</b> pour en mettre deux ou trois côte à côte.</p>
+    </section>
     <section class="bt-sec" id="bt-s-th"><h3>Thèmes <button class="btn petit" id="bt-surprise" style="margin-left:auto">🎲 Surprends-moi</button></h3><p class="aide">Un look complet en un clic. Tout reste modifiable en dessous.</p>
       <div class="seg" style="margin-bottom:12px;max-width:100%;overflow-x:auto">${o.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
-      <p class="aide" style="margin:-4px 0 6px">${o.themes.filter(t => t.ambiance === amb).length} thèmes ${({Classique: "classiques", Vibrant: "vibrants", Cosy: "cosy", Audacieux: "audacieux", "Créatif": "créatifs"})[amb] || ""} · fais défiler <span style="float:right"><button class="btn petit" data-defile="-1" aria-label="Thèmes précédents">←</button> <button class="btn petit" data-defile="1" aria-label="Thèmes suivants">→</button></span></p>
+      <p class="aide" style="margin:-4px 0 6px">${o.themes.filter(t => t.ambiance === amb).length} thèmes ${({Classique: "classiques", Vibrant: "vibrants", Cosy: "cosy", Audacieux: "audacieux", "Créatif": "créatifs", Bento: "en tuiles", "Éditorial": "éditoriaux"})[amb] || ""} · fais défiler <span style="float:right"><button class="btn petit" data-defile="-1" aria-label="Thèmes précédents">←</button> <button class="btn petit" data-defile="1" aria-label="Thèmes suivants">→</button></span></p>
       <div class="bt-themes" id="bt-themes"></div>
       ${BQ.palettes || BQ.page.photo ? `<p class="bt-sous-titre">✨ Couleurs tirées de ta photo</p><div class="bt-palettes" id="bt-palettes">${(BQ.palettes || []).map((p, i) => paletteHTML(p, i)).join("") || '<span class="aide">Calcul…</span>'}</div>` : ""}
     </section>
@@ -3888,7 +4015,8 @@ function ongletDesign(z) {
   z.querySelectorAll("[data-dset]").forEach(b => b.onclick = () => {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
     if (typeof def === "number") v = +v;
-    d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor"].includes(k)) d.theme = "perso";
+    d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor",
+      "mise_en_page", "espacement", "largeur_page", "taille_texte"].includes(k)) d.theme = "perso";
     if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
     modifieBoutique(true);
   });

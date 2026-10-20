@@ -1635,6 +1635,8 @@ def _options_boutique() -> dict:
             "formes_bouton": bq.FORMES_BOUTON, "formes_decoupees": sorted(bq.FORMES_DECOUPEES), "survols": bq.SURVOLS,
             "tailles_bouton": bq.TAILLES_BOUTON, "alignements": bq.ALIGNEMENTS, "decors": bq.DECORS, "formes_image": bq.FORMES_IMAGE,
             "styles_prix": bq.STYLES_PRIX, "cadres_carte": bq.CADRES_CARTE,
+            "mises_en_page": bq.MISES_EN_PAGE, "espacements": bq.ESPACEMENTS, "largeurs_page": bq.LARGEURS_PAGE, "tailles_texte": bq.TAILLES_TEXTE,
+            "largeurs_bloc": bq.LARGEURS_BLOC, "separateurs": bq.SEPARATEURS, "dispositions_galerie": bq.DISPOSITIONS_GALERIE,
             "reseaux": {k: v[0] for k, v in bq.RESEAUX.items()}, "defaut": bq.DESIGN_DEFAUT}
 
 
@@ -1715,16 +1717,54 @@ def boutique_change_pseudo():
     return (jsonify({"erreur": err}), 400) if err else jsonify({"pseudo": pseudo, "url": f"{url_site()}/@{pseudo}"})
 
 
+TYPES_BLOCS = ("lien", "titre", "texte", "video", "produit", "produits", "capture", "kit",
+               "image", "galerie", "temoignages", "faq", "compte", "banniere", "separateur", "musique")
+
+
 def _bloc_propre(b: dict) -> dict | None:
     t = b.get("type")
-    if t not in ("lien", "titre", "texte", "video", "produit", "produits", "capture", "kit"):
+    if t not in TYPES_BLOCS:
         return None
     r = {"id": str(b.get("id") or bq.nouvel_id())[:12], "type": t, "visible": b.get("visible", True) is not False}
-    for k, lim in (("titre", 120), ("url", 800), ("texte", 1200), ("emoji", 8), ("bouton", 60), ("produit", 12), ("merci", 200)):
+    for k, lim in (("titre", 120), ("url", 800), ("texte", 1200), ("emoji", 8), ("bouton", 60), ("produit", 12), ("merci", 200),
+                   ("legende", 200), ("code", 40)):
         if isinstance(b.get(k), str):
             r[k] = b[k].strip()[:lim]
     if t == "lien":
         r["en_avant"] = bool(b.get("en_avant"))
+    # Mise en page du bloc : largeur (côte à côte), hauteur (bento) et style propre
+    if b.get("largeur") in bq.LARGEURS_BLOC:
+        r["largeur"] = b["largeur"]
+    if b.get("hauteur") in bq.HAUTEURS_BLOC:
+        r["hauteur"] = b["hauteur"]
+    st = b.get("style") if isinstance(b.get("style"), dict) else {}
+    st2 = {}
+    for k in ("fond", "texte"):
+        if isinstance(st.get(k), str) and bq.COULEUR.match(st[k]):
+            st2[k] = st[k]
+    for k, choix in (("forme", bq.FORMES_BOUTON), ("bouton", bq.BOUTONS), ("taille", bq.TAILLES_BOUTON), ("align", bq.ALIGNEMENTS), ("police", bq.POLICES)):
+        if st.get(k) in choix:
+            st2[k] = st[k]
+    if st2:
+        r["style"] = st2
+    # Champs des nouveaux blocs
+    if t == "galerie":
+        r["images"] = [i for i in (b.get("images") or []) if isinstance(i, str) and NOM_IMAGE.match(i)][:24]
+        if b.get("disposition") in bq.DISPOSITIONS_GALERIE:
+            r["disposition"] = b["disposition"]
+    if t == "temoignages":
+        r["items"] = [{"texte": str(x.get("texte") or "").strip()[:500], "nom": str(x.get("nom") or "").strip()[:60],
+                       **({"image": x["image"]} if isinstance(x.get("image"), str) and NOM_IMAGE.match(x["image"]) else {})}
+                      for x in (b.get("items") or [])[:20] if isinstance(x, dict)]
+    if t == "faq":
+        r["items"] = [{"q": str(x.get("q") or "").strip()[:200], "r": str(x.get("r") or "").strip()[:1500]}
+                      for x in (b.get("items") or [])[:30] if isinstance(x, dict)]
+    if t == "compte" and isinstance(b.get("fin"), str) and _re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?", b["fin"]):
+        r["fin"] = b["fin"]
+    if t == "banniere":
+        r["defilement"] = bool(b.get("defilement"))
+    if t == "separateur" and b.get("forme") in bq.SEPARATEURS:
+        r["forme"] = b["forme"]
     if isinstance(b.get("image"), str) and NOM_IMAGE.match(b["image"]):
         r["image"] = b["image"]
     if isinstance(b.get("ids"), list):

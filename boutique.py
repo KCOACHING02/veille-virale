@@ -177,8 +177,38 @@ POLICES = {
     "Space Mono": ("Space Mono", "Space+Mono:wght@400;700", "futuriste"),
     "Shrikhand": ("Shrikhand", "Shrikhand", "affiche"),
     "Bricolage Grotesque": ("Bricolage Grotesque", "Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800", "moderne"),
+    # Ajouts : éditorial, bento, affiche, rétro
+    "Bodoni Moda": ("Bodoni Moda", "Bodoni+Moda", "classique"),
+    "Young Serif": ("Young Serif", "Young+Serif", "classique"),
+    "EB Garamond": ("EB Garamond", "EB+Garamond:wght@400;700", "classique"),
+    "Italiana": ("Italiana", "Italiana", "classique"),
+    "Cinzel": ("Cinzel", "Cinzel", "classique"),
+    "Yeseva One": ("Yeseva One", "Yeseva+One", "classique"),
+    "Zilla Slab": ("Zilla Slab", "Zilla+Slab:wght@400;700", "classique"),
+    "Manrope": ("Manrope", "Manrope:wght@400;700", "moderne"),
+    "Plus Jakarta Sans": ("Plus Jakarta Sans", "Plus+Jakarta+Sans:wght@400;700", "moderne"),
+    "Sora": ("Sora", "Sora:wght@400;700", "moderne"),
+    "Epilogue": ("Epilogue", "Epilogue:wght@400;700", "moderne"),
+    "Archivo": ("Archivo", "Archivo:wght@400;700", "moderne"),
+    "Instrument Sans": ("Instrument Sans", "Instrument+Sans:wght@400;700", "moderne"),
+    "Chivo": ("Chivo", "Chivo:wght@400;700", "moderne"),
+    "Big Shoulders Display": ("Big Shoulders Display", "Big+Shoulders+Display", "affiche"),
+    "Dela Gothic One": ("Dela Gothic One", "Dela+Gothic+One", "affiche"),
+    "Rubik Mono One": ("Rubik Mono One", "Rubik+Mono+One", "affiche"),
+    "Bungee": ("Bungee", "Bungee", "affiche"),
+    "Monoton": ("Monoton", "Monoton", "affiche"),
+    "Fredoka": ("Fredoka", "Fredoka", "douce"),
+    "Lobster": ("Lobster", "Lobster", "manuscrite"),
+    "Permanent Marker": ("Permanent Marker", "Permanent+Marker", "manuscrite"),
+    "Sacramento": ("Sacramento", "Sacramento", "manuscrite"),
+    "IBM Plex Mono": ("IBM Plex Mono", "IBM+Plex+Mono:wght@400;700", "futuriste"),
+    "DM Mono": ("DM Mono", "DM+Mono:wght@400;500", "futuriste"),
+    "VT323": ("VT323", "VT323", "futuriste"),
+    "Press Start 2P": ("Press Start 2P", "Press+Start+2P", "futuriste"),
 }
-POLICES_TEXTE = ["Poppins", "DM Sans", "Inter", "Outfit", "Nunito", "Lora", "Libre Baskerville", "Cormorant Garamond", "Space Mono", "Fraunces"]
+POLICES_TEXTE = ["Poppins", "DM Sans", "Inter", "Outfit", "Nunito", "Lora", "Libre Baskerville", "Cormorant Garamond", "Space Mono", "Fraunces",
+                 "Manrope", "Plus Jakarta Sans", "Sora", "Epilogue", "Archivo", "Instrument Sans", "Chivo", "EB Garamond", "Zilla Slab",
+                 "IBM Plex Mono", "DM Mono", "Fredoka"]
 LOCALES = {
     "Poppins": [("Poppins-Regular.ttf", 400), ("Poppins-Medium.ttf", 500), ("Poppins-Bold.ttf", 700)],
     "Montserrat": [("Montserrat-ExtraBold.ttf", 800)], "Space Grotesk": [("SpaceGrotesk-Bold.ttf", 700)],
@@ -212,6 +242,15 @@ ANIMATIONS = {"aucune": "Aucune", "pulse": "Pulsation", "secousse": "Secousse", 
 VUES_PRODUITS = {"grille": "Grille", "liste": "Liste", "vitrine": "Vitrine", "carrousel": "Carrousel", "bento": "Bento", "polaroid": "Polaroïds",
                  "zigzag": "Zigzag", "mini": "Compacte"}
 TAILLES_TITRE = {"s": 26, "m": 32, "l": 40, "xl": 52}
+# Mise en page : la structure de la page, pas seulement ses couleurs
+MISES_EN_PAGE = {"colonne": "Colonne", "bento": "Bento", "magazine": "Magazine"}
+ESPACEMENTS = {"serre": 8, "normal": 12, "aere": 20, "large": 30}
+LARGEURS_PAGE = {"etroite": 460, "normale": 560, "large": 760, "pleine": 1080}
+TAILLES_TEXTE = {"s": 14, "m": 15.5, "l": 17, "xl": 19}
+LARGEURS_BLOC = {"plein": 6, "deux_tiers": 4, "demi": 3, "tiers": 2}
+HAUTEURS_BLOC = {"normale": 1, "haute": 2}
+SEPARATEURS = {"ligne": "Ligne", "points": "Points", "vague": "Vague", "etoiles": "Étoiles", "double": "Double trait", "espace": "Espace vide"}
+DISPOSITIONS_GALERIE = {"grille": "Grille", "carrousel": "Carrousel", "mosaique": "Mosaïque"}
 
 DESIGN_DEFAUT = {
     "theme": "sable", "entete": "minimal", "photo_forme": "rond", "photo_taille": 112, "photo_contour": False,
@@ -222,6 +261,7 @@ DESIGN_DEFAUT = {
     "bouton_style": "plein", "rayon": 16, "animation": "pulse", "apparition": True, "produits_vue": "grille",
     "bouton_forme": "arrondi", "survol": "soulever", "bouton_taille": "normal", "alignement": "centre", "decor": "aucun",
     "image_forme": "carre", "prix_style": "texte", "carte_cadre": "ombre",
+    "mise_en_page": "colonne", "espacement": "normal", "largeur_page": "normale", "taille_texte": "m",
 }
 
 # Thèmes prêts à l'emploi, regroupés par ambiance (comme les « looks » de Beacons, en plus poussé)
@@ -326,7 +366,7 @@ THEMES.update({
                police_titre="Cormorant Garamond", police_texte="Inter", bouton_style="double", bouton_forme="carre", rayon=0, photo_forme="anneau",
                survol="aucun", image_forme="fenetre", prix_style="texte", carte_cadre="contour", produits_vue="vitrine"),
 })
-AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif"]
+AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial"]
 
 # ------------------------------------------------------------
 #  Collection de thèmes : 20 par ambiance. Chaque thème = une palette (fond, fond 2, texte, bouton, accent),
@@ -366,6 +406,16 @@ ALLURES = {
                      alignement="gauche", image_forme="carre", carte_cadre="sans", produits_vue="liste", prix_style="texte"),
     "vichy": dict(entete="arche", fond_type="motif", motif="vichy", photo_forme="arche", bouton_style="plein", bouton_forme="capsule", rayon=18,
                   survol="rebond", image_forme="arche", carte_cadre="ombre", produits_vue="grille", prix_style="pastille", decor="coeurs"),
+    # Allures des nouvelles mises en page
+    "tuiles": dict(entete="minimal", fond_type="uni", photo_forme="arrondi", bouton_style="doux", bouton_forme="arrondi", rayon=22, survol="grossir",
+                   image_forme="carre", carte_cadre="ombre", produits_vue="bento", prix_style="pastille", mise_en_page="bento", espacement="normal"),
+    "tuiles_brut": dict(entete="minimal", fond_type="uni", photo_forme="arrondi", bouton_style="decale", bouton_forme="carre", rayon=0, survol="enfoncer",
+                        image_forme="carre", carte_cadre="decale", produits_vue="bento", prix_style="etiquette", mise_en_page="bento", espacement="normal"),
+    "tuiles_verre": dict(entete="minimal", fond_type="anime", photo_forme="rond", bouton_style="verre", bouton_forme="arrondi", rayon=26, survol="incliner",
+                         image_forme="carre", carte_cadre="verre", produits_vue="bento", prix_style="bouton", mise_en_page="bento", espacement="normal"),
+    "edito": dict(entete="magazine", fond_type="uni", photo_forme="arrondi", bouton_style="plein", bouton_forme="carre", rayon=0, survol="aucun",
+                  image_forme="carre", carte_cadre="contour", produits_vue="vitrine", prix_style="surligne", taille_titre="xl",
+                  mise_en_page="magazine", espacement="aere", alignement="gauche"),
 }
 
 
@@ -483,6 +533,34 @@ for _x in [
     ("graffiti", "Graffiti", "Créatif", "#1A1A1A", "#262626", "#FFFFFF", "#FF3CAC", "#39FF14", "Shrikhand", "Space Grotesk", "brutal"),
     ("album", "Album photo", "Créatif", "#EFE7DA", "#E3D7C3", "#3E3226", "#FFFFFF", "#B5651D", "Gloock", "Lora", "papier"),
     ("briques", "Briques", "Créatif", "#FFD500", "#FFC300", "#1A1A1A", "#E3000B", "#0055BF", "Archivo Black", "DM Sans", "pixel"),
+    # Bento : des tuiles, comme l'écran d'accueil d'une application
+    ("bento_creme", "Crème", "Bento", "#F3EEE6", "#E9E1D4", "#1E1B16", "#FFFFFF", "#FF6B3D", "Plus Jakarta Sans", "Plus Jakarta Sans", "tuiles"),
+    ("bento_nuit", "Nuit", "Bento", "#0F1115", "#1A1D24", "#F2F2F2", "#1E222B", "#7C5CFF", "Sora", "Sora", "tuiles"),
+    ("bento_menthe", "Menthe", "Bento", "#E6F4EE", "#D3EBDF", "#12352A", "#FFFFFF", "#00A36C", "Manrope", "Manrope", "tuiles"),
+    ("bento_peche", "Pêche", "Bento", "#FFE8DC", "#FFD3BD", "#3A1D10", "#FFFFFF", "#FF7A45", "Fredoka", "Manrope", "tuiles"),
+    ("bento_lilas", "Lilas", "Bento", "#EEE8FF", "#DCD2FF", "#24154D", "#FFFFFF", "#7C4DFF", "Epilogue", "Epilogue", "tuiles"),
+    ("bento_ocre", "Ocre", "Bento", "#F6E7C8", "#EBD3A2", "#2E220E", "#FFF8EA", "#C8861E", "Young Serif", "Instrument Sans", "tuiles"),
+    ("bento_ciel", "Ciel", "Bento", "#E3F2FF", "#CDE6FF", "#0D2847", "#FFFFFF", "#2E7CF6", "Plus Jakarta Sans", "Plus Jakarta Sans", "tuiles"),
+    ("bento_rubis", "Rubis", "Bento", "#2A0A12", "#3D0F1B", "#FFE9EE", "#4A1422", "#FF3D6E", "Bricolage Grotesque", "Manrope", "tuiles"),
+    ("bento_sable", "Sable chaud", "Bento", "#EFE6DA", "#E2D4C2", "#3B2F25", "#FBF7F1", "#9C6B3F", "Fraunces", "Manrope", "tuiles"),
+    ("bento_brut", "Brut", "Bento", "#FFFFFF", "#F2F2F2", "#0A0A0A", "#FFE14D", "#0A0A0A", "Dela Gothic One", "Archivo", "tuiles_brut"),
+    ("bento_acide", "Acide", "Bento", "#F4F4EF", "#E8E8E0", "#111111", "#C6F432", "#FF4FA3", "Rubik Mono One", "Archivo", "tuiles_brut"),
+    ("bento_verre", "Verre", "Bento", "#7F5CFF", "#00C2A8", "#FFFFFF", "#FFFFFF", "#FFE45C", "Sora", "Manrope", "tuiles_verre"),
+    ("bento_aube", "Aube", "Bento", "#FF9A62", "#E8457C", "#FFFFFF", "#FFFFFF", "#FFE07A", "Epilogue", "Manrope", "tuiles_verre"),
+    # Éditorial : comme la une d'un magazine
+    ("edito_couverture", "Couverture", "Éditorial", "#FFFFFF", "#F3F3F3", "#111111", "#111111", "#D7263D", "Bodoni Moda", "Inter", "edito"),
+    ("edito_journal", "Papier journal", "Éditorial", "#F1ECE2", "#E6DFD1", "#1B1B1B", "#1B1B1B", "#B5442C", "EB Garamond", "IBM Plex Mono", "edito"),
+    ("edito_noir", "Noir", "Éditorial", "#0E0E0E", "#1A1A1A", "#F3EFE7", "#F3EFE7", "#C9A86A", "Italiana", "Manrope", "edito"),
+    ("edito_rose", "Rose", "Éditorial", "#F9E1E4", "#F2CBD1", "#3A0E1A", "#3A0E1A", "#E0436B", "Yeseva One", "Epilogue", "edito"),
+    ("edito_anglais", "Vert anglais", "Éditorial", "#14342B", "#1D4538", "#F2EAD8", "#F2EAD8", "#E2B65C", "Cinzel", "EB Garamond", "edito"),
+    ("edito_klein", "Bleu Klein", "Éditorial", "#F4F1EA", "#E8E3D6", "#1A2CA3", "#1A2CA3", "#1A2CA3", "Big Shoulders Display", "Chivo", "edito"),
+    ("edito_kraft", "Kraft", "Éditorial", "#D8C3A5", "#CBB18E", "#2A1E12", "#2A1E12", "#8A2C12", "Zilla Slab", "DM Mono", "edito"),
+    ("edito_lilas", "Lilas", "Éditorial", "#EDE7F6", "#DED4F0", "#2B1A47", "#2B1A47", "#7E57C2", "Young Serif", "Instrument Sans", "edito"),
+    ("edito_affiche", "Affiche", "Éditorial", "#FF4A1C", "#E63E12", "#FFF3E6", "#FFF3E6", "#111111", "Rubik Mono One", "Archivo", "edito"),
+    ("edito_moka", "Moka", "Éditorial", "#3B2A20", "#4C372B", "#F5E6D3", "#F5E6D3", "#E2A76F", "Fraunces", "Lora", "edito"),
+    ("edito_galerie", "Galerie", "Éditorial", "#FAFAF7", "#EFEFEA", "#222222", "#222222", "#7A7A74", "Instrument Serif", "DM Mono", "edito"),
+    ("edito_neon", "Néon", "Éditorial", "#0B0B0F", "#16161D", "#FFFFFF", "#FFFFFF", "#C6F432", "Monoton", "Space Mono", "edito"),
+    ("edito_terre", "Terre", "Éditorial", "#EADBC8", "#DCC7AE", "#4A2A16", "#4A2A16", "#B5541C", "Playfair Display", "Manrope", "edito"),
 ]:
     _theme(*_x)
 
@@ -512,7 +590,8 @@ def design_propre(d: dict) -> dict:
                      "animation": ANIMATIONS, "produits_vue": VUES_PRODUITS, "bouton_forme": FORMES_BOUTON, "survol": SURVOLS,
                      "bouton_taille": TAILLES_BOUTON, "alignement": ALIGNEMENTS, "decor": DECORS, "image_forme": FORMES_IMAGE,
                      "prix_style": STYLES_PRIX, "carte_cadre": CADRES_CARTE, "taille_titre": TAILLES_TITRE, "theme": {**THEMES, "perso": 1},
-                     "police_titre": POLICES, "police_texte": POLICES}.get(k)
+                     "police_titre": POLICES, "police_texte": POLICES, "mise_en_page": MISES_EN_PAGE, "espacement": ESPACEMENTS,
+                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE}.get(k)
             if choix is not None and v in choix:
                 r[k] = v
             elif k == "fond_image" and isinstance(v, str) and re.fullmatch(r"[0-9a-f]{12}\.(jpg|png|webp)", v or "x"):
@@ -526,7 +605,8 @@ def design_propre(d: dict) -> dict:
 
 
 def applique_theme(design: dict, theme: str) -> dict:
-    base = {k: v for k, v in DESIGN_DEFAUT.items() if k not in ("photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue")}
+    base = {k: v for k, v in DESIGN_DEFAUT.items() if k not in ("photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue",
+                                                                  "mise_en_page", "espacement", "largeur_page", "taille_texte")}
     t = THEMES.get(theme)
     if not t:
         return design
@@ -662,17 +742,17 @@ def prix_txt(centimes: int, devise: str = "eur") -> str:
 # ------------------------------------------------------------
 #  Rendu HTML de la page publique
 # ------------------------------------------------------------
-def _polices_css(d: dict) -> tuple[str, str]:
+def _polices_css(d: dict, extra: list | None = None) -> tuple[str, str]:
     faces, google = [], []
-    for nom in dict.fromkeys([d["police_titre"], d["police_texte"]]):
+    for nom in dict.fromkeys([d["police_titre"], d["police_texte"], *[x for x in (extra or []) if x in POLICES]]):
         fam, src, _ = POLICES[nom]
         if src == "local":
             for fichier, poids in LOCALES[nom]:
                 faces.append(f"@font-face{{font-family:'{fam}';src:url('/static/fonts/{fichier}') format('truetype');font-weight:{poids};font-display:swap}}")
         else:
             google.append(src)
-    lien = (f'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" '
-            f'href="https://fonts.googleapis.com/css2?{"&".join("family=" + g for g in google)}&display=swap">') if google else ""
+    lien = ('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' + "".join(
+        f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={g}&display=swap">' for g in google)) if google else ""
     return "\n".join(faces), lien
 
 
@@ -884,6 +964,130 @@ h2.t2{{font:400 calc(var(--tt) * .6)/1.15 var(--tf);margin:26px 0 10px}}
 """
 
 
+def _css_mise_en_page(d: dict) -> str:
+    """Grille des blocs (largeurs), espacements, largeur de page, taille du texte, et mises en page Bento / Magazine."""
+    esp = ESPACEMENTS.get(d.get("espacement"), 12)
+    mp = d.get("mise_en_page", "colonne")
+    larg = LARGEURS_PAGE.get(d.get("largeur_page"), 560)
+    if mp != "colonne" and d.get("largeur_page") in ("etroite", "normale"):
+        larg = 760  # bento et magazine ont besoin d'air sur ordinateur
+    tt = TAILLES_TEXTE.get(d.get("taille_texte"), 15.5)
+    return """
+body{font-size:%(tt)spx}
+.page{max-width:%(larg)spx}
+/* Grille des blocs : 6 colonnes, chaque bloc choisit sa largeur (pleine, 2/3, moitié, tiers) */
+.blocs{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:%(esp)spx;grid-auto-flow:row dense}
+.blocs>.bk{grid-column:span 6;min-width:0;display:flex;flex-direction:column;gap:%(esp)spx}
+.blocs>.l-deux_tiers{grid-column:span 4}.blocs>.l-demi{grid-column:span 3}.blocs>.l-tiers{grid-column:span 2}
+.bk>.lien,.bk>.carte,.bk>form{flex:1}
+.l-tiers .lien,.l-demi .lien{padding-left:10px;padding-right:10px}.l-tiers .lien span,.l-demi .lien span{padding:0 4px}
+.l-tiers .lien .vig,.l-tiers .lien .emo{display:none}
+.l-tiers .lien{font-size:.9em}
+.bk.fd{background:var(--k);color:var(--kt);border-radius:var(--rk);padding:14px}
+.bk .fl{display:none}
+/* Tailles et alignements par bloc */
+.t-compact .lien{min-height:46px;font-size:.92em;padding-top:6px;padding-bottom:6px}.t-grand .lien{min-height:76px;font-size:1.1em}
+.a-gauche .lien{justify-content:flex-start;text-align:left}.a-gauche .sec,.a-gauche .txt{text-align:left}
+.a-centre .lien{justify-content:center;text-align:center}.a-centre .sec,.a-centre .txt{text-align:center}
+/* Nouveaux blocs */
+.bk-image figure{margin:0}.bk-image img{width:100%%;display:block;border-radius:var(--rk);object-fit:cover}
+.bk-image figcaption{font-size:.85em;opacity:.75;margin-top:6px;text-align:center}
+.galerie{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.galerie img{width:100%%;aspect-ratio:1;object-fit:cover;display:block;border-radius:calc(var(--rk) * .6)}
+.galerie.g-carrousel{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;gap:10px}
+.galerie.g-carrousel::-webkit-scrollbar{display:none}
+.galerie.g-carrousel img{flex:0 0 78%%;aspect-ratio:4/5;scroll-snap-align:center}
+.galerie.g-mosaique{display:block;columns:2;column-gap:6px}.galerie.g-mosaique img{aspect-ratio:auto;margin-bottom:6px;break-inside:avoid}
+.temoins{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}
+.temoins::-webkit-scrollbar{display:none}
+.temoin{flex:0 0 min(86%%,340px);scroll-snap-align:start;display:flex;flex-direction:column;gap:10px}
+.temoin q{font-size:1.02em;line-height:1.5;quotes:"«\\00a0" "\\00a0»"}
+.temoin span{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.9em}
+.temoin span img{width:36px;height:36px;border-radius:50%%;object-fit:cover}
+.temoin .etoiles{color:var(--a);letter-spacing:2px}
+.faq{display:flex;flex-direction:column;gap:8px}
+.faq details{padding:14px 16px}.faq summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:10px}
+.faq summary::-webkit-details-marker{display:none}.faq summary::after{content:"+";color:var(--a);font-size:1.3em;line-height:1}
+.faq details[open] summary::after{content:"–"}.faq p{margin:10px 0 0;opacity:.85;white-space:pre-line}
+.compte{text-align:center}.compte h2{font:400 calc(var(--tt) * .55)/1.15 var(--tf);margin:0 0 4px}.compte p{margin:0 0 12px;opacity:.85}
+.chrono{display:flex;justify-content:center;gap:6px;margin:6px 0 12px}
+.chrono span{flex:1 1 0;min-width:0;max-width:72px;padding:8px 2px;border-radius:calc(var(--rk) * .7);background:color-mix(in srgb,var(--kt) 8%%,transparent)}
+.chrono b{display:block;font:400 calc(var(--tt) * .8)/1 var(--tf)}.chrono small{font-size:.72em;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+.banniere{display:block;overflow:hidden;background:var(--a);color:var(--ac);border-radius:var(--rk);padding:11px 16px;text-decoration:none;font-weight:700;text-align:center}
+.banniere code{font:inherit;background:color-mix(in srgb,var(--ac) 18%%,transparent);border:1.5px dashed currentColor;border-radius:6px;padding:1px 8px;margin-left:6px}
+.banniere.defile{padding-left:0;padding-right:0;white-space:nowrap}
+.banniere.defile .piste{display:inline-flex;gap:48px;animation:defile 18s linear infinite;padding-left:100%%}
+@keyframes defile{to{transform:translateX(-100%%)}}
+.sep{border:0;margin:6px auto;width:100%%;color:var(--t);opacity:.5}
+.sep-ligne{border-top:1.5px solid currentColor}.sep-double{border-top:4px double currentColor}
+.sep-points{height:6px;background:radial-gradient(currentColor 2px,transparent 2.5px) center/16px 6px repeat-x}
+.sep-vague{height:10px;background:radial-gradient(circle at 10px -4px,transparent 9px,currentColor 9.5px 10.5px,transparent 11px) 0 0/20px 10px repeat-x}
+.sep-etoiles{height:auto;text-align:center;letter-spacing:14px;opacity:.6}.sep-etoiles::before{content:"✦ ✦ ✦"}
+.sep-espace{height:18px;opacity:0}
+.musique{width:100%%;border:0;border-radius:calc(var(--rk) * .8);display:block}
+/* ============ BENTO : tuiles de tailles variées ============ */
+.mp-bento .blocs{grid-auto-rows:auto}
+.mp-bento .blocs>.h-haute{grid-row:span 2}
+.mp-bento .bk-lien .lb.bf-pilule::before,.mp-bento .bk-lien .lb.bf-capsule::before,.mp-bento .bk-lien .lb.bf-croquis::before{border-radius:28px}
+.mp-bento .tete{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;text-align:left;background:var(--k);color:var(--kt);
+  border-radius:calc(var(--rk) + 8px);padding:18px;margin-bottom:%(esp)spx}
+.mp-bento .tete .photo{margin:0;width:min(var(--ph),92px);height:min(var(--ph),92px)}
+.mp-bento .tete h1{margin:0 0 4px;font-size:calc(var(--tt) * .82)}.mp-bento .tete .bio{margin:0;max-width:none;font-size:.95em}
+.mp-bento .tete .reseaux{grid-column:1/-1;justify-content:flex-start;margin-left:-8px}
+.mp-bento .tete .reseaux a{color:var(--kt)}
+.mp-bento .couv{display:none}
+.mp-bento .bk-lien .lien{min-height:124px;height:100%%;flex-direction:column;align-items:flex-start;justify-content:flex-end;text-align:left;padding:16px;font-size:1.02em}
+.mp-bento .bk-lien.h-haute .lien{min-height:260px}
+.mp-bento .bk-lien .lien span{padding:0;line-height:1.25}
+.mp-bento .bk-lien .lien .vig{position:static;transform:none;width:52px;height:52px;margin-bottom:auto;border-radius:calc(var(--rk) * .6)}
+.mp-bento .bk-lien .lien .emo{position:static;font-size:30px;margin-bottom:auto}
+.mp-bento .bk-lien .lien .fl{display:block;position:absolute;top:12px;right:14px;font-style:normal;font-size:1.1em;opacity:.8}
+.mp-bento .bk-lien .lien:has(.vig) .fl,.mp-bento .bk-lien .lien:has(.emo) .fl{top:14px}
+.mp-bento .bk-lien.l-tiers .lien{font-size:.92em;padding:12px}
+.mp-bento .bk-titre{justify-content:flex-end}
+.mp-bento .bk-titre .sec{text-align:left;margin:10px 2px 0;font-size:calc(var(--tt) * .5)}
+.mp-bento .bk-texte .txt{text-align:left;background:var(--k);color:var(--kt);border-radius:calc(var(--rk) + 4px);padding:16px;height:100%%}
+.mp-bento .bk-image img,.mp-bento .bk-video .video{height:100%%;min-height:124px;border-radius:calc(var(--rk) + 4px)}
+.mp-bento .carte,.mp-bento .faq details{border-radius:calc(var(--rk) + 4px)}
+.mp-bento .bk-produit .prod{height:100%%}
+.mp-bento .bk-musique .musique{height:100%%;min-height:152px}
+/* ============ MAGAZINE : éditorial ============ */
+.mp-magazine .tete{text-align:left;border-top:3px solid var(--t);border-bottom:1px solid var(--t);padding:14px 0 16px;margin-bottom:26px}
+.mp-magazine .tete h1{font-size:clamp(calc(var(--tt) * 1.3),13vw,calc(var(--tt) * 2.2));line-height:.92;letter-spacing:-.03em;margin:0 0 12px}
+.mp-magazine .tete .photo{display:none}
+.mp-magazine .tete .bio{margin:0 0 10px;max-width:46ch;font:italic 400 1.18em/1.45 var(--tf);opacity:.9}
+.mp-magazine .tete .reseaux{justify-content:flex-start;margin-left:-8px}
+.mp-magazine .couv{display:block!important;width:100%%!important;margin:0 0 18px!important;height:auto!important;aspect-ratio:4/5;object-fit:cover;border-radius:0!important;
+  -webkit-mask-image:none!important;mask-image:none!important}
+.mp-magazine .titre-mag{position:static!important;color:inherit!important;text-shadow:none!important;padding:0!important}
+.mp-magazine .blocs{counter-reset:art}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien{counter-increment:art;justify-content:flex-start;text-align:left;min-height:64px;padding:14px 34px 14px 2px;
+  border-top:1px solid color-mix(in srgb,var(--t) 35%%,transparent);border-radius:0;font:400 1.35em/1.15 var(--tf);color:var(--t);filter:none;transform:none!important}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien::before{display:none}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien::after{content:"→";position:absolute;right:4px;top:50%%;transform:translateY(-50%%);font-family:var(--tx);font-size:.8em;opacity:.7;transition:transform .2s}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien:hover::after{transform:translate(5px,-50%%)}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien span{padding:0}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien span::before{content:counter(art,decimal-leading-zero);font:600 .5em/1 var(--tx);letter-spacing:.08em;opacity:.6;margin-right:12px;vertical-align:middle}
+.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien .vig,.mp-magazine .bk-lien:not(.perso):not(:has(.avant)) .lien .emo{position:static;transform:none;margin-right:12px}
+.mp-magazine .l-tiers .lien,.mp-magazine .l-demi .lien{font-size:1.05em!important;padding-right:24px!important}
+.mp-magazine .l-tiers .lien{padding-right:4px!important;font-size:.98em!important}
+.mp-magazine .l-tiers .lien span::before,.mp-magazine .l-tiers .lien::after{display:none!important}
+.mp-magazine .sec{text-align:left;font-size:calc(var(--tt) * .85);border-bottom:1px solid var(--t);padding-bottom:6px;margin-top:22px}
+.mp-magazine .txt{text-align:left;font-size:1.08em;line-height:1.65}
+.mp-magazine .bk-texte .txt::first-letter{float:left;font:400 3.2em/.85 var(--tf);margin:4px 8px 0 0;color:var(--a)}
+.mp-magazine .carte,.mp-magazine .prod,.mp-magazine .faq details{border-radius:0}
+.mp-magazine .bk-image img{border-radius:0}
+.mp-magazine .bk-image figcaption{text-align:left;font-style:italic}
+@media (min-width:720px){
+  .mp-magazine .tete{display:grid;grid-template-columns:1.1fr 1fr;gap:0 26px;align-items:end}
+  .mp-magazine .tete h1{grid-column:1/-1}
+  .mp-magazine .couv{aspect-ratio:16/10}
+  .mp-magazine .bk-texte .txt{columns:2;column-gap:28px}
+  .mp-bento .bk-lien .lien{min-height:150px}
+}
+""" % {"tt": tt, "larg": larg, "esp": esp}
+
+
 def _img(uid_pseudo: str, nom: str) -> str:
     return f"/@{uid_pseudo}/i/{quote(nom)}"
 
@@ -904,6 +1108,11 @@ def _tete(page: dict, pseudo: str) -> str:
     couv_nom = page.get("couverture") or photo
     couv = f'<img class="couv" src="{_img(pseudo, couv_nom)}" alt="">' if couv_nom else ""
     e = d["entete"]
+    mp = d.get("mise_en_page", "colonne")
+    if mp == "bento":
+        return f'<header class="tete">{img_photo}<div><h1>{nom}</h1>{bio}</div>{reseaux}</header>'
+    if mp == "magazine":
+        return f'<header class="tete"><h1>{nom}</h1><div>{bio}{reseaux}</div></header>{couv}'
     if e == "cote":
         return f'<header class="tete">{img_photo}<div><h1>{nom}</h1>{reseaux}</div><div class="bio-l">{bio}</div></header>'
     if e == "magazine":
@@ -946,15 +1155,21 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
     prods = {p["id"]: p for p in page.get("produits", []) if p.get("visible", True)}
     if t == "lien":
         vig = f'<img class="vig" src="{_img(pseudo, b["image"])}" alt="">' if b.get("image") else (f'<i class="emo">{E(b["emoji"])}</i>' if b.get("emoji") else "")
+        st = b.get("style") or {}
+        cls = "lien"  # classes de bouton ajoutées par document() ; personnalisées ici si le bloc a sa propre forme
+        if st.get("forme") or st.get("bouton"):
+            cls = "lb-fait " + classes_bouton({**d, **({"bouton_forme": st["forme"]} if st.get("forme") else {}),
+                                               **({"bouton_style": st["bouton"]} if st.get("bouton") else {})}) + " lien"
+        cls += " avant" if b.get("en_avant") else ""
         pr = prods.get(b.get("produit") or "")
         if pr:  # bouton vers la page de paiement d'un produit : même onglet, comptée comme un clic
-            return (f'<a class="lien{" avant" if b.get("en_avant") else ""}" href="/@{pseudo}/l/{b["id"]}">'
-                    f'{vig}<span>{E(b.get("titre") or pr.get("titre") or "Je le veux")}</span><i class="reflet"></i></a>')
+            return (f'<a class="{cls}" href="/@{pseudo}/l/{b["id"]}">'
+                    f'{vig}<span>{E(b.get("titre") or pr.get("titre") or "Je le veux")}</span><i class="fl">→</i><i class="reflet"></i></a>')
         u = url_sure(b.get("url"))
         if not u:
             return ""
-        return (f'<a class="lien{" avant" if b.get("en_avant") else ""}" href="/@{pseudo}/l/{b["id"]}" data-url="{E(u)}" target="_blank" rel="noopener">'
-                f'{vig}<span>{E(b.get("titre") or u)}</span><i class="reflet"></i></a>')
+        return (f'<a class="{cls}" href="/@{pseudo}/l/{b["id"]}" data-url="{E(u)}" target="_blank" rel="noopener">'
+                f'{vig}<span>{E(b.get("titre") or u)}</span><i class="fl">↗</i><i class="reflet"></i></a>')
     if t == "titre":
         return f'<h2 class="sec">{E(b.get("texte") or "")}</h2>'
     if t == "texte":
@@ -983,7 +1198,138 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
     if t == "kit":
         return (f'<a class="kit-lien carte" href="/@{pseudo}/kit"><span><b>{E(b.get("titre") or "Kit média")}</b><br>'
                 f'<small>{E(b.get("texte") or "Mes chiffres et collaborations")}</small></span><span aria-hidden="true">→</span></a>')
+    if t == "image":
+        if not b.get("image"):
+            return ""
+        img = f'<img src="{_img(pseudo, b["image"])}" alt="{E(b.get("legende") or "")}" loading="lazy">'
+        u = url_sure(b.get("url"))
+        if u:
+            img = f'<a href="{E(u)}" target="_blank" rel="noopener">{img}</a>'
+        leg = f'<figcaption>{E(b["legende"])}</figcaption>' if b.get("legende") else ""
+        return f'<figure>{img}{leg}</figure>'
+    if t == "galerie":
+        imgs = [i for i in (b.get("images") or []) if i]
+        if not imgs:
+            return ""
+        titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
+        disp = b.get("disposition") if b.get("disposition") in DISPOSITIONS_GALERIE else "grille"
+        return titre + f'<div class="galerie g-{disp}">' + "".join(f'<img src="{_img(pseudo, i)}" alt="" loading="lazy">' for i in imgs) + "</div>"
+    if t == "temoignages":
+        items = [x for x in (b.get("items") or []) if (x.get("texte") or "").strip()]
+        if not items:
+            return ""
+        titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
+        cartes = []
+        for x in items:
+            photo = f'<img src="{_img(pseudo, x["image"])}" alt="">' if x.get("image") else ""
+            cartes.append(f'<figure class="temoin carte" style="margin:0"><span class="etoiles" aria-label="5 étoiles">★★★★★</span>'
+                          f'<q>{E(x["texte"])}</q><span>{photo}{E(x.get("nom") or "")}</span></figure>')
+        cartes = "".join(cartes)
+        return f'{titre}<div class="temoins">{cartes}</div>'
+    if t == "faq":
+        items = [x for x in (b.get("items") or []) if (x.get("q") or "").strip()]
+        if not items:
+            return ""
+        titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
+        return titre + '<div class="faq">' + "".join(f'<details class="carte"><summary>{E(x["q"])}</summary><p>{E(x.get("r") or "")}</p></details>' for x in items) + "</div>"
+    if t == "compte":
+        fin = b.get("fin") or ""
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?", fin):
+            return ""
+        u = url_sure(b.get("url"))
+        pr = prods.get(b.get("produit") or "")
+        lien = f"/@{pseudo}/p/{pr['id']}?src=compte" if pr else u
+        btn = f'<a class="bouton" href="{E(lien)}">{E(b.get("bouton") or "J’en profite")}</a>' if lien else ""
+        txt = f'<p>{E(b["texte"])}</p>' if b.get("texte") else ""
+        unites = "".join(f'<span><b data-u="{k}">00</b><small>{l}</small></span>' for k, l in (("j", "jours"), ("h", "heures"), ("m", "min"), ("s", "sec")))
+        return (f'<div class="compte carte" data-fin="{E(fin)}"><h2>{E(b.get("titre") or "Offre limitée")}</h2>{txt}'
+                f'<div class="chrono">{unites}</div><p class="fini" hidden>C’est terminé, merci !</p>{btn}</div>')
+    if t == "banniere":
+        texte = E(b.get("texte") or "")
+        if not texte:
+            return ""
+        code = f'<code>{E(b["code"])}</code>' if b.get("code") else ""
+        contenu = f'<span>{texte}{code}</span>'
+        if b.get("defilement"):
+            contenu = f'<span class="piste">{contenu * 4}</span>'
+        u = url_sure(b.get("url"))
+        cls = f'banniere{" defile" if b.get("defilement") else ""}'
+        return f'<a class="{cls}" href="{E(u)}" target="_blank" rel="noopener">{contenu}</a>' if u else f'<div class="{cls}">{contenu}</div>'
+    if t == "separateur":
+        f = b.get("forme") if b.get("forme") in SEPARATEURS else "ligne"
+        return f'<hr class="sep sep-{f}">' if f != "etoiles" else '<div class="sep sep-etoiles" role="separator"></div>'
+    if t == "musique":
+        lec = lecteur_musique(b.get("url") or "")
+        return (f'<iframe class="musique" src="{E(lec[0])}" height="{lec[1]}" loading="lazy" title="Musique" '
+                f'allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>') if lec else ""
     return ""
+
+
+def lecteur_musique(u: str) -> tuple[str, int] | None:
+    """Lecteur intégré pour Spotify, Apple Music, Deezer ou SoundCloud (adresse publique collée par la créatrice)."""
+    u = (u or "").strip()
+    m = re.search(r"open\.spotify\.com/(?:intl-[a-z-]+/)?(track|album|playlist|episode|show|artist)/([A-Za-z0-9]{10,40})", u)
+    if m:
+        return f"https://open.spotify.com/embed/{m[1]}/{m[2]}", 152 if m[1] in ("track", "episode") else 352
+    m = re.search(r"music\.apple\.com/([a-z]{2})/(album|playlist|song)/([A-Za-z0-9%._/-]+)(\?i=\d+)?", u)
+    if m:
+        return f"https://embed.music.apple.com/{m[1]}/{m[2]}/{m[3]}{m[4] or ''}", 175 if (m[2] == "song" or m[4]) else 450
+    m = re.search(r"deezer\.com/(?:[a-z]{2}/)?(track|album|playlist)/(\d+)", u)
+    if m:
+        return f"https://widget.deezer.com/widget/auto/{m[1]}/{m[2]}", 150 if m[1] == "track" else 300
+    if re.fullmatch(r"https://(on\.)?soundcloud\.com/[A-Za-z0-9_\-/]+", u):
+        return f"https://w.soundcloud.com/player/?url={quote(u, safe='')}&visual=false", 166
+    return None
+
+
+LARGEUR_DEFAUT = {  # largeur d'un bloc quand la créatrice n'en a pas choisi, selon la mise en page
+    "bento": {"lien": "demi", "produit": "demi", "image": "demi", "musique": "demi", "kit": "demi"},
+}
+
+
+def _bloc_enveloppe(b: dict, page: dict, pseudo: str) -> str:
+    """Chaque bloc dans sa case : largeur (côte à côte), hauteur (bento), couleurs, police, taille et alignement propres."""
+    contenu = _bloc(b, page, pseudo)
+    if not contenu:
+        return ""
+    d, t = page["design"], b.get("type")
+    mp = d.get("mise_en_page", "colonne")
+    larg = b.get("largeur") or LARGEUR_DEFAUT.get(mp, {}).get(t, "plein")
+    if larg not in LARGEURS_BLOC:
+        larg = "plein"
+    st = b.get("style") or {}
+    cls = [f"bk bk-{t} l-{larg}"]
+    if b.get("hauteur") == "haute":
+        cls.append("h-haute")
+    if st.get("taille") in TAILLES_BOUTON:
+        cls.append(f"t-{st['taille']}")
+    if st.get("align") in ALIGNEMENTS:
+        cls.append(f"a-{st['align']}")
+    if st.get("fond") or st.get("forme") or st.get("bouton"):
+        cls.append("perso")  # style propre : garde l'allure de bouton même en mise en page Magazine
+    v = []
+    if st.get("fond") and COULEUR.match(st["fond"]):
+        v.append(f"--b:{st['fond']};--k:{st['fond']}")
+        if t in ("titre", "texte", "image", "galerie", "separateur", "musique", "video"):
+            cls.append("fd")
+    if st.get("texte") and COULEUR.match(st["texte"]):
+        v.append(f"--bt:{st['texte']};--kt:{st['texte']};--t:{st['texte']}")
+    if st.get("police") in POLICES:
+        fam = POLICES[st["police"]][0]
+        v.append(f"--tf:'{fam}',Georgia,serif;--tx:'{fam}',system-ui,sans-serif;font-family:'{fam}',system-ui,sans-serif")
+    style = f' style="{";".join(v)}"' if v else ""
+    return f'<div class="{" ".join(cls)}"{style}>{contenu}</div>'
+
+
+SCRIPT_COMPTE = """
+<script>
+(() => { const z = document.querySelectorAll("[data-fin]"); if (!z.length) return;
+  const maj = () => z.forEach(c => { const r = new Date(c.dataset.fin) - Date.now();
+    if (r <= 0) { c.querySelector(".chrono").hidden = true; const f = c.querySelector(".fini"); if (f) f.hidden = false; const b = c.querySelector(".bouton"); if (b) b.hidden = true; return; }
+    const v = {j: Math.floor(r / 864e5), h: Math.floor(r / 36e5) % 24, m: Math.floor(r / 6e4) % 60, s: Math.floor(r / 1e3) % 60};
+    c.querySelectorAll("[data-u]").forEach(e => e.textContent = String(v[e.dataset.u]).padStart(2, "0")); });
+  maj(); setInterval(maj, 1000); })();
+</script>"""
 
 
 SCRIPT_PUBLIC = """
@@ -1007,9 +1353,10 @@ document.addEventListener("submit", e => e.preventDefault());
 
 def document(page: dict, pseudo: str, corps: str, titre: str, description: str = "", apercu: bool = False, image_og: str = "", url: str = "") -> str:
     d = page["design"]
-    faces, lien = _polices_css(d)
+    faces, lien = _polices_css(d, [(b.get("style") or {}).get("police") for b in page.get("blocs", [])])
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
-    classes = (f'e-{d["entete"]} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} tb-{d["bouton_taille"]} al-{d["alignement"]}')
+    classes = (f'e-{d["entete"]} mp-{d.get("mise_en_page", "colonne")} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} '
+               f'tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
     if page.get("_parrain"):  # la pastille « Créé avec Virallink » porte le lien de parrainage de la créatrice
         corps = corps.replace('<a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec', f'<a href="/boutique-gratuite?parrain={quote(page["_parrain"])}" target="_blank" rel="noopener">Créé avec')
@@ -1025,8 +1372,8 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
         og += f'<meta property="og:url" content="{E(url)}">'
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{E(titre)}</title><meta name="description" content="{E(description)}">{og}<meta name="theme-color" content="{d['fond1'][:7]}">
-{lien}<style>{faces}{_css(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
-<body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}</body></html>"""
+{lien}<style>{faces}{_css(d)}{_css_mise_en_page(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
+<body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}{SCRIPT_COMPTE if 'data-fin=' in corps else ''}</body></html>"""
 
 
 POSITIONS_DECOR = [(6, 8, 1, 0), (88, 5, .7, 1.2), (72, 22, 1.3, 2.4), (14, 34, .8, .7), (93, 41, 1, 3.1), (4, 58, 1.2, 1.8),
@@ -1046,7 +1393,7 @@ def badge(page: dict | None = None) -> str:
 
 
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
-    blocs = "".join(_bloc(b, page, pseudo) for b in page.get("blocs", []) if b.get("visible", True))
+    blocs = "".join(_bloc_enveloppe(b, page, pseudo) for b in page.get("blocs", []) if b.get("visible", True))
     if not blocs.strip() and apercu:
         blocs = '<p class="txt" style="opacity:.6">Ajoute tes liens et tes produits : ils apparaîtront ici.</p>'
     corps = f'{_tete(page, pseudo)}<div class="blocs">{blocs}</div>{badge(page)}'
