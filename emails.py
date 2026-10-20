@@ -113,3 +113,55 @@ def relance(email: str, prenom: str, url: str):
         "<p>Ça fait quelques jours qu'on ne t'a pas vue. Pendant ce temps, les comptes que tu surveilles ont continué à publier : "
         "les Reels qui ont explosé cette semaine t'attendent, déjà adaptés à ta niche.</p><p>Dix minutes suffisent pour choisir les trois prochains à tourner.</p>",
         ("Voir mes Reels", url)))
+
+
+def bienvenue_boutique(email: str, prenom: str, url: str):
+    p = html.escape(prenom or "")
+    envoie(email, "Ta boutique t'attend", _gabarit(
+        f"Bienvenue{' ' + p if p else ''} !",
+        "<p>Ton compte est prêt. Il te reste trois petites étapes pour mettre ta boutique en ligne : ton nom et ta photo, "
+        "un style, tes premiers liens. Compte deux minutes.</p>"
+        "<p>C'est gratuit, sans limite de durée. Tu pourras ajouter tes produits, récolter des e-mails et suivre tes visites.</p>",
+        ("Finir ma boutique", url)))
+
+
+def _pied_conseils(url_reglages: str) -> str:
+    return (f'<p style="font-size:12px;color:#8A7F78;margin-top:26px">Tu reçois quelques conseils pendant tes premiers jours. '
+            f'<a href="{html.escape(url_reglages)}" style="color:#8A7F78">Ne plus les recevoir</a></p>')
+
+
+def conseil_boutique(n: int, email: str, prenom: str, publiee: bool, jours_essai: int, url_boutique: str, url_essai: str, url_reglages: str):
+    """Suite d'e-mails des inscrites par la boutique gratuite : utile d'abord, puis l'essai de la veille, sans insister."""
+    p = html.escape(prenom or "")
+    salut = f"<p>Bonjour{' ' + p if p else ''},</p>"
+    if n == 1:
+        if not publiee:
+            sujet, titre = "Ta boutique n'est pas encore en ligne", "Il ne manque presque rien"
+            corps = (salut + "<p>Tu as commencé ta boutique mais elle n'est pas encore publiée. Le plus long est fait : "
+                     "choisis un style, ajoute un ou deux liens, et clique sur Publier.</p>"
+                     "<p>Ensuite, colle ton lien dans ta bio Instagram. Tes abonnés le voient dès la minute suivante.</p>")
+            bouton = ("Finir ma boutique", url_boutique)
+        else:
+            sujet, titre = "3 réglages qui font vendre une boutique", "Trois réglages qui changent tout"
+            corps = (salut + "<p>Ta boutique est en ligne, bravo. Voici ce qui fait la différence chez celles qui vendent :</p>"
+                     "<p><b>1. Un cadeau contre un e-mail.</b> Une checklist, un mini-guide, un code promo. Les gens laissent leur adresse "
+                     "bien plus facilement quand ils repartent avec quelque chose.</p>"
+                     "<p><b>2. Un seul bouton mis en avant.</b> Ton offre principale en premier, les autres liens dessous.</p>"
+                     "<p><b>3. Le lien partout.</b> Dans ta bio, mais aussi en story une fois par semaine, avec le sticker lien.</p>")
+            bouton = ("Ouvrir ma boutique", url_boutique)
+        return envoie(email, sujet, _gabarit(titre, corps + _pied_conseils(url_reglages), bouton))
+    if n == 2:
+        corps = (salut + "<p>Une boutique ne vend que si des gens arrivent dessus. Et sur Instagram, ce qui amène du monde "
+                 "dans ta bio, ce sont les Reels qui accrochent dès la première seconde.</p>"
+                 "<p>C'est exactement ce que fait le reste de Virallink : chaque semaine, il repère les Reels qui ont explosé "
+                 "dans ta niche, comprend pourquoi, et te les réécrit pour ton audience. Hook, script, légende, prêts à tourner.</p>"
+                 f"<p>Tu peux l'essayer {jours_essai} jours, sans carte bancaire. Si tu ne choisis rien ensuite, tu restes en gratuit "
+                 "et ta boutique ne bouge pas.</p>")
+        return envoie(email, "D'où viennent les visites d'une boutique", _gabarit(
+            "Le secret, c'est ce qui se passe avant la boutique", corps + _pied_conseils(url_reglages), (f"Essayer {jours_essai} jours", url_essai)))
+    corps = (salut + f"<p>Petit rappel : ton essai de {jours_essai} jours de la veille est toujours disponible. "
+             "Tu choisis quelques comptes qui cartonnent dans ta niche, et tu reçois leurs meilleurs Reels réécrits pour toi, "
+             "avec ton planning de la semaine.</p>"
+             "<p>Pas de carte bancaire, pas d'engagement. C'est le dernier message à ce sujet.</p>")
+    return envoie(email, f"Ton essai de {jours_essai} jours t'attend toujours", _gabarit(
+        "Toujours partante ?", corps + _pied_conseils(url_reglages), (f"Démarrer mon essai", url_essai)))

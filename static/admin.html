@@ -80,7 +80,8 @@ async function charge() {
   const g = D.croissance || {};
   $("#croissance").innerHTML = [[g.conversion == null ? "—" : g.conversion + " %", "conversion essai → payant (inscrites depuis 14 j+)"],
     [g.inactives, "clientes inactives depuis 14 jours"], [g.resilies, "abonnements résiliés"], [g.parrainages, "inscriptions par parrainage"],
-    [g.boutiques, "boutiques en ligne"], [(g.ca_boutiques || 0).toLocaleString("fr-FR") + " €", `vendus par les boutiques (${g.ventes_boutiques || 0} ventes)`]]
+    [g.boutiques, "boutiques en ligne"], [(g.ca_boutiques || 0).toLocaleString("fr-FR") + " €", `vendus par les boutiques (${g.ventes_boutiques || 0} ventes)`],
+    [(g.boutique_gratuite || {}).inscrites || 0, `inscrites par la boutique gratuite : ${(g.boutique_gratuite || {}).essais || 0} ont essayé la veille, ${(g.boutique_gratuite || {}).abonnees || 0} abonnées`]]
     .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
   const c = D.config;
   $("#config").innerHTML = [["Apify", c.apify], ["Claude", c.claude], ["Paiement Stripe", c.stripe], ["E-mails Resend", c.emails], ["Banque d'images", c.banque]]

@@ -88,8 +88,10 @@ const params = new URLSearchParams(location.search);
 let mode = params.get("t") ? "nouveau" : (location.hash.includes("connexion") || params.get("suite")) ? "connexion" : "inscription";
 // Page à rouvrir après connexion (lien reçu par e-mail) : uniquement une adresse interne au site
 const suite = (params.get("suite") || "").match(/^\/(?!\/)[^\\]*$/) ? params.get("suite") : "/app";
+const offre = params.get("offre") === "boutique" ? "boutique" : "";  // boutique gratuite (page /boutique-gratuite)
 const TEXTES = {
-  inscription: ["Crée ton compte", "7 jours d'essai gratuit, sans carte bancaire.", "Commencer mon essai"],
+  inscription: offre ? ["Crée ta boutique", "Gratuite, sans carte bancaire. En ligne en deux minutes.", "Créer ma boutique gratuite"]
+    : ["Crée ton compte", "7 jours d'essai gratuit, sans carte bancaire.", "Commencer mon essai"],
   connexion: ["Bon retour", "Connecte-toi pour retrouver tes Reels.", "Se connecter"],
   oubli: ["Mot de passe oublié", "Indique ton e-mail : tu reçois un lien pour en choisir un nouveau.", "Recevoir le lien"],
   nouveau: ["Nouveau mot de passe", "Choisis ton nouveau mot de passe (8 caractères minimum).", "Enregistrer et me connecter"],
@@ -117,7 +119,7 @@ $("#f").onsubmit = async ev => {
   $("#b").disabled = true;
   const url = {inscription: "/api/inscription", connexion: "/api/connexion", oubli: "/api/mot-de-passe-oublie", nouveau: "/api/reinitialiser"}[mode];
   const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value, cgv: $("#cgv").checked, jeton: params.get("t"), parrain: params.get("parrain") || ""})});
+    body: JSON.stringify({email: $("#email").value, mdp: $("#mdp").value, prenom: $("#prenom").value, cgv: $("#cgv").checked, jeton: params.get("t"), parrain: params.get("parrain") || "", offre})});
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { message(j.erreur || "Erreur, réessaie."); $("#b").disabled = false; return; }
   if (mode === "oubli") {
@@ -125,7 +127,7 @@ $("#f").onsubmit = async ev => {
     if (j.lien_demo) $("#e").insertAdjacentHTML("beforeend", `<p class="info">Mode démo (aucun e-mail envoyé) : <a href="${j.lien_demo}">ouvrir le lien</a></p>`);
     return;
   }
-  location.href = mode === "inscription" ? "/app" : suite;
+  location.href = mode === "inscription" ? (j.boutique ? "/app?boutique=1" : "/app") : suite;
 };
 </script>
 </body>

@@ -291,7 +291,7 @@ def inscription():
     if not c.get("cgv"):
         return jsonify({"erreur": "Accepte les conditions générales pour créer ton compte."}), 400
     try:
-        u = ab.cree(c.get("email", ""), c.get("mdp", ""), c.get("prenom", ""), cgv=True)
+        u = ab.cree(c.get("email", ""), c.get("mdp", ""), c.get("prenom", ""), cgv=True, offre=str(c.get("offre") or ""))
     except ValueError as e:
         return jsonify({"erreur": str(e)}), 400
     session.permanent, session["uid"] = True, u["id"]
@@ -301,8 +301,20 @@ def inscription():
         p = ab.par_code(code)
         if p:
             nt.notifie(p["id"], "Ta filleule s'est inscrite 💌", f"{u.get('prenom') or 'Une amie'} a rejoint Virallink grâce à toi.", "/app")
-    emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app")
-    return jsonify({"ok": True})
+    if u.get("origine") == "boutique":
+        emails.bienvenue_boutique(u["email"], u.get("prenom") or "", url_site() + "/app?boutique=1")
+    else:
+        emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app")
+    return jsonify({"ok": True, "boutique": u.get("origine") == "boutique"})
+
+
+@app.post("/api/essai")
+@connecte
+def demarre_essai():
+    """Inscrite par la boutique gratuite : elle démarre l'essai de la veille quand elle le décide."""
+    if not ab.demarre_essai(g.u["id"]):
+        return jsonify({"erreur": "Ton essai gratuit a déjà été utilisé. Choisis une formule pour profiter de la veille."}), 400
+    return jsonify({"ok": True, "abonnement": droits(ab.get(g.u["id"]))})
 
 
 @app.post("/api/mot-de-passe-oublie")
@@ -362,6 +374,18 @@ def accueil():
     return rep
 
 
+@app.get("/boutique-gratuite")
+def page_boutique_gratuite():
+    """Page d'entrée de la boutique gratuite (lien de la pastille « Créé avec Virallink »)."""
+    if ab.get(session.get("uid", 0)):
+        return redirect("/app?boutique=1")
+    rep = _page("boutique-gratuite.html")
+    code = (request.args.get("parrain") or "").strip().lower()
+    if code and _re.fullmatch(r"[a-z0-9]{3,20}", code):
+        rep.set_cookie("vv_parrain", code, max_age=60 * 86400, samesite="Lax", secure=request.is_secure)
+    return rep
+
+
 @app.get("/app")
 @connecte
 def application():
@@ -371,9 +395,12 @@ def application():
 @app.get("/api/formules")
 def formules_publiques():
     p = ab.plans()
-    return jsonify({"essai_jours": p["essai"].get("duree_jours", 7),
+    g_ = p.get("gratuit") or {}
+    com = g_.get("commission_boutique")
+    com = float(os.getenv("BOUTIQUE_COMMISSION", "0") if com is None else com)
+    return jsonify({"essai_jours": p["essai"].get("duree_jours", 7), "commission_gratuit": com,
                     "plans": [{"id": k, **{x: v.get(x) for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois",
-                                                                 "comptes_surveilles", "veille_auto", "studio_par_mois")}}
+                                                                 "comptes_surveilles", "veille_auto", "studio_par_mois", "gratuit")}}
                               for k, v in p.items() if k != "essai"]})
 
 
@@ -421,7 +448,7 @@ def etat():
     cfg = g.esp.lit_config()
     return jsonify({
         "utilisateur": {"prenom": g.u["prenom"], "email": g.u["email"], "onboarding": bool(g.u["onboarding"]),
-                        "veille_auto": bool(g.u["veille_auto"])},
+                        "veille_auto": bool(g.u["veille_auto"]), "origine": g.u.get("origine") or ""},
         "abonnement": droits(g.u), "demo": en_demo(), "admin": est_admin(g.u),
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
@@ -2128,6 +2155,29 @@ def synthese_de(u: dict) -> list[tuple[str, str]]:
     return blocs
 
 
+RELANCES_BOUTIQUE_JOURS = (2, 5, 10)  # e-mails des inscrites par la boutique gratuite
+
+
+def envoie_relances_boutique():
+    """Conseils puis invitation à l'essai de la veille, aux inscrites par la boutique gratuite (3 e-mails au plus)."""
+    if not 9 <= datetime.now().hour < 20:
+        return
+    for u in ab.tous():
+        try:
+            n = (u.get("relances_boutique") or 0) + 1
+            if (u.get("origine") != "boutique" or n > len(RELANCES_BOUTIQUE_JOURS) or not u.get("synthese", 1)
+                    or not ab.essai_dispo(u) or not u.get("cree")):
+                continue
+            if (datetime.now() - datetime.fromisoformat(u["cree"])).days < RELANCES_BOUTIQUE_JOURS[n - 1]:
+                continue
+            ab.maj(u["id"], relances_boutique=n)
+            page = bq.lit_page(u["id"]) or {}
+            emails.conseil_boutique(n, u["email"], u.get("prenom") or "", bool(page.get("publie")), ab.plans()["essai"].get("duree_jours", 7),
+                                    url_site() + "/app?boutique=1", url_site() + "/app?essai=1", url_site() + "/app#parametres")
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+
+
 def envoie_syntheses():
     maintenant = datetime.now()
     if maintenant.weekday() != 0 or maintenant.hour < 10:
@@ -2135,7 +2185,7 @@ def envoie_syntheses():
     semaine = maintenant.strftime("%G-%V")
     for u in ab.tous():
         try:
-            if not u.get("synthese", 1) or (u.get("derniere_synthese") or "") == semaine or not droits(u)["actif"] or not u.get("onboarding"):
+            if not u.get("synthese", 1) or (u.get("derniere_synthese") or "") == semaine or not droits(u)["actif"] or not (u.get("onboarding") or u.get("origine") == "boutique"):
                 continue
             ab.maj(u["id"], derniere_synthese=semaine)
             blocs = synthese_de(u)
@@ -2194,6 +2244,7 @@ def admin_donnees():
         c["parrain"] = (tous_.get(u.get("parrain")) or {}).get("email") if u.get("parrain") else None
         c["filleules"] = sum(1 for x in tous_.values() if x.get("parrain") == c["id"])
         c["a_paye"] = bool(u.get("a_paye"))
+        c["origine"] = u.get("origine") or ""
     anciens = [c for c in clients if (c["cree"] or "") < limite]
     mois = datetime.now().strftime("%Y-%m")
     ca_boutiques, boutiques_publiees, ventes_boutiques = 0, 0, 0
@@ -2211,6 +2262,10 @@ def admin_donnees():
         "resilies": sum(1 for c in clients if c["statut"] == "resilie"), "inactives": sum(1 for c in clients if c["inactive"]),
         "boutiques": boutiques_publiees, "ventes_boutiques": ventes_boutiques, "ca_boutiques": round(ca_boutiques / 100),
         "parrainages": sum(1 for u in tous_.values() if u.get("parrain")), "mois": mois,
+        # Boutique gratuite (aimant à prospects) : inscrites, puis essai de la veille démarré, puis abonnées
+        "boutique_gratuite": {"inscrites": sum(1 for u in tous_.values() if u.get("origine") == "boutique"),
+                              "essais": sum(1 for u in tous_.values() if u.get("origine") == "boutique" and u.get("essai_utilise")),
+                              "abonnees": sum(1 for u in tous_.values() if u.get("origine") == "boutique" and u.get("a_paye"))},
     }
     return jsonify({"croissance": croissance,
         "clients": clients, "plans": {k: v["nom"] for k, v in p.items()},
@@ -2246,7 +2301,7 @@ def admin_modifie(uid):
     champs = {}
     if c.get("plan") in ab.plans():
         champs["plan"] = c["plan"]
-    if c.get("statut") in ("essai", "actif", "impaye", "resilie", "suspendu"):
+    if c.get("statut") in ("essai", "actif", "impaye", "resilie", "suspendu", "gratuit"):
         champs["statut"] = c["statut"]
     if c.get("prolonger_jours"):
         base = max(datetime.now(), datetime.fromisoformat(u["fin_essai"]) if u.get("fin_essai") else datetime.now())
@@ -2303,6 +2358,7 @@ def planificateur():
                     lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(), "differe": True,
                                                                            "max_adaptations": d["reste"]["adaptations"]})
             envoie_syntheses()
+            envoie_relances_boutique()
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(900)

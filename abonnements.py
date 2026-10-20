@@ -53,9 +53,12 @@ def init():
                                 ("utilisateurs", "parrain", "INTEGER"), ("utilisateurs", "mois_offerts", "INTEGER DEFAULT 0"),
                                 ("utilisateurs", "parrainage_recompense", "INTEGER DEFAULT 0"), ("utilisateurs", "synthese", "INTEGER DEFAULT 1"),
                                 ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0"),
-                                ("utilisateurs", "debut_cycle", "TEXT")):
+                                ("utilisateurs", "debut_cycle", "TEXT"), ("utilisateurs", "origine", "TEXT"),
+                                ("utilisateurs", "relances_boutique", "INTEGER DEFAULT 0"), ("utilisateurs", "essai_utilise", "INTEGER DEFAULT 0")):
             try:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+                if col == "essai_utilise":  # comptes existants : ils ont tous eu leur essai à l'inscription
+                    c.execute("UPDATE utilisateurs SET essai_utilise=1")
             except sqlite3.OperationalError:
                 pass  # colonne déjà présente
 
@@ -63,17 +66,22 @@ def init():
 # ------------------------------------------------------------
 #  Utilisateurs
 # ------------------------------------------------------------
-def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False) -> dict:
+def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False, offre: str = "") -> dict:
+    """offre="boutique" : boutique gratuite (aimant à prospects) ; l'essai de la veille reste disponible pour plus tard."""
     email = email.strip().lower()
     if "@" not in email or len(mdp) < 8:
         raise ValueError("Adresse e-mail invalide ou mot de passe trop court (8 caractères minimum).")
     duree = plans()["essai"].get("duree_jours", 7)
     with _verrou, _db() as c:
         try:
-            c.execute("INSERT INTO utilisateurs(email, mdp, prenom, fin_essai, cree, cgv_acceptees) VALUES (?,?,?,?,?,?)",
+            boutique = offre == "boutique" and "gratuit" in plans()
+            c.execute("INSERT INTO utilisateurs(email, mdp, prenom, fin_essai, cree, cgv_acceptees, plan, statut, origine, essai_utilise) "
+                      "VALUES (?,?,?,?,?,?,?,?,?,?)",
                       (email, generate_password_hash(mdp), prenom.strip(),
-                       (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"), datetime.now().isoformat(timespec="minutes"),
-                       datetime.now().isoformat(timespec="minutes") if cgv else None))
+                       None if boutique else (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"),
+                       datetime.now().isoformat(timespec="minutes"), datetime.now().isoformat(timespec="minutes") if cgv else None,
+                       "gratuit" if boutique else "essai", "gratuit" if boutique else "essai", "boutique" if boutique else None,
+                       0 if boutique else 1))
         except sqlite3.IntegrityError:
             raise ValueError("Un compte existe déjà avec cette adresse.") from None
     return verifie(email, mdp)
@@ -137,7 +145,7 @@ def recompense_parrain(uid_filleule: int) -> dict | None:
         if prix:
             try:
                 requests.post(f"https://api.stripe.com/v1/customers/{p['stripe_client']}/balance_transactions",
-                              data={"amount": -int(prix * 100), "currency": "eur", "description": "Parrainage : un mois offert"},
+                              data={"amount": -round(float(prix) * 100), "currency": "eur", "description": "Parrainage : un mois offert"},
                               auth=(os.environ["STRIPE_SECRET_KEY"], ""), timeout=30)
             except Exception:  # noqa: BLE001
                 pass
@@ -295,6 +303,21 @@ OPTIONS_DEFAUT = {"ia": True, "montage_reel": True, "suivi_publications": True, 
                   "filigrane": False, "mention_boutique": False}
 
 
+def essai_dispo(u: dict) -> bool:
+    """L'essai de la veille n'a pas encore servi (inscription par la boutique gratuite) et la cliente n'est pas abonnée."""
+    return not u.get("essai_utilise") and plan_effectif(u) == "gratuit"
+
+
+def demarre_essai(uid: int) -> bool:
+    u = get(uid)
+    if not u or not essai_dispo(u):
+        return False
+    duree = plans()["essai"].get("duree_jours", 7) + (JOURS_FILLEULE if u.get("parrain") else 0)  # invitée par une amie : le mois promis
+    maj(uid, plan="essai", statut="essai", essai_utilise=1, debut_cycle=date.today().isoformat(),
+        fin_essai=(datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"))
+    return True
+
+
 def plan_effectif(u: dict) -> str:
     """Formule réellement appliquée : fin d'essai, résiliation ou impayé → formule gratuite (si elle existe)."""
     p = plans()
@@ -322,6 +345,7 @@ def droits(u: dict) -> dict:
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
         "usage": {k: us[k] for k in ("analyses", "adaptations", "studio")},  # le coût réel reste côté administrateur
         "renouvellement": periode(u)[1].isoformat(), "renouvellement_fr": date_fr(periode(u)[1]),
+        "essai_dispo": essai_dispo(u), "essai_jours": p["essai"].get("duree_jours", 7),
         "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"],
                   "studio": plan.get("studio_par_mois", 10) - us["studio"]},
     }

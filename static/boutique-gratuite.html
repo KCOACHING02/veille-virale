@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boutique lien en bio gratuite — Virallink</title>
+<meta name="description" content="Crée gratuitement ta boutique lien en bio : tes liens, tes produits numériques, tes rendez-vous, tes e-mails et ton kit média sur une seule page à ton image.">
+<link rel="icon" type="image/png" href="/static/icones/favicon.png">
+<link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
+<meta name="theme-color" content="#FF4F79">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F6F4F8;--surface:#fff;--sunk:#EDE9F1;--ink:#271B2D;--ink-2:#5E5166;--ink-3:#8E8296;--line:#E2DCE7;--glow:#FF4F79;--glow-soft:#FFE3EA;--ok:#13936B;--nuit:#271B2D;
+  --shadow:0 1px 2px rgba(39,27,45,.06),0 12px 32px -16px rgba(39,27,45,.25);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;--body:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root{--paper:#17111B;--surface:#211A26;--sunk:#2B2231;--ink:#F3EEF6;--ink-2:#C2B7C9;--ink-3:#8F8398;--line:#352B3B;--glow:#FF5C84;--glow-soft:#3E1F2A;--ok:#3CC796;--nuit:#0F0A12}}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit} :focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
+.l{max-width:1120px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 20px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:var(--surface);white-space:nowrap}
+.btn.prim{background:var(--glow);border-color:var(--glow);color:#fff}
+.btn.prim:hover{filter:brightness(1.06)}
+.atouts-boutique{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:22px}
+.atouts-boutique div{background:var(--surface);border-radius:16px;padding:18px;box-shadow:var(--shadow);display:grid;gap:6px}
+.atouts-boutique span{color:var(--ink-2);font-size:15px}
+.bandeau-parrain{background:var(--glow);color:#fff;text-align:center;padding:9px 16px;font-size:14.5px}
+.vitrines{display:flex;gap:18px;overflow-x:auto;padding:22px 4px 10px;scroll-snap-type:x mandatory}
+.vitrine{flex:0 0 190px;scroll-snap-align:start;text-decoration:none;text-align:center;color:var(--ink-2);font-weight:600;font-size:14px}
+.vitrine .tel-v{width:190px;height:370px;border-radius:28px;border:7px solid #1C1420;overflow:hidden;position:relative;margin-bottom:8px;background:var(--sunk);box-shadow:var(--shadow);transition:transform .2s}
+.vitrine:hover .tel-v{transform:translateY(-4px)}
+.vitrine iframe{width:375px;height:740px;border:0;transform:scale(.47);transform-origin:0 0;pointer-events:none;position:absolute;left:0;top:0}
+/* En-tête */
+.tete{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid transparent}
+.tete .l{display:flex;align-items:center;gap:22px;height:66px}
+.marque{font:800 22px/1 var(--display);font-stretch:80%;display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto}
+.marque i{width:12px;height:22px;border-radius:4px;background:var(--glow);display:inline-block;transform:skewX(-10deg)}
+.tete nav a{text-decoration:none;color:var(--ink-2);font-weight:500;font-size:15px}
+.tete nav{display:flex;gap:22px}
+.tete .btn{padding:9px 16px}
+.connexion{text-decoration:none;font-weight:600;font-size:15px}
+/* Héros */
+.heros{background:var(--nuit);color:#fff;overflow:hidden}
+.heros .l{display:grid;grid-template-columns:1.15fr 1fr;gap:40px;align-items:center;padding-top:72px;padding-bottom:80px}
+.heros h1{font-weight:800;font-size:clamp(40px,6vw,70px);line-height:.98;font-stretch:78%;max-width:13ch}
+.heros h1 em{font-style:normal;color:var(--glow)}
+.heros p{color:#D8CEDD;font-size:18px;max-width:46ch;margin:22px 0 30px}
+.heros .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.heros .cta small{color:#B9AEC0;font-size:14px}
+.pile{display:flex;gap:16px;justify-content:center;transform:rotate(-4deg)}
+.tel{width:150px;aspect-ratio:9/16;border-radius:22px;background:linear-gradient(160deg,#4A2F55,#2E1F35);position:relative;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0;box-shadow:0 30px 60px -24px rgba(0,0,0,.7)}
+.tel:nth-child(2){transform:translateY(-30px);background:linear-gradient(160deg,#FF4F79,#B9305A)}
+.tel:nth-child(3){transform:translateY(14px);background:linear-gradient(160deg,#3D2A49,#22172A)}
+.tel b{font:800 36px/1 var(--display);font-stretch:75%}
+.tel small{font-size:12px;opacity:.85}
+.tel .ok{position:absolute;top:12px;left:12px;font-size:11px;font-weight:600;background:#13936B;border-radius:99px;padding:3px 8px}
+.tel .hook{position:absolute;top:44px;left:12px;right:12px;font:700 15px/1.2 var(--display);background:rgba(0,0,0,.35);border-radius:10px;padding:8px}
+/* Sections */
+section.s{padding:84px 0}
+.surtitre{color:var(--glow);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+.s h2{font-size:clamp(30px,4vw,44px);line-height:1.05;font-stretch:85%;font-weight:800;max-width:22ch}
+.s .intro{color:var(--ink-2);font-size:18px;max-width:58ch;margin:14px 0 0}
+.etapes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px;counter-reset:e}
+.etape{background:var(--surface);border-radius:20px;padding:26px;box-shadow:var(--shadow)}
+.etape::before{counter-increment:e;content:counter(e);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--glow-soft);color:var(--glow);font:800 18px/1 var(--display);margin-bottom:16px}
+.etape h3{font-size:21px;margin-bottom:6px}
+.etape p{color:var(--ink-2);margin:0}
+.grille{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.bloc{border:1px solid var(--line);border-radius:18px;padding:22px;background:var(--surface)}
+.bloc h3{font-size:18px;margin:0 0 6px}
+.bloc p{color:var(--ink-2);margin:0;font-size:15px}
+.bloc .ic{width:38px;height:38px;border-radius:11px;background:var(--glow-soft);color:var(--glow);display:grid;place-items:center;margin-bottom:14px}
+.bloc .ic svg{width:20px;height:20px}
+.alt{background:var(--sunk)}
+/* Tarifs */
+.tarifs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:40px}
+.tarif{background:var(--surface);border-radius:20px;padding:26px;box-shadow:var(--shadow);display:flex;flex-direction:column;border:2px solid transparent}
+.tarif.fort{border-color:var(--glow)}
+.tarif .badge{align-self:flex-start;background:var(--glow);color:#fff;font-size:12px;font-weight:600;border-radius:99px;padding:3px 10px;margin-bottom:10px}
+.tarif h3{font-size:22px}
+.tarif .prix{font:800 44px/1 var(--display);font-stretch:80%;margin:12px 0 4px}
+.tarif .prix small{font:500 15px var(--body);color:var(--ink-3)}
+.tarif ul{list-style:none;padding:0;margin:16px 0 22px;color:var(--ink-2);font-size:15px}
+.tarif li{padding:5px 0 5px 24px;position:relative}
+.tarif li::before{content:"";position:absolute;left:2px;top:12px;width:12px;height:7px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
+.tarif .btn{margin-top:auto}
+.ce-qui-compte{max-width:720px;margin:22px auto 0;color:var(--ink-2);font-size:15px;text-align:left}
+.ce-qui-compte summary{cursor:pointer;font-weight:600;text-align:center}
+.ce-qui-compte p{margin:10px 0 0}
+/* FAQ */
+.faq{max-width:780px;margin-top:34px}
+details{border-bottom:1px solid var(--line);padding:18px 0}
+summary{cursor:pointer;font-weight:600;font-size:17px;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";color:var(--glow);font-size:22px;line-height:1}
+details[open] summary::after{content:"–"}
+details p{color:var(--ink-2);margin:10px 0 0}
+.final{background:var(--nuit);color:#fff;border-radius:28px;padding:56px 32px;text-align:center}
+.final h2{color:#fff;margin:0 auto;max-width:20ch}
+.final p{color:#D8CEDD;margin:14px auto 28px;max-width:50ch}
+footer{padding:36px 0 50px;color:var(--ink-3);font-size:14px}
+footer .l{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+footer .l span{margin-right:auto}
+@media (max-width:900px){
+  .heros .l{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px}
+  .pile{transform:rotate(-4deg) scale(.8);margin:-10px 0 -30px}
+  .etapes,.grille{grid-template-columns:1fr}
+  .tete nav{display:none}
+  section.s{padding:60px 0}
+}
+@media (max-width:420px){.tel{width:110px}.tel b{font-size:28px}.tel .hook{font-size:12px}.tete .btn{display:none}}
+</style>
+<style>
+/* Page boutique gratuite */
+.maquette{width:260px;margin:0 auto;border-radius:34px;border:8px solid #120C15;background:linear-gradient(170deg,#FFE3EA,#F6F4F8 60%);padding:26px 18px 22px;color:#271B2D;box-shadow:0 30px 60px -24px rgba(0,0,0,.7);transform:rotate(3deg)}
+.maquette .av{width:64px;height:64px;border-radius:50%;margin:0 auto 10px;background:linear-gradient(140deg,#FF4F79,#B9305A)}
+.maquette b{display:block;text-align:center;font:800 18px/1.1 var(--display)}
+.maquette small{display:block;text-align:center;color:#5E5166;font-size:12px;margin:4px 0 14px}
+.maquette i{display:block;font-style:normal;background:#fff;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:13px;font-weight:600;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.maquette i.fort{background:#FF4F79;color:#fff}
+.maquette .prod{display:flex;gap:10px;align-items:center;background:#fff;border-radius:12px;padding:8px;margin:8px 0;font-size:12.5px;font-weight:600}
+.maquette .prod span{width:38px;height:38px;border-radius:9px;background:#EDE9F1;flex-shrink:0}
+.maquette .prod em{font-style:normal;margin-left:auto;color:#FF4F79;white-space:nowrap}
+.zero{display:inline-block;background:var(--glow-soft);color:var(--glow);font-weight:700;border-radius:99px;padding:2px 10px;font-size:14px}
+.et-aussi{border:1px dashed var(--line);border-radius:20px;padding:26px;margin-top:40px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}
+.et-aussi p{margin:6px 0 0;color:var(--ink-2)}
+@media (max-width:900px){.et-aussi{grid-template-columns:1fr}.maquette{transform:none;margin-top:10px}}
+</style>
+</head>
+<body>
+<header class="tete"><div class="l">
+  <a class="marque" href="/"><i></i>Virallink</a>
+  <a class="connexion" href="/connexion#connexion">Se connecter</a>
+  <a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique</a>
+</div></header>
+
+<section class="heros"><div class="l">
+  <div>
+    <h1>Ta boutique lien en bio, <em>gratuite pour de vrai.</em></h1>
+    <p>Tes liens, tes produits numériques, tes rendez-vous et ton kit média sur une seule page qui te ressemble. Pas d'abonnement, pas de date de fin.</p>
+    <div class="cta"><a class="btn prim" href="/connexion?offre=boutique" id="cta-haut">Créer ma boutique gratuite</a><small>Sans carte bancaire · en ligne en 2 minutes</small></div>
+  </div>
+  <div aria-hidden="true">
+    <div class="maquette">
+      <div class="av"></div><b>Léa · Coach bien-être</b><small>Routines simples pour femmes pressées</small>
+      <i class="fort">Réserve ton appel découverte</i>
+      <div class="prod"><span></span>Guide « Matins sereins »<em>19 €</em></div>
+      <div class="prod"><span></span>Programme 21 jours<em>47 €</em></div>
+      <i>Reçois ma checklist gratuite</i>
+      <i>Kit média</i>
+    </div>
+  </div>
+</div></section>
+
+<section class="s"><div class="l">
+  <p class="surtitre">Tout est inclus</p>
+  <h2>Tout ce qu'il faut pour vendre depuis ta bio.</h2>
+  <div class="grille">
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18M3 12h18"/></svg></div><h3>Une page à ton image</h3><p>100 thèmes, tes couleurs, tes polices, des fonds animés. Ou les couleurs tirées de ta photo, en un clic.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16l-1.5 11h-13z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><h3>Tes produits numériques</h3><p>Guides, formations, modèles : le paiement arrive sur ton propre compte Stripe, le fichier part tout seul. <span class="zero" id="commission">0 % de commission</span></p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><h3>Tes premiers abonnés e-mail</h3><p>Un formulaire « Reste en contact » ou un cadeau contre une adresse. Tes inscrits sont rangés dans ton espace.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><h3>Ventes et rendez-vous</h3><p>Codes promo, prix barrés, offres limitées dans le temps, appels réservés en ligne.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>D'où viennent tes visites</h3><p>Instagram, TikTok, stories : tu vois ce qui amène du monde et ce qui fait vendre.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.6 5.5 6 .8-4.4 4.2 1 6L12 16.7 6.8 19.5l1-6L3.4 9.3l6-.8z"/></svg></div><h3>Ton kit média</h3><p>Une page propre avec tes chiffres et tes collaborations, à envoyer aux marques.</p></div>
+  </div>
+  <div class="vitrines" id="vitrines" hidden></div>
+</div></section>
+
+<section class="s alt"><div class="l">
+  <p class="surtitre">Questions</p>
+  <h2>C'est vraiment gratuit ?</h2>
+  <div class="faq">
+    <details open><summary>Il y a un piège ?</summary><p>Non. Ta boutique reste gratuite sans limite de durée et sans carte bancaire. La seule contrepartie : une petite mention « Créé avec Virallink » en bas de ta page.</p></details>
+    <details><summary>Et sur mes ventes ?</summary><p id="faq-commission">Virallink ne prend aucune commission. Les paiements arrivent directement sur ton compte Stripe, qui prend ses frais habituels.</p></details>
+    <details><summary>Il faut savoir coder ?</summary><p>Non. Trois étapes guidées : ton nom et ta photo, un style, tes liens. Tu peux tout modifier ensuite depuis ton téléphone.</p></details>
+    <details><summary>Je peux changer de lien en bio plus tard ?</summary><p>Oui, ta page reste à toi. Tu peux la dépublier ou supprimer ton compte quand tu veux.</p></details>
+  </div>
+  <div class="et-aussi">
+    <div><b>Et pour remplir ta boutique de visites ?</b><p>Virallink, c'est aussi une veille qui repère les Reels qui explosent dans ta niche et te les réécrit pour ton audience. Tu pourras l'essayer quand tu voudras, depuis ton espace.</p></div>
+    <a class="btn" href="/">Découvrir la veille</a>
+  </div>
+</div></section>
+
+<section class="s"><div class="l">
+  <div class="final">
+    <h2>Ta boutique en ligne avant ton prochain café.</h2>
+    <p>Crée ton compte, choisis un style, colle le lien dans ta bio. C'est tout.</p>
+    <a class="btn prim" href="/connexion?offre=boutique" id="cta-bas">Créer ma boutique gratuite</a>
+  </div>
+</div></section>
+
+<footer><div class="l"><span>© Virallink</span><a href="/cgv">CGV</a><a href="/confidentialite">Confidentialité</a><a href="/mentions-legales">Mentions légales</a></div></footer>
+
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const parrain = new URLSearchParams(location.search).get("parrain");
+if (parrain) document.querySelectorAll('a[href^="/connexion?offre"]').forEach(a => a.href += "&parrain=" + encodeURIComponent(parrain));
+fetch("/api/formules").then(r => r.json()).then(f => {
+  if (!f.commission_gratuit) return;
+  const t = String(f.commission_gratuit).replace(".", ",");
+  document.getElementById("commission").textContent = `${t} % de commission seulement`;
+  document.getElementById("faq-commission").textContent = `Virallink prélève ${t} % sur chaque vente. Les paiements arrivent directement sur ton compte Stripe, qui prend aussi ses frais habituels.`;
+}).catch(() => {});
+fetch("/api/vitrines").then(r => r.json()).then(v => {
+  if (!v.vitrines.length) return;
+  const z = document.getElementById("vitrines"); z.hidden = false;
+  z.innerHTML = v.vitrines.map(x => `<a class="vitrine" href="/@${encodeURIComponent(x.pseudo)}" target="_blank" rel="noopener"><div class="tel-v"><iframe loading="lazy" tabindex="-1" title="${esc(x.nom)}" src="/@${encodeURIComponent(x.pseudo)}"></iframe></div>${esc(x.nom)}</a>`).join("");
+}).catch(() => {});
+</script>
+</body>
+</html>

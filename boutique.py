@@ -1008,7 +1008,7 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     classes = (f'e-{d["entete"]} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
     if page.get("_parrain"):  # la pastille « Créé avec Virallink » porte le lien de parrainage de la créatrice
-        corps = corps.replace('<a href="/" target="_blank" rel="noopener">Créé avec', f'<a href="/?parrain={quote(page["_parrain"])}" target="_blank" rel="noopener">Créé avec')
+        corps = corps.replace('<a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec', f'<a href="/boutique-gratuite?parrain={quote(page["_parrain"])}" target="_blank" rel="noopener">Créé avec')
     corps = corps.replace('class="lien', f'class="{cb} lien').replace('class="bouton"', f'class="bouton {cb}"')
     decor = ""
     if d.get("decor", "aucun") != "aucun":
@@ -1038,7 +1038,7 @@ def badge(page: dict | None = None) -> str:
     """Mention en bas de page : affichée en formule gratuite, retirée pour les abonnées."""
     if page is not None and not page.get("_marque", True):
         return ""
-    return '<div class="marque"><a href="/" target="_blank" rel="noopener">Créé avec Virallink</a></div>'
+    return '<div class="marque"><a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec Virallink · crée la tienne</a></div>'
 
 
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
