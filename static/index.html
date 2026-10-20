@@ -3119,7 +3119,9 @@ const APRES = {
 async function renduParametres() {
   const p = await api("/api/profil"), n = p.niche, o = p.objectifs, a = p.analyse, nbC = (p.comptes.instagram || []).length + (p.comptes.tiktok || []).length;
   const r = (t, v, e) => `<div class="reglage"><b>${t}</b><span>${v}</span><button class="btn petit" data-param="${e}">Modifier</button></div>`;
-  $("#parametres").innerHTML = guide("reglages", "Tes réglages servent à chaque veille", [
+  // Administrateur : accès au tableau de bord (le lien du menu latéral n'existe pas sur téléphone)
+  const admin = S.etat?.admin ? `<div class="panneau" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div><b>Administration</b><br><span style="color:var(--ink-2);font-size:14px">Abonnées, essais, revenus, coûts et santé du serveur.</span></div><a class="btn prim" href="/admin">Ouvrir le tableau de bord</a></div>` : "";
+  $("#parametres").innerHTML = admin + guide("reglages", "Tes réglages servent à chaque veille", [
       "Clique <b>Modifier</b> sur la ligne à changer.",
       "Les changements s'appliquent à ta prochaine veille (pas aux analyses déjà faites).",
       "Pour repartir de zéro, utilise <b>Refaire le démarrage rapide</b> en bas de page."]) + `<div class="reglages">
