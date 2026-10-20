@@ -510,7 +510,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-video div{display:grid;flex:1} .st-video span{color:var(--ink-3);font-size:13px}
 .st-input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
 .st-slides{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:sl}
-.st-slide{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;counter-increment:sl;position:relative}
+.st-slide{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:start;counter-increment:sl;position:relative}
 .st-slide>img,.st-slide>.st-fond{width:56px;height:70px;border-radius:8px;object-fit:cover}
 .st-vign{border:0;padding:0;background:none;cursor:pointer;display:grid;gap:3px;justify-items:center;align-self:start}
 .st-vign img,.st-vign .st-fond{width:56px;height:70px;border-radius:8px;object-fit:cover;display:grid;place-items:center;font-size:20px;color:var(--ink-3)}
@@ -524,7 +524,8 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .bq-el:hover,.bq-el.choisi{border-color:var(--glow)}
 .bq-duree{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;border-radius:99px;padding:1px 7px}
 .st-slide::before{content:counter(sl);position:absolute;left:4px;top:4px;background:rgba(39,27,45,.75);color:#fff;font-size:11px;font-weight:600;border-radius:99px;padding:0 6px;z-index:1}
-.st-slide div{display:grid;gap:6px}
+.st-slide div{display:grid;gap:6px;min-width:0}
+.st-slide input,.st-slide textarea,.st-slide select{max-width:100%;min-width:0}
 .st-slide .st-mise{display:flex;flex-wrap:wrap;gap:6px}
 .st-mise select,.st-mise input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 8px;font-size:12.5px;color:var(--ink-2);min-width:0}
 .st-mise input{flex:1 1 120px}
@@ -754,10 +755,20 @@ a.btn{text-decoration:none}
 .bt-tel iframe,.bt-plein iframe{width:100%;height:100%;border:0;background:#fff;display:block}
 .bt-ap-nav{display:flex;gap:4px}
 .bt-flottant{display:none}
-.bt-plein{position:fixed;inset:0;z-index:40;background:rgba(23,10,30,.6);display:none;padding:14px 14px calc(70px + env(safe-area-inset-bottom))}
-.bt-plein.ouvert{display:block}
-.bt-plein .cadre{height:100%;max-width:420px;margin:0 auto;border-radius:28px;overflow:hidden;background:#fff}
-.bt-plein .fermer{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:41}
+/* Aperçu plein écran (téléphone) : barre du haut avec ✕ toujours visible, hauteur réelle de l'écran (dvh), fond qui ne défile pas */
+.bt-plein{position:fixed;inset:0;z-index:60;background:rgba(23,14,28,.96);display:none;flex-direction:column;
+  padding:calc(8px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));height:100dvh;overscroll-behavior:contain;cursor:pointer}
+.bt-plein .cadre,.bt-plein .barre b{cursor:auto}
+.bt-plein.ouvert{display:flex}
+.bt-plein .barre{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#fff;max-width:420px;width:100%;margin:0 auto 8px;flex:0 0 auto}
+.bt-plein .barre b{font-size:15px}
+.bt-plein .ferme-x{width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#1C1420;font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.bt-plein .cadre{flex:1 1 auto;min-height:0;width:100%;max-width:420px;margin:0 auto;border-radius:22px;overflow:hidden;background:#fff}
+.bt-plein .fermer{flex:0 0 auto;margin:10px auto 0;min-height:44px}
+html.sans-defilement,html.sans-defilement body{overflow:hidden;overscroll-behavior:none}
+/* Aperçu ouvert : la barre d'onglets et le bouton flottant disparaissent (ils passaient par-dessus le bouton Fermer) */
+html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilement .st-apercu{display:none !important}
+.bt-plein .fermer{white-space:nowrap;align-self:center;width:auto;min-width:220px;max-width:none;display:inline-flex;justify-content:center;padding:12px 24px}
 .bt-sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px;margin-bottom:14px}
 .bt-sec>h3{font-size:18px;font-stretch:90%;margin:0 0 4px;display:flex;align-items:center;gap:8px}
 .bt-sec>.aide{font-size:13.5px;color:var(--ink-3);margin:0 0 14px}
@@ -972,6 +983,15 @@ a.btn{text-decoration:none}
   .bt-paire{grid-template-columns:1fr 92px 34px}
 }
 @keyframes aurore-ed{50%{background-position:100% 50%}}
+/* iPhone : Safari zoome sur tout champ dont le texte fait moins de 16 px (et la page reste zoomée) */
+@media (max-width:860px),(pointer:coarse){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea{font-size:16px !important}
+}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Choix d'ambiance de la boutique : sur plusieurs lignes au lieu de sortir de l'écran */
+@media (max-width:860px){.seg{flex-wrap:wrap;max-width:100%}.seg button{flex:1 1 auto}
+  /* Les boutons au texte long passent à la ligne au lieu de sortir de l'écran */
+  .btn{white-space:normal;max-width:100%;text-align:center}}
 </style>
 </head>
 <body>
@@ -1180,7 +1200,7 @@ function pousseHistorique(extra = {}) {
   if (S.ignorePop) { S.pousseApres = extra; return; }   // un retour arrière est en cours : on attend qu'il soit fini
   const st = {vue: S.vue, projet: S.projetId || null, ...extra};
   const h = history.state || {};
-  if (h.vue === st.vue && (h.projet || null) === st.projet && !!h.tiroir === !!st.tiroir && !!h.modale === !!st.modale) return;
+  if (h.vue === st.vue && (h.projet || null) === st.projet && !!h.tiroir === !!st.tiroir && !!h.modale === !!st.modale && !!h.apercuBoutique === !!st.apercuBoutique) return;
   history.pushState(st, "", "#" + st.vue);
 }
 function va(vue, depuisHistorique) {
@@ -2045,6 +2065,7 @@ window.addEventListener("popstate", e => {
   const st = e.state || {vue: "accueil"};
   S.depuisPop = true;
   try {
+    if ($("#bt-plein")?.classList.contains("ouvert") && !st.apercuBoutique) { $("#bt-plein").classList.remove("ouvert"); document.documentElement.classList.remove("sans-defilement"); return; }
     if ($("#modale").classList.contains("ouvert") && !st.modale) { $("#modale").classList.remove("ouvert"); return; }
     if (S.ouvert && !st.tiroir) fermeTiroir();
     if (st.vue === S.vue && (st.projet || null) === (S.projetId || null)) return;
@@ -3494,15 +3515,23 @@ function renduEditeur(el) {
       <aside class="bt-droite"><div class="bt-tel"><iframe id="bt-ap" title="Aperçu de ta page"></iframe></div>
         <div class="seg bt-ap-nav" id="bt-ap-nav"></div></aside></div>
     <button class="bt-flottant" id="bt-voir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button>
-    <div class="bt-plein" id="bt-plein"><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap">Fermer l'aperçu</button></div>`;
+    <div class="bt-plein" id="bt-plein" role="dialog" aria-modal="true" aria-label="Aperçu de ta boutique"><div class="barre"><b>Aperçu de ta boutique</b><button class="ferme-x" id="bt-fermer-x" type="button" aria-label="Fermer l'aperçu">✕</button></div><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap" type="button">Fermer l'aperçu</button></div>`;
   $$("[data-onglet]").forEach(b => b.onclick = () => { BQ.onglet = b.dataset.onglet; $$("[data-onglet]").forEach(x => x.setAttribute("aria-pressed", x === b));
     BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page"; renduOnglet(); apercu(); });
   $("#bt-publie").onchange = e => { p.publie = e.target.checked; e.target.nextElementSibling.textContent = p.publie ? "En ligne" : "Brouillon";
     $(".bt-url .pastille").classList.toggle("off", !p.publie); sauveBoutique(true); toast(p.publie ? "Ta page est en ligne" : "Ta page est masquée"); };
   $("#bt-qr").onclick = ouvreQR;
   $("#bt-avance").onchange = e => basculeAvance(e.target.checked);
-  $("#bt-voir").onclick = () => { $("#bt-ap2").srcdoc = BQ.html; $("#bt-plein").classList.add("ouvert"); };
-  $("#bt-fermer-ap").onclick = () => $("#bt-plein").classList.remove("ouvert");
+  $("#bt-voir").onclick = () => {
+    $("#bt-ap2").srcdoc = BQ.html; $("#bt-plein").classList.add("ouvert"); document.documentElement.classList.add("sans-defilement");
+    pousseHistorique({apercuBoutique: 1});  // le geste « retour » de l'iPhone ferme l'aperçu au lieu de quitter la page
+  };
+  const fermeAp = () => { if (!$("#bt-plein")?.classList.contains("ouvert")) return;
+    $("#bt-plein").classList.remove("ouvert"); document.documentElement.classList.remove("sans-defilement");
+    if (history.state?.apercuBoutique) { S.ignorePop = true; history.back(); } };
+  $("#bt-fermer-ap").onclick = fermeAp; $("#bt-fermer-x").onclick = fermeAp;
+  // Toucher le fond sombre ferme aussi (pointerup : l'iPhone n'envoie pas toujours « click » sur une zone non cliquable)
+  $("#bt-plein").addEventListener("pointerup", e => { if (e.target.id === "bt-plein") fermeAp(); });
   BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page";
   renduOnglet(); apercu(true);
 }

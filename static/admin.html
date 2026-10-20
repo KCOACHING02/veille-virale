@@ -47,6 +47,11 @@ select{border:1px solid var(--line);background:var(--surface);border-radius:8px;
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;transition:transform .25s;max-width:calc(100% - 32px)}
 #toast.vu{transform:translateX(-50%)}
 .lien{word-break:break-all;background:var(--sunk);border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:13px}
+/* iPhone : Safari zoome sur tout champ dont le texte fait moins de 16 px (et la page reste zoomée) */
+@media (max-width:860px),(pointer:coarse){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea{font-size:16px !important}
+}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 </style>
 </head>
 <body>

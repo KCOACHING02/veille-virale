@@ -855,7 +855,7 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 @keyframes tourne{{to{{transform:rotate(1turn)}}}}
 .capture h2{{font:400 calc(var(--tt) * .58)/1.15 var(--tf);margin:0 0 4px}}.capture p{{margin:0 0 12px;opacity:.85;font-size:14.5px}}
 .champ{{display:flex;gap:8px;flex-wrap:wrap}}
-.champ input{{flex:1 1 180px;min-width:0;border:1.5px solid color-mix(in srgb,var(--kt) 25%,transparent);background:transparent;color:var(--kt);border-radius:var(--r);padding:12px 14px;font:inherit}}
+.champ input{{flex:1 1 180px;min-width:0;border:1.5px solid color-mix(in srgb,var(--kt) 25%,transparent);background:transparent;color:var(--kt);border-radius:var(--r);padding:12px 14px;font:inherit;font-size:16px}}
 .bouton{{padding:12px 18px;font:600 15px var(--tx);cursor:pointer}}
 .capture .ok{{font-weight:600;margin:0}}
 .kit-lien{{display:flex;justify-content:space-between;align-items:center;text-decoration:none}}
