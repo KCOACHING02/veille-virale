@@ -58,14 +58,23 @@ def envoie(destinataire: str, sujet: str, contenu_html: str, attendre: bool = Fa
     return True
 
 
-def bienvenue(email: str, prenom: str, url: str):
+def bienvenue(email: str, prenom: str, url: str, lien_confirmation: str = ""):
     p = html.escape(prenom or "")
-    envoie(email, f"Bienvenue sur {NOM_PRODUIT}", _gabarit(
+    envoie(email, f"Bienvenue sur {NOM_PRODUIT} : confirme ton adresse", _gabarit(
         f"Bienvenue{' ' + p if p else ''} !",
-        "<p>Ton compte est prêt. En 5 minutes, l'assistant configure ta niche, ta voix et les comptes à surveiller.</p>"
-        "<p>Ensuite, chaque semaine, tu reçois les Reels qui ont explosé chez les autres, déjà adaptés à ta niche : "
-        "hook, script, légende et séquence DM.</p>",
-        ("Ouvrir mon espace", url)))
+        "<p>Ton compte est prêt. Clique sur le bouton pour confirmer ton adresse : c'est ce qui débloque ta première veille.</p>"
+        "<p>Ensuite, en 5 minutes, l'assistant configure ta niche, ta voix et les comptes à surveiller. Chaque semaine, "
+        "tu reçois les Reels qui ont explosé chez les autres, déjà adaptés à ta niche : hook, script, légende et séquence DM.</p>",
+        ("Confirmer mon adresse", lien_confirmation or url)))
+
+
+def confirmation(email: str, prenom: str, lien: str):
+    p = html.escape(prenom or "")
+    envoie(email, "Confirme ton adresse e-mail", _gabarit(
+        f"{'Bonjour ' + p + ', u' if p else 'U'}n clic et c'est bon",
+        "<p>Clique sur le bouton pour confirmer ton adresse e-mail. Ça débloque la veille, l'essai gratuit et l'écriture par Virall.ai.</p>"
+        "<p style='color:#8A7F78;font-size:13px'>Si tu n'as pas créé de compte, ignore simplement cet e-mail.</p>",
+        ("Confirmer mon adresse", lien)))
 
 
 def reinitialisation(email: str, lien: str):
@@ -115,14 +124,14 @@ def relance(email: str, prenom: str, url: str):
         ("Voir mes Reels", url)))
 
 
-def bienvenue_boutique(email: str, prenom: str, url: str):
+def bienvenue_boutique(email: str, prenom: str, url: str, lien_confirmation: str = ""):
     p = html.escape(prenom or "")
-    envoie(email, "Ta boutique t'attend", _gabarit(
+    envoie(email, "Ta boutique t'attend : confirme ton adresse", _gabarit(
         f"Bienvenue{' ' + p if p else ''} !",
-        "<p>Ton compte est prêt. Il te reste trois petites étapes pour mettre ta boutique en ligne : ton nom et ta photo, "
+        "<p>Ton compte est prêt. Confirme ton adresse en un clic, puis termine ta boutique : ton nom et ta photo, "
         "un style, tes premiers liens. Compte deux minutes.</p>"
         "<p>C'est gratuit, sans limite de durée. Tu pourras ajouter tes produits, récolter des e-mails et suivre tes visites.</p>",
-        ("Finir ma boutique", url)))
+        ("Confirmer et finir ma boutique", lien_confirmation or url)))
 
 
 def _pied_conseils(url_reglages: str) -> str:

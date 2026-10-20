@@ -37,7 +37,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, abort, g, jsonify, redirect, request, send_from_directory, session
+from flask import Flask, abort, g, has_request_context, jsonify, redirect, request, send_from_directory, session
 
 import abonnements as ab
 import emails
@@ -134,13 +134,40 @@ def droits(u: dict) -> dict:
     return d
 
 
+class AdresseNonConfirmee(Exception):
+    """Action coûteuse (collecte, IA) demandée avant la confirmation de l'adresse e-mail."""
+
+
+def verification_requise(u: dict) -> bool:
+    """La confirmation n'est exigée que si les e-mails partent vraiment (sinon impossible de confirmer : démo, local)."""
+    return emails.actif() and not est_admin(u) and not u.get("email_verifie")
+
+
+def _exige_confirmation(u: dict):
+    if has_request_context() and verification_requise(u):
+        raise AdresseNonConfirmee()
+
+
+@app.errorhandler(AdresseNonConfirmee)
+def adresse_non_confirmee(_e):
+    return jsonify({"erreur": "Confirme d'abord ton adresse e-mail : on t'a envoyé un lien à l'inscription.", "verification": True}), 403
+
+
 def refus(u: dict, analyses=0, adaptations=0, studio=0) -> str | None:
+    if analyses or adaptations:  # collecte et IA : adresse confirmée obligatoire (protège des inscriptions jetables)
+        _exige_confirmation(u)
     return None if est_admin(u) else ab.peut(u, analyses, adaptations, studio)
 
 
 def reserve(u: dict, option: str) -> str | None:
     """Fonction incluse dans la formule ? (formule gratuite : pas d'IA, pas de montage de Reel, pas de suivi…)"""
+    if option in ("ia", "montage_reel", "sequences_emails"):
+        _exige_confirmation(u)
     return None if est_admin(u) else ab.reserve(u, option)
+
+
+def lien_confirmation(u: dict) -> str:
+    return f"{url_site()}/confirmer?u={u['id']}&j={ab.jeton_confirmation(u)}"
 
 
 def bloque(msg: str):
@@ -302,16 +329,43 @@ def inscription():
         if p:
             nt.notifie(p["id"], "Ta filleule s'est inscrite 💌", f"{u.get('prenom') or 'Une amie'} a rejoint Virallink grâce à toi.", "/app")
     if u.get("origine") == "boutique":
-        emails.bienvenue_boutique(u["email"], u.get("prenom") or "", url_site() + "/app?boutique=1")
+        emails.bienvenue_boutique(u["email"], u.get("prenom") or "", url_site() + "/app?boutique=1", lien_confirmation(u))
     else:
-        emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app")
+        emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app", lien_confirmation(u))
     return jsonify({"ok": True, "boutique": u.get("origine") == "boutique"})
+
+
+@app.get("/confirmer")
+def confirmer():
+    """Lien du mail de bienvenue."""
+    try:
+        uid = int(request.args.get("u", "0"))
+    except ValueError:
+        uid = 0
+    ok = ab.confirme_email(uid, request.args.get("j", ""))
+    u = ab.get(uid) if ok else None
+    suite = "/app?boutique=1&confirme=1" if (u and u.get("origine") == "boutique") else "/app?confirme=1"
+    return redirect(suite if ok else "/app?confirme=0")
+
+
+@app.post("/api/confirmation/renvoyer")
+@connecte
+def renvoie_confirmation():
+    if not verification_requise(g.u):
+        return jsonify({"ok": True, "deja": True})
+    derniere = session.get("conf_envoi", 0)
+    if time.time() - derniere < 60:
+        return jsonify({"erreur": "Un e-mail vient de partir. Attends une minute avant d'en redemander un."}), 429
+    session["conf_envoi"] = time.time()
+    emails.confirmation(g.u["email"], g.u.get("prenom") or "", lien_confirmation(g.u))
+    return jsonify({"ok": True})
 
 
 @app.post("/api/essai")
 @connecte
 def demarre_essai():
     """Inscrite par la boutique gratuite : elle démarre l'essai de la veille quand elle le décide."""
+    _exige_confirmation(g.u)
     if not ab.demarre_essai(g.u["id"]):
         return jsonify({"erreur": "Ton essai gratuit a déjà été utilisé. Choisis une formule pour profiter de la veille."}), 400
     return jsonify({"ok": True, "abonnement": droits(ab.get(g.u["id"]))})
@@ -448,7 +502,8 @@ def etat():
     cfg = g.esp.lit_config()
     return jsonify({
         "utilisateur": {"prenom": g.u["prenom"], "email": g.u["email"], "onboarding": bool(g.u["onboarding"]),
-                        "veille_auto": bool(g.u["veille_auto"]), "origine": g.u.get("origine") or ""},
+                        "veille_auto": bool(g.u["veille_auto"]), "origine": g.u.get("origine") or "",
+                        "email_verifie": not verification_requise(g.u)},
         "abonnement": droits(g.u), "demo": en_demo(), "admin": est_admin(g.u),
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
@@ -2348,7 +2403,8 @@ def planificateur():
             if now.hour >= 6:
                 for u in ab.tous():
                     d = droits(u)
-                    if not (u["onboarding"] and d["veille_auto"] and d["actif"]) or (u.get("derniere_veille_auto") or "") >= lundi:
+                    if (not (u["onboarding"] and d["veille_auto"] and d["actif"]) or (u.get("derniere_veille_auto") or "") >= lundi
+                            or verification_requise(u)):
                         continue
                     esp = espace_client(u["id"])
                     cfg = esp.lit_config()

@@ -993,6 +993,7 @@ a.btn{text-decoration:none}
       <button class="btn prim" id="ouvrir-nouvelle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg><span id="ouvrir-nouvelle-txt">Nouvelle veille</span></button>
     </div>
     <div class="bandeau" id="bandeau-demo" hidden><b>Mode démo.</b> Les analyses utilisent des données fictives.</div>
+    <div class="bandeau" id="bandeau-confirm" hidden></div>
     <div id="job-haut"></div>
 
     <!-- ACCUEIL -->
@@ -1088,7 +1089,8 @@ const api = async (url, opts = {}) => {
   const r = await fetch(url, {headers: {"Content-Type": "application/json"}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined});
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) { location.href = "/connexion#connexion"; throw new Error("Session expirée"); }
-  if (r.status === 402 && essaiDispo()) { setTimeout(() => { fermeTiroir(); proposeEssai("Cette fonction fait partie de la veille. Tu peux l'essayer gratuitement, ta boutique ne change pas."); }, 50); }
+  if (r.status === 403 && j.verification) { setTimeout(() => { fermeTiroir(); demandeConfirmation(); }, 50); }
+  else if (r.status === 402 && essaiDispo()) { setTimeout(() => { fermeTiroir(); proposeEssai("Cette fonction fait partie de la veille. Tu peux l'essayer gratuitement, ta boutique ne change pas."); }, 50); }
   else if (r.status === 402) { setTimeout(() => { fermeModale(); fermeTiroir(); va("abonnement"); }, 50); toast(j.erreur || "Limite de ta formule atteinte", {duree: 7000}); }
   if (!r.ok) throw Object.assign(new Error(j.erreur || "Erreur " + r.status), {data: j});
   return j;
@@ -1134,6 +1136,9 @@ async function chargeEtat() {
   const u = S.etat.utilisateur, ab = S.etat.abonnement;
   $("#utilisateur").innerHTML = `<span>${esc(u.prenom || u.email)}${ab ? ` — ${esc(ab.nom_plan)}` : ""}</span><button onclick="deconnexion()">Se déconnecter</button>${S.etat.admin ? '<a class="lien-admin" href="/admin">Administration</a>' : ""}`;
   $("#bandeau-demo").innerHTML = S.etat.demo ? "<b>Mode démo.</b> Les analyses utilisent des données fictives." : "";
+  const nonConfirmee = !u.email_verifie;
+  $("#bandeau-confirm").hidden = !nonConfirmee;
+  if (nonConfirmee) $("#bandeau-confirm").innerHTML = `<b>Confirme ton adresse e-mail.</b> On t'a envoyé un lien à ${esc(u.email)} (pense aux indésirables). <button class="lien" type="button" onclick="renvoieConfirmation(this)">Renvoyer l'e-mail</button>`;
   if (ab && !ab.actif) { $("#bandeau-demo").hidden = false; $("#bandeau-demo").innerHTML = `<b>${ab.statut === "essai" ? "Ton essai gratuit est terminé." : "Ton abonnement n'est pas actif."}</b> <a href="#" onclick="va('abonnement');return false">Choisis une formule</a> pour lancer de nouvelles analyses.`; }
 }
 async function deconnexion() { await api("/api/deconnexion", {method: "POST"}); location.href = "/"; }
@@ -1697,6 +1702,23 @@ document.addEventListener("click", e => {
   try { localStorage.setItem("vv-masque-" + b.dataset.masque, Date.now()); } catch {}
   b.closest(".carte-essai")?.remove();
 });
+// ---- Confirmation de l'adresse e-mail (exigée avant tout ce qui consomme de la collecte ou de l'IA)
+async function renvoieConfirmation(b) {
+  if (b) b.disabled = true;
+  try { const r = await api("/api/confirmation/renvoyer", {method: "POST"});
+    if (r.deja) { await chargeEtat(); return toast("Ton adresse est déjà confirmée"); }
+    toast(`E-mail envoyé à ${S.etat.utilisateur.email}`, {duree: 5000}); }
+  catch (e) { toast(e.message); }
+  finally { if (b) setTimeout(() => b.disabled = false, 60000); }
+}
+function demandeConfirmation() {
+  $("#feuille").innerHTML = `<h2 id="m-titre">Confirme ton adresse e-mail</h2>
+    <p class="sous">Pour lancer une veille ou faire écrire Virall.ai, on a besoin de vérifier ton adresse. Clique sur le lien reçu à <b>${esc(S.etat.utilisateur.email)}</b> au moment de ton inscription.</p>
+    <p class="aide">Rien reçu ? Regarde dans les indésirables ou les promotions, ou demande un nouvel e-mail.</p>
+    <div class="pied-modale"><button class="btn" data-fermer>Fermer</button><button class="btn prim" id="m-renvoi">Renvoyer l'e-mail</button></div>`;
+  $("#m-renvoi").onclick = () => renvoieConfirmation($("#m-renvoi"));
+  $("#modale").classList.add("ouvert");
+}
 function proposeEssai(raison = "") {
   if (!essaiDispo()) return va("abonnement");
   const j = S.etat.abonnement.essai_jours;
@@ -4227,6 +4249,8 @@ function ongletKit(z) {
   await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", location.pathname);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); va("abonnement"); }
   if (q.get("stripe")) { await chargeBoutique(true); BQ.onglet = "produits"; va("boutique"); toast(BQ.page?.stripe?.pret ? "Stripe est relié : tu peux vendre" : "Inscription Stripe à terminer"); }
+  if (q.get("confirme") === "1") toast("Merci, ton adresse est confirmée", {duree: 4000});
+  if (q.get("confirme") === "0") toast("Ce lien de confirmation n'est plus valable : demande un nouvel e-mail depuis le bandeau.", {duree: 6000});
   if (q.get("projet")) ouvreProjet(q.get("projet")).catch(() => toast("Ce contenu n'existe plus."));  // lien de l'e-mail « contenu prêt »
   else if (q.get("essai") && essaiDispo()) { va("boutique"); proposeEssai(); }  // lien des e-mails de suivi
   else if (q.get("boutique") || (boutiqueSeule() && !S.etat.utilisateur.onboarding)) va("boutique");  // inscrite par la boutique gratuite

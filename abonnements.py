@@ -54,11 +54,14 @@ def init():
                                 ("utilisateurs", "parrainage_recompense", "INTEGER DEFAULT 0"), ("utilisateurs", "synthese", "INTEGER DEFAULT 1"),
                                 ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0"),
                                 ("utilisateurs", "debut_cycle", "TEXT"), ("utilisateurs", "origine", "TEXT"),
-                                ("utilisateurs", "relances_boutique", "INTEGER DEFAULT 0"), ("utilisateurs", "essai_utilise", "INTEGER DEFAULT 0")):
+                                ("utilisateurs", "relances_boutique", "INTEGER DEFAULT 0"), ("utilisateurs", "essai_utilise", "INTEGER DEFAULT 0"),
+                                ("utilisateurs", "email_verifie", "INTEGER DEFAULT 0")):
             try:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
                 if col == "essai_utilise":  # comptes existants : ils ont tous eu leur essai à l'inscription
                     c.execute("UPDATE utilisateurs SET essai_utilise=1")
+                if col == "email_verifie":  # comptes existants : considérés comme confirmés
+                    c.execute("UPDATE utilisateurs SET email_verifie=1")
             except sqlite3.OperationalError:
                 pass  # colonne déjà présente
 
@@ -71,6 +74,8 @@ def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False, offre: str =
     email = email.strip().lower()
     if "@" not in email or len(mdp) < 8:
         raise ValueError("Adresse e-mail invalide ou mot de passe trop court (8 caractères minimum).")
+    if adresse_jetable(email):
+        raise ValueError("Les adresses e-mail temporaires ne sont pas acceptées. Utilise ton adresse habituelle.")
     duree = plans()["essai"].get("duree_jours", 7)
     with _verrou, _db() as c:
         try:
@@ -301,6 +306,46 @@ def usage_tous() -> dict:
 # Options des formules payantes (une formule peut en désactiver une dans plans.yaml, comme la formule gratuite)
 OPTIONS_DEFAUT = {"ia": True, "montage_reel": True, "suivi_publications": True, "sequences_emails": True,
                   "filigrane": False, "mention_boutique": False}
+
+
+# ------------------------------------------------------------
+#  Confirmation de l'adresse e-mail
+# ------------------------------------------------------------
+DOMAINES_JETABLES = {
+    "yopmail.com", "yopmail.fr", "yopmail.net", "mailinator.com", "guerrillamail.com", "guerrillamail.net", "guerrillamailblock.com",
+    "sharklasers.com", "grr.la", "10minutemail.com", "10minutemail.net", "temp-mail.org", "tempmail.com", "tempmail.net",
+    "tempmailo.com", "temp-mail.io", "tempr.email", "trashmail.com", "trashmail.fr", "trashmail.net", "getnada.com", "nada.email",
+    "maildrop.cc", "dispostable.com", "throwawaymail.com", "mohmal.com", "emailondeck.com", "mailnesia.com", "fakeinbox.com",
+    "jetable.org", "mail-temp.com", "moakt.com", "burnermail.io", "spamgourmet.com", "mintemail.com", "mailcatch.com",
+    "minuteinbox.com", "discard.email", "mytemp.email", "emailfake.com", "crazymailing.com", "tmpmail.org", "tmail.ws",
+    "inboxkitten.com", "spam4.me", "33mail.com", "mailpoof.com", "luxusmail.org", "fexpost.com", "dropmail.me",
+}
+
+
+def adresse_jetable(email: str) -> bool:
+    dom = email.rsplit("@", 1)[-1].strip().lower()
+    return dom in DOMAINES_JETABLES or any(dom.endswith("." + d) for d in DOMAINES_JETABLES)
+
+
+def jeton_confirmation(u: dict) -> str:
+    """Lien de confirmation signé (lié à l'adresse : il ne vaut plus si l'adresse change)."""
+    cle = os.getenv("SECRET_KEY") or ""
+    if not cle:  # même clé que les sessions (app.cle_secrete) : générée une fois et gardée dans data/
+        f = DATA / "secret.key"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        if not f.exists():
+            f.write_text(secrets.token_hex(32))
+        cle = f.read_text().strip()
+    cle = cle.encode()
+    return hmac.new(cle, f"confirmation:{u['id']}:{u['email']}".encode(), hashlib.sha256).hexdigest()[:40]
+
+
+def confirme_email(uid: int, jeton: str) -> bool:
+    u = get(uid)
+    if not u or not hmac.compare_digest(jeton_confirmation(u), str(jeton or "")):
+        return False
+    maj(uid, email_verifie=1)
+    return True
 
 
 def essai_dispo(u: dict) -> bool:
