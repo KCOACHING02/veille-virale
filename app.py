@@ -206,7 +206,8 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
         with (file_ or FILE):
             job["statut"] = "en cours"
             import ia as _ia
-            cout_avant = _ia.cout_total()
+            import collecte as _co
+            cout_avant = _ia.cout_total() + _co.cout_apify_total()
             def hook(m):
                 job["logs"].append({"t": datetime.now().strftime("%H:%M:%S"), "m": m})
             hook.studio = FIL.studio = job["studio"]
@@ -229,7 +230,7 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
                 if fichier:
                     fichier.unlink(missing_ok=True)
                 # coût IA des petites tâches (adaptation, assistant, boutique) : les analyses l'enregistrent elles-mêmes
-                cout = _ia.cout_total() - cout_avant
+                cout = _ia.cout_total() + _co.cout_apify_total() - cout_avant
                 if persiste is None and cout > 0 and not en_demo():
                     try:
                         ab.compte_usage(uid, cout=cout)
@@ -800,7 +801,8 @@ def assistant_comptes():
     cfg = g.esp.lit_config()
     c = request.get_json(silent=True) or {}
     cfg["niche"].update({k: v for k, v in (c.get("niche") or {}).items() if v})
-    return jsonify({"job": lance(g.u["id"], "Comptes suggérés", suggestions.suggere, cfg, os.getenv("APIFY_TOKEN"), demo=en_demo())})
+    pl = "TikTok" if c.get("plateforme") == "TikTok" else "Instagram"
+    return jsonify({"job": lance(g.u["id"], f"Comptes {pl} suggérés", suggestions.suggere, cfg, os.getenv("APIFY_TOKEN"), demo=en_demo(), plateforme=pl)})
 
 
 @app.post("/api/assistant/hashtags")

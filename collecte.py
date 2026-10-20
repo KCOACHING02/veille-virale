@@ -22,7 +22,7 @@ CHAMPS_REELS = ["displayUrl", "title", "ownerUsername", "url", "timestamp", "vid
 MAX_SLIDES = 10
 
 # Coût réel des runs Apify (une analyse à la fois : un compteur global suffit)
-_COUT = {"usd": 0.0}
+_COUT = {"usd": 0.0, "total": 0.0}  # total : jamais remis à zéro (coût des petites tâches)
 _COUT_VERROU = threading.Lock()
 
 
@@ -33,6 +33,10 @@ def cout_apify_reinitialise():
 
 def cout_apify() -> float:
     return round(_COUT["usd"], 3)
+
+
+def cout_apify_total() -> float:
+    return _COUT["total"]
 
 
 def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> list[dict]:
@@ -60,10 +64,12 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
         if s["status"] == "SUCCEEDED":
             with _COUT_VERROU:
                 _COUT["usd"] += float(s.get("usageTotalUsd") or 0)
+                _COUT["total"] += float(s.get("usageTotalUsd") or 0)
             break
         if s["status"] in ("FAILED", "ABORTED", "TIMED-OUT"):
             with _COUT_VERROU:
                 _COUT["usd"] += float(s.get("usageTotalUsd") or 0)
+                _COUT["total"] += float(s.get("usageTotalUsd") or 0)
             raise RuntimeError(f"La collecte s'est arrêtée ({s['status']}).")
         if time.time() > limite:
             raise TimeoutError(f"La collecte prend trop de temps (> {timeout_min} min).")

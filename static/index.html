@@ -863,6 +863,8 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-saut button:hover{color:var(--ink);border-color:var(--ink-3)}
 .bt-sec{scroll-margin-top:52px}
 .bt-puces{display:flex;flex-wrap:wrap;gap:6px}
+.duo-sugg{display:flex;flex-wrap:wrap;gap:8px}
+.reseau-seg{margin-bottom:10px}.reseau-seg button{display:inline-flex;align-items:center;gap:6px}.reseau-seg svg,.sugg-c b svg{width:15px;height:15px;vertical-align:-2px}
 .bt-select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;color:var(--ink)}
 .bt-apparence{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
 .bt-apparence summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--glow)}
@@ -1387,6 +1389,8 @@ const estCarrousel = p => p.format === "Carrousel";
 const nbSlides = p => (p.medias || []).length || (p.adaptation?.slides_modele || []).length;
 const libFormat = p => estCarrousel(p) ? `Carrousel${nbSlides(p) ? " · " + nbSlides(p) + " slides" : ""}` : p.plateforme === "TikTok" ? "Vidéo" : "Reel";
 const texteSeuil = a => a.seuil_mode === "auto" ? `≥ ${String(a.seuil_multiple || 3).replace(".", ",")}× les vues habituelles du compte (min. ${nb(a.seuil_plancher || 30000)})` : `≥ ${nbLong(a.vues_min)} vues`;
+const ICO_IG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>';
+const ICO_TT = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 5.8A4.3 4.3 0 0115.5 3h-3.1v12.4a2.6 2.6 0 11-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.8 5.8 0 00-.8-.1 5.7 5.7 0 105.7 5.7V9a7.3 7.3 0 004.3 1.4V7.3a4.3 4.3 0 01-3.2-1.5z"/></svg>';
 const prixFr = x => Number(x).toLocaleString("fr-FR", {minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2});
 const limites = p => p.gratuit ? [
   "Ta boutique lien en bio complète",
@@ -1921,28 +1925,29 @@ async function renduComptes() {
         <div><h3>Instagram</h3><div class="comptes-l">${(c.instagram || []).map(n => ligne("Instagram", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
         <div><h3>TikTok</h3><div class="comptes-l">${(c.tiktok || []).map(n => ligne("TikTok", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
       </div>
-      <div style="margin-top:14px"><button class="btn" id="c-sugg">✨ Suggère-moi des comptes qui cartonnent</button><div id="c-sugg-res" style="margin-top:10px"></div></div>
-      <form class="ajout" id="form-ajout"><input id="ajout-txt" placeholder="@compte, tt:compte ou lien du profil" aria-label="Compte à ajouter"><select class="select" id="ajout-pl"><option>Instagram</option><option>TikTok</option></select><button class="btn prim">Ajouter</button></form>
+      <div style="margin-top:14px"><div class="duo-sugg"><button type="button" class="btn" data-sugg="Instagram" data-zone="c">✨ Comptes Instagram qui cartonnent</button><button type="button" class="btn" data-sugg="TikTok" data-zone="c">✨ Comptes TikTok qui cartonnent</button></div><div id="c-sugg-res" style="margin-top:10px"></div></div>
+      <form class="ajout" id="form-ajout"><input id="ajout-txt" placeholder="@compte ou lien du profil" aria-label="Compte à ajouter"><select class="select" id="ajout-pl"><option>Instagram</option><option>TikTok</option></select><button class="btn prim">Ajouter</button></form>
     </div>
     ${dec.length ? `<div class="panneau"><h2>Comptes repérés dans ta niche</h2><p style="color:var(--ink-2);margin:-4px 0 12px">Ils dépassent régulièrement ${nbLong(S.analyse.criteres.vues_min)} vues sur les hashtags de ta niche.</p>
       <div style="overflow-x:auto"><table><thead><tr><th>Compte</th><th>Reels au-dessus du seuil</th><th>Meilleur</th><th>Engagement</th><th></th></tr></thead><tbody>
       ${dec.map(d => `<tr><td><b>@${esc(d.compte)}</b> <span style="color:var(--ink-3)">${d.plateforme}</span></td><td class="num">${d.reels_au_dessus_seuil}</td><td class="num"><a href="${esc(d.exemple)}" target="_blank" rel="noopener">${nb(d.vues_max)} vues</a></td><td class="num">${pc(d.engagement_median)}</td><td><button class="btn petit" data-ajoute="${d.plateforme}|${esc(d.compte)}">Ajouter</button></td></tr>`).join("")}
       </tbody></table></div></div>` : ""}`;
-  $("#c-sugg").onclick = () => suggereComptes($("#c-sugg-res"), async comptes => {
-    try { const r = await api("/api/comptes", {method: "POST", body: {texte: comptes.map(c => "@" + c).join("\n")}}); toast("Ajouté : " + r.ajoutes.join(", ")); }
+  $$("[data-sugg][data-zone=c]").forEach(b => b.onclick = () => suggereComptes($("#c-sugg-res"), async comptes => {
+    try { const r = await api("/api/comptes", {method: "POST", body: {texte: comptes.map(c => (c.plateforme === "TikTok" ? "tt:" : "ig:") + c.compte).join("\n")}});
+      toast("Ajouté : " + r.ajoutes.join(", ")); }
     catch (e) { toast(e.message); }
     setTimeout(renduComptes, 1200);
-  });
+  }, undefined, b.dataset.sugg));
   $("#form-ajout").onsubmit = async e => { e.preventDefault(); const r = await api("/api/comptes", {method: "POST", body: {texte: $("#ajout-txt").value, plateforme: $("#ajout-pl").value}}); toast(r.ajoutes.length ? "Ajouté : " + r.ajoutes.join(", ") : "Rien à ajouter"); renduComptes(); };
   $$("[data-retire]", el).forEach(b => b.onclick = async () => { const [pl, n] = b.dataset.retire.split("|"); await api("/api/comptes", {method: "DELETE", body: {plateforme: pl, compte: n}}); toast("@" + n + " retiré"); renduComptes(); });
   $$("[data-ajoute]", el).forEach(b => b.onclick = async () => { const [pl, n] = b.dataset.ajoute.split("|"); await api("/api/comptes", {method: "POST", body: {texte: (pl === "TikTok" ? "tt:" : "ig:") + n}}); toast("@" + n + " ajouté à ta veille"); renduComptes(); });
 }
 
 // ---------------------------------------------------------------- Comptes suggérés (vérifiés)
-async function suggereComptes(zone, ajoute, niche) {
-  zone.innerHTML = `<p class="encours"><span class="spin"></span><span class="sg-phrase">Je cherche des comptes qui cartonnent dans ta niche…</span></p>`;
+async function suggereComptes(zone, ajoute, niche, plateforme = "Instagram") {
+  zone.innerHTML = `<p class="encours"><span class="spin"></span><span class="sg-phrase">Je cherche des comptes ${plateforme} qui cartonnent dans ta niche…</span></p>`;
   let jid;
-  try { jid = (await api("/api/assistant/comptes-suggeres", {method: "POST", body: {niche}})).job; }
+  try { jid = (await api("/api/assistant/comptes-suggeres", {method: "POST", body: {niche, plateforme}})).job; }
   catch (e) { zone.innerHTML = ""; if (!e.data?.quota) toast(e.message); return; }
   const fin = async () => {
     let j; try { j = await api("/api/jobs/" + jid); } catch { return setTimeout(fin, 3000); }
@@ -1952,11 +1957,11 @@ async function suggereComptes(zone, ajoute, niche) {
     const r = j.resultat || [];
     if (!r.length) { zone.innerHTML = `<p class="aide">Aucun compte vérifié cette fois. Réessaie, ou ajoute des comptes que tu connais.</p>`; return; }
     zone.innerHTML = `<div class="sugg">${r.map((c, i) => `<label class="sugg-c"><input type="checkbox" data-sg="${i}" checked>
-        <div><b>@${esc(c.compte)}</b><span>${c.vues_mediane ? nb(c.vues_mediane) + " vues habituelles" : c.likes_median ? nb(c.likes_median) + " j'aime habituels" : ""}${c.reels || c.carrousels ? ` · ${c.reels} Reels, ${c.carrousels} carrousels` : ""}</span>
+        <div><b>${c.plateforme === "TikTok" ? ICO_TT : ICO_IG} @${esc(c.compte)}</b><span>${c.vues_mediane ? nb(c.vues_mediane) + " vues habituelles" : c.likes_median ? nb(c.likes_median) + " j'aime habituels" : ""}${c.plateforme === "TikTok" ? (c.publications ? ` · ${c.publications} vidéos récentes` : "") : c.reels || c.carrousels ? ` · ${c.reels} Reels, ${c.carrousels} carrousels` : ""}</span>
         <small>${esc(c.pourquoi || "")}${c.exemple ? ` · <a href="${esc(c.exemple)}" target="_blank" rel="noopener">voir un exemple</a>` : ""}</small></div></label>`).join("")}</div>
       <p style="margin:10px 0 0"><button class="btn prim petit" id="sg-ajout">Ajouter les comptes cochés</button></p>`;
     $("#sg-ajout", zone).onclick = async () => {
-      const choisis = $$("[data-sg]", zone).filter(x => x.checked).map(x => r[+x.dataset.sg].compte);
+      const choisis = $$("[data-sg]", zone).filter(x => x.checked).map(x => ({compte: r[+x.dataset.sg].compte, plateforme: r[+x.dataset.sg].plateforme || plateforme}));
       if (!choisis.length) return toast("Coche au moins un compte.");
       await ajoute(choisis); zone.innerHTML = `<p class="pret-ok">✓ ${choisis.length} compte${choisis.length > 1 ? "s" : ""} ajouté${choisis.length > 1 ? "s" : ""}</p>`;
     };
@@ -2001,10 +2006,10 @@ function ouvreNouvelle(mode = "copie") {
     <div id="m-copie" ${mode === "copie" ? "" : "hidden"}>
       <div class="champ">
         <label for="m-texte">Comptes ou Reels à analyser</label>
-        <textarea id="m-texte" placeholder="@compte_insta&#10;tt:compte_tiktok&#10;https://www.instagram.com/compte/&#10;https://www.instagram.com/reel/…   (un Reel précis)"></textarea>
-        <span class="aide">Un par ligne ou séparés par des virgules. Les noms sans préfixe sont considérés comme des comptes
-          <select class="select" id="m-pl" style="padding:2px 28px 2px 8px;font-size:13px"><option>Instagram</option><option>TikTok</option></select>.
-          Un lien de Reel est toujours analysé, même s'il ne remplit pas les critères.</span>
+        <div class="seg reseau-seg" id="m-pl-seg" role="group" aria-label="Réseau"><button type="button" data-pl="Instagram" aria-pressed="true">${ICO_IG} Instagram</button><button type="button" data-pl="TikTok" aria-pressed="false">${ICO_TT} TikTok</button></div>
+        <select class="select" id="m-pl" hidden><option>Instagram</option><option>TikTok</option></select>
+        <textarea id="m-texte" placeholder="@compte&#10;https://www.instagram.com/compte/&#10;https://www.instagram.com/reel/…   (un Reel précis)"></textarea>
+        <span class="aide" id="m-pl-aide">Un par ligne ou séparés par des virgules. Les noms sans préfixe sont des comptes Instagram. Un lien de Reel précis est toujours analysé, même s'il ne remplit pas les critères.</span>
         <div class="reconnus" id="m-reconnus"></div>
       </div>
       <label class="coche" ${gratuit ? "hidden" : ""}><input type="checkbox" id="m-ajout"> Ajouter ces comptes à ma veille de la semaine</label>
@@ -2044,6 +2049,15 @@ function ouvreNouvelle(mode = "copie") {
     } catch { if ($("#m-estim")) $("#m-estim").textContent = ""; }
   }, 350); };
   $("#m-texte").oninput = () => { majReconnus(); majEstim(); }; $("#m-pl").onchange = () => { majReconnus(); majEstim(); };
+  $$("#m-pl-seg [data-pl]").forEach(b => b.onclick = () => {  // réseau des noms sans préfixe (les liens sont reconnus tout seuls)
+    const tt = b.dataset.pl === "TikTok";
+    $$("#m-pl-seg [data-pl]").forEach(x => x.setAttribute("aria-pressed", x === b)); $("#m-pl").value = b.dataset.pl;
+    $("#m-texte").placeholder = tt ? "@compte\nhttps://www.tiktok.com/@compte\nhttps://www.tiktok.com/@compte/video/…   (une vidéo précise)"
+      : "@compte\nhttps://www.instagram.com/compte/\nhttps://www.instagram.com/reel/…   (un Reel précis)";
+    $("#m-pl-aide").textContent = `Un par ligne ou séparés par des virgules. Les noms sans préfixe sont des comptes ${b.dataset.pl}. `
+      + (tt ? "Un lien de vidéo TikTok précise est toujours analysé." : "Un lien de Reel précis est toujours analysé.") + " Tu peux mélanger les deux réseaux en collant leurs liens.";
+    $("#m-pl").dispatchEvent(new Event("change"));
+  });
   ["#m-nb", "#m-mois"].forEach(s => $(s).addEventListener("input", majEstim));
   $("#m-seuil").onchange = () => { $("#m-vues-champ").hidden = $("#m-seuil").value === "auto"; };
   $$("#m-mode button").forEach(b => b.onclick = () => {
@@ -2967,7 +2981,8 @@ const PAGES = {
     <div class="f"><label for="w-comptes">Un compte par ligne</label>
       <textarea id="w-comptes" placeholder="@compte_insta&#10;tt:compte_tiktok&#10;https://www.instagram.com/compte/">${esc([...(c.instagram || []).map(x => "@" + x), ...(c.tiktok || []).map(x => "tt:" + x)].join("\n"))}</textarea>
       <div class="reconnus" id="w-reconnus"></div><span class="aide" id="w-limite"></span></div>
-    <div class="f"><button type="button" class="btn" id="w-sugg">✨ Suggère-moi des comptes qui cartonnent</button><div id="w-sugg-res" style="margin-top:10px"></div></div>
+    <p class="aide" style="margin:-6px 0 12px">Pour un compte TikTok, colle le lien de son profil (tiktok.com/@…) ou écris <b>tt:</b> devant son nom.</p>
+    <div class="f"><div class="duo-sugg"><button type="button" class="btn" data-sugg="Instagram" data-zone="w">✨ Comptes Instagram qui cartonnent</button><button type="button" class="btn" data-sugg="TikTok" data-zone="w">✨ Comptes TikTok qui cartonnent</button></div><div id="w-sugg-res" style="margin-top:10px"></div></div>
     <p class="aide">Conseil : 5 à 10 comptes qui font régulièrement beaucoup de vues. Ta première veille prend 10 à 20 minutes, tu peux fermer la page.</p>`; },
   compte: () => `<h2 id="a-titre">Commençons par ton compte</h2>
     <p class="intro">Virall.ai lit tes derniers Reels pour comprendre ton positionnement, ce qui marche déjà chez toi et ton ton. Les étapes suivantes seront pré-remplies.</p>
@@ -3075,9 +3090,9 @@ const APRES = {
   },
   demarrer: () => {
     APRES.modeles();
-    $("#w-sugg").onclick = () => suggereComptes($("#w-sugg-res"), async comptes => {
-      const t = $("#w-comptes"); t.value = [t.value.trim(), ...comptes.map(c => "@" + c)].filter(Boolean).join("\n"); t.dispatchEvent(new Event("input"));
-    }, W.p.niche);
+    $$("[data-sugg][data-zone=w]").forEach(b => b.onclick = () => suggereComptes($("#w-sugg-res"), async comptes => {
+      const t = $("#w-comptes"); t.value = [t.value.trim(), ...comptes.map(c => (c.plateforme === "TikTok" ? "tt:" : "@") + c.compte)].filter(Boolean).join("\n"); t.dispatchEvent(new Event("input"));
+    }, W.p.niche, b.dataset.sugg));
     const termine = async () => { const err = analyseSaisie($("#w-comptes").value, "Instagram").some(i => i.type === "compte");
       await enregistreEtape(); await api("/api/profil", {method: "PUT", body: {onboarding_termine: true}}); return err; };
     $("#w-plus-tard").onclick = async () => { await termine(); fermeAssistant(); await chargeEtat(); va("accueil"); };

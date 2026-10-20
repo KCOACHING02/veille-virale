@@ -682,7 +682,7 @@ OUTIL_COMPTES = {
 }
 
 
-def propose_comptes(cfg: dict, deja: list[str]) -> list[dict]:
+def propose_comptes(cfg: dict, deja: list[str], plateforme: str = "Instagram", nombre: int = 18) -> list[dict]:
     """Candidats à vérifier ensuite (Claude peut se tromper de pseudo : chaque compte est contrôlé par une vraie collecte)."""
     ia = IA.__new__(IA)
     import anthropic
@@ -690,10 +690,13 @@ def propose_comptes(cfg: dict, deja: list[str]) -> list[dict]:
     n = cfg["niche"]
     texte = (f"Niche : {n.get('description', '')}\nCible : {n.get('cible', '')}\nLangue du marché : {n.get('langue', 'français')}\n"
              f"Déjà surveillés (à exclure) : {', '.join(deja) or 'aucun'}\n\n"
-             "Propose 18 comptes Instagram publics, actifs, qui publient des Reels ou des carrousels à forte audience : "
-             "la moitié dans cette niche et cette langue, l'autre moitié dans des niches voisines ou à l'international "
-             "dont les formats sont faciles à transposer. Donne uniquement des pseudos dont tu es sûr qu'ils existent.")
-    res = ia._appel(OUTIL_COMPTES, texte, max_tokens=1500, systeme="Tu es expert Instagram et veille de contenus viraux.")
+             + (f"Propose {nombre} comptes TikTok publics, actifs, qui publient des vidéos à forte audience : "
+                if plateforme == "TikTok" else
+                f"Propose {nombre} comptes Instagram publics, actifs, qui publient des Reels ou des carrousels à forte audience : ")
+             + "la moitié dans cette niche et cette langue, l'autre moitié dans des niches voisines ou à l'international "
+             "dont les formats sont faciles à transposer. Donne uniquement des pseudos dont tu es sûr qu'ils existent"
+             + (" sur TikTok (le pseudo après le @ de tiktok.com/@…)." if plateforme == "TikTok" else "."))
+    res = ia._appel(OUTIL_COMPTES, texte, max_tokens=1500, systeme=f"Tu es expert {plateforme} et veille de contenus viraux.")
     if res.get("erreur"):
         raise RuntimeError(res["erreur"])
     c = res.get("comptes")
