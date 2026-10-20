@@ -174,3 +174,24 @@ def conseil_boutique(n: int, email: str, prenom: str, publiee: bool, jours_essai
              "<p>Pas de carte bancaire, pas d'engagement. C'est le dernier message à ce sujet.</p>")
     return envoie(email, f"Ton essai de {jours_essai} jours t'attend toujours", _gabarit(
         "Toujours partante ?", corps + _pied_conseils(url_reglages), (f"Démarrer mon essai", url_essai)))
+
+
+def fin_essai(n: int, email: str, prenom: str, adaptes: int, formule: dict, url: str, url_reglages: str):
+    """n=1 : deux jours avant la fin ; n=2 : le jour où l'essai se termine."""
+    p = html.escape(prenom or "")
+    prix = f"{formule.get('prix', 0):.2f}".replace(".", ",").replace(",00", "")
+    nom = html.escape(formule.get("nom") or "Créateur")
+    bilan = (f"<p>Pendant ton essai, Virallink a écrit <b>{adaptes} publication{'s' if adaptes > 1 else ''}</b> pour toi, "
+             "à partir des Reels qui ont explosé dans ta niche.</p>") if adaptes else ""
+    pied = (f'<p style="font-size:12px;color:#8A7F78;margin-top:26px">Sans engagement, résiliable en un clic. '
+            f'<a href="{html.escape(url_reglages)}" style="color:#8A7F78">Ne plus recevoir ces e-mails</a></p>')
+    if n == 1:
+        corps = (f"<p>Bonjour{' ' + p if p else ''},</p><p>Ton essai gratuit se termine dans deux jours.</p>" + bilan +
+                 f"<p>Pour garder ta veille du lundi, ton planning et l'écriture par Virall.ai, la formule <b>{nom}</b> "
+                 f"est à <b>{prix} € par mois</b>. Ta veille continue sans interruption.</p>")
+        return envoie(email, "Ton essai se termine dans 2 jours", _gabarit("Plus que deux jours", corps + pied, ("Choisir ma formule", url)))
+    corps = (f"<p>Bonjour{' ' + p if p else ''},</p><p>Ton essai gratuit est terminé. Ton compte reste ouvert : tu gardes ta boutique, "
+             "tes Reels et tes créations.</p>" + bilan +
+             f"<p>La veille du lundi et les adaptations sont en pause. Pour les retrouver, la formule <b>{nom}</b> est à "
+             f"<b>{prix} € par mois</b>, sans engagement.</p>")
+    return envoie(email, "Ton essai est terminé : ta veille est en pause", _gabarit("Ta veille est en pause", corps + pied, ("Reprendre ma veille", url)))

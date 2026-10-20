@@ -55,7 +55,7 @@ def init():
                                 ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0"),
                                 ("utilisateurs", "debut_cycle", "TEXT"), ("utilisateurs", "origine", "TEXT"),
                                 ("utilisateurs", "relances_boutique", "INTEGER DEFAULT 0"), ("utilisateurs", "essai_utilise", "INTEGER DEFAULT 0"),
-                                ("utilisateurs", "email_verifie", "INTEGER DEFAULT 0")):
+                                ("utilisateurs", "email_verifie", "INTEGER DEFAULT 0"), ("utilisateurs", "relances_essai", "INTEGER DEFAULT 0")):
             try:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
                 if col == "essai_utilise":  # comptes existants : ils ont tous eu leur essai à l'inscription
@@ -346,6 +346,16 @@ def confirme_email(uid: int, jeton: str) -> bool:
         return False
     maj(uid, email_verifie=1)
     return True
+
+
+def formule_conseillee() -> dict:
+    """La formule payante d'entrée (la moins chère) : celle qu'on propose en fin d'essai."""
+    payantes = [(k, v) for k, v in plans().items() if not v.get("gratuit") and k != "essai" and float(v.get("prix_mensuel") or 0) > 0]
+    if not payantes:
+        return {}
+    k, v = min(payantes, key=lambda x: float(x[1]["prix_mensuel"]))
+    return {"id": k, "nom": v["nom"], "prix": float(v["prix_mensuel"]), "adaptations": v.get("adaptations_par_mois"),
+            "veille_auto": bool(v.get("veille_auto"))}
 
 
 def essai_dispo(u: dict) -> bool:

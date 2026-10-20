@@ -508,6 +508,7 @@ def etat():
         "utilisateur": {"prenom": g.u["prenom"], "email": g.u["email"], "onboarding": bool(g.u["onboarding"]),
                         "veille_auto": bool(g.u["veille_auto"]), "origine": g.u.get("origine") or "",
                         "email_verifie": not verification_requise(g.u)},
+        "offre": ab.formule_conseillee(),
         "abonnement": droits(g.u), "demo": en_demo(), "admin": est_admin(g.u),
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
@@ -2217,6 +2218,27 @@ def synthese_de(u: dict) -> list[tuple[str, str]]:
 RELANCES_BOUTIQUE_JOURS = (2, 5, 10)  # e-mails des inscrites par la boutique gratuite
 
 
+def envoie_relances_essai():
+    """Fin d'essai : un e-mail deux jours avant, un le jour où il se termine (jamais pour une abonnée)."""
+    if not 9 <= datetime.now().hour < 20:
+        return
+    maintenant = datetime.now()
+    for u in ab.tous():
+        try:
+            if u.get("statut") != "essai" or not u.get("fin_essai") or u.get("a_paye") or not u.get("synthese", 1) or est_admin(u):
+                continue
+            reste = (datetime.fromisoformat(u["fin_essai"]) - maintenant).total_seconds() / 86400
+            deja = u.get("relances_essai") or 0
+            n = 2 if -3 < reste <= 0 else 1 if 0 < reste <= 2 else 0
+            if not n or deja >= n:
+                continue
+            ab.maj(u["id"], relances_essai=n)
+            emails.fin_essai(n, u["email"], u.get("prenom") or "", ab.usage(u["id"])["adaptations"], ab.formule_conseillee(),
+                             url_site() + "/app?formules=1", url_site() + "/app#parametres")
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
+
+
 def envoie_relances_boutique():
     """Conseils puis invitation à l'essai de la veille, aux inscrites par la boutique gratuite (3 e-mails au plus)."""
     if not 9 <= datetime.now().hour < 20:
@@ -2419,6 +2441,7 @@ def planificateur():
                                                                            "max_adaptations": d["reste"]["adaptations"]})
             envoie_syntheses()
             envoie_relances_boutique()
+            envoie_relances_essai()
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(900)
