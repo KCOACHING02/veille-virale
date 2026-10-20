@@ -945,10 +945,14 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
     d = page["design"]
     prods = {p["id"]: p for p in page.get("produits", []) if p.get("visible", True)}
     if t == "lien":
+        vig = f'<img class="vig" src="{_img(pseudo, b["image"])}" alt="">' if b.get("image") else (f'<i class="emo">{E(b["emoji"])}</i>' if b.get("emoji") else "")
+        pr = prods.get(b.get("produit") or "")
+        if pr:  # bouton vers la page de paiement d'un produit : même onglet, comptée comme un clic
+            return (f'<a class="lien{" avant" if b.get("en_avant") else ""}" href="/@{pseudo}/l/{b["id"]}">'
+                    f'{vig}<span>{E(b.get("titre") or pr.get("titre") or "Je le veux")}</span><i class="reflet"></i></a>')
         u = url_sure(b.get("url"))
         if not u:
             return ""
-        vig = f'<img class="vig" src="{_img(pseudo, b["image"])}" alt="">' if b.get("image") else (f'<i class="emo">{E(b["emoji"])}</i>' if b.get("emoji") else "")
         return (f'<a class="lien{" avant" if b.get("en_avant") else ""}" href="/@{pseudo}/l/{b["id"]}" data-url="{E(u)}" target="_blank" rel="noopener">'
                 f'{vig}<span>{E(b.get("titre") or u)}</span><i class="reflet"></i></a>')
     if t == "titre":

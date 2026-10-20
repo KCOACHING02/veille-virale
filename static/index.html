@@ -3281,6 +3281,7 @@ const AIDE_RES = {instagram: "ton_pseudo", tiktok: "ton_pseudo", youtube: "ta_ch
   linkedin: "ton-profil", pinterest: "ton_pseudo", snapchat: "ton_pseudo", whatsapp: "+33 6 12 34 56 78", email: "toi@exemple.fr", site: "www.ton-site.fr"};
 const TYPES_BLOCS = {
   lien: ["🔗", "Lien", "Vers ton site, un rendez-vous, une vidéo, un code promo…"],
+  paiement: ["💳", "Bouton de paiement", "Un bouton qui ouvre la page de paiement d'un de tes produits"],
   produits: ["🛍️", "Ma boutique", "Tous tes produits, en grille, liste ou vitrine"],
   produit: ["⭐", "Un produit en avant", "Une seule offre mise en valeur"],
   capture: ["💌", "Récolter des e-mails", "Formulaire d'inscription, avec un cadeau en option"],
@@ -3636,7 +3637,7 @@ function ongletContenu(z) {
 }
 function resumeBloc(b) {
   const prods = BQ.page.produits;
-  return ({lien: b.titre || b.url || "Nouveau lien", titre: b.texte || "Titre", texte: (b.texte || "Texte").slice(0, 60), video: b.url || "Colle le lien YouTube",
+  return ({lien: b.titre || prods.find(x => x.id === b.produit)?.titre || b.url || "Nouveau lien", titre: b.texte || "Titre", texte: (b.texte || "Texte").slice(0, 60), video: b.url || "Colle le lien YouTube",
     produit: prods.find(x => x.id === b.produit)?.titre || "Choisis le produit", produits: b.titre || "Ma boutique",
     capture: b.titre || "Reste en contact", kit: b.titre || "Kit média"})[b.type];
 }
@@ -3644,7 +3645,7 @@ function blocHTML(b, i) {
   const [ic, nom] = TYPES_BLOCS[b.type] || ["•", b.type], ouvert = BQ.ouvertBloc === b.id, n = BQ.page.blocs.length;
   return `<div class="bt-bloc ${b.visible === false ? "cache" : ""}">
     <div class="bt-bloc-tete"><span class="ic">${ic}</span>
-      <button class="res" data-bloc-action="ouvrir" data-i="${i}" aria-expanded="${ouvert}"><b>${esc(resumeBloc(b))}${b.en_avant ? " ✨" : ""}</b><small>${nom}${b.type === "lien" && b.url ? " · " + esc(b.url) : ""}</small></button>
+      <button class="res" data-bloc-action="ouvrir" data-i="${i}" aria-expanded="${ouvert}"><b>${esc(resumeBloc(b))}${b.en_avant ? " ✨" : ""}</b><small>${nom}${b.type === "lien" && b.produit && BQ.page.produits.some(x => x.id === b.produit) ? " · 💳 paiement" : b.type === "lien" && b.url ? " · " + esc(b.url) : ""}</small></button>
       <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === 0 ? "disabled" : ""}>↑</button>
       <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === n - 1 ? "disabled" : ""}>↓</button>
       <button class="icone-btn" data-bloc-action="voir" data-i="${i}" aria-label="${b.visible === false ? "Afficher" : "Masquer"}" title="${b.visible === false ? "Masqué" : "Visible"}">${b.visible === false
@@ -3658,7 +3659,14 @@ function corpsBloc(b, i) {
   const prods = BQ.page.produits;
   const optsProd = (sel, gratuits) => `<option value="">${gratuits ? "Aucun cadeau" : "Choisis…"}</option>` + prods.filter(p => !gratuits || !p.prix).map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.titre || "Sans titre")}</option>`).join("");
   switch (b.type) {
-    case "lien": return champB(i, "titre", "Texte du bouton", b.titre, 'maxlength="120"') + champB(i, "url", "Adresse", b.url, 'inputmode="url" autocapitalize="off" placeholder="ton-site.fr"')
+    case "lien": return champB(i, "titre", "Texte du bouton", b.titre, 'maxlength="120"')
+      + `<div class="champ"><label>Ce bouton mène à</label><select data-b="${i}" data-bk="produit" data-rerendu="1">
+          <option value="">Une adresse web (ton site, Calendly, une vidéo…)</option>
+          ${prods.map(p => `<option value="${p.id}" ${p.id === b.produit ? "selected" : ""}>💳 La page de paiement : ${esc(p.titre || "Sans titre")} (${euros(p.promo_prix || p.prix)})</option>`).join("")}
+        </select>${prods.length ? "" : '<span class="aide">Pour faire payer avec ce bouton, crée d\'abord ton produit dans l\'onglet <b>Produits</b> : il apparaîtra dans cette liste.</span>'}</div>`
+      + (b.produit && prods.some(p => p.id === b.produit)
+        ? '<p class="aide" style="margin:-4px 0 12px">Le bouton ouvre la page de paiement du produit : prix, code promo et paiement sécurisé. Le fichier ou l\'accès est envoyé tout seul après l\'achat.</p>'
+        : champB(i, "url", "Adresse", b.url, 'inputmode="url" autocapitalize="off" placeholder="ton-site.fr"'))
       + `<div class="champ"><label>Petite image ou emoji (facultatif)</label><div class="bt-rangee">
           <label class="bt-depot" style="flex:1">${b.image ? `<img src="${urlImg(b.image)}" alt="">` : "🖼️"}<span>${b.image ? "Changer" : "Vignette"}</span><input type="file" accept="image/*" data-envoi-bloc="${i}"></label>
           <input data-b="${i}" data-bk="emoji" value="${esc(b.emoji || "")}" maxlength="4" placeholder="😊" style="width:64px;text-align:center;font-size:20px;border:1px solid var(--line);border-radius:10px;padding:8px" aria-label="Emoji">
@@ -3683,7 +3691,12 @@ function choisirTypeBloc() {
     <div class="pied-modale" style="margin-top:16px"><button class="btn" data-fermer>Annuler</button></div>`;
   $("#modale").classList.add("ouvert");
   $$("[data-type-bloc]").forEach(b => b.onclick = () => {
-    const t = b.dataset.typeBloc, nb = {id: idCourt(), type: t, visible: true};
+    const t = b.dataset.typeBloc, nb = {id: idCourt(), type: t === "paiement" ? "lien" : t, visible: true};
+    if (t === "paiement") {  // un bouton « lien » relié à un produit
+      const pr = BQ.page.produits.find(x => x.prix) || BQ.page.produits[0];
+      if (!pr) { fermeModale(); BQ.onglet = "produits"; renduBoutique(); return toast("Crée d'abord ton produit : le bouton de paiement mènera vers lui", {duree: 5000}); }
+      Object.assign(nb, {produit: pr.id, titre: "Je le veux", en_avant: true});
+    }
     if (t === "capture") Object.assign(nb, {titre: "Reste en contact", texte: "Mes meilleurs conseils, directement dans ta boîte mail.", bouton: "Je m'inscris"});
     if (t === "produits") nb.titre = "Ma boutique";
     if (t === "kit") Object.assign(nb, {titre: "Kit média", texte: "Mes chiffres et collaborations"});
@@ -3704,6 +3717,7 @@ function lieChamps(z) {
     else if (x.dataset.r) p.reseaux[x.dataset.r] = x.value;
     else if (x.dataset.b) {
       const b = p.blocs[+x.dataset.b]; b[x.dataset.bk] = x.type === "checkbox" ? x.checked : x.value;
+      if (x.dataset.rerendu) return modifieBoutique(true);  // ex. bouton → produit : le champ « Adresse » disparaît
       const r = x.closest(".bt-bloc")?.querySelector(".res b"); if (r) r.textContent = resumeBloc(b) + (b.en_avant ? " ✨" : "");
     } else if (x.dataset.d) {
       const k = x.dataset.d, def = BQ.etat.options.defaut[k];

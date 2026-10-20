@@ -1328,7 +1328,8 @@ def boutique_image(pseudo, nom):
 def boutique_clic(pseudo, bid):
     uid, page = _vitrine(pseudo)
     b = next((x for x in page["blocs"] if x.get("id") == bid and x.get("type") == "lien"), None)
-    u = bq.url_sure((b or {}).get("url"))
+    pr = next((x for x in page["produits"] if b and x.get("id") == b.get("produit") and x.get("visible", True)), None)
+    u = f"/@{pseudo.lower()}/p/{pr['id']}?src=bouton" if pr else bq.url_sure((b or {}).get("url"))  # bouton → page de paiement
     if not u:
         abort(404)
     if session.get("uid") != uid:
