@@ -2398,7 +2398,8 @@ def admin_donnees():
                 "mrr": mrr, "cout_mois_usd": round(cout_mois, 2)},
         "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")), "banque": banque.active(),
                    "stripe": ab.stripe_actif(), "emails": emails.actif(), "demo": en_demo(), "url": url_site()},
-        "serveur": {"memoire_mo": __import__("ressources").memoire_mo(), **__import__("ressources").disque(DATA)},
+        "serveur": {"memoire_mo": __import__("ressources").memoire_mo(), **__import__("ressources").disque(DATA),
+                    "nettoyage": __import__("nettoyage").dernier()},
     })
 
 
@@ -2485,6 +2486,9 @@ def planificateur():
             envoie_syntheses()
             envoie_relances_boutique()
             envoie_relances_essai()
+            import nettoyage
+            if nettoyage.a_faire():
+                nettoyage.nettoie()
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(900)
