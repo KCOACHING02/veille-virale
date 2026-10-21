@@ -260,15 +260,33 @@ class IA:
         """
         if self._lot is not None and outil is OUTIL_ADAPTATION:  # traitement différé (voir adapte_tous_differe)
             return self._lot(contenu, max_tokens)
-        derniere = None
+        derniere, forcer = None, False
         for essai in range(3):
             try:
-                rep = self.client.messages.create(**self._params(outil, contenu, max_tokens, systeme, modele))
+                p = self._params(outil, contenu, max_tokens, systeme, modele)
+                if forcer:  # la réponse précédente était du texte libre : on impose l'outil
+                    p["tool_choice"] = {"type": "tool", "name": outil["name"]}
+                rep = self.client.messages.create(**p)
                 _compte(rep, modele or self.modele)
-                return self._lit_reponse(rep)
+                try:
+                    return self._lit_reponse(rep)
+                except ValueError:
+                    texte = "".join(getattr(b, "text", "") for b in rep.content)
+                    arret = getattr(rep, "stop_reason", "")
+                    print(f"[ia] {outil['name']} : réponse sans l'outil (arrêt : {arret}) : {texte[:400]!r}")
+                    if arret == "max_tokens":
+                        max_tokens = min(max_tokens * 2, 16000)  # réponse coupée : plus de place au prochain essai
+                    forcer = True
+                    raise
+            except ValueError as e:
+                derniere = e
+                time.sleep(1)
             except Exception as e:  # noqa: BLE001
                 derniere = e
                 bas = str(e).lower()
+                if forcer and "tool_choice" in bas:
+                    forcer = False  # ce modèle refuse l'outil imposé : on revient au choix libre
+                    continue
                 if any(x in bas for x in ("invalid x-api-key", "credit balance", "not supported", "invalid_request")):
                     break  # inutile de réessayer une erreur de configuration
                 if essai < 2:
@@ -694,8 +712,10 @@ def propose_comptes(cfg: dict, deja: list[str], plateforme: str = "Instagram", n
                 if plateforme == "TikTok" else
                 f"Propose {nombre} comptes Instagram publics, actifs, qui publient des Reels ou des carrousels à forte audience : ")
              + "la moitié dans cette niche et cette langue, l'autre moitié dans des niches voisines ou à l'international "
-             "dont les formats sont faciles à transposer. Donne uniquement des pseudos dont tu es sûr qu'ils existent"
-             + (" sur TikTok (le pseudo après le @ de tiktok.com/@…)." if plateforme == "TikTok" else "."))
+             "dont les formats sont faciles à transposer. Chaque compte sera ensuite vérifié automatiquement par une vraie collecte : "
+             "propose ceux que tu connais le mieux, sans commentaire ni avertissement, et remplis l'outil avec "
+             f"{nombre} comptes (le pseudo exact{', celui après le @ de tiktok.com/@…' if plateforme == 'TikTok' else ''}, sans @)."
+             )
     res = ia._appel(OUTIL_COMPTES, texte, max_tokens=1500, systeme=f"Tu es expert {plateforme} et veille de contenus viraux.")
     if res.get("erreur"):
         raise RuntimeError(res["erreur"])
