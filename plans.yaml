@@ -38,7 +38,7 @@ gratuit:
 
 createur:
   nom: "Créateur"
-  prix_mensuel: 19.90
+  prix_mensuel: 29.90
   analyses_par_mois: 8
   adaptations_par_mois: 50      # 4 veilles × 7 + ~22 à la demande
   comptes_surveilles: 10
