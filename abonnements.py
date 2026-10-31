@@ -492,6 +492,17 @@ def portail(u: dict, url_retour: str) -> str:
     return r.json()["url"]
 
 
+def _uid_stripe(abonnement: str | None, client: str | None) -> int:
+    """Retrouve la cliente sans les métadonnées (ex. changement de formule planifié par le portail Stripe)."""
+    with _db() as c:
+        for col, val in (("stripe_abonnement", abonnement), ("stripe_client", client)):
+            if val:
+                r = c.execute(f"SELECT id FROM utilisateurs WHERE {col}=?", (val,)).fetchone()
+                if r:
+                    return r["id"]
+    return 0
+
+
 def webhook(charge_utile: bytes, signature: str) -> str:
     """Vérifie la signature Stripe et met à jour l'abonnement du client."""
     secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -508,7 +519,7 @@ def webhook(charge_utile: bytes, signature: str) -> str:
             stripe_client=obj.get("customer"), stripe_abonnement=obj.get("subscription"))
         recompense_parrain(uid)
     elif typ in ("customer.subscription.updated", "customer.subscription.deleted"):
-        uid = int((obj.get("metadata") or {}).get("uid", 0))
+        uid = int((obj.get("metadata") or {}).get("uid", 0)) or _uid_stripe(obj.get("id"), obj.get("customer"))
         if uid:
             statut = {"active": "actif", "trialing": "actif", "past_due": "impaye", "unpaid": "impaye"}.get(obj["status"], "resilie")
             champs = {"statut": "resilie" if typ.endswith("deleted") else statut}
