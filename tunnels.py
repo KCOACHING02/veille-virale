@@ -146,6 +146,11 @@ def modeles() -> list[dict]:
     return [{"id": k, "nom": n, "description": d, "type": m["type"], "contenu": m} for k, (n, d, m) in MODELES.items()]
 
 
+def styles() -> list[dict]:
+    return [{"id": k, "nom": v["nom"], "groupe": v["groupe"], "fond": v["design"]["fond1"], "accent": v["design"]["accent"], "carte": v["design"]["bloc_fond"]}
+            for k, v in STYLES.items()]
+
+
 def nouveau(modele: str) -> dict | None:
     m = MODELES.get(modele)
     if not m:
@@ -173,6 +178,7 @@ def propre(t: dict, produits: set[str]) -> dict | None:
     of = t.get("offre") if isinstance(t.get("offre"), dict) else {}
     r = {"id": "".join(c for c in _s(t.get("id"), 12) if c.isalnum()) or secrets.token_hex(4), "type": t["type"],
          "titre": _s(t.get("titre"), 80) or "Mon tunnel", "publie": t.get("publie", True) is not False, "modele": _s(t.get("modele"), 30),
+         "style": t.get("style") if t.get("style") in STYLES else "",
          "accroche": {"surtitre": _s(ac.get("surtitre"), 60), "titre": _s(ac.get("titre"), 120), "titre_accent": _s(ac.get("titre_accent"), 120),
                       "texte": _s(ac.get("texte"), 400), "bouton": _s(ac.get("bouton"), 40) or "Commencer",
                       "puces": [_s(p, 40) for p in _liste(ac.get("puces"), 4) if _s(p, 40)]},
@@ -264,6 +270,14 @@ CSS = """
 .tn-offre{text-align:center}.tn-offre .prix{font:800 40px/1 var(--tf);margin:10px 0}.tn-offre .prix s{font-size:20px;opacity:.55;margin-right:8px}
 .tn-offre .garantie{font-size:13.5px;opacity:.8;margin-top:10px}
 .tn-offre img{width:100%;border-radius:calc(var(--rk) - 6px);margin-bottom:14px;aspect-ratio:16/10;object-fit:cover}
+/* Variantes de style */
+.v-halo .tn-tete{position:relative;isolation:isolate}
+.v-halo .tn-tete::before{content:"";position:absolute;left:50%;top:-30px;width:min(560px,120%);height:340px;transform:translateX(-50%);background:radial-gradient(closest-side,color-mix(in srgb,var(--a) 34%,transparent),transparent);z-index:-1;pointer-events:none}
+.v-cadre .tn-carte{border:1px solid color-mix(in srgb,var(--kt) 14%,transparent);box-shadow:none}
+.v-cadre .tn-items .ic{border:1px solid color-mix(in srgb,var(--a) 45%,transparent);background:color-mix(in srgb,var(--a) 10%,transparent)}
+.v-impact h1{text-transform:uppercase;letter-spacing:-.02em;line-height:1.02}
+.v-impact h1 em{font-style:normal;background:var(--a);color:var(--ac);padding:0 .14em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.v-doux .tn-carte{box-shadow:0 22px 44px -28px rgba(40,20,30,.35)}
 /* Quiz */
 .qz-etape[hidden]{display:none!important}
 .qz-barre{height:6px;border-radius:9px;background:color-mix(in srgb,var(--t) 14%,transparent);overflow:hidden;margin:6px 0 18px}
@@ -286,6 +300,36 @@ CSS = """
 .qz-actions li{counter-increment:a;padding-left:38px;position:relative}
 .qz-actions li::before{content:counter(a);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--a);color:var(--ac);display:grid;place-items:center;font-weight:800;font-size:14px}
 """
+
+
+# ------------------------------------------------------------
+#  Styles propres aux tunnels (couleurs, polices, effets), indépendants du thème de la boutique
+# ------------------------------------------------------------
+def _st(nom, groupe, fond, texte, carte, accent, titre, corps, variantes, fond2=None, sur=None, cadre="ombre", rayon=16):
+    sur = sur or ("#1A1A1A" if bq._clair(accent) else "#FFFFFF")
+    d = {"fond_type": "degrade" if fond2 else "uni", "fond1": fond, "fond2": fond2 or fond, "texte": texte, "bloc_fond": carte, "bloc_texte": texte if not bq._clair(carte) == bq._clair(texte) else ("#1A1A1A" if bq._clair(carte) else "#F5F1E8"),
+         "accent": accent, "bouton_fond": accent, "bouton_texte": sur, "bouton_ombre": accent, "police_titre": titre, "police_texte": corps,
+         "carte_cadre": cadre, "rayon": rayon, "bouton_style": "plein", "decor": "aucun"}
+    return {"nom": nom, "groupe": groupe, "design": d, "variantes": variantes}
+
+
+STYLES = {
+    "nuit_doree": _st("Nuit dorée", "Sombre", "#0B0B0D", "#F5F1E8", "#17171B", "#F2C14E", "Playfair Display", "Inter", "halo cadre"),
+    "minuit_rose": _st("Minuit rose", "Sombre", "#140A17", "#F8EEF3", "#1F1124", "#FF4F79", "Fraunces", "DM Sans", "halo cadre"),
+    "encre_neon": _st("Encre néon", "Sombre", "#0A0F1A", "#E8F1FF", "#121A2A", "#3DF2C4", "Space Grotesk", "Inter", "impact cadre", rayon=10),
+    "foret_nuit": _st("Forêt de nuit", "Sombre", "#0E1A15", "#ECF3EE", "#15241D", "#A8DDB0", "Cormorant Garamond", "Manrope", "halo cadre"),
+    "violet_electrique": _st("Violet électrique", "Sombre", "#24104F", "#FFFFFF", "#311A66", "#FFD23F", "Unbounded", "Inter", "halo impact", fond2="#3A1680"),
+    "creme_elegant": _st("Crème élégant", "Clair", "#F6F1E9", "#2A211C", "#FFFFFF", "#9A6B3F", "Cormorant Garamond", "Lora", "doux"),
+    "blanc_minimal": _st("Blanc minimal", "Clair", "#FFFFFF", "#111111", "#F5F5F5", "#111111", "Instrument Serif", "Inter", "cadre", cadre="contour", rayon=8),
+    "lavande": _st("Lavande", "Clair", "#F3EEFB", "#2B2140", "#FFFFFF", "#7B5CD6", "Fraunces", "Nunito", "doux"),
+    "sauge": _st("Sauge", "Clair", "#EEF2EA", "#1F2B22", "#FFFFFF", "#4F7A5A", "DM Serif Display", "DM Sans", "doux"),
+    "sable": _st("Sable chaud", "Clair", "#F4EDE4", "#2A211C", "#FFFFFF", "#B4693E", "Libre Baskerville", "Poppins", "doux"),
+    "rose_pop": _st("Rose pop", "Coloré", "#FFE4EC", "#2B0A16", "#FFFFFF", "#E6195C", "Archivo Black", "Poppins", "impact", rayon=12),
+    "citron": _st("Citron", "Coloré", "#FFF3B8", "#1A1A1A", "#FFFFFF", "#1A1A1A", "Bricolage Grotesque", "Manrope", "impact cadre", cadre="decale", rayon=6),
+    "ocean": _st("Océan", "Coloré", "#E4F1FB", "#0E2238", "#FFFFFF", "#1166CC", "Sora", "Inter", "doux"),
+    "terracotta": _st("Terracotta", "Coloré", "#F7E3D7", "#3A1D12", "#FFF8F3", "#C2502E", "Gloock", "Outfit", "doux"),
+    "peche": _st("Pêche", "Coloré", "#FFD9C2", "#3B1420", "#FFFFFF", "#D9415E", "Yeseva One", "Nunito", "doux", fond2="#FFC1D1", rayon=22),
+}
 
 
 def _sur(ac: dict) -> str:
@@ -320,8 +364,12 @@ def _offre(page: dict, pseudo: str, t: dict, avec_titre: bool = True) -> str:
 
 
 def rendu(page: dict, pseudo: str, t: dict, apercu: bool = False) -> str:
+    st = STYLES.get(t.get("style") or "")
+    if st:  # style propre au tunnel : remplace les couleurs et polices de la boutique
+        page = {**page, "design": bq.design_propre({**page["design"], **st["design"]})}
     corps = rendu_quiz(page, pseudo, t, apercu) if t["type"] == "quiz" else rendu_vente(page, pseudo, t)
-    corps = f'<style>{CSS}</style>{corps}{bq.badge(page)}'
+    variantes = " ".join("v-" + v for v in (st or {}).get("variantes", "").split())
+    corps = f'<style>{CSS}</style><div class="{variantes}">{corps}</div>{bq.badge(page)}'
     ac = t["accroche"]
     return bq.document(page, pseudo, corps, f'{ac.get("titre", "")} {ac.get("titre_accent", "")}'.strip() or page.get("nom") or pseudo,
                        ac.get("texte", "")[:160], apercu)

@@ -966,6 +966,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .tn-type:hover{border-color:var(--glow)}.tn-type .e{font-size:30px;grid-row:span 3}.tn-type b{font-size:17px}.tn-type p{margin:0;font-size:14.5px;color:var(--ink-2)}.tn-type small{color:var(--ink-3)}
 .tn-exemples{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;font-size:13.5px}
 .tn-exemples span{color:var(--ink-3)}.tn-exemples button{border:1px dashed var(--glow);background:transparent;color:var(--glow);border-radius:99px;padding:5px 12px;font:600 13px var(--sans,inherit);cursor:pointer}
+.tn-styles{flex-wrap:wrap;overflow:visible;justify-content:center;scroll-snap-type:none}
 .tn-groupe{margin-bottom:12px}.tn-groupe .bt-sous-titre{margin:6px 0 8px}
 .tn-rapide{background:var(--sunk);border-radius:12px;padding:10px 12px;margin-bottom:14px}.tn-rapide summary{cursor:pointer;font-weight:600;color:var(--glow)}.tn-rapide[open] summary{margin-bottom:10px}
 .tn-rapide input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
@@ -4232,6 +4233,28 @@ function lieChampsTunnel(z, t, rendu) {
 }
 const exemples = (liste) => `<div class="tn-exemples"><span>💡 Exemples :</span>${liste.map(([lib, val]) => `<button type="button" data-ex='${esc(JSON.stringify(val))}'>${esc(lib)}</button>`).join("")}</div>`;
 
+// Styles du tunnel : vignettes avec l'aperçu réel de la page
+function choixStyleTunnel(t) {
+  const st = BQ.etat.options.styles_tunnels || [], g = BQ.groupeStyle ||= "Tous";
+  const groupes = ["Tous", ...new Set(st.map(x => x.groupe))];
+  const liste = [{id: "", nom: "Comme ma boutique", groupe: "Tous"}, ...st].filter(x => g === "Tous" || x.groupe === g || !x.id);
+  return `<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${groupes.map(x => `<button type="button" data-gst="${x}" aria-pressed="${x === g}">${x}</button>`).join("")}</div>
+    <div class="bt-themes tn-styles">${liste.map(x => `<button type="button" class="bt-th" data-style="${x.id}" aria-pressed="${(t.style || "") === x.id}"><div class="mini" style="background:${x.fond || BQ.page.design.fond1.slice(0, 7)}"><iframe tabindex="-1" title="${esc(x.nom)}"></iframe></div>${esc(x.nom)}</button>`).join("")}</div>`;
+}
+function lieStyleTunnel(z, t, rendu) {
+  z.querySelectorAll("[data-gst]").forEach(b => b.onclick = () => { BQ.groupeStyle = b.dataset.gst; rendu(); });
+  z.querySelectorAll("[data-style]").forEach(b => b.onclick = () => { t.style = b.dataset.style;
+    z.querySelectorAll("[data-style]").forEach(x => x.setAttribute("aria-pressed", x === b)); modifieBoutique(false); });
+  const charge = async b => {
+    if (b.dataset.charge) return; b.dataset.charge = "1";
+    const h = await htmlApercu(contenuApercu({vue: "t:" + t.id, tunnels: [{...t, style: b.dataset.style}], design: {...BQ.page.design, apparition: false}}));
+    const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
+  };
+  const bs = z.querySelectorAll("[data-style]");
+  if (!("IntersectionObserver" in window)) return bs.forEach(charge);
+  const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { obs.unobserve(e.target); charge(e.target); } }), {rootMargin: "200px"});
+  bs.forEach(b => obs.observe(b));
+}
 // ---- Assistant pas à pas : créer un tunnel de vente
 const TYPES_TUNNEL_INFO = {
   quiz: {quand: "Ta visiteuse ne te connaît pas encore. Le quiz l'intrigue, lui donne un diagnostic utile et gratuit, récupère son e-mail, puis lui propose ton produit comme la suite logique.",
@@ -4264,6 +4287,8 @@ function etapesTunnel(t) {
           <button class="btn petit prim" id="tn-np">Créer ce produit</button><small class="aide" style="display:block;margin-top:6px">Tu ajouteras ensuite le fichier, le lien ou les créneaux dans l'onglet Produits.</small></details>`
         + ch("offre.titre", "Titre de l'offre") + ch("offre.texte", "Ce qu'elle obtient", {long: true}) + ch("offre.bouton", "Texte du bouton", {max: 40})
         + (quiz ? "" : ch("offre.garantie", "Garantie (facultatif)", {ph: "Satisfaite ou remboursée pendant 14 jours"})); }};
+  const design = {nom: "Ton design", style: true, pourquoi: "Maintenant que tes textes sont prêts, choisis l'allure de ta page. Chaque vignette montre ta vraie page avec ce style. Le sombre et doré fait premium, le clair rassure, le coloré attire l'œil en story.",
+    corps: () => choixStyleTunnel(t)};
   const fin = {nom: "C'est prêt", fin: true, pourquoi: "Ton tunnel a son propre lien. Il ne vend que si des visiteuses arrivent dessus : voici où le partager.",
     corps: () => `<div class="bt-url"><a href="${esc(urlTunnel(t))}" target="_blank" rel="noopener">${esc(urlTunnel(t).replace(/^https?:\/\//, ""))}</a><button class="btn petit prim" data-copier="${esc(urlTunnel(t))}">Copier</button></div>
       ${BQ.page.publie ? "" : '<p class="aide">⚠️ Ta boutique est en brouillon : publie-la (en haut) pour que le lien fonctionne.</p>'}
@@ -4286,7 +4311,7 @@ function etapesTunnel(t) {
     {nom: "L'e-mail", pourquoi: "Juste avant le résultat, c'est le moment où elle est la plus curieuse : c'est là qu'elle laisse le plus volontiers son adresse. Même si elle n'achète pas aujourd'hui, tu pourras lui écrire.",
       corps: () => `<label class="bt-interr"><span><b>Demander son e-mail avant le résultat</b><br><small class="aide">Conseillé. Les adresses arrivent dans tes inscrits.</small></span><input type="checkbox" data-tp="email.actif" data-bool ${t.email.actif ? "checked" : ""}></label>`
         + ch("email.titre", "Titre") + ch("email.texte", "Texte", {long: true}) + ch("email.bouton", "Bouton", {max: 40})},
-    offre, fin];
+    design, offre, fin];
   return [accroche,
     {nom: "Son problème", pourquoi: "Elle doit se dire « c'est exactement moi ». Écris ses blocages avec ses mots, comme elle te les raconterait en message privé.",
       corps: () => ch("probleme.titre", "Titre", {ph: "Tu te reconnais ?"}) + liste("probleme.items", (x, i, k) => `<input data-tp="${k}" value="${esc(x)}" maxlength="200" aria-label="Blocage ${i + 1}">`, "", 12, "Un blocage")},
@@ -4298,7 +4323,7 @@ function etapesTunnel(t) {
         + `<p class="bt-sous-titre">Témoignages</p>` + liste("temoignages.items", (x, i, k) => `<textarea data-tp="${k}.texte" placeholder="Ce qu'elle a dit" maxlength="500">${esc(x.texte)}</textarea><input data-tp="${k}.nom" value="${esc(x.nom)}" placeholder="Prénom (et ville ou métier)" maxlength="60">`, {texte: "", nom: ""}, 10, "Un témoignage")},
     {nom: "Ses questions", pourquoi: "Chaque question sans réponse est une raison de ne pas acheter. Reprends celles qu'on te pose en message privé : le temps, le prix, « et si ça ne marche pas pour moi ? ».",
       corps: () => ch("faq.titre", "Titre") + liste("faq.items", (x, i, k) => `<input data-tp="${k}.q" value="${esc(x.q)}" placeholder="Question" maxlength="200"><textarea data-tp="${k}.r" placeholder="Réponse" maxlength="800">${esc(x.r)}</textarea>`, {q: "", r: ""}, 12, "Une question")},
-    offre, fin];
+    design, offre, fin];
 }
 function assistantTunnel(z) {
   const A = BQ.tnAssist, p = BQ.page, modeles = BQ.etat.options.modeles_tunnels || [];
@@ -4333,6 +4358,7 @@ function assistantTunnel(z) {
     <div class="bt-pied">${A.etape ? '<button class="btn" id="tn-prec">← Retour</button>' : "<span></span>"}
       ${e.fin ? `<span class="bt-rangee"><button class="btn" id="tn-detail">Modifier en détail</button><button class="btn prim" id="tn-publier">${t.publie ? "Terminer" : "Mettre en ligne 🚀"}</button></span>` : '<button class="btn prim" id="tn-suiv">Continuer →</button>'}</div></div>`;
   lieChampsTunnel(z, t, rendu);
+  if (e.style) lieStyleTunnel(z, t, rendu);
   $("#tn-quitter").onclick = quitter;
   $("#tn-prec") && ($("#tn-prec").onclick = () => { A.etape--; rendu(); scrollTo({top: 0, behavior: "smooth"}); });
   $("#tn-suiv") && ($("#tn-suiv").onclick = () => { A.etape++; rendu(); scrollTo({top: 0, behavior: "smooth"}); });
@@ -4424,6 +4450,7 @@ function editeTunnel(z, t) {
       ${prods.length ? "" : '<small class="aide">Crée d\'abord un produit dans l\'onglet Produits.</small>'}</div>`
     + ch("offre.titre", "Titre") + ch("offre.texte", "Texte", {long: true}) + ch("offre.bouton", "Bouton", {max: 40})
     + (quiz ? "" : ch("offre.garantie", "Garantie (facultatif)", {ph: "Satisfaite ou remboursée pendant 14 jours"})), true);
+  html += sec("🎨 Design", "L'allure de cette page : couleurs, polices et effets. Chaque vignette montre ta page avec ce style.", `<div id="tn-zone-style">${choixStyleTunnel(t)}</div>`);
   html += `<button class="btn" id="tn-suppr" style="width:100%;justify-content:center;margin-top:6px;color:var(--warn)">Supprimer ce tunnel</button>`;
   z.innerHTML = html;
   const maj = (rendu) => { modifieBoutique(rendu); };
@@ -4433,6 +4460,8 @@ function editeTunnel(z, t) {
     if (x.dataset.num !== undefined) v = +v || 0;
     fixe(t, k, v); maj(k === "titre" && false);
   };
+  const zs = $("#tn-zone-style"), rStyle = () => { zs.innerHTML = choixStyleTunnel(t); lieStyleTunnel(zs, t, rStyle); };
+  zs.closest("details").addEventListener("toggle", function f() { if (this.open) { lieStyleTunnel(zs, t, rStyle); this.removeEventListener("toggle", f); } });
   $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true); };
   $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué"; sauveBoutique(true); };
   z.querySelectorAll("[data-tadd]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tadd) || []; L.push(JSON.parse(b.dataset.modele)); fixe(t, b.dataset.tadd, L); maj(true); });

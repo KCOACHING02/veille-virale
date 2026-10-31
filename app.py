@@ -1672,7 +1672,7 @@ def boutique_kit_media(pseudo, nom):
 
 # ---- API d'édition (application)
 def _options_boutique() -> dict:
-    return {"modeles_tunnels": tunnels.modeles(), "themes": [{"id": k, "nom": t["nom"], "ambiance": t["ambiance"], "design": t["design"]} for k, t in bq.THEMES.items()],
+    return {"modeles_tunnels": tunnels.modeles(), "styles_tunnels": tunnels.styles(), "themes": [{"id": k, "nom": t["nom"], "ambiance": t["ambiance"], "design": t["design"]} for k, t in bq.THEMES.items()],
             "ambiances": bq.AMBIANCES, "polices": [{"nom": k, "categorie": v[2]} for k, v in bq.POLICES.items()],
             "polices_texte": bq.POLICES_TEXTE, "entetes": bq.ENTETES, "formes": bq.FORMES, "fonds": bq.FONDS, "motifs": bq.MOTIFS,
             "boutons": bq.BOUTONS, "animations": bq.ANIMATIONS, "vues_produits": bq.VUES_PRODUITS,
