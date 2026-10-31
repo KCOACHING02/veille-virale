@@ -694,6 +694,8 @@ a.btn{text-decoration:none}
 .conso{display:grid;gap:12px;max-width:520px}
 .conso .barre-ind{height:8px}
 .conso label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.compte-mobile{display:none}
+@media (max-width:860px){.compte-mobile{display:flex;flex-direction:column;gap:10px;align-items:stretch;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-2);font-size:14px}.compte-mobile .btn{justify-content:center;color:var(--warn)}}
 .utilisateur{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:10px;color:var(--ink-2)}
 .utilisateur .lien-admin{flex-basis:100%;margin:0}
 .utilisateur button{border:0;background:none;color:var(--ink-3);cursor:pointer;text-decoration:underline;font-size:12.5px;padding:0}
@@ -3240,7 +3242,8 @@ async function renduParametres() {
     <label class="interrupteur"><input type="checkbox" id="p-auto" ${S.etat.utilisateur.veille_auto ? "checked" : ""}><span><b>Veille automatique chaque lundi matin</b><br><span style="color:var(--ink-3);font-size:13.5px">${S.etat.abonnement.veille_auto || S.etat.abonnement.plan !== "essai" ? "Ton planning de la semaine est prêt à ton réveil." : "Incluse dans les formules payantes."}</span></span></label>
     <label class="interrupteur"><input type="checkbox" id="p-synthese" ${p.synthese ? "checked" : ""}><span><b>Récapitulatif chaque lundi par e-mail</b><br><span style="color:var(--ink-3);font-size:13.5px">Ta veille, tes publications et ta boutique de la semaine en un coup d'œil.</span></span></label>
     <div class="panneau" style="margin-top:16px" id="p-telephone"></div>
-    <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire le démarrage rapide</button></p>`;
+    <p style="margin-top:16px"><button class="btn" onclick="ouvreAssistant(0)">Refaire le démarrage rapide</button></p>
+    <div class="compte-mobile"><span>Connectée : <b>${esc(S.etat.utilisateur.email)}</b></span><button class="btn" onclick="deconnexion()">Se déconnecter</button></div>`;
   $("#p-synthese").onchange = async e => { await api("/api/profil", {method: "PUT", body: {synthese: e.target.checked}}); toast(e.target.checked ? "Récapitulatif activé" : "Récapitulatif désactivé"); };
   renduTelephone();
   $$("[data-param]").forEach(b => b.onclick = () => ouvreAssistant(b.dataset.param, true));
