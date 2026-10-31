@@ -3558,7 +3558,8 @@ function etapesBoutique(A) {
         <li>✓ <b>${esc(A.nom)}</b>${A.bio ? " · " + esc(A.bio.slice(0, 60)) + (A.bio.length > 60 ? "…" : "") : ""}</li>
         <li>✓ Adresse : <b>${esc(hote)}/@${esc(A.pseudo)}</b></li>
         <li>✓ ${OBJECTIFS_BQ.filter(([k]) => o(k)).map(([, e, t]) => e + " " + t).join(" · ")}</li>
-        ${produitAssistant(A) ? `<li>✓ Produit : <b>${esc(A.produit.titre)}</b> · ${euros(produitAssistant(A).prix)}</li>` : ""}</ul>`});
+        ${produitAssistant(A) ? `<li>✓ Produit : <b>${esc(A.produit.titre)}</b> · ${euros(produitAssistant(A).prix)}</li>` : ""}</ul>
+        ${A.relance ? '<p class="aide" style="margin-top:12px">Tes blocs et ton design actuels seront remplacés par ceux préparés ici. Tes produits, tes inscrits, tes ventes et tes tunnels ne bougent pas. Tu pourras annuler juste après.</p>' : ""}`});
   return E;
 }
 
@@ -3569,6 +3570,7 @@ function renduAssistantBoutique(el) {
   const e = E[A.etape], n = E.length;
   el.innerHTML = `<div class="bt-assist2"><div class="bt-assist">
       <div class="tn-tete-as"><b>Ta boutique en lien dans la bio</b><span class="aide">Étape ${A.etape + 1} sur ${n} · ${esc(e.nom)}</span></div>
+      ${A.relance ? '<button class="btn petit" id="as-quitter" style="margin-bottom:10px">← Revenir à ma boutique sans rien changer</button>' : ""}
       <div class="tn-prog"><i style="width:${(A.etape + 1) / n * 100}%"></i></div>
       <section class="bt-sec"><h3>${e.fin ? "🎉 " : ""}${esc(e.nom)}</h3><p class="tn-pourquoi">${e.pourquoi}</p>${e.corps()}</section>
       <div class="bt-pied">${A.etape ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}
@@ -3588,6 +3590,7 @@ function renduAssistantBoutique(el) {
   $("#bt-fermer-ap").onclick = fermeAp; $("#bt-fermer-x").onclick = fermeAp;
   $("#bt-plein").addEventListener("pointerup", ev => { if (ev.target.id === "bt-plein") fermeAp(); });
   $("#as-retour") && ($("#as-retour").onclick = () => aller(A.etape - 1));
+  $("#as-quitter") && ($("#as-quitter").onclick = () => { BQ.assist = null; BQ.htmlAssist = null; renduBoutique(); });
 
   // Champs
   $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); });
@@ -3656,12 +3659,28 @@ function renduAssistantBoutique(el) {
         if (pr) corps.produits = [...(BQ.page?.produits || []).filter(x => x.id !== pr.id), pr];
         if (o("marques")) corps.kit = {...(BQ.page?.kit || {}), actif: true};
         await api("/api/boutique", {method: "PUT", body: corps});
-        await chargeBoutique(); A.fini = true; BQ.htmlAssist = null; return rendu();
+        await chargeBoutique(); A.fini = true; BQ.htmlAssist = null; rendu();
+        if (A.relance && BQ.avantAssist) { const av = BQ.avantAssist; BQ.avantAssist = null;
+          toastAnnuler("Ta boutique a été refaite", async () => { await api("/api/boutique", {method: "PUT", body: av}); await chargeBoutique(); BQ.assist = null; renduBoutique(); }, () => {}, 15000); }
+        return;
       }
       aller(A.etape + 1);
     } catch (er) { toast(er.message); b.disabled = false; }
   };
   function o(k) { return A.objectifs.includes(k); }
+}
+// Relancer la création pas à pas sur une boutique existante (pré-remplie ; annulable après publication)
+function relanceAssistantBoutique() {
+  const p = BQ.page, d = p.design, types = new Set(p.blocs.map(b => b.type));
+  const liens = p.blocs.filter(b => b.type === "lien" && !b.produit).slice(0, 6).map(b => ({titre: b.titre || "", url: b.url || ""}));
+  BQ.avantAssist = {nom: p.nom, bio: p.bio, photo: p.photo, reseaux: p.reseaux, blocs: p.blocs, design: d, kit: p.kit};
+  BQ.assist = {etape: 0, relance: true, pseudo: BQ.etat.pseudo, nom: p.nom || "", bio: p.bio || "", photo: p.photo || "",
+    reseaux: {instagram: p.reseaux?.instagram || "", tiktok: p.reseaux?.tiktok || ""},
+    objectifs: [types.has("produits") || types.has("produit") ? "vendre" : null, types.has("capture") ? "emails" : null, types.has("kit") ? "marques" : null, liens.length ? "liens" : null].filter(Boolean),
+    palettes: null, theme: BQ.etat.options.themes.some(t => t.id === d.theme) ? d.theme : "sable", palette: null, mep: d.mise_en_page || "colonne",
+    rdv: {titre: "Réserve ton appel découverte", url: ""}, liens: liens.length ? liens : [{titre: "", url: ""}, {titre: "", url: ""}], produit: {titre: "", prix: ""}};
+  if (!BQ.assist.objectifs.length) BQ.assist.objectifs = ["liens"];
+  BQ.htmlAssist = null; renduBoutique(); scrollTo({top: 0});
 }
 function bravoBoutique(el) {
   const url = BQ.etat.url, A = BQ.assist || {objectifs: []};
@@ -3734,6 +3753,7 @@ function renduEditeur(el) {
     <div class="bt-haut">
       <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button><button class="btn petit" id="bt-qr" title="QR code">QR</button></div>
       <label class="bt-publie"><input type="checkbox" id="bt-publie" ${p.publie ? "checked" : ""}><span>${p.publie ? "En ligne" : "Brouillon"}</span></label>
+      <button class="btn petit prim" id="bt-guide" type="button">✨ Création pas à pas</button>
       <label class="bt-mode" title="Afficher toutes les options"><input type="checkbox" id="bt-avance" ${BQ.avance ? "checked" : ""}><span>Mode avancé</span></label>
       <span class="bt-statut" id="bt-statut"></span>
     </div>
@@ -3749,6 +3769,7 @@ function renduEditeur(el) {
     $(".bt-url .pastille").classList.toggle("off", !p.publie); sauveBoutique(true); toast(p.publie ? "Ta page est en ligne" : "Ta page est masquée"); };
   $("#bt-qr").onclick = ouvreQR;
   $("#bt-avance").onchange = e => basculeAvance(e.target.checked);
+  $("#bt-guide").onclick = () => relanceAssistantBoutique();
   $("#bt-voir").onclick = () => {
     $("#bt-ap2").srcdoc = BQ.html; $("#bt-plein").classList.add("ouvert"); document.documentElement.classList.add("sans-defilement");
     pousseHistorique({apercuBoutique: 1});  // le geste « retour » de l'iPhone ferme l'aperçu au lieu de quitter la page
