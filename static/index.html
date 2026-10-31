@@ -955,6 +955,29 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-paires{display:grid;gap:8px}
 .bt-paire{display:grid;grid-template-columns:1fr 120px 34px;gap:8px}
 .bt-paire input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
+/* Tunnels de vente */
+.tn-modeles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tn-modele{text-align:left;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;cursor:pointer;color:var(--ink);font:inherit}
+.tn-modele:hover{border-color:var(--glow)}
+.tn-modele .e{font-size:24px;grid-row:span 2}.tn-modele b{font-size:15px}.tn-modele small{color:var(--ink-3);font-size:13px}
+.tn-barre{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.tn-sec-ed summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.tn-sec-ed summary::-webkit-details-marker{display:none}
+.tn-sec-ed summary::after{content:"▾";color:var(--ink-3);transition:transform .15s}.tn-sec-ed[open] summary::after{transform:rotate(180deg)}
+.tn-sec-ed summary h3{margin:0}
+.tn-sec-ed[open] summary{margin-bottom:10px}
+.tn-liste{display:grid;gap:8px;margin-bottom:8px}
+.tn-el{display:grid;grid-template-columns:1fr 34px;gap:8px;align-items:start;background:var(--sunk);border-radius:12px;padding:10px}
+.tn-el-corps{display:grid;gap:6px;min-width:0}
+.tn-el input,.tn-el textarea,.tn-el select{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px;font:inherit;color:var(--ink)}
+.tn-el textarea{min-height:60px;resize:vertical}
+.tn-el .tn-el{background:var(--surface)}
+.tn-q{display:grid;gap:8px}.tn-q label select{width:auto;margin-left:6px}
+.tn-rep{display:grid;grid-template-columns:1fr 90px;gap:6px}
+.tn-promo .liste-essai{margin:10px 0}
+.bt-sec .champ textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink)}
+.bt-sec .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:860px){.bt-sec .duo{grid-template-columns:1fr}}
 /* Parcours de création */
 .bt-assist2{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:26px;max-width:1140px;margin:0 auto;align-items:start}
 .bt-assist2 > .bt-assist{max-width:none}
@@ -3602,7 +3625,7 @@ function themeApplique(design, id) {
 const paletteDesign = p => Object.fromEntries(Object.entries(p).filter(([k]) => k !== "nom"));
 const paletteHTML = (p, i, actif) => `<button class="bt-pal" data-pal="${i}" aria-pressed="${!!actif}" style="${actif ? "border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)" : ""}"><i>${[p.fond1, p.fond2, p.bouton_fond, p.texte, p.accent].map(c => `<b style="background:${c.slice(0, 7)}"></b>`).join("")}</i>${esc(p.nom)}</button>`;
 function contenuApercu(extra = {}) {
-  const p = BQ.page; return {nom: p.nom, bio: p.bio, photo: p.photo, couverture: p.couverture, reseaux: p.reseaux, blocs: p.blocs, produits: p.produits, design: p.design, kit: p.kit, ...extra};
+  const p = BQ.page; return {nom: p.nom, bio: p.bio, photo: p.photo, couverture: p.couverture, reseaux: p.reseaux, blocs: p.blocs, produits: p.produits, design: p.design, kit: p.kit, tunnels: p.tunnels, ...extra};
 }
 async function htmlApercu(corps) {
   const r = await fetch("/api/boutique/apercu", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(corps)});
@@ -3626,7 +3649,7 @@ function remplitThemes(zone, ambiance, actif, palette) {
 }
 
 // ---------------------------------------------------------------- Éditeur
-const ONGLETS_BQ = [["contenu", "Contenu"], ["design", "Design"], ["produits", "Produits"], ["emails", "E-mails"], ["kit", "Kit média"], ["stats", "Statistiques"]];
+const ONGLETS_BQ = [["contenu", "Contenu"], ["design", "Design"], ["produits", "Produits"], ["tunnels", "Tunnels"], ["emails", "E-mails"], ["kit", "Kit média"], ["stats", "Statistiques"]];
 const ONGLETS_AVANCES = ["emails", "kit"];
 // Mode simple par défaut : l'essentiel seulement. Le mode avancé (mémorisé dans le navigateur) montre toutes les options.
 BQ.avance = (() => { try { return localStorage.getItem("bt-avance") === "1"; } catch { return false; } })();
@@ -3653,7 +3676,7 @@ function renduEditeur(el) {
     <button class="bt-flottant" id="bt-voir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button>
     <div class="bt-plein" id="bt-plein" role="dialog" aria-modal="true" aria-label="Aperçu de ta boutique"><div class="barre"><b>Aperçu de ta boutique</b><button class="ferme-x" id="bt-fermer-x" type="button" aria-label="Fermer l'aperçu">✕</button></div><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap" type="button">Fermer l'aperçu</button></div>`;
   $$("[data-onglet]").forEach(b => b.onclick = () => { BQ.onglet = b.dataset.onglet; $$("[data-onglet]").forEach(x => x.setAttribute("aria-pressed", x === b));
-    BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page"; renduOnglet(); apercu(); });
+    BQ.vueAp = BQ.onglet === "kit" ? "kit" : BQ.onglet === "tunnels" && BQ.tunnelId ? "t:" + BQ.tunnelId : "page"; renduOnglet(); apercu(); });
   $("#bt-publie").onchange = e => { p.publie = e.target.checked; e.target.nextElementSibling.textContent = p.publie ? "En ligne" : "Brouillon";
     $(".bt-url .pastille").classList.toggle("off", !p.publie); sauveBoutique(true); toast(p.publie ? "Ta page est en ligne" : "Ta page est masquée"); };
   $("#bt-qr").onclick = ouvreQR;
@@ -3677,6 +3700,7 @@ function navApercu() {
   if (BQ.page.kit?.actif !== false) vues.push(["kit", "Kit média"]);
   const prod = BQ.vueAp.startsWith("p:") ? BQ.vueAp : null;
   if (prod) vues.push([prod, "Produit"]);
+  if (BQ.vueAp.startsWith("t:")) vues.push([BQ.vueAp, "Tunnel"]);
   n.innerHTML = vues.map(([v, t]) => `<button aria-pressed="${v === BQ.vueAp}" data-vueap="${v}">${t}</button>`).join("");
   n.querySelectorAll("[data-vueap]").forEach(b => b.onclick = () => { BQ.vueAp = b.dataset.vueap; apercu(true); });
 }
@@ -3722,7 +3746,7 @@ function sauveBoutique(immediat) {
 function renduOnglet() {
   const z = $("#bt-panneau"); if (!z) return;
   const y = window.scrollY;
-  ({contenu: ongletContenu, design: ongletDesign, produits: ongletProduits, emails: ongletEmails, kit: ongletKit, stats: ongletStats})[BQ.onglet](z);
+  ({contenu: ongletContenu, design: ongletDesign, produits: ongletProduits, tunnels: ongletTunnels, emails: ongletEmails, kit: ongletKit, stats: ongletStats})[BQ.onglet](z);
   window.scrollTo(0, y);
 }
 
@@ -4164,6 +4188,118 @@ const TYPES_PRODUIT = {guide: "📘 Guide", checklist: "✅ Checklist", template
 const JOURS_COURTS = ["L", "M", "M", "J", "V", "S", "D"];
 
 // ---- Onglet Produits
+// ---- Onglet Tunnels (formules payantes) : quiz-audit noté, page de vente
+const TYPES_TUNNEL = {quiz: ["🎯", "Quiz-audit noté"], vente: ["📄", "Page de vente"]};
+const urlTunnel = t => `${BQ.etat.url}/t/${t.id}`;
+function chemin(o, p) { return p.split(".").reduce((x, k) => x?.[k], o); }
+function fixe(o, p, v) { const ks = p.split("."), d = ks.pop(); ks.reduce((x, k) => x[k] ??= {}, o)[d] = v; }
+function ongletTunnels(z) {
+  const p = BQ.page; p.tunnels ||= [];
+  if (!BQ.etat.tunnels_ok) {
+    z.innerHTML = `<section class="bt-sec tn-promo"><h3>🎯 Tunnels de vente</h3>
+      <p>Transforme tes visiteuses en clientes avec une page pensée pour vendre :</p>
+      <ul class="liste-essai"><li><b>Quiz-audit noté</b> : quelques questions, une note sur 100 par critère, son point bloquant… puis ton offre.</li>
+      <li><b>Page de vente</b> : promesse, bénéfices, contenu, FAQ et bouton de paiement.</li></ul>
+      <p class="aide">Modèles déjà rédigés, à adapter en quelques minutes. Réservé aux formules payantes.</p>
+      <button class="btn prim" id="tn-debloque">${essaiDispo() ? `Essayer ${S.etat.abonnement.essai_jours} jours gratuitement` : "Voir les formules"}</button></section>`;
+    $("#tn-debloque").onclick = () => essaiDispo() ? proposeEssai("Les tunnels de vente sont inclus dans toutes les formules payantes, et dans l'essai.") : va("abonnement");
+    return;
+  }
+  const t = p.tunnels.find(x => x.id === BQ.tunnelId);
+  if (t) return editeTunnel(z, t);
+  BQ.tunnelId = null;
+  const st = BQ.etat.tunnels_stats || {};
+  const modeles = BQ.etat.options.modeles_tunnels || [];
+  z.innerHTML = `
+    <section class="bt-sec"><h3>Tes tunnels de vente</h3><p class="aide">Une page à part, avec son propre lien, qui mène vers un de tes produits. Partage-la en story, en bio ou en réponse à un mot-clé.</p>
+      <div class="bt-prods">${p.tunnels.map(x => { const s = st[x.id] || {}; const [ic, nom] = TYPES_TUNNEL[x.type];
+        return `<div class="tn-ligne"><button class="bt-prod" data-tn="${x.id}"><span class="vig">${ic}</span>
+          <span><b>${esc(x.titre)}</b><span class="meta"><span>${nom}</span><span>👁 ${s.vues || 0}</span>${x.type === "quiz" ? `<span>✉️ ${s.emails || 0}</span>` : ""}<span>🛒 ${s.clics || 0}</span>${x.publie ? "" : "<span>Masqué</span>"}${x.offre?.produit ? "" : "<span>⚠️ Aucun produit</span>"}</span></span>
+          <span aria-hidden="true" style="color:var(--ink-3)">›</span></button></div>`; }).join("") || '<div class="vide" style="padding:16px;text-align:center;color:var(--ink-3)">Pas encore de tunnel. Choisis un modèle ci-dessous.</div>'}</div></section>
+    <section class="bt-sec"><h3>Créer un tunnel</h3><p class="aide">Chaque modèle est déjà rédigé : tu adaptes les textes à ta niche et tu choisis le produit à vendre.</p>
+      <div class="tn-modeles">${modeles.map(m => `<button class="tn-modele" data-modele="${m.id}"><span class="e">${TYPES_TUNNEL[m.type][0]}</span><b>${esc(m.nom)}</b><small>${esc(m.description)}</small></button>`).join("")}</div></section>`;
+  z.querySelectorAll("[data-tn]").forEach(b => b.onclick = () => { BQ.tunnelId = b.dataset.tn; BQ.vueAp = "t:" + BQ.tunnelId; renduOnglet(); apercu(true); });
+  z.querySelectorAll("[data-modele]").forEach(b => b.onclick = () => {
+    const m = modeles.find(x => x.id === b.dataset.modele);
+    const nt = {...structuredClone(m.contenu), id: idCourt(), publie: true, modele: m.id};
+    const prod = p.produits.find(x => x.visible !== false && x.prix) || p.produits.find(x => x.visible !== false);
+    if (prod) nt.offre.produit = prod.id;
+    p.tunnels.push(nt); BQ.tunnelId = nt.id; BQ.vueAp = "t:" + nt.id;
+    modifieBoutique(true); toast("Tunnel créé : adapte les textes à ta niche");
+  });
+  if (BQ.vueAp.startsWith("t:")) { BQ.vueAp = "page"; apercu(true); }
+}
+function editeTunnel(z, t) {
+  const p = BQ.page, quiz = t.type === "quiz";
+  const ch = (k, lab, opt = {}) => { const v = chemin(t, k) ?? ""; const id = "tn-" + k.replace(/\./g, "-");
+    return `<div class="champ"><label for="${id}">${lab}</label>${opt.long ? `<textarea id="${id}" data-tp="${k}" maxlength="${opt.max || 400}" style="min-height:${opt.h || 70}px">${esc(v)}</textarea>`
+      : `<input id="${id}" data-tp="${k}" value="${esc(v)}" maxlength="${opt.max || 120}" ${opt.ph ? `placeholder="${esc(opt.ph)}"` : ""}>`}${opt.aide ? `<small class="aide">${opt.aide}</small>` : ""}</div>`; };
+  const liste = (k, rendu, ajout, max, libelle) => { const L = chemin(t, k) || [];
+    return `<div class="tn-liste">${L.map((x, i) => `<div class="tn-el"><div class="tn-el-corps">${rendu(x, i, `${k}.${i}`)}</div><button class="icone-btn" data-tdel="${k}" data-i="${i}" aria-label="Retirer">✕</button></div>`).join("")}</div>
+      ${L.length < max ? `<button class="btn petit" data-tadd="${k}" data-modele='${esc(JSON.stringify(ajout))}'>+ ${libelle}</button>` : ""}`; };
+  const prods = p.produits.filter(x => x.visible !== false);
+  const sec = (titre, aide, corps, ouvert) => `<details class="bt-sec tn-sec-ed" ${ouvert ? "open" : ""}><summary><h3>${titre}</h3></summary>${aide ? `<p class="aide">${aide}</p>` : ""}${corps}</details>`;
+  let html = `<div class="tn-barre"><button class="btn petit" id="tn-retour">← Mes tunnels</button>
+      <label class="bt-publie"><input type="checkbox" id="tn-publie" ${t.publie ? "checked" : ""}><span>${t.publie ? "En ligne" : "Masqué"}</span></label></div>
+    <section class="bt-sec"><div class="champ"><label for="tn-titre">Nom du tunnel (pour toi)</label><input id="tn-titre" data-tp="titre" value="${esc(t.titre)}" maxlength="80"></div>
+      <div class="bt-url" style="margin-top:4px"><a href="${esc(urlTunnel(t))}" target="_blank" rel="noopener">${esc(urlTunnel(t).replace(/^https?:\/\//, ""))}</a><button class="btn petit prim" data-copier="${esc(urlTunnel(t))}">Copier</button></div>
+      ${BQ.page.publie ? "" : '<p class="aide" style="margin:8px 0 0">⚠️ Ta boutique est en brouillon : publie-la pour que ce lien fonctionne.</p>'}</section>`;
+  html += sec("1. L'accroche", "Le haut de la page : ce qui donne envie de continuer.",
+    ch("accroche.surtitre", "Petit texte au-dessus", {max: 60}) + `<div class="duo">${ch("accroche.titre", "Titre")}${ch("accroche.titre_accent", "Suite du titre, mise en valeur")}</div>`
+    + ch("accroche.texte", "Sous-titre", {long: true}) + ch("accroche.bouton", "Texte du bouton", {max: 40})
+    + (quiz ? `<p class="bt-sous-titre">Réassurances sous le bouton</p>` + liste("accroche.puces", (x, i, k) => `<input data-tp="${k}" value="${esc(x)}" maxlength="40" aria-label="Réassurance ${i + 1}">`, "", 4, "Une réassurance") : ""), true);
+  if (quiz) {
+    html += sec("2. Ce qu'elle va recevoir", "Les promesses affichées avant le quiz.", ch("promesse.titre", "Titre")
+      + liste("promesse.items", (x, i, k) => `<input data-tp="${k}.titre" value="${esc(x.titre)}" placeholder="Titre" maxlength="60"><input data-tp="${k}.texte" value="${esc(x.texte)}" placeholder="Détail" maxlength="200">`, {titre: "", texte: ""}, 6, "Une promesse"));
+    html += sec("3. Les critères notés", "Chaque critère est noté sur 20. Le conseil s'affiche quand c'est le point bloquant ou une action prioritaire.",
+      liste("piliers", (x, i, k) => `<input data-tp="${k}.nom" value="${esc(x.nom)}" placeholder="Nom du critère" maxlength="40"><textarea data-tp="${k}.conseil" placeholder="Le conseil à donner si ce critère est faible" maxlength="400">${esc(x.conseil)}</textarea>`, {nom: "", conseil: ""}, 6, "Un critère"));
+    const opts = (sel) => t.piliers.map((x, j) => `<option value="${j}" ${+sel === j ? "selected" : ""}>${esc(x.nom || "Critère " + (j + 1))}</option>`).join("");
+    html += sec(`4. Les questions (${t.questions.length})`, "Chaque réponse rapporte de 0 (à améliorer) à 4 points (parfait). Vise 8 à 12 questions : au-delà, on abandonne.",
+      liste("questions", (q, i, k) => `<div class="tn-q"><b>Question ${i + 1}</b><textarea data-tp="${k}.texte" maxlength="200" style="min-height:52px">${esc(q.texte)}</textarea>
+        <label class="aide">Critère noté <select data-tp="${k}.pilier" data-num>${opts(q.pilier)}</select></label>
+        ${liste(`${k}.reponses`, (a, j, k2) => `<div class="tn-rep"><input data-tp="${k2}.texte" value="${esc(a.texte)}" placeholder="Réponse" maxlength="120"><select data-tp="${k2}.points" data-num aria-label="Points">${[0, 1, 2, 3, 4].map(n => `<option value="${n}" ${+a.points === n ? "selected" : ""}>${n} pt${n > 1 ? "s" : ""}</option>`).join("")}</select></div>`, {texte: "", points: 2}, 6, "Une réponse")}</div>`,
+        {texte: "", pilier: 0, reponses: [{texte: "Oui", points: 4}, {texte: "Parfois", points: 2}, {texte: "Non", points: 0}]}, 20, "Une question"));
+    html += sec("5. L'e-mail", "Juste avant le résultat. Les adresses arrivent dans tes inscrits (onglet E-mails).",
+      `<label class="bt-interr"><span><b>Demander l'e-mail avant le résultat</b></span><input type="checkbox" data-tp="email.actif" data-bool ${t.email.actif ? "checked" : ""}></label>`
+      + ch("email.titre", "Titre") + ch("email.texte", "Texte", {long: true}) + ch("email.bouton", "Bouton", {max: 40}));
+    html += sec("6. Les niveaux de résultat", "Le message affiché selon la note. « À partir de » : note minimale sur 100.",
+      liste("niveaux", (x, i, k) => `<div class="duo"><label class="aide">À partir de <input type="number" min="0" max="100" data-tp="${k}.min" data-num value="${x.min}" style="width:80px"> / 100</label></div><input data-tp="${k}.titre" value="${esc(x.titre)}" placeholder="Titre" maxlength="100"><textarea data-tp="${k}.texte" maxlength="400">${esc(x.texte)}</textarea>`, {min: 50, titre: "", texte: ""}, 5, "Un niveau"));
+  } else {
+    html += sec("2. Le problème", "Les phrases dans lesquelles ta cliente se reconnaît.", ch("probleme.titre", "Titre")
+      + liste("probleme.items", (x, i, k) => `<input data-tp="${k}" value="${esc(x)}" maxlength="200">`, "", 12, "Une phrase"));
+    html += sec("3. Les bénéfices", "", ch("benefices.titre", "Titre")
+      + liste("benefices.items", (x, i, k) => `<input data-tp="${k}.titre" value="${esc(x.titre)}" placeholder="Bénéfice" maxlength="80"><input data-tp="${k}.texte" value="${esc(x.texte)}" placeholder="Détail" maxlength="300">`, {titre: "", texte: ""}, 8, "Un bénéfice"));
+    html += sec("4. Ce qu'elle reçoit", "", ch("contenu.titre", "Titre")
+      + liste("contenu.items", (x, i, k) => `<input data-tp="${k}" value="${esc(x)}" maxlength="200">`, "", 12, "Un élément"));
+    html += sec("5. Témoignages", "Uniquement de vrais retours de clientes, avec leur accord. La section est masquée tant qu'elle est vide.", ch("temoignages.titre", "Titre")
+      + liste("temoignages.items", (x, i, k) => `<textarea data-tp="${k}.texte" placeholder="Ce qu'elle a dit" maxlength="500">${esc(x.texte)}</textarea><input data-tp="${k}.nom" value="${esc(x.nom)}" placeholder="Prénom (et ville ou métier)" maxlength="60">`, {texte: "", nom: ""}, 10, "Un témoignage"));
+    html += sec("6. Qui es-tu ?", "", ch("a_propos.titre", "Titre") + ch("a_propos.texte", "Ton parcours", {long: true, max: 1500, h: 110}));
+    html += sec("7. Questions fréquentes", "", ch("faq.titre", "Titre")
+      + liste("faq.items", (x, i, k) => `<input data-tp="${k}.q" value="${esc(x.q)}" placeholder="Question" maxlength="200"><textarea data-tp="${k}.r" placeholder="Réponse" maxlength="800">${esc(x.r)}</textarea>`, {q: "", r: ""}, 12, "Une question"));
+  }
+  html += sec(`${quiz ? 7 : 8}. L'offre`, "Le produit vendu à la fin. Son prix et son image viennent de l'onglet Produits.",
+    `<div class="champ"><label for="tn-prod">Produit</label><select id="tn-prod" data-tp="offre.produit"><option value="">— Choisis un produit —</option>${prods.map(x => `<option value="${x.id}" ${t.offre.produit === x.id ? "selected" : ""}>${esc(x.titre || "Sans titre")} · ${euros(x.prix)}</option>`).join("")}</select>
+      ${prods.length ? "" : '<small class="aide">Crée d\'abord un produit dans l\'onglet Produits.</small>'}</div>`
+    + ch("offre.titre", "Titre") + ch("offre.texte", "Texte", {long: true}) + ch("offre.bouton", "Bouton", {max: 40})
+    + (quiz ? "" : ch("offre.garantie", "Garantie (facultatif)", {ph: "Satisfaite ou remboursée pendant 14 jours"})), true);
+  html += `<button class="btn" id="tn-suppr" style="width:100%;justify-content:center;margin-top:6px;color:var(--warn)">Supprimer ce tunnel</button>`;
+  z.innerHTML = html;
+  const maj = (rendu) => { modifieBoutique(rendu); };
+  z.oninput = z.onchange = e => {
+    const x = e.target, k = x.dataset.tp; if (!k) return;
+    let v = x.dataset.bool !== undefined ? x.checked : x.value;
+    if (x.dataset.num !== undefined) v = +v || 0;
+    fixe(t, k, v); maj(k === "titre" && false);
+  };
+  $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true); };
+  $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué"; sauveBoutique(true); };
+  z.querySelectorAll("[data-tadd]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tadd) || []; L.push(JSON.parse(b.dataset.modele)); fixe(t, b.dataset.tadd, L); maj(true); });
+  z.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tdel); L.splice(+b.dataset.i, 1); maj(true); });
+  $("#tn-suppr").onclick = () => {
+    const i = p.tunnels.indexOf(t); p.tunnels.splice(i, 1); BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true);
+    toastAnnuler("Tunnel supprimé", () => { p.tunnels.splice(i, 0, t); renduOnglet(); }, () => sauveBoutique(true), 5000, {boutique: true});
+  };
+}
 function ongletProduits(z) {
   const p = BQ.page, pay = BQ.etat.paiement, st = p.stripe || {};
   const payants = p.produits.some(x => x.prix);

@@ -1253,6 +1253,7 @@ import re as _re  # noqa: E402
 
 import boutique as bq  # noqa: E402
 import boutique_ventes as bv  # noqa: E402
+import tunnels  # noqa: E402
 
 
 def _droits_uid(uid: int) -> dict | None:
@@ -1316,6 +1317,47 @@ def boutique_publique(pseudo):
             bv.compte_source(uid, _src(pseudo), "vues")
     page["_avis"] = bv.resume_avis(uid)
     return _avec_cookie(_html(bq.rendu_page(page, pseudo.lower(), url=f"{url_site()}/@{pseudo.lower()}")), pseudo)
+
+
+# ---- Tunnels de vente (formules payantes)
+def _tunnel(pseudo: str, tid: str):
+    uid, page = _vitrine(pseudo)
+    t = next((x for x in page.get("tunnels") or [] if x.get("id") == tid), None)
+    proprio = ab.get(uid)
+    if not t or (not t.get("publie") and session.get("uid") != uid) or not proprio or reserve(proprio, "tunnels"):
+        abort(404)
+    return uid, page, t
+
+
+@app.get("/@<pseudo>/t/<tid>")
+def tunnel_public(pseudo, tid):
+    uid, page, t = _tunnel(pseudo, tid)
+    if session.get("uid") != uid:
+        bq.compte(uid, "tunnels", f"{tid}:vues")
+    return _avec_cookie(_html(tunnels.rendu(page, pseudo.lower(), t)), pseudo)
+
+
+@app.post("/@<pseudo>/t/<tid>/email")
+def tunnel_email(pseudo, tid):
+    uid, page, t = _tunnel(pseudo, tid)
+    email = (request.form.get("email") or "").strip().lower()
+    if not _email_valide(email):
+        return jsonify({"erreur": "Indique une adresse e-mail valide."}), 400
+    if bq.ajoute_inscrit(uid, email, (request.form.get("prenom") or "").strip()[:60], "tunnel : " + (t.get("titre") or "")):
+        bv.compte_source(uid, _src(pseudo), "inscrits")
+    bq.compte(uid, "tunnels", f"{tid}:emails")
+    return jsonify({"ok": True})
+
+
+@app.get("/@<pseudo>/t/<tid>/offre")
+def tunnel_offre(pseudo, tid):
+    uid, page, t = _tunnel(pseudo, tid)
+    if session.get("uid") != uid:
+        bq.compte(uid, "tunnels", f"{tid}:clics")
+    pid = (t.get("offre") or {}).get("produit")
+    if pid and any(p.get("id") == pid and p.get("visible", True) for p in page.get("produits", [])):
+        return redirect(f"/@{pseudo.lower()}/p/{pid}?src=tunnel-{tid}")
+    return redirect(f"/@{pseudo.lower()}")
 
 
 @app.get("/@<pseudo>/i/<nom>")
@@ -1630,7 +1672,7 @@ def boutique_kit_media(pseudo, nom):
 
 # ---- API d'édition (application)
 def _options_boutique() -> dict:
-    return {"themes": [{"id": k, "nom": t["nom"], "ambiance": t["ambiance"], "design": t["design"]} for k, t in bq.THEMES.items()],
+    return {"modeles_tunnels": tunnels.modeles(), "themes": [{"id": k, "nom": t["nom"], "ambiance": t["ambiance"], "design": t["design"]} for k, t in bq.THEMES.items()],
             "ambiances": bq.AMBIANCES, "polices": [{"nom": k, "categorie": v[2]} for k, v in bq.POLICES.items()],
             "polices_texte": bq.POLICES_TEXTE, "entetes": bq.ENTETES, "formes": bq.FORMES, "fonds": bq.FONDS, "motifs": bq.MOTIFS,
             "boutons": bq.BOUTONS, "animations": bq.ANIMATIONS, "vues_produits": bq.VUES_PRODUITS,
@@ -1672,7 +1714,8 @@ def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False)
         suggestion = {"nom": ini["nom"], "bio": ini["bio"], "reseaux": ini["reseaux"], "pseudo": libre}
     return {"page": page, "pseudo": pseudo, "suggestion": suggestion, "url": f"{url_site()}/@{pseudo}" if pseudo else None,
             "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission(g.u["id"])}, "emails": emails.actif(),
-            "kit_chiffres": bq.chiffres_kit(prof) if prof else None, "options": _options_boutique()}
+            "kit_chiffres": bq.chiffres_kit(prof) if prof else None, "options": _options_boutique(),
+            "tunnels_ok": not reserve(g.u, "tunnels"), "tunnels_stats": bq.stats_tunnels(uid)}
 
 
 @app.get("/api/boutique")
@@ -1881,6 +1924,9 @@ def boutique_maj():
                            for e in (q.get("emails") or [])[:10] if isinstance(e, dict)]}
         if isinstance(c.get("sources_noms"), dict):
             page["sources_noms"] = {bv.source_propre(k): str(v)[:80] for k, v in list(c["sources_noms"].items())[:200] if bv.source_propre(k)}
+        if isinstance(c.get("tunnels"), list) and not reserve(g.u, "tunnels"):
+            ids = {p["id"] for p in page["produits"]}
+            page["tunnels"] = [x for x in (tunnels.propre(t, ids) for t in c["tunnels"][:20]) if x]
         if "exemple" in c:
             page["exemple"] = bool(c["exemple"])
         if "publie" in c:
@@ -1889,6 +1935,7 @@ def boutique_maj():
     if c.get("nettoyer"):
         bq.nettoie_images(uid, page)
     return jsonify({"ok": True, "design": page["design"], "produits": page["produits"], "blocs": page["blocs"], "promos": page.get("promos") or [],
+                    "tunnels": page.get("tunnels") or [],
                     "sequence": page.get("sequence")})
 
 
@@ -1919,6 +1966,12 @@ def boutique_apercu():
     if isinstance(c.get("kit"), dict):
         page["kit"] = c["kit"]
     pseudo = bq.pseudo_de(uid)
+    if vue.startswith("t:") and isinstance(c.get("tunnels"), list):
+        ids = {p["id"] for p in page["produits"]}
+        t = next((x for x in (tunnels.propre(y, ids) for y in c["tunnels"][:20]) if x and x["id"] == vue[2:]), None)
+        if t:
+            h = tunnels.rendu(page, pseudo or "", t, apercu=True)
+            return _html(h.replace("/@None/", "/api/boutique/").replace("/@/i/", "/api/boutique/i/") if not pseudo else h)
     if vue == "kit":
         h = bq.rendu_kit(page, pseudo, _profil_compte(uid))
     elif vue.startswith("p:"):

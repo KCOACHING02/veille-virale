@@ -1509,6 +1509,15 @@ def compte(uid: int, cle: str, sous: str | None = None):
         _ecrit(f, s)
 
 
+def stats_tunnels(uid: int) -> dict:
+    """{id: {"vues": n, "emails": n, "clics": n}} pour chaque tunnel de vente."""
+    r: dict = {}
+    for k, n in (_lit(dossier(uid) / "stats.json", {}).get("tunnels") or {}).items():
+        tid, _, champ = k.partition(":")
+        r.setdefault(tid, {"vues": 0, "emails": 0, "clics": 0})[champ] = n
+    return r
+
+
 def stats(uid: int, page: dict) -> dict:
     d = dossier(uid)
     s = _lit(d / "stats.json", {})

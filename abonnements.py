@@ -304,7 +304,7 @@ def usage_tous() -> dict:
 
 
 # Options des formules payantes (une formule peut en désactiver une dans plans.yaml, comme la formule gratuite)
-OPTIONS_DEFAUT = {"ia": True, "montage_reel": True, "suivi_publications": True, "sequences_emails": True,
+OPTIONS_DEFAUT = {"ia": True, "montage_reel": True, "suivi_publications": True, "sequences_emails": True, "tunnels": True,
                   "filigrane": False, "mention_boutique": False}
 
 
@@ -412,6 +412,7 @@ MSG_OPTIONS = {
     "montage_reel": "Le montage des Reels est réservé aux abonnées. En gratuit, tu peux créer des carrousels.",
     "suivi_publications": "Le suivi automatique de tes Reels publiés est réservé aux abonnées.",
     "sequences_emails": "Les séquences d'e-mails automatiques sont réservées aux abonnées.",
+    "tunnels": "Les tunnels de vente (quiz-audit, page de vente) sont réservés aux abonnées. Choisis une formule pour les débloquer.",
 }
 
 
