@@ -957,7 +957,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-paires{display:grid;gap:8px}
 .bt-paire{display:grid;grid-template-columns:1fr 120px 34px;gap:8px}
 .bt-paire input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px}
-.tn-assist .tn-tete-as{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.bt-assist .tn-tete-as,.tn-assist .tn-tete-as{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .tn-prog{height:6px;border-radius:9px;background:var(--sunk);overflow:hidden;margin-bottom:14px}.tn-prog i{display:block;height:100%;background:var(--glow);transition:width .3s}
 .tn-pourquoi{background:var(--glow-soft,#FFE9EE);border-radius:12px;padding:12px 14px;margin:0 0 16px;font-size:14.5px;color:var(--ink)}
 .tn-pourquoi::before{content:"Pourquoi ? ";font-weight:700}
@@ -967,6 +967,8 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .tn-exemples{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;font-size:13.5px}
 .tn-exemples span{color:var(--ink-3)}.tn-exemples button{border:1px dashed var(--glow);background:transparent;color:var(--glow);border-radius:99px;padding:5px 12px;font:600 13px var(--sans,inherit);cursor:pointer}
 .tn-styles{flex-wrap:wrap;overflow:visible;justify-content:center;scroll-snap-type:none}
+.tn-coches-ed{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:14.5px}
+.bt-assist .tn-tete-as b{font:700 18px var(--display)}
 .tn-groupe{margin-bottom:12px}.tn-groupe .bt-sous-titre{margin:6px 0 8px}
 .tn-rapide{background:var(--sunk);border-radius:12px;padding:10px 12px;margin-bottom:14px}.tn-rapide summary{cursor:pointer;font-weight:600;color:var(--glow)}.tn-rapide[open] summary{margin-bottom:10px}
 .tn-rapide input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
@@ -1013,7 +1015,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-recap span{background:var(--sunk);border-radius:99px;padding:5px 12px;font-size:13px}
 .bt-assist2 .bt-droite small{text-align:center}
 @media (max-width:1100px){.bt-assist2{grid-template-columns:minmax(0,1fr);max-width:760px}}
-@media (max-width:860px){.bt-assist .duo{grid-template-columns:1fr}.bt-etapes span{font-size:0}.bt-etapes span::before{margin-bottom:0}}
+@media (max-width:860px){.bt-assist2{padding-bottom:70px}.bt-assist .duo{grid-template-columns:1fr}.bt-etapes span{font-size:0}.bt-etapes span::before{margin-bottom:0}}
 .bt-assist{max-width:760px;margin:0 auto}
 .bt-assist .panneau{padding:28px}
 .bt-prog{display:flex;gap:6px;margin-bottom:16px}
@@ -3426,7 +3428,7 @@ async function envoieImageBoutique(fichier, role) {
 }
 const urlImg = nom => nom ? `/@${BQ.etat.pseudo}/i/${nom}` : "";
 
-// ---------------------------------------------------------------- Parcours de création : 4 étapes, aperçu en direct
+// ---------------------------------------------------------------- Création de la boutique : pas à pas, aperçu en direct
 const OBJECTIFS_BQ = [
   ["vendre", "🛍️", "Vendre mes produits", "Guides, formations, templates, séances…"],
   ["rdv", "📅", "Prendre des rendez-vous", "Un bouton vers ton agenda en ligne"],
@@ -3437,15 +3439,18 @@ const OBJECTIFS_BQ = [
 // Produits d'exemple, visibles seulement dans l'aperçu tant que la boutique n'en a pas
 const PRODUITS_EXEMPLE = [{id: "ex1", titre: "Ton guide PDF", sous_titre: "Exemple : ajoute ton vrai produit après la publication", prix: 1900},
   {id: "ex2", titre: "Ta formation vidéo", sous_titre: "Exemple", prix: 4900}];
-const ETAPES_BQ = ["Toi", "Ton objectif", "Ton style", "Tes liens"];
 const nettoieRes = v => (v || "").trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?(instagram\.com|tiktok\.com)\/@?/i, "").replace(/\/.*$/, "");
 
 function etatAssistant() {
   const sug = BQ.etat.suggestion || {}, res = sug.reseaux || BQ.page?.reseaux || {};
-  return BQ.assist ||= {etape: 1, pseudo: sug.pseudo || "", nom: sug.nom || BQ.page?.nom || "", bio: sug.bio || BQ.page?.bio || "", photo: BQ.page?.photo || "",
+  return BQ.assist ||= {etape: 0, pseudo: sug.pseudo || BQ.etat.pseudo || "", nom: sug.nom || BQ.page?.nom || "", bio: sug.bio || BQ.page?.bio || "", photo: BQ.page?.photo || "",
     reseaux: {instagram: res.instagram || "", tiktok: res.tiktok || ""}, objectifs: ["vendre", "liens"],
     palettes: null, theme: "sable", palette: null, mep: "colonne",
-    rdv: {titre: "Réserve ton appel découverte", url: ""}, liens: [{titre: "", url: ""}, {titre: "", url: ""}]};
+    rdv: {titre: "Réserve ton appel découverte", url: ""}, liens: [{titre: "", url: ""}, {titre: "", url: ""}], produit: {titre: "", prix: ""}};
+}
+function produitAssistant(A) {
+  const t = A.produit.titre.trim(); if (!t) return null;
+  return {id: A.produit.id ||= idCourt(), titre: t, prix: Math.round((+String(A.produit.prix).replace(",", ".") || 0) * 100), visible: true, type: "telechargement"};
 }
 function blocsAssistant(A, apercu) {
   const bento = A.mep === "bento", B = [], o = k => A.objectifs.includes(k), id = () => idCourt();
@@ -3458,163 +3463,209 @@ function blocsAssistant(A, apercu) {
   if (o("marques")) B.push({id: id(), type: "kit", titre: "Kit média", texte: "Mes chiffres et mes collaborations"});
   return B;
 }
-function designAssistant(A) {
-  let d = themeApplique(BQ.page?.design || BQ.etat.options.defaut, A.theme);
-  if (A.palette != null && A.palettes) d = {...d, ...paletteDesign(A.palettes[A.palette]), theme: "perso"};
-  return {...d, mise_en_page: A.mep};
+function designAssistant(A, extra = {}) {
+  const B = {...A, ...extra};
+  let d = themeApplique(BQ.page?.design || BQ.etat.options.defaut, B.theme);
+  if (B.palette != null && A.palettes) d = {...d, ...paletteDesign(A.palettes[B.palette]), theme: "perso"};
+  return {...d, mise_en_page: B.mep, apparition: false};
 }
 const reseauxAssistant = A => Object.fromEntries(Object.entries(A.reseaux).map(([k, v]) => [k, nettoieRes(v)]).filter(([, v]) => v));
+// Tout ce que l'aperçu doit montrer, avec un design éventuellement différent (vignettes)
+function contenuAssistant(A, extra) {
+  const pr = produitAssistant(A), exist = BQ.page?.produits || [];
+  const produits = pr ? [...exist.filter(x => x.id !== pr.id), pr] : exist.length ? exist : A.objectifs.includes("vendre") ? PRODUITS_EXEMPLE : [];
+  return {nom: A.nom || "Ton nom", bio: A.bio, photo: A.photo, reseaux: reseauxAssistant(A), blocs: blocsAssistant(A, true), produits, design: designAssistant(A, extra)};
+}
 function apercuAssistant(tout_de_suite) {
   clearTimeout(BQ.tAssist);
   BQ.tAssist = setTimeout(async () => {
-    const A = BQ.assist; if (!A || A.etape > 4) return;
-    const h = await htmlApercu({nom: A.nom || "Ton nom", bio: A.bio, photo: A.photo, reseaux: reseauxAssistant(A), blocs: blocsAssistant(A, true),
-      produits: BQ.page?.produits?.length ? BQ.page.produits : A.objectifs.includes("vendre") ? PRODUITS_EXEMPLE : [], design: {...designAssistant(A), apparition: false}});
+    const A = BQ.assist; if (!A || A.fini) return;
+    const h = await htmlApercu(contenuAssistant(A));
     BQ.htmlAssist = h;
     const f = $("#as-ap"); if (f) f.srcdoc = h;
     if ($("#bt-plein")?.classList.contains("ouvert")) $("#bt-ap2").srcdoc = h;
   }, tout_de_suite ? 0 : 300);
 }
+// Vignettes « vraie page » : chaque bouton [data-v] reçoit l'aperçu de la page avec sa variante
+function vignettesAssistant(zone, A, cle) {
+  const charge = async b => {
+    if (b.dataset.charge) return; b.dataset.charge = "1";
+    const extra = {[cle]: cle === "palette" ? +b.dataset.v : b.dataset.v};
+    if (cle === "theme") extra.palette = null;
+    const h = await htmlApercu(contenuAssistant(A, extra));
+    const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
+  };
+  const bs = zone.querySelectorAll("[data-v]");
+  if (!("IntersectionObserver" in window)) return bs.forEach(charge);
+  const obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { obs.unobserve(e.target); charge(e.target); } }), {rootMargin: "200px"});
+  bs.forEach(b => obs.observe(b));
+}
+const vignette = (v, nom, actif, fond) => `<button type="button" class="bt-th" data-v="${v}" aria-pressed="${!!actif}"><div class="mini" style="background:${fond || "var(--sunk)"}"><iframe tabindex="-1" title="${esc(nom)}"></iframe></div>${esc(nom)}</button>`;
+
+function etapesBoutique(A) {
+  const hote = location.host, o = k => A.objectifs.includes(k);
+  const E = [
+    {nom: "Ton nom", pourquoi: "C'est la première chose que voient tes visiteuses. Mets le nom sous lequel on te connaît sur Instagram, et une photo de toi souriante : on achète à une personne, pas à un logo.",
+      corps: () => `<div class="bt-profil">
+          <label class="bt-photo ${A.photo ? "pleine" : ""}" style="${A.photoUrl ? `background-image:url('${A.photoUrl}')` : A.photo ? `background-image:url('${BQ.etat.pseudo ? urlImg(A.photo) : "/api/boutique/i/" + A.photo}')` : ""}" id="as-photo">
+            ${A.photo ? "" : "Ajoute<br>ta photo"}<input type="file" accept="image/*" aria-label="Ta photo"></label>
+          <div style="flex:1"><div class="champ"><label for="as-nom">Ton nom ou ta marque</label><input id="as-nom" data-a="nom" value="${esc(A.nom)}" maxlength="60" placeholder="Brille & Vibre"></div></div></div>
+        <p class="aide">La photo est facultative, mais une page avec un visage inspire beaucoup plus confiance. Ses couleurs te seront proposées pour ta page.</p>`,
+      valide: () => A.nom.trim() ? null : "Indique ton nom ou celui de ta marque"},
+    {nom: "Ta présentation", pourquoi: "En une phrase : à qui tu t'adresses et ce que tu leur apportes. C'est elle qui donne envie de rester sur ta page, ou de partir.",
+      corps: () => `<div class="tn-exemples"><span>💡 Exemples :</span>${[
+          "J'aide les mamans débordées à retrouver du temps pour elles.",
+          "Naturopathe · J'aide les femmes actives à retrouver leur énergie.",
+          "Coach pour créatrices : tes premières ventes en ligne, sans y passer tes soirées."].map(x => `<button type="button" data-bio="${esc(x)}">${esc(x.split(/[:.·]/)[0].slice(0, 34))}…</button>`).join("")}</div>
+        <div class="champ"><label for="as-bio">Ta phrase de présentation</label><textarea id="as-bio" data-a="bio" maxlength="280" style="min-height:90px" placeholder="J'aide les … à … sans …">${esc(A.bio)}</textarea>
+        <small class="aide">La formule qui marche : « J'aide [qui] à [résultat] sans [ce qu'elle redoute] ».</small></div>`},
+    {nom: "Tes réseaux", pourquoi: "Tes icônes s'affichent sous ta présentation. Ça rassure : on voit que tu existes vraiment, et on peut te suivre en un clic.",
+      corps: () => `<div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
+        <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
+        <p class="aide">YouTube, Pinterest, WhatsApp… s'ajoutent ensuite, dans l'onglet Contenu. Laisse vide ce que tu n'utilises pas.</p>`},
+    {nom: "Ton adresse", pourquoi: "C'est le lien que tu mettras dans ta bio Instagram. Court et facile à retenir : idéalement ton nom de compte.",
+      corps: () => `<div class="champ"><label for="as-pseudo">L'adresse de ta page</label>
+        <div class="bt-adresse"><span>${esc(hote)}/@</span><input id="as-pseudo" value="${esc(A.pseudo)}" maxlength="30" autocapitalize="off" spellcheck="false" placeholder="ton-nom"></div>
+        <div class="bt-dispo" id="as-dispo"></div></div><p class="aide">Lettres, chiffres, tirets et points. Tu pourras la changer plus tard.</p>`,
+      cree: true},
+    {nom: "Ton objectif", pourquoi: "On prépare ta page selon ce que tu veux en faire : les bons blocs, dans le bon ordre. Coche tout ce qui te concerne, tu pourras changer ensuite.",
+      corps: () => `<div class="bt-objectifs">${OBJECTIFS_BQ.map(([k, e, t, d]) => `<button type="button" class="bt-obj" data-obj="${k}" aria-pressed="${o(k)}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div>`,
+      valide: () => A.objectifs.length ? null : "Choisis au moins un objectif"},
+    {nom: "Ta mise en page", pourquoi: "La structure de ta page. Chaque vignette montre TA page : la colonne est simple et efficace, le bento fait moderne, le magazine fait « marque ».",
+      corps: () => `<div class="bt-themes tn-styles">${Object.entries(BQ.etat.options.mises_en_page || {}).map(([k, n]) => vignette(k, n, A.mep === k)).join("")}</div><p class="aide" id="as-desc-mep" style="text-align:center">${DESC_MEP[A.mep] || ""}</p>`,
+      vignettes: "mep"},
+    {nom: "Tes couleurs", pourquoi: "L'ambiance de ta page. Choisis des couleurs qui te ressemblent et qui vont avec ton feed Instagram : ta visiteuse doit sentir qu'elle est toujours chez toi.",
+      corps: () => { const amb = BQ.ambiance ||= "Classique";
+        return (A.palettes ? `<p class="bt-sous-titre" style="margin-top:0">✨ Les couleurs de ta photo</p><div class="bt-themes tn-styles">${A.palettes.map((p, i) => vignette(i, p.nom, A.palette === i, p.fond1.slice(0, 7))).join("")}</div><p class="bt-sous-titre">Ou un thème</p>` : "")
+          + `<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${BQ.etat.options.ambiances.map(a => `<button type="button" aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
+          <div class="bt-themes tn-styles" id="as-themes">${BQ.etat.options.themes.filter(t => t.ambiance === amb).map(t => vignette(t.id, t.nom, A.palette == null && A.theme === t.id, (t.design.fond1 || "#eee").slice(0, 7)).replace('data-v="', 'data-th="1" data-v="')).join("")}</div>`; },
+      vignettes: "couleurs"},
+    {nom: "Tes liens", pourquoi: "Les boutons de ta page. Mets en premier ce qui compte le plus pour toi. Laisse vide ce que tu n'as pas encore : ta page sera quand même en ligne.",
+      corps: () => (o("rdv") ? `<p class="bt-sous-titre" style="margin-top:0">📅 Ton agenda</p>
+          <div class="bt-liens-rapides"><div><input data-rdv="titre" value="${esc(A.rdv.titre)}" placeholder="Texte du bouton" aria-label="Texte du bouton de rendez-vous"><input data-rdv="url" value="${esc(A.rdv.url)}" placeholder="calendly.com/toi" aria-label="Adresse de ton agenda" inputmode="url" autocapitalize="off"></div></div>` : "")
+        + `<p class="bt-sous-titre"${o("rdv") ? "" : ' style="margin-top:0"'}>🔗 ${o("liens") ? "Tes liens" : "D'autres liens (facultatif)"}</p>
+          <div class="bt-liens-rapides">${A.liens.map((l, i) => `<div><input data-i="${i}" data-k="titre" value="${esc(l.titre)}" placeholder="Texte du bouton (ex. Mon site)" aria-label="Texte du bouton ${i + 1}"><input data-i="${i}" data-k="url" value="${esc(l.url)}" placeholder="Adresse (ex. monsite.fr)" aria-label="Adresse du lien ${i + 1}" inputmode="url" autocapitalize="off"></div>`).join("")}</div>
+          ${A.liens.length < 6 ? '<button type="button" class="btn petit" id="as-plus">+ Un autre lien</button>' : ""}`},
+  ];
+  if (o("vendre") && !(BQ.page?.produits || []).length) E.push(
+    {nom: "Ton premier produit", pourquoi: "Commence simple : un cadeau gratuit pour récolter des e-mails, ou un petit produit à moins de 30 €. Tu ajouteras le fichier à livrer juste après la publication.",
+      corps: () => `<div class="tn-exemples"><span>💡 Idées :</span>${[["Guide offert", "Mon guide offert", "0"], ["Guide PDF", "Mon guide complet", "17"], ["Séance découverte", "Séance découverte", "47"]].map(([l, t, p]) => `<button type="button" data-prod='${esc(JSON.stringify([t, p]))}'>${l}${p === "0" ? " (gratuit)" : ` (${p} €)`}</button>`).join("")}</div>
+        <div class="duo"><div class="champ"><label for="as-pt">Nom du produit</label><input id="as-pt" data-pr="titre" value="${esc(A.produit.titre)}" maxlength="120" placeholder="Mon guide 7 jours pour…"></div>
+        <div class="champ"><label for="as-pp">Prix (€)</label><input id="as-pp" data-pr="prix" value="${esc(A.produit.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="0 = gratuit"></div></div>
+        <p class="aide">Pas encore d'idée ? Laisse vide : tu pourras demander des idées de produits à Virall.ai dans l'onglet Produits.</p>`});
+  E.push({nom: "C'est prêt", fin: true, pourquoi: "Relis ta page dans l'aperçu. Rien n'est figé : tu pourras tout modifier ensuite, même après la publication.",
+    corps: () => `<ul class="tn-coches-ed">
+        <li>✓ <b>${esc(A.nom)}</b>${A.bio ? " · " + esc(A.bio.slice(0, 60)) + (A.bio.length > 60 ? "…" : "") : ""}</li>
+        <li>✓ Adresse : <b>${esc(hote)}/@${esc(A.pseudo)}</b></li>
+        <li>✓ ${OBJECTIFS_BQ.filter(([k]) => o(k)).map(([, e, t]) => e + " " + t).join(" · ")}</li>
+        ${produitAssistant(A) ? `<li>✓ Produit : <b>${esc(A.produit.titre)}</b> · ${euros(produitAssistant(A).prix)}</li>` : ""}</ul>`});
+  return E;
+}
 
 function renduAssistantBoutique(el) {
-  const A = etatAssistant(), hote = location.host;
-  if (A.etape > 4) return bravoBoutique(el);
-  const etapes = `<div class="bt-etapes">${ETAPES_BQ.map((t, i) => `<span class="${i + 1 <= A.etape ? "fait" : ""}">${i + 1}. ${t}</span>`).join("")}</div>`;
-  const pied = (suite, retour = true) => `<div class="bt-pied">${retour ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}<button class="btn prim" id="as-suite">${suite}</button></div>`;
-  let corps = "";
-  if (A.etape === 1) corps = `
-      <h2>Ta boutique en lien dans la bio</h2>
-      <p class="sous">Une seule page pour tout ce que tu proposes. Regarde-la prendre forme au fur et à mesure.</p>
-      <div class="bt-profil">
-        <label class="bt-photo ${A.photo ? "pleine" : ""}" style="${A.photoUrl ? `background-image:url('${A.photoUrl}')` : A.photo ? `background-image:url('/api/boutique/i/${A.photo}')` : ""}" id="as-photo">
-          ${A.photo ? "" : "Ajoute<br>ta photo"}<input type="file" accept="image/*" aria-label="Ta photo"></label>
-        <div style="flex:1"><div class="champ"><label for="as-nom">Ton nom ou ta marque</label><input id="as-nom" value="${esc(A.nom)}" maxlength="60" placeholder="Brille & Vibre"></div></div>
-      </div>
-      <div class="champ"><label for="as-bio">Ta phrase de présentation</label><textarea id="as-bio" maxlength="280" style="min-height:76px" placeholder="J'aide les femmes actives à…">${esc(A.bio)}</textarea>
-        <small class="aide">Dis à qui tu t'adresses et ce que tu leur apportes, en une phrase.</small></div>
-      <div class="duo">
-        <div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
-        <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
-      </div>
-      <div class="champ"><label for="as-pseudo">L'adresse de ta page</label>
-        <div class="bt-adresse"><span>${esc(hote)}/@</span><input id="as-pseudo" value="${esc(A.pseudo)}" maxlength="30" autocapitalize="off" spellcheck="false" placeholder="ton-nom"></div>
-        <div class="bt-dispo" id="as-dispo"></div></div>
-      ${pied("Continuer →", false)}`;
-  else if (A.etape === 2) corps = `
-      <h2>À quoi va servir ta page&nbsp;?</h2>
-      <p class="sous">Coche tout ce qui te concerne : on prépare les bons blocs pour toi. Tu pourras en ajouter d'autres ensuite.</p>
-      <div class="bt-objectifs">${OBJECTIFS_BQ.map(([k, e, t, d]) => `<button class="bt-obj" data-obj="${k}" aria-pressed="${A.objectifs.includes(k)}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div>
-      ${pied("Continuer →")}`;
-  else if (A.etape === 3) {
-    const amb = BQ.ambiance ||= "Classique", o = BQ.etat.options;
-    corps = `
-      <h2>Choisis ton style</h2>
-      <p class="sous">D'abord la structure de ta page, puis ses couleurs. Tout reste modifiable ensuite.</p>
-      <p class="bt-sous-titre" style="margin-top:0">Mise en page</p>
-      <div class="bt-choix larges">${Object.keys(o.mises_en_page || {}).map(k => `<button class="bt-opt" data-mep="${k}" aria-pressed="${A.mep === k}"><span class="vis"><svg width="60" height="76" viewBox="0 0 60 76" fill="currentColor">${SCHEMAS_MEP[k]}</svg></span>${esc(o.mises_en_page[k])}</button>`).join("")}</div>
-      <p class="aide" style="margin:8px 0 0">${DESC_MEP[A.mep] || ""}</p>
-      ${A.palettes ? `<p class="bt-sous-titre">✨ Les couleurs de ta photo</p><div class="bt-palettes">${A.palettes.map((p, i) => paletteHTML(p, i, A.palette === i)).join("")}</div>` : ""}
-      <p class="bt-sous-titre">Ambiance</p>
-      <div class="seg" style="margin-bottom:14px;flex-wrap:wrap">${o.ambiances.map(a => `<button aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
-      <div class="bt-themes" id="as-themes"></div>
-      ${pied("Continuer →")}`;
-  } else {
-    const o = k => A.objectifs.includes(k);
-    corps = `
-      <h2>Tes liens</h2>
-      <p class="sous">${o("vendre") ? "Tes produits s'ajoutent juste après la publication. " : ""}Laisse vide ce que tu n'as pas encore : ta page sera quand même en ligne.</p>
-      ${o("rdv") ? `<p class="bt-sous-titre" style="margin-top:0">📅 Ton agenda</p>
-        <div class="bt-liens-rapides"><div><input id="as-rdv-t" value="${esc(A.rdv.titre)}" placeholder="Texte du bouton" aria-label="Texte du bouton de rendez-vous"><input id="as-rdv-u" value="${esc(A.rdv.url)}" placeholder="calendly.com/toi" aria-label="Adresse de ton agenda" inputmode="url" autocapitalize="off"></div></div>` : ""}
-      <p class="bt-sous-titre"${o("rdv") ? "" : ' style="margin-top:0"'}>🔗 ${o("liens") ? "Tes liens" : "D'autres liens (facultatif)"}</p>
-      <div class="bt-liens-rapides" id="as-liens">${A.liens.map((l, i) => `<div><input data-i="${i}" data-k="titre" value="${esc(l.titre)}" placeholder="Texte du bouton (ex. Mon site)" aria-label="Texte du bouton ${i + 1}"><input data-i="${i}" data-k="url" value="${esc(l.url)}" placeholder="Adresse (ex. monsite.fr)" aria-label="Adresse du lien ${i + 1}" inputmode="url" autocapitalize="off"></div>`).join("")}</div>
-      ${A.liens.length < 6 ? '<button class="btn petit" id="as-plus">+ Un autre lien</button>' : ""}
-      <div class="bt-recap">${OBJECTIFS_BQ.filter(([k]) => o(k) && !["liens", "rdv"].includes(k)).map(([, e, t]) => `<span>${e} ${t}</span>`).join("")}</div>
-      ${pied("Publier ma boutique 🎉")}`;
-  }
-  el.innerHTML = `<div class="bt-assist2"><div class="panneau bt-assist">${etapes}${corps}</div>
+  const A = etatAssistant();
+  if (A.fini) return bravoBoutique(el);
+  const E = etapesBoutique(A); A.etape = Math.min(A.etape, E.length - 1);
+  const e = E[A.etape], n = E.length;
+  el.innerHTML = `<div class="bt-assist2"><div class="bt-assist">
+      <div class="tn-tete-as"><b>Ta boutique en lien dans la bio</b><span class="aide">Étape ${A.etape + 1} sur ${n} · ${esc(e.nom)}</span></div>
+      <div class="tn-prog"><i style="width:${(A.etape + 1) / n * 100}%"></i></div>
+      <section class="bt-sec"><h3>${e.fin ? "🎉 " : ""}${esc(e.nom)}</h3><p class="tn-pourquoi">${e.pourquoi}</p>${e.corps()}</section>
+      <div class="bt-pied">${A.etape ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}
+        <button class="btn prim" id="as-suite">${e.fin ? "Mettre ma boutique en ligne 🚀" : "Continuer →"}</button></div></div>
       <aside class="bt-droite"><div class="bt-tel"><iframe id="as-ap" title="Aperçu de ta page"></iframe></div><small class="aide">Aperçu en direct</small></aside></div>
     <button class="bt-flottant" id="as-voir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button>
     <div class="bt-plein" id="bt-plein" role="dialog" aria-modal="true" aria-label="Aperçu de ta boutique"><div class="barre"><b>Aperçu de ta boutique</b><button class="ferme-x" id="bt-fermer-x" type="button" aria-label="Fermer l'aperçu">✕</button></div><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap" type="button">Fermer l'aperçu</button></div>`;
   if (BQ.htmlAssist) $("#as-ap").srcdoc = BQ.htmlAssist;
   apercuAssistant(true);
+  const rendu = () => renduAssistantBoutique(el);
+  const aller = k => { A.etape = k; rendu(); scrollTo({top: 0, behavior: "smooth"}); };
   // Aperçu plein écran (téléphone)
   const fermeAp = () => { if (!$("#bt-plein").classList.contains("ouvert")) return; $("#bt-plein").classList.remove("ouvert");
     document.documentElement.classList.remove("sans-defilement"); if (history.state?.apercuBoutique) { S.ignorePop = true; history.back(); } };
   $("#as-voir").onclick = () => { $("#bt-ap2").srcdoc = BQ.htmlAssist || ""; $("#bt-plein").classList.add("ouvert");
     document.documentElement.classList.add("sans-defilement"); pousseHistorique({apercuBoutique: 1}); };
   $("#bt-fermer-ap").onclick = fermeAp; $("#bt-fermer-x").onclick = fermeAp;
-  $("#bt-plein").addEventListener("pointerup", e => { if (e.target.id === "bt-plein") fermeAp(); });
-  const aller = n => { A.etape = n; renduAssistantBoutique(el); window.scrollTo({top: 0, behavior: "smooth"}); };
+  $("#bt-plein").addEventListener("pointerup", ev => { if (ev.target.id === "bt-plein") fermeAp(); });
   $("#as-retour") && ($("#as-retour").onclick = () => aller(A.etape - 1));
 
-  if (A.etape === 1) {
-    const verifie = async () => {
-      const v = $("#as-pseudo").value; if (!v) { $("#as-dispo").textContent = ""; A.pseudoOk = false; return; }
+  // Champs
+  $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); });
+  $$("[data-res]").forEach(i => i.oninput = () => { A.reseaux[i.dataset.res] = i.value; apercuAssistant(); });
+  $$("[data-rdv]").forEach(i => i.oninput = () => { A.rdv[i.dataset.rdv] = i.value; apercuAssistant(); });
+  $$("[data-pr]").forEach(i => i.oninput = () => { A.produit[i.dataset.pr] = i.value; apercuAssistant(); });
+  $$("[data-i][data-k]").forEach(i => i.oninput = () => { A.liens[i.dataset.i][i.dataset.k] = i.value; apercuAssistant(); });
+  $$("[data-bio]").forEach(b => b.onclick = () => { A.bio = b.dataset.bio; $("#as-bio").value = A.bio; apercuAssistant(); });
+  $$("[data-prod]").forEach(b => b.onclick = () => { const [t, p] = JSON.parse(b.dataset.prod); A.produit.titre = t; A.produit.prix = p; $("#as-pt").value = t; $("#as-pp").value = p; apercuAssistant(); });
+  $("#as-plus") && ($("#as-plus").onclick = () => { A.liens.push({titre: "", url: ""}); rendu(); });
+  $$("[data-obj]").forEach(b => b.onclick = () => {
+    const k = b.dataset.obj, i = A.objectifs.indexOf(k);
+    if (i >= 0) A.objectifs.splice(i, 1); else A.objectifs.push(k);
+    b.setAttribute("aria-pressed", i < 0); apercuAssistant();
+  });
+  $("#as-photo input") && ($("#as-photo input").onchange = async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    $("#as-photo").innerHTML = '<span class="spin"></span>';
+    try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); }
+    catch (er) { toast(er.message); }
+    rendu();
+  });
+  // Vignettes
+  if (e.vignettes === "mep") {
+    const z = $(".tn-styles"); vignettesAssistant(z, A, "mep");
+    z.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { A.mep = b.dataset.v; z.querySelectorAll("[data-v]").forEach(x => x.setAttribute("aria-pressed", x === b));
+      $("#as-desc-mep").textContent = DESC_MEP[A.mep] || ""; apercuAssistant(); });
+  }
+  if (e.vignettes === "couleurs") {
+    $$(".tn-styles").forEach(z => vignettesAssistant(z, A, z.id === "as-themes" ? "theme" : "palette"));
+    $$("[data-amb]").forEach(b => b.onclick = () => { BQ.ambiance = b.dataset.amb; rendu(); });
+    $$(".tn-styles [data-v]").forEach(b => b.onclick = () => {
+      if (b.dataset.th) { A.theme = b.dataset.v; A.palette = null; } else { A.palette = +b.dataset.v; }
+      $$(".tn-styles [data-v]").forEach(x => x.setAttribute("aria-pressed", x === b)); apercuAssistant();
+    });
+  }
+  // Adresse : vérification en direct, puis création de la boutique (brouillon)
+  let verifie = async () => true;
+  if (e.cree) {
+    verifie = async () => {
+      const v = $("#as-pseudo").value; if (!v) { $("#as-dispo").textContent = ""; return A.pseudoOk = false; }
       const r = await api("/api/boutique/pseudo?p=" + encodeURIComponent(v));
       A.pseudo = r.pseudo; A.pseudoOk = !r.erreur || (BQ.etat.pseudo && r.pseudo === BQ.etat.pseudo);
       $("#as-dispo").className = "bt-dispo " + (A.pseudoOk ? "ok" : "ko");
-      $("#as-dispo").textContent = A.pseudoOk ? `✓ ${hote}/@${r.pseudo} est disponible` : r.erreur;
+      $("#as-dispo").textContent = A.pseudoOk ? `✓ ${location.host}/@${r.pseudo} est disponible` : r.erreur;
+      return A.pseudoOk;
     };
     let t; $("#as-pseudo").oninput = () => { clearTimeout(t); t = setTimeout(verifie, 350); };
     if (A.pseudo) verifie();
-    $("#as-nom").oninput = e => { A.nom = e.target.value; apercuAssistant(); };
-    $("#as-bio").oninput = e => { A.bio = e.target.value; apercuAssistant(); };
-    $$("[data-res]").forEach(i => i.oninput = () => { A.reseaux[i.dataset.res] = i.value; apercuAssistant(); });
-    $("#as-photo input").onchange = async e => {
-      const f = e.target.files[0]; if (!f) return;
-      $("#as-photo").innerHTML = '<span class="spin"></span>';
-      try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); }
-      catch (er) { toast(er.message); }
-      renduAssistantBoutique(el);
-    };
-    $("#as-suite").onclick = async () => {
-      if (!A.nom.trim()) return toast("Indique ton nom ou celui de ta marque");
-      await verifie(); if (!A.pseudoOk) return toast("Choisis une adresse disponible");
-      const b = $("#as-suite"); b.disabled = true;
-      try {
+  }
+  $("#as-suite").onclick = async () => {
+    const msg = e.valide?.(); if (typeof msg === "string") return toast(msg);
+    const b = $("#as-suite"); b.disabled = true;
+    try {
+      if (e.cree) {
+        if (!await verifie()) { b.disabled = false; return toast("Choisis une adresse disponible"); }
         if (!BQ.etat.pseudo || BQ.etat.pseudo !== A.pseudo) {
+          if (BQ.etat.pseudo) await api("/api/boutique/pseudo", {method: "PUT", body: {pseudo: A.pseudo}});
           BQ.etat = {...BQ.etat, ...await api("/api/boutique", {method: "POST", body: {pseudo: A.pseudo, nom: A.nom, bio: A.bio, photo: A.photo}})};
           BQ.page = structuredClone(BQ.etat.page); S.etat.boutique = BQ.etat.pseudo;
         }
-        aller(2);
-      } catch (er) { toast(er.message); b.disabled = false; }
-    };
-  } else if (A.etape === 2) {
-    $$("[data-obj]").forEach(b => b.onclick = () => {
-      const k = b.dataset.obj, i = A.objectifs.indexOf(k);
-      if (i >= 0) A.objectifs.splice(i, 1); else A.objectifs.push(k);
-      b.setAttribute("aria-pressed", i < 0); apercuAssistant();
-    });
-    $("#as-suite").onclick = () => aller(3);
-  } else if (A.etape === 3) {
-    const amb = BQ.ambiance;
-    remplitThemes($("#as-themes"), amb, A.theme, A.palette != null ? A.palettes[A.palette] : null);
-    $$("[data-mep]").forEach(b => b.onclick = () => { A.mep = b.dataset.mep;
-      $$("[data-mep]").forEach(x => x.setAttribute("aria-pressed", x === b)); b.closest(".bt-choix").nextElementSibling.textContent = DESC_MEP[A.mep] || ""; apercuAssistant(); });
-    $$("[data-amb]").forEach(b => b.onclick = () => { BQ.ambiance = b.dataset.amb; renduAssistantBoutique(el); });
-    $("#as-themes").onclick = e => { const b = e.target.closest("[data-theme]"); if (!b) return; A.theme = b.dataset.theme;
-      $$("#as-themes [data-theme]").forEach(x => x.setAttribute("aria-pressed", x === b)); apercuAssistant(); };
-    $$("[data-pal]").forEach(b => b.onclick = () => { A.palette = A.palette === +b.dataset.pal ? null : +b.dataset.pal; renduAssistantBoutique(el); });
-    $("#as-suite").onclick = () => aller(4);
-  } else {
-    $("#as-rdv-t") && ($("#as-rdv-t").oninput = e => { A.rdv.titre = e.target.value; apercuAssistant(); });
-    $("#as-rdv-u") && ($("#as-rdv-u").oninput = e => { A.rdv.url = e.target.value; apercuAssistant(); });
-    $("#as-liens").oninput = e => { const x = e.target; if (x.dataset.i) { A.liens[x.dataset.i][x.dataset.k] = x.value; apercuAssistant(); } };
-    $("#as-plus") && ($("#as-plus").onclick = () => { A.liens.push({titre: "", url: ""}); renduAssistantBoutique(el); });
-    $("#as-suite").onclick = async () => {
-      const b = $("#as-suite"); b.disabled = true;
-      const corpsPut = {reseaux: reseauxAssistant(A), design: designAssistant(A), blocs: blocsAssistant(A, false), publie: true, nom: A.nom, bio: A.bio};
-      if (A.objectifs.includes("marques")) corpsPut.kit = {...(BQ.page?.kit || {}), actif: true};
-      try {
-        await api("/api/boutique", {method: "PUT", body: corpsPut});
-        await chargeBoutique(); A.etape = 5; renduAssistantBoutique(el);
-      } catch (er) { toast(er.message); b.disabled = false; }
-    };
-  }
+      }
+      if (e.fin) {
+        const pr = produitAssistant(A);
+        const corps = {nom: A.nom, bio: A.bio, photo: A.photo, reseaux: reseauxAssistant(A), design: {...designAssistant(A), apparition: true}, blocs: blocsAssistant(A, false), publie: true};
+        if (pr) corps.produits = [...(BQ.page?.produits || []).filter(x => x.id !== pr.id), pr];
+        if (o("marques")) corps.kit = {...(BQ.page?.kit || {}), actif: true};
+        await api("/api/boutique", {method: "PUT", body: corps});
+        await chargeBoutique(); A.fini = true; BQ.htmlAssist = null; return rendu();
+      }
+      aller(A.etape + 1);
+    } catch (er) { toast(er.message); b.disabled = false; }
+  };
+  function o(k) { return A.objectifs.includes(k); }
 }
 function bravoBoutique(el) {
   const url = BQ.etat.url, A = BQ.assist || {objectifs: []};
-  const suite = A.objectifs.includes("vendre") ? ["produits", "Ajouter mon premier produit"] : A.objectifs.includes("marques") ? ["kit", "Compléter mon kit média"] : ["contenu", "Ajouter d'autres blocs"];
+  const suite = A.objectifs.includes("vendre") ? ["produits", A.produit?.titre?.trim() ? "Ajouter le fichier de mon produit" : "Ajouter mon premier produit"] : A.objectifs.includes("marques") ? ["kit", "Compléter mon kit média"] : ["contenu", "Ajouter d'autres blocs"];
   el.innerHTML = `<div class="bt-assist"><div class="panneau bt-bravo">
     <div class="gros">🎉</div><h2>Ta boutique est en ligne !</h2>
     <p class="sous" style="margin:0">Voici ton lien. Mets-le dans ta bio : tout le monde peut le voir dès maintenant.</p>
