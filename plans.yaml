@@ -39,23 +39,23 @@ gratuit:
 createur:
   nom: "Créateur"
   prix_mensuel: 29.90
-  analyses_par_mois: 8
-  adaptations_par_mois: 50      # 4 veilles × 7 + ~22 à la demande
+  analyses_par_mois: 12
+  adaptations_par_mois: 80      # 4 veilles × 7 + ~52 à la demande
   comptes_surveilles: 10
   studio_par_mois: 20          # carrousels et Reels montés
   veille_auto: true
-  budget_usd: 7             # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
+  budget_usd: 10            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 pro:
   nom: "Pro"
   prix_mensuel: 79
-  analyses_par_mois: 25
-  adaptations_par_mois: 200
+  analyses_par_mois: 30
+  adaptations_par_mois: 250
   comptes_surveilles: 30
   studio_par_mois: 60          # carrousels et Reels montés
   veille_auto: true
-  budget_usd: 25            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
+  budget_usd: 35            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   stripe_price: ""
 
 agence:
