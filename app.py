@@ -1897,9 +1897,8 @@ def boutique_maj():
 def boutique_apercu():
     """Aperçu en direct : la page telle qu'elle est dans l'éditeur, sans l'enregistrer."""
     uid = g.u["id"]
-    base = bq.lit_page(uid)
-    if not base:
-        abort(404)
+    # Pendant la création (avant que la boutique existe) : aperçu à partir de la page de départ
+    base = bq.lit_page(uid) or bq.page_initiale(uid, _profil_compte(uid), g.u.get("prenom") or "")
     c = request.get_json(force=True)
     page = dict(base)
     vue = c.get("vue", "page")
@@ -1929,7 +1928,17 @@ def boutique_apercu():
         h = bq.rendu_page(page, pseudo, True)
     if vue != "page":
         h = h.replace(bq.SCRIPT_PUBLIC, bq.SCRIPT_APERCU)
+    if not pseudo:  # pas encore d'adresse : les images passent par une route privée
+        h = h.replace("/@None/i/", "/api/boutique/i/").replace("/@/i/", "/api/boutique/i/")
     return _html(h)
+
+
+@app.get("/api/boutique/i/<nom>")
+@connecte
+def boutique_image_privee(nom):
+    if not NOM_IMAGE.match(nom):
+        abort(404)
+    return send_from_directory(bq.dossier(g.u["id"]) / "images", nom, max_age=86400)
 
 
 @app.post("/api/boutique/image")
