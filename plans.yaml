@@ -45,7 +45,7 @@ createur:
   studio_par_mois: 20          # carrousels et Reels montés
   veille_auto: true
   budget_usd: 10            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  stripe_price: ""
+  stripe_price: "price_1UWi9ILT6SI8Z9tJyvFk3I2j"
 
 pro:
   nom: "Pro"
@@ -56,7 +56,7 @@ pro:
   studio_par_mois: 60          # carrousels et Reels montés
   veille_auto: true
   budget_usd: 35            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  stripe_price: ""
+  stripe_price: "price_1UWi9uLT6SI8Z9tJneRTiBrM"
 
 agence:
   nom: "Agence"
@@ -67,4 +67,4 @@ agence:
   studio_par_mois: 200         # carrousels et Reels montés
   veille_auto: true
   budget_usd: 60            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  stripe_price: ""
+  stripe_price: "price_1UWiAMLT6SI8Z9tJXBLvSfhw"
