@@ -36,9 +36,58 @@ VERROUS: dict[int, threading.Lock] = {}
 _v = threading.Lock()
 
 
-def verrou(uid: int) -> threading.Lock:
+def verrou(uid) -> threading.Lock:
     with _v:
-        return VERROUS.setdefault(int(uid), threading.Lock())
+        return VERROUS.setdefault(str(uid), threading.Lock())
+
+
+# ------------------------------------------------------------
+#  Plusieurs boutiques par compte
+#  Identifiant d'une boutique (« bid ») : l'id de l'utilisatrice pour sa première boutique (12),
+#  « 12-2 », « 12-3 »… pour les suivantes. Stocké tel quel dans la colonne uid de la table boutiques.
+# ------------------------------------------------------------
+MOTIF_BID = re.compile(r"^\d+(-\d+)?$")
+
+
+def proprio(bid) -> int:
+    """Id de l'utilisatrice propriétaire d'une boutique."""
+    return int(str(bid).split("-")[0])
+
+
+def bid_propre(bid):
+    """12 → 12 (entier, comme avant) ; « 12-2 » → « 12-2 »."""
+    s = str(bid)
+    return int(s) if s.isdigit() else s
+
+
+def boutiques_de(uid: int) -> list:
+    """Toutes les boutiques d'une utilisatrice (créées ou en cours de création), la première en tête."""
+    l = [uid] if (dossier(uid) / "page.json").exists() or pseudo_de(uid) else []
+    d = DATA / "espaces" / str(uid) / "boutiques"
+    if d.exists():
+        l += [f"{uid}-{n.name}" for n in sorted(d.iterdir(), key=lambda x: int(x.name) if x.name.isdigit() else 0) if n.name.isdigit()]
+    return l
+
+
+def nouvelle_boutique(uid: int):
+    """Réserve l'identifiant d'une boutique supplémentaire (dossier vide jusqu'à la création)."""
+    if not boutiques_de(uid):
+        return uid
+    d = DATA / "espaces" / str(uid) / "boutiques"
+    n = max([int(x.name) for x in d.iterdir() if x.name.isdigit()] + [1]) + 1 if d.exists() else 2
+    bid = f"{uid}-{n}"
+    dossier(bid)
+    return bid
+
+
+def supprime_boutique(bid):
+    """Boutique supplémentaire uniquement : libère son adresse et efface son dossier."""
+    import shutil
+    if "-" not in str(bid):
+        raise ValueError("La première boutique ne peut pas être supprimée.")
+    with ab._verrou, ab._db() as c:
+        c.execute("DELETE FROM boutiques WHERE uid=?", (str(bid),))
+    shutil.rmtree(dossier(bid), ignore_errors=True)
 
 
 # ------------------------------------------------------------
@@ -60,15 +109,16 @@ def nettoie_pseudo(p: str) -> str:
     return re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9._-]+", "", p.replace(" ", "-"))).strip("-.")[:30]
 
 
-def uid_de(pseudo: str) -> int | None:
+def uid_de(pseudo: str):
+    """Identifiant de la boutique (pas forcément de l'utilisatrice : voir proprio)."""
     with ab._db() as c:
         r = c.execute("SELECT uid FROM boutiques WHERE pseudo=?", (pseudo.lower(),)).fetchone()
-    return r["uid"] if r else None
+    return bid_propre(r["uid"]) if r else None
 
 
 def pseudo_de(uid: int) -> str | None:
     with ab._db() as c:
-        r = c.execute("SELECT pseudo FROM boutiques WHERE uid=?", (uid,)).fetchone()
+        r = c.execute("SELECT pseudo FROM boutiques WHERE uid=?", (uid if isinstance(uid, int) else str(uid),)).fetchone()
     return r["pseudo"] if r else None
 
 
@@ -79,7 +129,7 @@ def pseudo_libre(pseudo: str, uid: int | None = None) -> str | None:
     if pseudo in RESERVES:
         return "Ce nom est réservé, choisis-en un autre."
     autre = uid_de(pseudo)
-    if autre and autre != uid:
+    if autre and str(autre) != str(uid):
         return "Ce nom est déjà pris, essaie une variante."
     return None
 
@@ -89,16 +139,18 @@ def reserve_pseudo(uid: int, pseudo: str) -> str | None:
     if err:
         return err
     with ab._verrou, ab._db() as c:
-        c.execute("DELETE FROM boutiques WHERE uid=?", (uid,))
-        c.execute("INSERT INTO boutiques(pseudo, uid) VALUES(?, ?)", (pseudo, uid))
+        cle = uid if isinstance(uid, int) else str(uid)
+        c.execute("DELETE FROM boutiques WHERE uid=?", (cle,))
+        c.execute("INSERT INTO boutiques(pseudo, uid) VALUES(?, ?)", (pseudo, cle))
     return None
 
 
 # ------------------------------------------------------------
 #  Stockage
 # ------------------------------------------------------------
-def dossier(uid: int) -> Path:
-    d = DATA / "espaces" / str(uid) / "boutique"
+def dossier(uid) -> Path:
+    s = str(uid)
+    d = DATA / "espaces" / s.split("-")[0] / "boutiques" / s.split("-")[1] if "-" in s else DATA / "espaces" / s / "boutique"
     for s in ("images", "fichiers"):
         (d / s).mkdir(parents=True, exist_ok=True)
     return d
@@ -1395,7 +1447,7 @@ def badge(page: dict | None = None) -> str:
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
     blocs = "".join(_bloc_enveloppe(b, page, pseudo) for b in page.get("blocs", []) if b.get("visible", True))
     if not blocs.strip() and apercu:
-        blocs = '<p class="txt" style="opacity:.6">Ajoute tes liens et tes produits : ils apparaîtront ici.</p>'
+        blocs = '<p class="txt" style="opacity:.6;grid-column:1/-1">Ajoute tes liens et tes produits : ils apparaîtront ici.</p>'
     corps = f'{_tete(page, pseudo)}<div class="blocs">{blocs}</div>{badge(page)}'
     img = f"{url.rsplit('/@', 1)[0]}{_img(pseudo, page['photo'])}" if page.get("photo") and url else ""
     return document(page, pseudo, corps, page.get("nom") or pseudo, (page.get("bio") or "")[:160], apercu, img, url)

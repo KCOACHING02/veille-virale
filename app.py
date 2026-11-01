@@ -1256,8 +1256,8 @@ import boutique_ventes as bv  # noqa: E402
 import tunnels  # noqa: E402
 
 
-def _droits_uid(uid: int) -> dict | None:
-    u = ab.get(uid)
+def _droits_uid(uid) -> dict | None:
+    u = ab.get(bq.proprio(uid))
     return droits(u) if u else None
 
 
@@ -1276,14 +1276,14 @@ def _vitrine(pseudo: str):
     page = bq.lit_page(uid) if uid else None
     if not page:
         abort(404)
-    if not page.get("publie") and session.get("uid") != uid:
+    if not page.get("publie") and session.get("uid") != bq.proprio(uid):
         abort(404)
-    page["_parrain"] = ab.code_parrain(uid)
+    page["_parrain"] = ab.code_parrain(bq.proprio(uid))
     return uid, page
 
 
-def _profil_compte(uid: int) -> dict | None:
-    f = espace_client(uid).profil_compte
+def _profil_compte(uid) -> dict | None:
+    f = espace_client(bq.proprio(uid)).profil_compte
     return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
 
 
@@ -1311,7 +1311,7 @@ def _avec_cookie(rep, pseudo: str):
 @app.get("/@<pseudo>")
 def boutique_publique(pseudo):
     uid, page = _vitrine(pseudo)
-    if session.get("uid") != uid:
+    if session.get("uid") != bq.proprio(uid):
         bq.compte(uid, "vue")
         if request.args.get("src"):
             bv.compte_source(uid, _src(pseudo), "vues")
@@ -1323,8 +1323,8 @@ def boutique_publique(pseudo):
 def _tunnel(pseudo: str, tid: str):
     uid, page = _vitrine(pseudo)
     t = next((x for x in page.get("tunnels") or [] if x.get("id") == tid), None)
-    proprio = ab.get(uid)
-    if not t or (not t.get("publie") and session.get("uid") != uid) or not proprio or reserve(proprio, "tunnels"):
+    proprio = ab.get(bq.proprio(uid))
+    if not t or (not t.get("publie") and session.get("uid") != bq.proprio(uid)) or not proprio or reserve(proprio, "tunnels"):
         abort(404)
     return uid, page, t
 
@@ -1332,7 +1332,7 @@ def _tunnel(pseudo: str, tid: str):
 @app.get("/@<pseudo>/t/<tid>")
 def tunnel_public(pseudo, tid):
     uid, page, t = _tunnel(pseudo, tid)
-    if session.get("uid") != uid:
+    if session.get("uid") != bq.proprio(uid):
         bq.compte(uid, "tunnels", f"{tid}:vues")
     return _avec_cookie(_html(tunnels.rendu(page, pseudo.lower(), t)), pseudo)
 
@@ -1352,7 +1352,7 @@ def tunnel_email(pseudo, tid):
 @app.get("/@<pseudo>/t/<tid>/offre")
 def tunnel_offre(pseudo, tid):
     uid, page, t = _tunnel(pseudo, tid)
-    if session.get("uid") != uid:
+    if session.get("uid") != bq.proprio(uid):
         bq.compte(uid, "tunnels", f"{tid}:clics")
     pid = (t.get("offre") or {}).get("produit")
     if pid and any(p.get("id") == pid and p.get("visible", True) for p in page.get("produits", [])):
@@ -1376,7 +1376,7 @@ def boutique_clic(pseudo, bid):
     u = f"/@{pseudo.lower()}/p/{pr['id']}?src=bouton" if pr else bq.url_sure((b or {}).get("url"))  # bouton → page de paiement
     if not u:
         abort(404)
-    if session.get("uid") != uid:
+    if session.get("uid") != bq.proprio(uid):
         bq.compte(uid, "clics", bid)
     return redirect(u, 302)
 
@@ -1402,7 +1402,7 @@ def _produit(page, pid):
 def boutique_produit(pseudo, pid):
     uid, page = _vitrine(pseudo)
     p = _produit(page, pid)
-    if session.get("uid") != uid:
+    if session.get("uid") != bq.proprio(uid):
         bq.compte(uid, "produits", pid)
         if request.args.get("src"):
             bv.compte_source(uid, _src(pseudo), "vues")
@@ -1446,11 +1446,11 @@ def _livre(uid, page, pseudo, p, email, prenom="", montant=0, devise="eur", sess
     if montant:
         bv.compte_source(uid, src, "ventes", montant)
         bv.utilise_code(uid, code)
-    proprio = ab.get(uid)
+    proprio = ab.get(bq.proprio(uid))
     if proprio and (montant or p.get("type") == "rdv"):
         quand = f" pour le {bv.date_fr(bv._date(rdv['debut']))}" if rdv else ""
         bq.mail_vente(proprio["email"], page, p, montant, devise, (email or "une cliente") + quand)
-        nt.notifie(uid, "Nouvelle réservation 📅" if rdv and not montant else f"Nouvelle vente : {bq.prix_txt(montant, devise)} 🎉",
+        nt.notifie(bq.proprio(uid), "Nouvelle réservation 📅" if rdv and not montant else f"Nouvelle vente : {bq.prix_txt(montant, devise)} 🎉",
                    f"{p.get('titre')}{quand}", "/app")
     return v
 
@@ -1663,7 +1663,7 @@ def boutique_kit_media(pseudo, nom):
     prof = _profil_compte(uid) if uid else None
     if not prof or nom not in {t.get("miniature") for t in prof.get("top") or []}:
         abort(404)
-    f = espace_client(uid).media / nom
+    f = espace_client(bq.proprio(uid)).media / nom
     if not f.exists():
         abort(404)
     allege(f)
@@ -1718,24 +1718,87 @@ def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False)
             "tunnels_ok": not reserve(g.u, "tunnels"), "tunnels_stats": bq.stats_tunnels(uid)}
 
 
+def bq_active():
+    """Boutique ouverte dans l'éditeur : celle choisie dans la session, si elle appartient bien à l'utilisatrice."""
+    b = str(session.get("bq") or "")
+    if bq.MOTIF_BID.match(b) and bq.proprio(b) == g.u["id"]:
+        return bq.bid_propre(b)
+    return g.u["id"]
+
+
+def max_boutiques(u: dict) -> int:
+    return 999 if est_admin(u) else int((ab.plans().get(ab.plan_effectif(u)) or {}).get("boutiques", 1) or 1)
+
+
+@app.get("/api/boutiques")
+@connecte
+def boutiques_liste():
+    uid, active = g.u["id"], str(bq_active())
+    res = []
+    for bid in bq.boutiques_de(uid):
+        page = bq.lit_page(bid) or {}
+        ps = bq.pseudo_de(bid)
+        res.append({"id": str(bid), "pseudo": ps, "nom": page.get("nom") or "Boutique en création", "publie": bool(page.get("publie")),
+                    "photo": f"/@{ps}/i/{page['photo']}" if ps and page.get("photo") else "", "url": f"{url_site()}/@{ps}" if ps else "",
+                    "produits": len(page.get("produits") or []), "active": str(bid) == active, "premiere": str(bid) == str(uid),
+                    "fond": (page.get("design") or {}).get("fond1", "")[:7]})
+    return jsonify({"boutiques": res, "max": max_boutiques(g.u)})
+
+
+@app.post("/api/boutiques/ouvrir")
+@connecte
+def boutiques_ouvrir():
+    b = str((request.get_json(force=True) or {}).get("id") or "")
+    if not (bq.MOTIF_BID.match(b) and bq.proprio(b) == g.u["id"] and b in map(str, bq.boutiques_de(g.u["id"]))):
+        return jsonify({"erreur": "Boutique introuvable."}), 404
+    session["bq"] = b
+    return jsonify({"ok": True})
+
+
+@app.post("/api/boutiques/nouvelle")
+@connecte
+def boutiques_nouvelle():
+    uid = g.u["id"]
+    l = bq.boutiques_de(uid)
+    # une boutique supplémentaire jamais terminée est réutilisée plutôt que d'en réserver une autre
+    vide = next((b for b in l if "-" in str(b) and not bq.lit_page(b)), None)
+    if not vide and len([b for b in l if bq.lit_page(b)]) >= max_boutiques(g.u):
+        n = max_boutiques(g.u)
+        return jsonify({"erreur": f"Ta formule comprend {n} boutique{'s' if n > 1 else ''}. Passe à la formule supérieure pour en créer d'autres.", "quota": True}), 402
+    bid = vide or bq.nouvelle_boutique(uid)
+    session["bq"] = str(bid)
+    return jsonify({"id": str(bid)})
+
+
+@app.delete("/api/boutiques/<bid>")
+@connecte
+def boutiques_supprime(bid):
+    if not (bq.MOTIF_BID.match(bid) and bq.proprio(bid) == g.u["id"] and "-" in bid):
+        return jsonify({"erreur": "Ta première boutique ne peut pas être supprimée : tu peux la mettre hors ligne."}), 400
+    bq.supprime_boutique(bid)
+    if str(session.get("bq")) == bid:
+        session.pop("bq", None)
+    return jsonify({"ok": True})
+
+
 @app.get("/api/boutique")
 @connecte
 def boutique_etat():
-    return jsonify(_etat_boutique(g.u["id"], bq.lit_page(g.u["id"]), bool(request.args.get("stripe"))))
+    return jsonify(_etat_boutique(bq_active(), bq.lit_page(bq_active()), bool(request.args.get("stripe"))))
 
 
 @app.get("/api/boutique/pseudo")
 @connecte
 def boutique_pseudo_libre():
     p = bq.nettoie_pseudo(request.args.get("p", ""))
-    return jsonify({"pseudo": p, "erreur": bq.pseudo_libre(p, g.u["id"])})
+    return jsonify({"pseudo": p, "erreur": bq.pseudo_libre(p, bq_active())})
 
 
 @app.post("/api/boutique")
 @connecte
 def boutique_cree():
     c = request.get_json(force=True)
-    uid = g.u["id"]
+    uid = bq_active()
     pseudo = bq.nettoie_pseudo(c.get("pseudo", ""))
     err = bq.reserve_pseudo(uid, pseudo)
     if err:
@@ -1758,7 +1821,7 @@ def boutique_cree():
 @connecte
 def boutique_change_pseudo():
     pseudo = bq.nettoie_pseudo(request.get_json(force=True).get("pseudo", ""))
-    err = bq.reserve_pseudo(g.u["id"], pseudo)
+    err = bq.reserve_pseudo(bq_active(), pseudo)
     return (jsonify({"erreur": err}), 400) if err else jsonify({"pseudo": pseudo, "url": f"{url_site()}/@{pseudo}"})
 
 
@@ -1866,7 +1929,7 @@ def _produit_propre(p: dict, ancien: dict | None) -> dict:
 @connecte
 def boutique_maj():
     c = request.get_json(force=True)
-    uid = g.u["id"]
+    uid = bq_active()
     with bq.verrou(uid):
         page = bq.lit_page(uid)
         if not page:
@@ -1943,7 +2006,7 @@ def boutique_maj():
 @connecte
 def boutique_apercu():
     """Aperçu en direct : la page telle qu'elle est dans l'éditeur, sans l'enregistrer."""
-    uid = g.u["id"]
+    uid = bq_active()
     # Pendant la création (avant que la boutique existe) : aperçu à partir de la page de départ
     base = bq.lit_page(uid) or bq.page_initiale(uid, _profil_compte(uid), g.u.get("prenom") or "")
     c = request.get_json(force=True)
@@ -1991,7 +2054,7 @@ def boutique_apercu():
 def boutique_image_privee(nom):
     if not NOM_IMAGE.match(nom):
         abort(404)
-    return send_from_directory(bq.dossier(g.u["id"]) / "images", nom, max_age=86400)
+    return send_from_directory(bq.dossier(bq_active()) / "images", nom, max_age=86400)
 
 
 @app.post("/api/boutique/image")
@@ -2002,13 +2065,13 @@ def boutique_image_envoi():
         return jsonify({"erreur": "Aucune image reçue."}), 400
     role = request.form.get("role", "")
     try:
-        nom = bq.enregistre_image(g.u["id"], f.stream, 700 if role == "photo" else 1600)
+        nom = bq.enregistre_image(bq_active(), f.stream, 700 if role == "photo" else 1600)
     except Exception:  # noqa: BLE001
         return jsonify({"erreur": "Ce fichier n'est pas une image lisible (JPG, PNG ou WebP)."}), 400
     r = {"nom": nom}
     if role == "photo":
         try:
-            r["palettes"] = bq.palettes_photo(bq.dossier(g.u["id"]) / "images" / nom)
+            r["palettes"] = bq.palettes_photo(bq.dossier(bq_active()) / "images" / nom)
         except Exception:  # noqa: BLE001
             pass
     return jsonify(r)
@@ -2017,10 +2080,10 @@ def boutique_image_envoi():
 @app.get("/api/boutique/palettes")
 @connecte
 def boutique_palettes():
-    page = bq.lit_page(g.u["id"])
+    page = bq.lit_page(bq_active())
     if not page or not page.get("photo"):
         return jsonify({"palettes": []})
-    return jsonify({"palettes": bq.palettes_photo(bq.dossier(g.u["id"]) / "images" / page["photo"])})
+    return jsonify({"palettes": bq.palettes_photo(bq.dossier(bq_active()) / "images" / page["photo"])})
 
 
 EXT_PRODUITS = {".pdf", ".zip", ".epub", ".mp3", ".mp4", ".mov", ".m4a", ".png", ".jpg", ".jpeg", ".docx", ".xlsx", ".pptx", ".key", ".numbers", ".pages", ".txt", ".csv"}
@@ -2030,7 +2093,7 @@ EXT_PRODUITS = {".pdf", ".zip", ".epub", ".mp3", ".mp4", ".mov", ".m4a", ".png",
 @connecte
 def boutique_fichier_produit(pid):
     f = request.files.get("fichier")
-    uid = g.u["id"]
+    uid = bq_active()
     if not f or not f.filename:
         return jsonify({"erreur": "Aucun fichier reçu."}), 400
     ext = Path(f.filename).suffix.lower()
@@ -2055,7 +2118,7 @@ def boutique_fichier_produit(pid):
 @app.get("/api/boutique/stats")
 @connecte
 def boutique_stats():
-    uid = g.u["id"]
+    uid = bq_active()
     page = bq.lit_page(uid)
     if not page:
         return jsonify({})
@@ -2068,7 +2131,7 @@ def boutique_stats():
 @app.get("/api/boutique/rdv")
 @connecte
 def boutique_rdv_liste():
-    uid = g.u["id"]
+    uid = bq_active()
     page = bq.lit_page(uid) or {"produits": []}
     titres = {p["id"]: p.get("titre") for p in page["produits"]}
     maint = bv.maintenant() - timedelta(hours=2)
@@ -2080,7 +2143,7 @@ def boutique_rdv_liste():
 @app.delete("/api/boutique/rdv/<rid>")
 @connecte
 def boutique_rdv_annule(rid):
-    uid = g.u["id"]
+    uid = bq_active()
     r = next((x for x in bv.lit_rdv(uid) if x["id"] == rid), None)
     if not r:
         abort(404)
@@ -2097,7 +2160,7 @@ def boutique_rdv_annule(rid):
 @app.get("/api/boutique/avis")
 @connecte
 def boutique_avis_liste():
-    uid = g.u["id"]
+    uid = bq_active()
     page = bq.lit_page(uid) or {"produits": []}
     titres = {p["id"]: p.get("titre") for p in page["produits"]}
     return jsonify({"avis": [{**a, "produit_titre": titres.get(a["produit"], "Produit supprimé")} for a in reversed(bv.lit_avis(uid))]})
@@ -2107,7 +2170,7 @@ def boutique_avis_liste():
 @connecte
 def boutique_avis_modere(aid):
     c = request.get_json(force=True)
-    bv.modere_avis(g.u["id"], aid, visible=bool(c.get("visible")), supprimer=bool(c.get("supprimer")))
+    bv.modere_avis(bq_active(), aid, visible=bool(c.get("visible")), supprimer=bool(c.get("supprimer")))
     return jsonify({"ok": True})
 
 
@@ -2115,7 +2178,7 @@ def boutique_avis_modere(aid):
 @connecte
 def boutique_qr(ext):
     from flask import Response
-    pseudo = bq.pseudo_de(g.u["id"])
+    pseudo = bq.pseudo_de(bq_active())
     if not pseudo or ext not in ("png", "svg"):
         abort(404)
     url = f"{url_site()}/@{pseudo}?src=qr"
@@ -2155,7 +2218,7 @@ def boutique_guide(pid):
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
     plan = [str(x)[:200] for x in (request.get_json(silent=True) or {}).get("plan") or []][:10]
-    return jsonify({"job": lance(uid, "Écriture du guide", boutique_ia.guide, g.esp, g.esp.lit_config(), uid, pid, plan, demo=en_demo(),
+    return jsonify({"job": lance(uid, "Écriture du guide", boutique_ia.guide, g.esp, g.esp.lit_config(), bq_active(), pid, plan, demo=en_demo(),
                                  base=url_site(), file_=FILE_STUDIO, apres=lambda _: ab.compte_usage(uid, studio=1))})
 
 
@@ -2169,7 +2232,7 @@ def boutique_sequence_ecrire():
     if msg:
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
-    return jsonify({"job": lance(uid, "Séquence d'e-mails", boutique_ia.sequence, g.esp, g.esp.lit_config(), uid, demo=en_demo(), file_=FILE_STUDIO,
+    return jsonify({"job": lance(uid, "Séquence d'e-mails", boutique_ia.sequence, g.esp, g.esp.lit_config(), bq_active(), demo=en_demo(), file_=FILE_STUDIO,
                                  apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
 
 
@@ -2177,13 +2240,13 @@ def boutique_sequence_ecrire():
 @connecte
 def boutique_sequence_test():
     import emails
-    page = bq.lit_page(g.u["id"])
+    page = bq.lit_page(bq_active())
     c = request.get_json(force=True)
     i = int(c.get("i") or 0)
     e = ((page or {}).get("sequence") or {}).get("emails") or []
     if not page or i >= len(e):
         return jsonify({"erreur": "Enregistre d'abord l'e-mail."}), 400
-    sujet, h = bv._mail_sequence(page, url_site(), bq.pseudo_de(g.u["id"]), {"prenom": g.u.get("prenom") or "", "jeton": "test"}, e[i])
+    sujet, h = bv._mail_sequence(page, url_site(), bq.pseudo_de(bq_active()), {"prenom": g.u.get("prenom") or "", "jeton": "test"}, e[i])
     if not emails.envoie(g.u["email"], "[Test] " + sujet, h):
         return jsonify({"erreur": "Les e-mails ne sont pas encore configurés (clé Resend absente)."}), 400
     return jsonify({"ok": True, "email": g.u["email"]})
@@ -2193,14 +2256,14 @@ def boutique_sequence_test():
 @connecte
 def boutique_inscrits_csv():
     from flask import Response
-    return Response(bq.inscrits_csv(g.u["id"]), mimetype="text/csv",
+    return Response(bq.inscrits_csv(bq_active()), mimetype="text/csv",
                     headers={"Content-Disposition": "attachment; filename=inscrits.csv"})
 
 
 @app.post("/api/boutique/stripe")
 @connecte
 def boutique_stripe():
-    uid = g.u["id"]
+    uid = bq_active()
     page = bq.lit_page(uid)
     if not page:
         return jsonify({"erreur": "Crée d'abord ta boutique."}), 404
@@ -2282,7 +2345,7 @@ def vitrines():
     with ab._db() as c:
         lignes = c.execute("SELECT pseudo, uid FROM boutiques").fetchall()
     for r in lignes:
-        page = bq.lit_page(r["uid"])
+        page = bq.lit_page(bq.bid_propre(r["uid"]))
         if page and page.get("publie") and page.get("exemple") and page.get("photo"):
             res.append({"pseudo": r["pseudo"], "nom": page.get("nom") or r["pseudo"], "produits": len(page.get("produits") or []),
                         "maj": page.get("maj") or ""})
@@ -2436,6 +2499,7 @@ def admin_donnees():
     ca_boutiques, boutiques_publiees, ventes_boutiques = 0, 0, 0
     with ab._db() as cx:
         for r in cx.execute("SELECT uid FROM boutiques").fetchall():
+            r = {"uid": bq.bid_propre(r["uid"])}
             page = bq.lit_page(r["uid"])
             if page and page.get("publie"):
                 boutiques_publiees += 1
@@ -2512,7 +2576,8 @@ def planificateur_emails():
                 uids = [r["uid"] for r in c.execute("SELECT uid FROM boutiques").fetchall()]
             for uid in uids:
                 try:
-                    u = ab.get(uid)
+                    uid = bq.bid_propre(uid)
+                    u = ab.get(bq.proprio(uid))
                     if u and droits(u)["actif"] and droits(u)["options"]["sequences_emails"]:
                         bv.envoie_sequences(uid, url_site())
                 except Exception:  # noqa: BLE001
