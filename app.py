@@ -1506,7 +1506,10 @@ def boutique_clic(pseudo, bid):
     uid, page = _vitrine(pseudo)
     b = next((x for x in page["blocs"] if x.get("id") == bid and x.get("type") == "lien"), None)
     pr = next((x for x in page["produits"] if b and x.get("id") == b.get("produit") and x.get("visible", True)), None)
-    u = f"/@{pseudo.lower()}/p/{pr['id']}?src=bouton" if pr else bq.url_sure((b or {}).get("url"))  # bouton → page de paiement
+    tn = next((t for t in page.get("tunnels") or [] if b and b.get("tunnel") and t.get("id") == b["tunnel"] and t.get("publie")), None)
+    u = (f"/@{pseudo.lower()}/p/{pr['id']}?src=bouton" if pr  # bouton → page de paiement
+         else f"/@{pseudo.lower()}/t/{tn['id']}" if tn  # bouton → tunnel de vente
+         else bq.url_sure((b or {}).get("url")))
     if not u:
         abort(404)
     if session.get("uid") != bq.proprio(uid):
@@ -1968,7 +1971,7 @@ def _bloc_propre(b: dict) -> dict | None:
         return None
     r = {"id": str(b.get("id") or bq.nouvel_id())[:12], "type": t, "visible": b.get("visible", True) is not False}
     for k, lim in (("titre", 120), ("url", 800), ("texte", 1200), ("emoji", 8), ("bouton", 60), ("produit", 12), ("merci", 200),
-                   ("legende", 200), ("code", 40)):
+                   ("legende", 200), ("code", 40), ("tunnel", 12)):
         if isinstance(b.get(k), str):
             r[k] = b[k].strip()[:lim]
     if t == "lien":

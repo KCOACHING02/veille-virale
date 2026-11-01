@@ -1216,6 +1216,12 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
         if pr:  # bouton vers la page de paiement d'un produit : même onglet, comptée comme un clic
             return (f'<a class="{cls}" href="/@{pseudo}/l/{b["id"]}">'
                     f'{vig}<span>{E(b.get("titre") or pr.get("titre") or "Je le veux")}</span><i class="fl">→</i><i class="reflet"></i></a>')
+        tn = next((x for x in page.get("tunnels") or [] if b.get("tunnel") and x.get("id") == b["tunnel"]), None)
+        if b.get("tunnel"):  # bouton vers un tunnel de vente : même onglet, masqué tant que le tunnel n'est pas en ligne
+            if not tn or not tn.get("publie"):
+                return ""
+            return (f'<a class="{cls}" href="/@{pseudo}/l/{b["id"]}">'
+                    f'{vig}<span>{E(b.get("titre") or "Découvrir")}</span><i class="fl">→</i><i class="reflet"></i></a>')
         u = url_sure(b.get("url"))
         if not u:
             return ""

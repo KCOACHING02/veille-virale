@@ -4611,8 +4611,10 @@ function corpsBlocContenu(b, i) {
       + `<div class="champ"><label>Ce bouton mène à</label><select data-b="${i}" data-bk="produit" data-rerendu="1">
           <option value="">Une adresse web (ton site, Calendly, une vidéo…)</option>
           ${prods.map(p => `<option value="${p.id}" ${p.id === b.produit ? "selected" : ""}>💳 La page de paiement : ${esc(p.titre || "Sans titre")} (${euros(p.promo_prix || p.prix)})</option>`).join("")}
+          ${(BQ.page.tunnels || []).map(t => `<option value="t:${t.id}" ${t.id === b.tunnel ? "selected" : ""}>🎯 Le tunnel : ${esc(t.titre || "Sans titre")}${t.publie ? "" : " (pas encore en ligne)"}</option>`).join("")}
         </select>${prods.length ? "" : '<span class="aide">Pour faire payer avec ce bouton, crée d\'abord ton produit dans l\'onglet <b>Produits</b> : il apparaîtra dans cette liste.</span>'}</div>`
-      + (b.produit && prods.some(p => p.id === b.produit)
+      + (b.tunnel ? '<p class="aide" style="margin:-4px 0 12px">Le bouton ouvre ton tunnel de vente. Il n\'apparaît sur ta page que si le tunnel est en ligne.</p>'
+        : b.produit && prods.some(p => p.id === b.produit)
         ? '<p class="aide" style="margin:-4px 0 12px">Le bouton ouvre la page de paiement du produit : prix, code promo et paiement sécurisé. Le fichier ou l\'accès est envoyé tout seul après l\'achat.</p>'
         : champB(i, "url", "Adresse", b.url, 'inputmode="url" autocapitalize="off" placeholder="ton-site.fr"'))
       + `<div class="champ"><label>Petite image ou emoji (facultatif)</label><div class="bt-rangee">
@@ -4697,6 +4699,7 @@ function lieChamps(z) {
       }
       if (x.dataset.it !== undefined) { b.items[+x.dataset.it][x.dataset.ik] = x.value; return modifieBoutique(); }
       b[x.dataset.bk] = x.type === "checkbox" ? x.checked : x.value;
+      if (x.dataset.bk === "produit" && b.type === "lien") { if (x.value.startsWith("t:")) { b.tunnel = x.value.slice(2); b.produit = ""; } else delete b.tunnel; }
       if (x.dataset.rerendu) return modifieBoutique(true);  // ex. bouton → produit : le champ « Adresse » disparaît
       const r = x.closest(".bt-bloc")?.querySelector(".res b"); if (r) r.textContent = resumeBloc(b) + (b.en_avant ? " ✨" : "");
     } else if (x.dataset.d) {
@@ -5019,7 +5022,10 @@ function etapesTunnel(t) {
         <details class="tn-rapide" ${prods.length ? "" : "open"}><summary>${prods.length ? "+ Ou crée un nouveau produit" : "Tu n'as pas encore de produit : crée-le ici"}</summary>
           <div class="duo"><div class="champ"><label for="tn-np-t">Nom du produit</label><input id="tn-np-t" placeholder="Programme 21 jours" maxlength="120"></div>
           <div class="champ"><label for="tn-np-p">Prix (€)</label><input id="tn-np-p" type="number" min="0" step="1" placeholder="47" inputmode="decimal"></div></div>
-          <button class="btn petit prim" id="tn-np">Créer ce produit</button><small class="aide" style="display:block;margin-top:6px">Tu ajouteras ensuite le fichier, le lien ou les créneaux dans l'onglet Produits.</small></details>`
+          <div class="champ"><label for="tn-np-l">Lien d'affiliation (facultatif)</label><input id="tn-np-l" placeholder="https://… (si le paiement se fait sur un autre site)" inputmode="url" autocapitalize="off"></div>
+          <button class="btn petit prim" id="tn-np">Créer ce produit</button><small class="aide" style="display:block;margin-top:6px">Sans lien d'affiliation, ajoute ensuite le fichier ou l'accès dans l'onglet Produits.</small></details>`
+        + (() => { const pr = p.produits.find(x => x.id === t.offre.produit);
+            return pr && !aLivrer(pr) ? `<p class="bt-stripe info" style="display:block">⚠️ <b>« ${esc(pr.titre || "Sans titre")} » n'a encore rien à livrer</b> : sa page affiche « bientôt disponible ». Ajoute le fichier, ou ton lien d'affiliation, dans l'onglet Produits.</p>` : ""; })()
         + ch("offre.titre", "Titre de l'offre") + ch("offre.texte", "Ce qu'elle obtient", {long: true}) + ch("offre.bouton", "Texte du bouton", {max: 40})
         + (quiz ? "" : ch("offre.garantie", "Garantie (facultatif)", {ph: "Satisfaite ou remboursée pendant 14 jours"})); }};
   const design = {nom: "Ton design", style: true, pourquoi: "Maintenant que tes textes sont prêts, choisis l'allure de ta page. Chaque vignette montre ta vraie page avec ce style. Le sombre et doré fait premium, le clair rassure, le coloré attire l'œil en story.",
@@ -5060,6 +5066,15 @@ function etapesTunnel(t) {
       corps: () => ch("faq.titre", "Titre") + liste("faq.items", (x, i, k) => `<input data-tp="${k}.q" value="${esc(x.q)}" placeholder="Question" maxlength="200"><textarea data-tp="${k}.r" placeholder="Réponse" maxlength="800">${esc(x.r)}</textarea>`, {q: "", r: ""}, 12, "Une question")},
     design, offre, fin];
 }
+// Un tunnel en ligne s'annonce sur la page de la boutique par un bouton mis en avant (bloc « lien » qui porte `tunnel`).
+const blocTunnel = t => (BQ.page.blocs || []).find(b => b.type === "lien" && b.tunnel === t.id);
+function metTunnelSurPage(t) {
+  if (blocTunnel(t)) return false;
+  const pr = BQ.page.produits.find(x => x.id === t.offre?.produit);
+  const titre = t.type === "quiz" ? "🎯 Fais le test gratuit" : `✨ Découvrir ${pr?.titre || t.offre?.titre || "mon offre"}`;
+  BQ.page.blocs.unshift({id: idCourt(), type: "lien", tunnel: t.id, titre: titre.slice(0, 120), en_avant: true, visible: true});
+  return true;
+}
 function assistantTunnel(z) {
   const A = BQ.tnAssist, p = BQ.page, modeles = BQ.etat.options.modeles_tunnels || [];
   const t = p.tunnels.find(x => x.id === A.id);
@@ -5098,11 +5113,14 @@ function assistantTunnel(z) {
   $("#tn-prec") && ($("#tn-prec").onclick = () => { A.etape--; rendu(); scrollTo({top: 0, behavior: "smooth"}); });
   $("#tn-suiv") && ($("#tn-suiv").onclick = () => { A.etape++; rendu(); scrollTo({top: 0, behavior: "smooth"}); });
   $("#tn-detail") && ($("#tn-detail").onclick = () => { BQ.tnAssist = null; BQ.tunnelId = t.id; renduOnglet(); });
-  $("#tn-publier") && ($("#tn-publier").onclick = async () => { t.publie = true; await sauveBoutique(true); toast("Ton tunnel est en ligne 🎉"); quitter(); });
+  $("#tn-publier") && ($("#tn-publier").onclick = async () => { t.publie = true; const ajoute = metTunnelSurPage(t); await sauveBoutique(true);
+    toast(ajoute ? "Ton tunnel est en ligne 🎉 Un bouton l'annonce en haut de ta boutique" : "Ton tunnel est en ligne 🎉"); quitter(); });
   $("#tn-np") && ($("#tn-np").onclick = () => {
     const titre = $("#tn-np-t").value.trim(), prix = Math.round((+$("#tn-np-p").value.replace(",", ".") || 0) * 100);
     if (!titre) return toast("Donne un nom à ton produit");
-    const np = {id: idCourt(), titre, prix, visible: true, type: "telechargement"};
+    const lien = ($("#tn-np-l")?.value || "").trim();
+    if (lien && !/^https?:\/\/\S+\.\S+/.test(lien)) return toast("Colle un lien complet, qui commence par https://");
+    const np = {id: idCourt(), titre, prix, visible: true, type: "telechargement", ...(lien ? {externe: true, lien} : {})};
     p.produits.push(np); t.offre.produit = np.id; if (!t.offre.titre) t.offre.titre = titre;
     modifieBoutique(false); toast("Produit créé"); rendu();
   });
@@ -5130,11 +5148,16 @@ function ongletTunnels(z) {
       <div class="bt-prods">${p.tunnels.map(x => { const s = st[x.id] || {}; const [ic, nom] = TYPES_TUNNEL[x.type];
         return `<div class="tn-ligne"><button class="bt-prod" data-tn="${x.id}"><span class="vig">${ic}</span>
           <span><b>${esc(x.titre)}</b><span class="meta"><span>${nom}</span><span>👁 ${s.vues || 0}</span>${x.type === "quiz" ? `<span>✉️ ${s.emails || 0}</span>` : ""}<span>🛒 ${s.clics || 0}</span>${x.publie ? "" : "<span>Masqué</span>"}${x.offre?.produit ? "" : "<span>⚠️ Aucun produit</span>"}</span></span>
-          <span aria-hidden="true" style="color:var(--ink-3)">›</span></button></div>`; }).join("") || '<div class="vide" style="padding:16px;text-align:center;color:var(--ink-3)">Pas encore de tunnel. Choisis un modèle ci-dessous.</div>'}</div></section>
+          <span aria-hidden="true" style="color:var(--ink-3)">›</span></button>
+          ${blocTunnel(x) ? `<small class="aide tn-sur-page">✓ Bouton sur ta boutique${x.publie ? "" : " (visible une fois le tunnel en ligne)"}</small>`
+            : `<button class="btn petit" data-tn-page="${x.id}" style="margin:6px 0 4px">📍 Ajouter un bouton sur ma boutique</button>`}</div>`; }).join("") || '<div class="vide" style="padding:16px;text-align:center;color:var(--ink-3)">Pas encore de tunnel. Choisis un modèle ci-dessous.</div>'}</div></section>
     <section class="bt-sec tn-cree"><h3>Créer un tunnel de vente</h3><p class="aide">Je te guide étape par étape : le type de tunnel, ta promesse, ${"tes questions ou tes arguments"}, puis ton offre. Tout est déjà pré-rédigé, tu adaptes à ta niche. Compte 10 minutes.</p>
       <button class="btn prim" id="tn-nouveau">+ Créer un tunnel, pas à pas</button></section>`;
   z.querySelectorAll("[data-tn]").forEach(b => b.onclick = () => { BQ.tunnelId = b.dataset.tn; BQ.vueAp = "t:" + BQ.tunnelId; renduOnglet(); apercu(true); });
   $("#tn-nouveau").onclick = () => { BQ.tnAssist = {etape: 0, type: null, id: null}; renduOnglet(); };
+  z.querySelectorAll("[data-tn-page]").forEach(b => b.onclick = async () => { const t = p.tunnels.find(x => x.id === b.dataset.tnPage);
+    metTunnelSurPage(t); await sauveBoutique(true); renduOnglet(); apercu(true);
+    toast(t.publie ? "Bouton ajouté en haut de ta boutique" : "Bouton ajouté : il apparaîtra quand le tunnel sera en ligne"); });
   if (BQ.vueAp.startsWith("t:")) { BQ.vueAp = "page"; apercu(true); }
 }
 function editeTunnel(z, t) {
@@ -5198,7 +5221,8 @@ function editeTunnel(z, t) {
   const zs = $("#tn-zone-style"), rStyle = () => { zs.innerHTML = choixStyleTunnel(t); lieStyleTunnel(zs, t, rStyle); };
   zs.closest("details").addEventListener("toggle", function f() { if (this.open) { lieStyleTunnel(zs, t, rStyle); this.removeEventListener("toggle", f); } });
   $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true); };
-  $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué"; sauveBoutique(true); };
+  $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué";
+    if (t.publie && metTunnelSurPage(t)) toast("Un bouton vers ce tunnel est ajouté en haut de ta boutique"); sauveBoutique(true); apercu(true); };
   z.querySelectorAll("[data-tadd]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tadd) || []; L.push(JSON.parse(b.dataset.modele)); fixe(t, b.dataset.tadd, L); maj(true); });
   z.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tdel); L.splice(+b.dataset.i, 1); maj(true); });
   $("#tn-suppr").onclick = () => {
