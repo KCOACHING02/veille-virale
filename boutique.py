@@ -1179,7 +1179,14 @@ def _youtube(u: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None = None) -> str:
+def tunnel_du_produit(page: dict, pid: str) -> dict | None:
+    """Tunnel de vente en ligne qui vend ce produit : la carte du produit y mène plutôt qu'à la page de paiement."""
+    if not page.get("_tunnels_ok"):
+        return None
+    return next((t for t in page.get("tunnels") or [] if t.get("publie") and (t.get("offre") or {}).get("produit") == pid), None)
+
+
+def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None = None, page: dict | None = None) -> str:
     from boutique_ventes import prix_effectif
     pe = prix_effectif(p)
     forme = f'pi-{d.get("image_forme", "carre")}'
@@ -1196,7 +1203,9 @@ def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None =
         style_prix = "bouton"
     px = f'<span class="px pp-{style_prix}">{E(prix_txt(pe["prix"], p.get("devise", "eur")))}{barre}</span>'
     dans_image, sous_titre = (px, "") if style_prix == "pastille" else ("", px)
-    return (f'<a class="prod carte" href="/@{pseudo}/p/{p["id"]}"><span class="pimg">{img}{dans_image}</span>'
+    tn = tunnel_du_produit(page or {}, p["id"])
+    href = f'/@{pseudo}/t/{tn["id"]}' if tn else f'/@{pseudo}/p/{p["id"]}'
+    return (f'<a class="prod carte" href="{href}"><span class="pimg">{img}{dans_image}</span>'
             f'<div class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{sous_titre}</div></a>')
 
 
@@ -1237,14 +1246,14 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
                 f'allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe>') if vid else ""
     if t == "produit":
         p = prods.get(b.get("produit"))
-        return f'<div class="produits v-vitrine">{_carte_produit(p, pseudo, d, "vitrine", page.get("_avis"))}</div>' if p else ""
+        return f'<div class="produits v-vitrine">{_carte_produit(p, pseudo, d, "vitrine", page.get("_avis"), page)}</div>' if p else ""
     if t == "produits":
         liste = [prods[i] for i in (b.get("ids") or [p["id"] for p in page["produits"]]) if i in prods]
         if not liste:
             return ""
         titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
         v = d["produits_vue"]
-        return f'{titre}<div class="produits v-{v}">{"".join(_carte_produit(p, pseudo, d, v, page.get("_avis")) for p in liste)}</div>'
+        return f'{titre}<div class="produits v-{v}">{"".join(_carte_produit(p, pseudo, d, v, page.get("_avis"), page) for p in liste)}</div>'
     if t == "capture":
         txt = f'<p>{E(b["texte"])}</p>' if b.get("texte") else ""
         btn = E(b.get("bouton") or "Je m’inscris")

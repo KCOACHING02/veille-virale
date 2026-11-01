@@ -1412,6 +1412,8 @@ def _vitrine(pseudo: str):
     if not page.get("publie") and session.get("uid") != bq.proprio(uid):
         abort(404)
     page["_parrain"] = ab.code_parrain(bq.proprio(uid))
+    proprio = ab.get(bq.proprio(uid))
+    page["_tunnels_ok"] = bool(proprio) and not reserve(proprio, "tunnels")
     return uid, page
 
 
@@ -1538,6 +1540,9 @@ def _produit(page, pid):
 def boutique_produit(pseudo, pid):
     uid, page = _vitrine(pseudo)
     p = _produit(page, pid)
+    tn = bq.tunnel_du_produit(page, pid)
+    if tn and not request.args:  # sans paramètre = clic sur la carte ou lien partagé ; le bouton du tunnel ajoute ?src=tunnel-…
+        return redirect(f"/@{pseudo.lower()}/t/{tn['id']}", 302)
     if session.get("uid") != bq.proprio(uid):
         bq.compte(uid, "produits", pid)
         if request.args.get("src"):
@@ -2167,6 +2172,10 @@ def boutique_apercu():
     if isinstance(c.get("kit"), dict):
         page["kit"] = c["kit"]
     pseudo = bq.pseudo_de(uid)
+    if isinstance(c.get("tunnels"), list):
+        ids_p = {p["id"] for p in page["produits"]}
+        page["tunnels"] = [x for x in (tunnels.propre(y, ids_p) for y in c["tunnels"][:20]) if x]
+    page["_tunnels_ok"] = not reserve(g.u, "tunnels")
     if vue.startswith("t:") and isinstance(c.get("tunnels"), list):
         ids = {p["id"] for p in page["produits"]}
         t = next((x for x in (tunnels.propre(y, ids) for y in c["tunnels"][:20]) if x and x["id"] == vue[2:]), None)

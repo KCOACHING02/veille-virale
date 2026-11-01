@@ -5068,8 +5068,11 @@ function etapesTunnel(t) {
 }
 // Un tunnel en ligne s'annonce sur la page de la boutique par un bouton mis en avant (bloc « lien » qui porte `tunnel`).
 const blocTunnel = t => (BQ.page.blocs || []).find(b => b.type === "lien" && b.tunnel === t.id);
-function metTunnelSurPage(t) {
-  if (blocTunnel(t)) return false;
+// La carte du produit vendu par un tunnel en ligne mène au tunnel : pas besoin d'un bouton en plus si elle est sur la page.
+const produitSurPage = pid => !!pid && (BQ.page.blocs || []).some(b => b.visible !== false && ((b.type === "produit" && b.produit === pid) || (b.type === "produits" && (!b.ids || b.ids.includes(pid)))))
+  && BQ.page.produits.some(x => x.id === pid && x.visible !== false);
+function metTunnelSurPage(t, auto) {
+  if (blocTunnel(t) || (auto && produitSurPage(t.offre?.produit))) return false;
   const pr = BQ.page.produits.find(x => x.id === t.offre?.produit);
   const titre = t.type === "quiz" ? "🎯 Fais le test gratuit" : `✨ Découvrir ${pr?.titre || t.offre?.titre || "mon offre"}`;
   BQ.page.blocs.unshift({id: idCourt(), type: "lien", tunnel: t.id, titre: titre.slice(0, 120), en_avant: true, visible: true});
@@ -5113,8 +5116,8 @@ function assistantTunnel(z) {
   $("#tn-prec") && ($("#tn-prec").onclick = () => { A.etape--; rendu(); scrollTo({top: 0, behavior: "smooth"}); });
   $("#tn-suiv") && ($("#tn-suiv").onclick = () => { A.etape++; rendu(); scrollTo({top: 0, behavior: "smooth"}); });
   $("#tn-detail") && ($("#tn-detail").onclick = () => { BQ.tnAssist = null; BQ.tunnelId = t.id; renduOnglet(); });
-  $("#tn-publier") && ($("#tn-publier").onclick = async () => { t.publie = true; const ajoute = metTunnelSurPage(t); await sauveBoutique(true);
-    toast(ajoute ? "Ton tunnel est en ligne 🎉 Un bouton l'annonce en haut de ta boutique" : "Ton tunnel est en ligne 🎉"); quitter(); });
+  $("#tn-publier") && ($("#tn-publier").onclick = async () => { t.publie = true; const ajoute = metTunnelSurPage(t, true); await sauveBoutique(true);
+    toast(ajoute ? "Ton tunnel est en ligne 🎉 Un bouton l'annonce en haut de ta boutique" : produitSurPage(t.offre?.produit) ? "Ton tunnel est en ligne 🎉 Un clic sur ton produit y mène" : "Ton tunnel est en ligne 🎉"); quitter(); });
   $("#tn-np") && ($("#tn-np").onclick = () => {
     const titre = $("#tn-np-t").value.trim(), prix = Math.round((+$("#tn-np-p").value.replace(",", ".") || 0) * 100);
     if (!titre) return toast("Donne un nom à ton produit");
@@ -5222,7 +5225,7 @@ function editeTunnel(z, t) {
   zs.closest("details").addEventListener("toggle", function f() { if (this.open) { lieStyleTunnel(zs, t, rStyle); this.removeEventListener("toggle", f); } });
   $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true); };
   $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué";
-    if (t.publie && metTunnelSurPage(t)) toast("Un bouton vers ce tunnel est ajouté en haut de ta boutique"); sauveBoutique(true); apercu(true); };
+    if (t.publie && metTunnelSurPage(t, true)) toast("Un bouton vers ce tunnel est ajouté en haut de ta boutique"); sauveBoutique(true); apercu(true); };
   z.querySelectorAll("[data-tadd]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tadd) || []; L.push(JSON.parse(b.dataset.modele)); fixe(t, b.dataset.tadd, L); maj(true); });
   z.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tdel); L.splice(+b.dataset.i, 1); maj(true); });
   $("#tn-suppr").onclick = () => {
