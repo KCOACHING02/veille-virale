@@ -404,7 +404,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .mb-avert{grid-column:1/-1;margin:2px 0 0;font-size:13px;color:var(--warn)}
 .np-types{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .np-types button{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:16px 12px;font-weight:600;font-size:15px;display:grid;gap:6px;justify-items:start;cursor:pointer;color:var(--ink);text-align:left}
-.np-types button span{font-size:26px}.np-types button:hover{border-color:var(--glow)}
+.np-types button span{font-size:26px}.np-types button:last-child:nth-child(odd){grid-column:1/-1}.np-types button:hover{border-color:var(--glow)}
 .np-type-choisi{margin:0 0 12px;font-weight:600}
 .np-liste{display:grid;gap:8px;margin-bottom:14px}
 .np-prod{border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
@@ -4091,7 +4091,8 @@ function etapesBoutique(A) {
   if (o("vendre")) E.push({nom: "Tes produits", q: (BQ.page?.produits || []).length ? "Tes produits" : "Crée ton premier produit", produits: true,
     corps: () => { const L = BQ.page?.produits || [], n = A.np ||= {type: "", titre: "", prix: "", desc: "", livraison: "fichier", lien: ""};
       const TYPES = [["guide", "📘", "Guide ou PDF", "fichier", "Mon guide pour…", "17"], ["formation", "🎓", "Formation", "lien", "Ma formation…", "97"],
-                     ["seance", "📅", "Séance ou coaching", "lien", "Séance découverte", "47"], ["cadeau", "🎁", "Cadeau gratuit", "fichier", "Mon guide offert", "0"]];
+                     ["seance", "📅", "Séance ou coaching", "lien", "Séance découverte", "47"], ["cadeau", "🎁", "Cadeau gratuit", "fichier", "Mon guide offert", "0"],
+                     ["affil", "🛒", "Produit vendu sur un autre site (affiliation)", "externe", "Nom de la formation", "497"]];
       const liste = L.length ? `<div class="np-liste">${L.map(p => `<div class="np-prod"><b>${esc(p.titre)}</b><span>${euros(p.prix)}${p.fichier_nom ? " · 📎 " + esc(p.fichier_nom) : p.lien ? " · 🔗 lien" : ""}</span></div>`).join("")}</div>` : "";
       if (L.length && !A.npOuvert) return liste + `<button type="button" class="btn large np-autre" id="np-nouveau">+ Ajouter un autre produit</button>`;
       if (!n.type) return liste + `<p class="bt-explique">Ce que tes abonnées pourront acheter ou recevoir sur ta page. Choisis le type :</p>
@@ -4101,9 +4102,10 @@ function etapesBoutique(A) {
         <div class="champ"><label for="np-t">Son nom</label><input id="np-t" data-np="titre" value="${esc(n.titre)}" maxlength="120" placeholder="${esc(ty[4])}"></div>
         <div class="champ"><label for="np-p">Son prix (€)</label><input id="np-p" data-np="prix" value="${esc(n.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="${ty[5] === "0" ? "0 = gratuit" : "Ex. " + ty[5]}"></div>
         <div class="champ"><label for="np-d">En une phrase, ce qu'il apporte</label><input id="np-d" data-np="desc" value="${esc(n.desc)}" maxlength="160" placeholder="Ex. 7 jours pour retrouver de l'énergie le matin"></div>
-        <div class="champ"><label>Ce que ta cliente reçoit après l'achat</label>
-          <div class="seg np-liv"><button type="button" data-np-liv="fichier" aria-pressed="${n.livraison === "fichier"}">Un fichier</button><button type="button" data-np-liv="lien" aria-pressed="${n.livraison === "lien"}">Un lien</button></div>
-          ${n.livraison === "fichier" ? `<label class="np-fichier"><input type="file" id="np-f" hidden><span>${n.fichier ? "📎 " + esc(n.fichier.name) : "📎 Choisir le fichier (PDF, vidéo, ZIP…)"}</span></label><small class="aide">Il est envoyé automatiquement après le paiement. Tu peux aussi l'ajouter plus tard.</small>`
+        <div class="champ"><label>${n.livraison === "externe" ? "Où on l'achète" : "Ce que ta cliente reçoit après l'achat"}</label>
+          ${n.livraison === "externe" ? "" : `<div class="seg np-liv"><button type="button" data-np-liv="fichier" aria-pressed="${n.livraison === "fichier"}">Un fichier</button><button type="button" data-np-liv="lien" aria-pressed="${n.livraison === "lien"}">Un lien</button></div>`}
+          ${n.livraison === "externe" ? `<input data-np="lien" value="${esc(n.lien)}" placeholder="Lien de la page de vente (ton lien d'affiliation)" inputmode="url" autocapitalize="off"><small class="aide">Le bouton « Acheter » mènera directement à cette page : le paiement se fait là-bas.</small>`
+          : n.livraison === "fichier" ? `<label class="np-fichier"><input type="file" id="np-f" hidden><span>${n.fichier ? "📎 " + esc(n.fichier.name) : "📎 Choisir le fichier (PDF, vidéo, ZIP…)"}</span></label><small class="aide">Il est envoyé automatiquement après le paiement. Tu peux aussi l'ajouter plus tard.</small>`
             : `<input data-np="lien" value="${esc(n.lien)}" placeholder="Lien de ta formation ou de ton agenda (Calendly…)" inputmode="url" autocapitalize="off"><small class="aide">Ta cliente le reçoit après le paiement.</small>`}</div>
         <button type="button" class="btn prim large" id="np-ajoute">Ajouter ce produit à ma boutique</button>`; }});
   E.push({nom: "C'est prêt", q: "Ta page est prête", fin: true, pourquoi: "Relis ta page dans l'aperçu. Rien n'est figé : tu pourras tout modifier ensuite, même après la publication.",
@@ -4156,7 +4158,7 @@ function renduAssistantBoutique(el) {
   const ajouteLien = () => { A.nbLiens = Math.min(6, (A.nbLiens || 1) + 1); while (A.liens.length < A.nbLiens) A.liens.push({titre: "", url: ""}); };
   if (e.produits) {
     const n = A.np;
-    $$("[data-np-type]").forEach(b => b.onclick = () => { n.type = b.dataset.npType; n.livraison = ["formation", "seance"].includes(n.type) ? "lien" : "fichier"; rendu(); });
+    $$("[data-np-type]").forEach(b => b.onclick = () => { n.type = b.dataset.npType; n.livraison = n.type === "affil" ? "externe" : ["formation", "seance"].includes(n.type) ? "lien" : "fichier"; rendu(); });
     $("#np-type-x")?.addEventListener("click", () => { n.type = ""; rendu(); });
     $$("[data-np]").forEach(i => i.oninput = () => { n[i.dataset.np] = i.value; });
     $$("[data-np-liv]").forEach(b => b.onclick = () => { n.livraison = b.dataset.npLiv; rendu(); });
@@ -4168,7 +4170,8 @@ function renduAssistantBoutique(el) {
       try {
         const prix = Math.round((+String(n.prix).replace(",", ".") || 0) * 100);
         const prod = {id: idCourt(), titre: n.titre.trim(), sous_titre: n.desc.trim(), prix, visible: true, type: "telechargement",
-                      lien: n.livraison === "lien" ? n.lien.trim() : "", bouton: prix ? "Je le veux" : "Je le reçois"};
+                      lien: ["lien", "externe"].includes(n.livraison) ? n.lien.trim() : "", externe: n.livraison === "externe", bouton: prix ? "Je le veux" : "Je le reçois"};
+        if (n.livraison === "externe" && !prod.lien) { bt.disabled = false; bt.textContent = "Ajouter ce produit à ma boutique"; return toast("Colle le lien de la page de vente"); }
         await api("/api/boutique", {method: "PUT", body: {produits: [...(BQ.page?.produits || []), prod]}});
         if (n.livraison === "fichier" && n.fichier) {
           const fd = new FormData(); fd.append("fichier", n.fichier);
@@ -5285,7 +5288,7 @@ function editeProduit(i, lancerGuide) {
   const x = neuf ? {id: idCourt(), titre: "", sous_titre: "", description: "", prix: 0, prix_barre: 0, devise: "eur", image: "", fichier: "", fichier_nom: "", lien: "", bouton: "", visible: true, type: "telechargement", mot_cle: "", inclus: [], upsell: {}, promo_prix: 0, promo_fin: ""} : structuredClone(p.produits[i]);
   x.type ||= "telechargement"; x.inclus ||= []; x.upsell ||= {};
   x.rdv = {duree: 30, jours: [0, 1, 2, 3, 4], plages: "09:00-12:00, 14:00-18:00", delai_h: 12, horizon_j: 21, lieu: "Lien de visio envoyé par e-mail", ...(x.rdv || {})};
-  let livraison = x.type === "rdv" ? "rdv" : x.type === "pack" ? "pack" : (x.lien && !x.fichier ? "lien" : "fichier"), fichierEnvoye = null, guideEnCours = false;
+  let livraison = x.type === "rdv" ? "rdv" : x.type === "pack" ? "pack" : x.externe ? "externe" : (x.lien && !x.fichier ? "lien" : "fichier"), fichierEnvoye = null, guideEnCours = false;
   BQ.vueAp = "p:" + x.id;
   const autres = p.produits.filter(y => y.id !== x.id);
   const enEuros = c => c ? (c / 100).toFixed(2).replace(/\.00$/, "") : "";
@@ -5305,11 +5308,12 @@ function editeProduit(i, lancerGuide) {
       </div>
       <div class="champ"><label for="pr-desc">Description</label><textarea id="pr-desc" maxlength="4000" placeholder="Ce qu'elle va apprendre, ce qu'il y a dedans, pour qui c'est…">${esc(x.description)}</textarea></div>
       <div class="champ"><label>Ce que reçoit ta cliente</label>
-        <div class="bt-puces">${[["fichier", "📄 Un fichier"], ["lien", "🔗 Un lien"], ["rdv", "📅 Un rendez-vous"], ["pack", "🎁 Un pack"]].map(([k, l]) => `<button type="button" data-liv="${k}" aria-pressed="${livraison === k}">${l}</button>`).join("")}</div></div>
+        <div class="bt-puces">${[["fichier", "📄 Un fichier"], ["lien", "🔗 Un lien"], ["rdv", "📅 Un rendez-vous"], ["pack", "🎁 Un pack"], ["externe", "🛒 Vendu sur un autre site"]].map(([k, l]) => `<button type="button" data-liv="${k}" aria-pressed="${livraison === k}">${l}</button>`).join("")}</div></div>
       ${livraison === "fichier" ? `<label class="bt-depot" style="margin-bottom:8px">📄<span id="pr-fichier-nom">${esc(fichierEnvoye?.name || x.fichier_nom || "Choisis ton fichier (PDF, ZIP, vidéo, audio…)")}</span><input type="file" id="pr-fichier"></label>
           ${(BQ.etat.guides_brouillons || []).includes(x.id) ? `<div class="bt-guide-ia gd-attente"><div><b>📄 Un guide attend ta relecture</b><span>Il n'est pas encore en ligne : relis-le, corrige-le si besoin, puis valide.</span></div><button type="button" class="btn petit prim" data-voir-guide="${x.id}">Relire le guide</button></div>` : ""}
           <div class="bt-guide-ia"><div><b>✨ Pas encore de fichier ?</b><span>Virall.ai écrit le guide dans ta voix et le met en page en PDF, à tes couleurs.</span></div><button type="button" class="btn petit prim" id="pr-guide">${x.fichier ? "Réécrire le guide" : "Écrire le guide"}</button></div>
           <p class="aide" id="pr-guide-log" style="margin:6px 0 14px"></p>`
+      : livraison === "externe" ? `<div class="champ"><input id="pr-lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="Lien de la page de vente (ton lien d'affiliation)"><span class="aide">Le bouton mène directement à cette page : le paiement se fait là-bas. Idéal pour l'affiliation ou une formation hébergée ailleurs.</span></div>`
       : livraison === "lien" ? `<div class="champ"><input id="pr-lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="Lien de ta formation, Notion, Drive…"><span class="aide">Le lien est donné après le paiement (ou l'inscription si c'est gratuit).</span></div>`
       : livraison === "rdv" ? `<div class="bt-rdv-conf">
           <div class="duo"><div class="champ"><label>Durée</label><select id="rdv-duree">${[15, 20, 30, 45, 60, 90].map(d => `<option value="${d}" ${+x.rdv.duree === d ? "selected" : ""}>${d} min</option>`).join("")}</select></div>
@@ -5349,12 +5353,13 @@ function editeProduit(i, lancerGuide) {
       jours: $$("[data-jour]").filter(c => c.checked).map(c => +c.dataset.jour)};
     if ($$("[data-inclus]").length) x.inclus = $$("[data-inclus]").filter(c => c.checked).map(c => c.dataset.inclus);
     x.type = livraison === "rdv" ? "rdv" : livraison === "pack" ? "pack" : "telechargement";
+    x.externe = livraison === "externe";
   };
   // Enregistre le produit dans la page (nécessaire avant d'y attacher un fichier ou un guide)
   const enregistre = async () => {
     lit();
-    if (livraison === "lien" || livraison === "rdv" || livraison === "pack") x.retirer_fichier = !!x.fichier;
-    if (livraison !== "lien") x.lien = livraison === "fichier" ? "" : x.lien;
+    if (["lien", "rdv", "pack", "externe"].includes(livraison)) x.retirer_fichier = !!x.fichier;
+    if (!["lien", "externe"].includes(livraison)) x.lien = livraison === "fichier" ? "" : x.lien;
     const k = p.produits.findIndex(y => y.id === x.id);
     if (k < 0) p.produits.push(x); else p.produits[k] = x;
     if (!p.blocs.some(bl => bl.type === "produits")) p.blocs.push({id: idCourt(), type: "produits", titre: "Ma boutique", visible: true});
@@ -5393,6 +5398,7 @@ function editeProduit(i, lancerGuide) {
       lit();
       if (!x.titre) return toast("Donne un titre à ton produit");
       if (livraison === "lien" && !x.lien) return toast("Indique le lien que reçoit ta cliente");
+      if (livraison === "externe" && !x.lien) return toast("Colle le lien de la page de vente (ton lien d'affiliation)");
       if (livraison === "fichier" && !fichierEnvoye && !x.fichier) return toast("Ajoute le fichier, ou fais écrire le guide par Virall.ai");
       if (livraison === "rdv" && !x.rdv.jours.length) return toast("Choisis au moins un jour");
       if (livraison === "pack" && x.inclus.length < 2) return toast("Choisis au moins deux produits pour le pack");

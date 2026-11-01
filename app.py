@@ -524,7 +524,7 @@ def _avancement_boutique(uid) -> dict:
     except Exception:  # noqa: BLE001
         page = {}
     prods = [p for p in page.get("produits") or [] if p.get("visible", True)]
-    payants = sum(1 for p in prods if p.get("prix"))
+    payants = sum(1 for p in prods if p.get("prix") and not p.get("externe"))  # vendus ailleurs : pas besoin de Stripe
     st = page.get("stripe") or {}
     return {"cree": bool(bq.pseudo_de(uid)), "produits": len(prods), "payants": payants,
             "paiements": bool(st.get("pret")) or not bq.stripe_actif() or not payants, "publie": bool(page.get("publie"))}
@@ -1551,7 +1551,7 @@ def boutique_produit_lien(pseudo, pid):
     uid, page = _vitrine(pseudo)
     p = _produit(page, pid)
     u = bq.url_sure(p.get("lien"))
-    if not u or p.get("prix"):
+    if not u or (p.get("prix") and not p.get("externe")):
         abort(404)
     bq.compte(uid, "clics", "p-" + pid)
     return redirect(u, 302)
@@ -2027,6 +2027,8 @@ def _produit_propre(p: dict, ancien: dict | None) -> dict:
     r["devise"] = p.get("devise") if p.get("devise") in ("eur", "usd", "chf", "cad", "gbp") else "eur"
     r["image"] = p["image"] if isinstance(p.get("image"), str) and NOM_IMAGE.match(p["image"]) else ""
     r["type"] = p.get("type") if p.get("type") in ("telechargement", "rdv", "pack") else "telechargement"
+    # Vendu sur un autre site (affiliation, plateforme de formation) : le bouton mène à « lien », pas de paiement Stripe
+    r["externe"] = bool(p.get("externe")) and r["type"] == "telechargement" and bool(bq.url_sure(r["lien"]))
     r["mot_cle"] = _re.sub(r"[^A-Z0-9]", "", str(p.get("mot_cle") or "").upper())[:20]
     r["inclus"] = [str(i)[:12] for i in (p.get("inclus") or []) if isinstance(i, str)][:20] if r["type"] == "pack" else []
     try:

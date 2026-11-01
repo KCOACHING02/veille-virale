@@ -461,7 +461,10 @@ def rendu_produit(page: dict, pseudo: str, p: dict, uid: int, message: str = "",
             creneaux_html = (f'<div id="creneaux" data-jours="{E(json.dumps(jours))}"><p style="margin:0 0 4px;font-weight:600">Choisis ton créneau '
                              f'<small style="font-weight:400;opacity:.7">({(p.get("rdv") or {}).get("duree", 30)} min, heure de Paris)</small></p>'
                              '<div class="jours"></div><div class="heures"></div></div><input type="hidden" name="creneau">')
-    if not livrable(page, p):
+    if p.get("externe") and p.get("lien"):  # vendu sur un autre site (affiliation) : le bouton y mène directement
+        action = (f'<a class="bouton" style="display:block;text-align:center;text-decoration:none;width:100%;margin-top:10px" href="/@{pseudo}/p/{p["id"]}/ouvrir" '
+                  f'rel="noopener sponsored">{E(p.get("bouton") or "Je le veux")}</a><p class="note">Tu vas être redirigée vers la page de vente officielle.</p>')
+    elif not livrable(page, p):
         action = '<p class="note" style="font-size:15px">Ce produit sera disponible très bientôt.</p>'
     elif p.get("lien") and not p.get("fichier") and gratuit and p.get("type") not in ("rdv", "pack"):
         action = f'<a class="bouton" style="display:block;text-align:center;text-decoration:none" href="/@{pseudo}/p/{p["id"]}/ouvrir" target="_blank" rel="noopener">{E(p.get("bouton") or "J’y vais")}</a>'

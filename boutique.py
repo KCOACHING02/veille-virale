@@ -1456,7 +1456,10 @@ def rendu_produit(page: dict, pseudo: str, p: dict, message: str = "", vente_pos
     img = f'<img class="couv-p" src="{_img(pseudo, p["image"])}" alt="">' if p.get("image") else ""
     barre = f'<s>{E(prix_txt(p["prix_barre"], p.get("devise", "eur")))}</s>' if p.get("prix_barre") and p["prix_barre"] > p.get("prix", 0) else ""
     gratuit = not p.get("prix")
-    if p.get("lien") and not p.get("fichier") and gratuit:
+    if p.get("externe") and p.get("lien"):
+        action = (f'<a class="bouton" style="display:block;text-align:center;text-decoration:none;width:100%;margin-top:10px" href="/@{pseudo}/p/{p["id"]}/ouvrir" '
+                  f'rel="noopener sponsored">{E(p.get("bouton") or "Je le veux")}</a><p class="note">Tu vas être redirigée vers la page de vente officielle.</p>')
+    elif p.get("lien") and not p.get("fichier") and gratuit:
         action = f'<a class="bouton" style="display:block;text-align:center;text-decoration:none" href="/@{pseudo}/p/{p["id"]}/ouvrir" target="_blank" rel="noopener">{E(p.get("bouton") or "J’y vais")}</a>'
     elif gratuit:
         action = (f'<form method="post" action="/@{pseudo}/p/{p["id"]}/obtenir" data-capture><div class="champ" style="flex-direction:column">'
