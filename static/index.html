@@ -981,6 +981,15 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .mb-act{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .mb-ici{font-size:12.5px;font-weight:700;color:var(--glow)}
 @media (max-width:520px){.mb-carte{grid-template-columns:40px 1fr}.mb-vig{width:40px;height:40px}.mb-act{grid-column:1/-1;justify-content:flex-start}}
+.gd-grille{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+.gd-pdf{display:flex;flex-direction:column;align-items:flex-start}
+.gd-pages{width:100%;height:min(70vh,640px);overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:var(--sunk);padding:10px;display:grid;gap:10px;align-content:start}
+.gd-pages img{width:100%;display:block;border-radius:4px;box-shadow:0 4px 14px -6px rgba(0,0,0,.3);background:#fff}
+.gd-texte .champ textarea,.gd-texte .champ input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px;font:inherit;color:var(--ink)}
+.gd-partie{border-top:1px solid var(--line);padding-top:6px;margin-top:8px}
+.gd-pied{flex-wrap:wrap}.gd-pied #gd-abandon{margin-right:auto}
+.gd-attente{border:1.5px solid var(--glow);background:var(--glow-soft)}
+@media (max-width:860px){.gd-grille{grid-template-columns:1fr}.gd-pages{height:60vh}.gd-pied .btn{flex:1 1 100%;justify-content:center}}
 /* Tunnels de vente */
 .tn-modeles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .tn-modele{text-align:left;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;cursor:pointer;color:var(--ink);font:inherit}
@@ -4657,6 +4666,50 @@ async function creeDepuisIdee(x, avecGuide) {
   editeProduit(BQ.page.produits.findIndex(y => y.id === id), avecGuide);
 }
 
+// ---- Relecture du guide écrit par Virall.ai : aperçu du PDF, corrections, puis mise en ligne
+async function apercuGuide(pid) {
+  let b;
+  try { b = await api(`/api/boutique/produits/${pid}/brouillon`); } catch (e) { return toast(e.message); }
+  const C = b.contenu, idx = () => BQ.page.produits.findIndex(y => y.id === pid);
+  const champ = (k, lab, v, long) => `<div class="champ"><label>${lab}</label>${long ? `<textarea data-g="${k}" style="min-height:${long}px">${esc(v || "")}</textarea>` : `<input data-g="${k}" value="${esc(v || "")}">`}</div>`;
+  const pagesGuide = () => Array.from({length: b.pages || 0}, (_, n) => `<img src="/api/boutique/produits/${pid}/brouillon/page/${n}.jpg?v=${b.v}" alt="Page ${n + 1}" loading="${n < 2 ? "eager" : "lazy"}">`).join("") || '<p class="aide" style="padding:20px">Aperçu indisponible : ouvre le PDF en plein écran.</p>';
+  const rendu = () => {
+    $("#feuille").innerHTML = `<h2 id="m-titre">Relis ton guide avant de le mettre en ligne</h2>
+      <p class="sous">C'est exactement le PDF que recevront tes clientes. Rien n'est encore en ligne : corrige ce que tu veux, puis valide.</p>
+      <div class="gd-grille">
+        <div class="gd-pdf"><div class="gd-pages" id="gd-frame">${pagesGuide()}</div>
+          <a class="btn petit" href="${esc(b.pdf)}" target="_blank" rel="noopener" style="margin-top:8px">Ouvrir en plein écran ↗</a></div>
+        <div class="gd-texte"><details class="tn-rapide"><summary>✏️ Corriger le texte</summary>
+          ${champ("titre", "Titre", C.titre)}${champ("sous_titre", "Sous-titre", C.sous_titre)}${champ("introduction", "Introduction", C.introduction, 110)}
+          ${C.parties.map((x, i) => `<div class="gd-partie"><p class="bt-sous-titre">Partie ${i + 1}</p>${champ(`parties.${i}.titre`, "Titre", x.titre)}${champ(`parties.${i}.texte`, "Texte", x.texte, 170)}
+            ${champ(`parties.${i}.a_retenir`, "À retenir (une idée par ligne)", (x.a_retenir || []).join("\n"), 70)}</div>`).join("")}
+          ${champ("conclusion", "Conclusion", C.conclusion, 90)}${champ("appel_action", "Pour aller plus loin", C.appel_action, 70)}
+          <button class="btn" id="gd-maj" style="width:100%;justify-content:center">↻ Mettre à jour l'aperçu</button></details>
+          <p class="aide">Les corrections sont gratuites : elles ne consomment aucun crédit.</p></div>
+      </div>
+      <div class="pied-modale gd-pied"><button class="btn" id="gd-abandon">Abandonner ce guide</button><button class="btn" id="gd-retour">Plus tard</button><button class="btn prim" id="gd-ok">✓ Valider et mettre en ligne</button></div>`;
+    $("#modale").classList.add("ouvert");
+    $("#feuille").oninput = e => { const k = e.target.dataset.g; if (!k) return;
+      const v = k.endsWith("a_retenir") ? e.target.value.split("\n").map(t => t.trim()).filter(Boolean) : e.target.value; fixe(C, k, v); $("#gd-maj").classList.add("prim"); };
+    $("#gd-maj").onclick = async () => {
+      const bt = $("#gd-maj"); bt.disabled = true; bt.innerHTML = spin(" Mise en page…");
+      try { const r = await api(`/api/boutique/produits/${pid}/brouillon`, {method: "POST", body: {contenu: C}}); b.pdf = r.pdf; b.pages = r.pages; b.v = r.v; $("#gd-frame").innerHTML = pagesGuide(); toast("Aperçu mis à jour"); }
+      catch (e) { toast(e.message); }
+      bt.disabled = false; bt.classList.remove("prim"); bt.textContent = "↻ Mettre à jour l'aperçu";
+    };
+    $("#gd-ok").onclick = async () => {
+      if ($("#gd-maj").classList.contains("prim")) { await $("#gd-maj").onclick(); }
+      try { const r = await api(`/api/boutique/produits/${pid}/brouillon/valider`, {method: "POST"}); await chargeBoutique(); toast(`✓ ${r.fichier_nom} est en ligne`); editeProduit(idx()); }
+      catch (e) { toast(e.message); }
+    };
+    $("#gd-retour").onclick = async () => { await chargeBoutique(); editeProduit(idx()); };
+    $("#gd-abandon").onclick = async () => {
+      const bt = $("#gd-abandon"); if (bt.dataset.ok !== "1") { bt.dataset.ok = "1"; bt.textContent = "Supprimer ce brouillon ?"; bt.style.color = "var(--warn)"; return; }
+      await api(`/api/boutique/produits/${pid}/brouillon`, {method: "DELETE"}); await chargeBoutique(); toast("Brouillon supprimé"); editeProduit(idx());
+    };
+  };
+  rendu();
+}
 // ---- Éditeur de produit
 function editeProduit(i, lancerGuide) {
   const p = BQ.page, neuf = i == null;
@@ -4685,6 +4738,7 @@ function editeProduit(i, lancerGuide) {
       <div class="champ"><label>Ce que reçoit ta cliente</label>
         <div class="bt-puces">${[["fichier", "📄 Un fichier"], ["lien", "🔗 Un lien"], ["rdv", "📅 Un rendez-vous"], ["pack", "🎁 Un pack"]].map(([k, l]) => `<button type="button" data-liv="${k}" aria-pressed="${livraison === k}">${l}</button>`).join("")}</div></div>
       ${livraison === "fichier" ? `<label class="bt-depot" style="margin-bottom:8px">📄<span id="pr-fichier-nom">${esc(fichierEnvoye?.name || x.fichier_nom || "Choisis ton fichier (PDF, ZIP, vidéo, audio…)")}</span><input type="file" id="pr-fichier"></label>
+          ${(BQ.etat.guides_brouillons || []).includes(x.id) ? `<div class="bt-guide-ia gd-attente"><div><b>📄 Un guide attend ta relecture</b><span>Il n'est pas encore en ligne : relis-le, corrige-le si besoin, puis valide.</span></div><button type="button" class="btn petit prim" data-voir-guide="${x.id}">Relire le guide</button></div>` : ""}
           <div class="bt-guide-ia"><div><b>✨ Pas encore de fichier ?</b><span>Virall.ai écrit le guide dans ta voix et le met en page en PDF, à tes couleurs.</span></div><button type="button" class="btn petit prim" id="pr-guide">${x.fichier ? "Réécrire le guide" : "Écrire le guide"}</button></div>
           <p class="aide" id="pr-guide-log" style="margin:6px 0 14px"></p>`
       : livraison === "lien" ? `<div class="champ"><input id="pr-lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="Lien de ta formation, Notion, Drive…"><span class="aide">Le lien est donné après le paiement (ou l'inscription si c'est gratuit).</span></div>`
@@ -4747,6 +4801,7 @@ function editeProduit(i, lancerGuide) {
     $("#pr-prix").oninput = () => { const v = parseFloat($("#pr-prix").value.replace(",", ".")) || 0; $("#pr-prix").nextElementSibling.textContent = v ? (v < .5 ? "Minimum 0,50 €" : "") : "Gratuit : on demande l'e-mail en échange 💌"; };
     $("#pr-mot")?.addEventListener("input", e => { const m = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); x.mot_cle = m;
       $("#pr-mot-aide").innerHTML = m ? `Lien direct à envoyer en DM : <b>${esc(lienMot())}</b>` : ""; });
+    $$("[data-voir-guide]").forEach(bt => bt.onclick = async () => { await enregistre(); apercuGuide(bt.dataset.voirGuide); });
     $("#pr-guide")?.addEventListener("click", async () => {
       lit(); if (!x.titre) return toast("Donne d'abord un titre au guide");
       if (guideEnCours) return; guideEnCours = true;
@@ -4755,9 +4810,8 @@ function editeProduit(i, lancerGuide) {
         await enregistre();
         const r = await api(`/api/boutique/produits/${x.id}/guide`, {method: "POST", body: {plan: (BQ.plans || {})[x.id] || []}});
         const res = await attendsTache(r.job, m => { const l = $("#pr-guide-log"); if (l) l.textContent = m; });
-        await chargeBoutique(); const pr = BQ.page.produits.find(y => y.id === x.id); if (pr) { x.fichier = pr.fichier; x.fichier_nom = pr.fichier_nom; }
-        fichierEnvoye = null; toast(`Guide prêt : ${res.fichier_nom}`); guideEnCours = false; rendu();
-        $("#pr-guide-log").innerHTML = `✓ <b>${esc(res.fichier_nom)}</b> est attaché au produit : fais une commande test depuis ta page pour le voir.`;
+        await chargeBoutique(); guideEnCours = false;
+        toast("Ton guide est prêt : relis-le avant de le mettre en ligne"); apercuGuide(x.id);
       } catch (e) { toast(e.message); guideEnCours = false; if ($("#pr-guide")) { $("#pr-guide").disabled = false; $("#pr-guide").textContent = "Réessayer"; } }
     });
     $("#pr-suppr")?.addEventListener("click", async () => {

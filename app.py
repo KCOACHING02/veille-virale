@@ -37,7 +37,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, abort, g, has_request_context, jsonify, redirect, request, send_from_directory, session
+from flask import Flask, Response, abort, g, has_request_context, jsonify, redirect, request, send_from_directory, session
 
 import abonnements as ab
 import emails
@@ -1715,7 +1715,7 @@ def _etat_boutique(uid: int, page: dict | None, rafraichir_stripe: bool = False)
     return {"page": page, "pseudo": pseudo, "suggestion": suggestion, "url": f"{url_site()}/@{pseudo}" if pseudo else None,
             "paiement": {"plateforme": bq.stripe_actif(), "demo": en_demo(), "commission": bq.commission(g.u["id"])}, "emails": emails.actif(),
             "kit_chiffres": bq.chiffres_kit(prof) if prof else None, "options": _options_boutique(),
-            "tunnels_ok": not reserve(g.u, "tunnels"), "tunnels_stats": bq.stats_tunnels(uid)}
+            "tunnels_ok": not reserve(g.u, "tunnels"), "tunnels_stats": bq.stats_tunnels(uid), "guides_brouillons": __import__("boutique_ia").brouillons(uid)}
 
 
 def bq_active():
@@ -2220,6 +2220,76 @@ def boutique_guide(pid):
     plan = [str(x)[:200] for x in (request.get_json(silent=True) or {}).get("plan") or []][:10]
     return jsonify({"job": lance(uid, "Écriture du guide", boutique_ia.guide, g.esp, g.esp.lit_config(), bq_active(), pid, plan, demo=en_demo(),
                                  base=url_site(), file_=FILE_STUDIO, apres=lambda _: ab.compte_usage(uid, studio=1))})
+
+
+@app.get("/api/boutique/produits/<pid>/brouillon")
+@connecte
+def guide_brouillon(pid):
+    import boutique_ia
+    b = boutique_ia.lit_brouillon(bq_active(), pid)
+    if not b:
+        return jsonify({"erreur": "Aucun guide en attente."}), 404
+    return jsonify({"contenu": b["contenu"], "fichier_nom": b["fichier_nom"], "pdf": f"/api/boutique/produits/{pid}/brouillon.pdf?v={b['fichier'][:8]}",
+                    "pages": _nb_pages(bq_active(), b), "v": b["fichier"][:8]})
+
+
+def _nb_pages(bid, b: dict) -> int:
+    return int(b.get("pages") or 0)
+
+
+@app.get("/api/boutique/produits/<pid>/brouillon.pdf")
+@connecte
+def guide_brouillon_pdf(pid):
+    import boutique_ia
+    b = boutique_ia.lit_brouillon(bq_active(), pid)
+    if not b:
+        abort(404)
+    return send_from_directory(bq.dossier(bq_active()) / "fichiers", b["fichier"], mimetype="application/pdf", download_name=b["fichier_nom"], as_attachment=False)
+
+
+@app.get("/api/boutique/produits/<pid>/brouillon/page/<int:n>.jpg")
+@connecte
+def guide_brouillon_page(pid, n):
+    """Une page du guide en image, fabriquée à la mise en page (s'affiche partout, même sur Android et iPhone)."""
+    import boutique_ia
+    b = boutique_ia.lit_brouillon(bq_active(), pid)
+    if not b:
+        abort(404)
+    return send_from_directory(bq.dossier(bq_active()) / "guides", f"{b['fichier'][:-4]}-{n}.jpg", max_age=3600)
+
+
+@app.post("/api/boutique/produits/<pid>/brouillon")
+@connecte
+def guide_brouillon_maj(pid):
+    """Texte corrigé par la cliente : nouveau PDF, sans IA ni quota."""
+    import boutique_ia
+    c = (request.get_json(force=True) or {}).get("contenu")
+    if not isinstance(c, dict):
+        return jsonify({"erreur": "Contenu manquant."}), 400
+    try:
+        b = boutique_ia.met_en_page(bq_active(), pid, c, url_site())
+    except RuntimeError as e:
+        return jsonify({"erreur": str(e)}), 400
+    return jsonify({"fichier_nom": b["fichier_nom"], "pdf": f"/api/boutique/produits/{pid}/brouillon.pdf?v={b['fichier'][:8]}",
+                    "pages": _nb_pages(bq_active(), b), "v": b["fichier"][:8]})
+
+
+@app.post("/api/boutique/produits/<pid>/brouillon/valider")
+@connecte
+def guide_brouillon_valide(pid):
+    import boutique_ia
+    try:
+        return jsonify(boutique_ia.valide_brouillon(bq_active(), pid))
+    except RuntimeError as e:
+        return jsonify({"erreur": str(e)}), 400
+
+
+@app.delete("/api/boutique/produits/<pid>/brouillon")
+@connecte
+def guide_brouillon_abandon(pid):
+    import boutique_ia
+    boutique_ia.abandonne_brouillon(bq_active(), pid)
+    return jsonify({"ok": True})
 
 
 @app.post("/api/boutique/sequence/ecrire")

@@ -120,26 +120,108 @@ def guide(esp: Espace, cfg: dict, uid: int, pid: str, plan: list[str] | None = N
     if not contenu["parties"]:
         raise RuntimeError("Virall.ai n'a pas renvoyé le contenu du guide : réessaie dans un instant.")
     log("Je mets le guide en page…")
+    brouillon = met_en_page(uid, pid, contenu, base)
+    log("✅ Ton guide est prêt : relis-le avant de le mettre en ligne")
+    return {"brouillon": True, "fichier_nom": brouillon["fichier_nom"], "pages": len(contenu.get("parties") or []) + 3}
+
+
+# ------------------------------------------------------------
+#  Brouillon du guide : relu et corrigé par la cliente avant d'être attaché au produit
+# ------------------------------------------------------------
+def _f_brouillon(uid, pid: str):
+    d = bq.dossier(uid) / "guides"
+    d.mkdir(exist_ok=True)
+    return d / (re.sub(r"[^\w-]", "", pid)[:12] + ".json")
+
+
+def lit_brouillon(uid, pid: str) -> dict | None:
+    return bq._lit(_f_brouillon(uid, pid), None)
+
+
+def brouillons(uid) -> list[str]:
+    d = bq.dossier(uid) / "guides"
+    return [f.stem for f in d.glob("*.json")] if d.exists() else []
+
+
+
+def met_en_page(uid, pid: str, contenu: dict, base: str = "") -> dict:
+    """(Re)fabrique le PDF du brouillon à partir du texte, sans IA. Le produit en ligne ne change pas."""
+    import guide_pdf
+    page = bq.lit_page(uid)
+    p = next((x for x in page["produits"] if x["id"] == pid), None)
+    if not p:
+        raise RuntimeError("Produit introuvable.")
+    contenu = normalise_guide(contenu, p)
+    if not contenu["parties"]:
+        raise RuntimeError("Ton guide doit garder au moins une partie.")
     nom = uuid.uuid4().hex + ".pdf"
     sortie = bq.dossier(uid) / "fichiers" / nom
     image = bq.dossier(uid) / "images" / p["image"] if p.get("image") else None
     url = f"{base or _url()}/@{bq.pseudo_de(uid)}"
     guide_pdf.genere(contenu, page["design"], sortie, page.get("nom") or "", url, image, bq.POLICES[page["design"]["police_titre"]][2])
     titre_fichier = re.sub(r"[^\w\- ]+", "", contenu.get("titre") or p.get("titre") or "guide").strip()[:60] or "guide"
+    ancien = lit_brouillon(uid, pid)
+    b = {"contenu": contenu, "fichier": nom, "fichier_nom": titre_fichier + ".pdf", "pages": _images_pages(uid, sortie, nom)}
+    bq._ecrit(_f_brouillon(uid, pid), b)
+    if ancien and ancien.get("fichier") and ancien["fichier"] != nom:
+        _efface(uid, ancien)
+    return b
+
+
+_PDFIUM = __import__("threading").Lock()  # pdfium ne supporte pas deux rendus en même temps
+
+
+def _images_pages(uid, pdf, nom: str) -> int:
+    """Chaque page du PDF en JPEG (aperçu lisible partout, même sur Android et iPhone)."""
+    try:
+        import pypdfium2
+        with _PDFIUM:
+            doc = pypdfium2.PdfDocument(str(pdf))
+            try:
+                for n in range(len(doc)):
+                    page = doc[n]
+                    page.render(scale=1.6).to_pil().convert("RGB").save(bq.dossier(uid) / "guides" / f"{nom[:-4]}-{n}.jpg", "JPEG", quality=82)
+                    page.close()
+                return len(doc)
+            finally:
+                doc.close()
+    except Exception as e:  # noqa: BLE001
+        log(f"Aperçu en images indisponible ({e})")
+        return 0
+
+
+def _efface(uid, b: dict):
+    (bq.dossier(uid) / "fichiers" / b["fichier"]).unlink(missing_ok=True)
+    for f in (bq.dossier(uid) / "guides").glob(b["fichier"][:-4] + "-*.jpg"):
+        f.unlink(missing_ok=True)
+
+
+def valide_brouillon(uid, pid: str) -> dict:
+    """Attache le PDF relu au produit (il remplace l'ancien fichier)."""
+    b = lit_brouillon(uid, pid)
+    if not b:
+        raise RuntimeError("Aucun guide à valider.")
     with bq.verrou(uid):
         page = bq.lit_page(uid)
         x = next((y for y in page["produits"] if y["id"] == pid), None)
         if not x:
-            sortie.unlink(missing_ok=True)
-            raise RuntimeError("Le produit a été supprimé pendant l'écriture.")
+            raise RuntimeError("Le produit a été supprimé.")
         ancien = x.get("fichier")
-        x["fichier"], x["fichier_nom"], x["lien"] = nom, titre_fichier + ".pdf", ""
-        x["type"] = "telechargement"
+        x["fichier"], x["fichier_nom"], x["lien"], x["type"] = b["fichier"], b["fichier_nom"], "", "telechargement"
         bq.ecrit_page(uid, page)
-    if ancien and ancien != nom:
+    _f_brouillon(uid, pid).unlink(missing_ok=True)
+    for f in (bq.dossier(uid) / "guides").glob(b["fichier"][:-4] + "-*.jpg"):
+        f.unlink(missing_ok=True)
+    if ancien and ancien != b["fichier"]:
         (bq.dossier(uid) / "fichiers" / ancien).unlink(missing_ok=True)
-    log("✅ Ton guide est prêt et attaché au produit")
-    return {"fichier_nom": titre_fichier + ".pdf", "pages": len(contenu.get("parties") or []) + 3}
+    return {"fichier_nom": b["fichier_nom"]}
+
+
+def abandonne_brouillon(uid, pid: str):
+    b = lit_brouillon(uid, pid)
+    if b and b.get("fichier"):
+        _efface(uid, b)
+    _f_brouillon(uid, pid).unlink(missing_ok=True)
 
 
 def _liste(v):

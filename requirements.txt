@@ -14,3 +14,4 @@ reportlab
 segno
 cryptography
 numpy
+pypdfium2
