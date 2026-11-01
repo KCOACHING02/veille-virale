@@ -483,6 +483,26 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .formats span:not(.ic){color:var(--ink-2);font-size:14px}
 .st-quota{margin:0 0 14px}
 /* ---------- Plan 30 jours (tunnel de vente) ---------- */
+/* Brief du plan : une question par écran */
+.p30-q{max-width:560px;margin:0 auto;padding-bottom:24px}
+.p30-q-haut{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:10px;margin:4px 0 28px}
+.p30-q-retour,.p30-q-fermer{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:17px;color:var(--ink-2)}
+.p30-q-barre{height:6px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.p30-q-barre i{display:block;height:100%;background:var(--glow);border-radius:99px;transition:width .3s}
+.p30-q h2{font-size:28px;line-height:1.15;margin:0 0 8px}
+.p30-aide{color:var(--ink-2);margin:0 0 18px;font-size:15px}
+.p30-q-corps{display:grid;gap:10px;margin:18px 0 24px}
+.p30 .p30-grand{font-size:17px;padding:14px 16px;border-radius:14px}
+.p30 textarea.p30-grand{min-height:130px}.p30 textarea.p30-grand.court{min-height:80px}
+.p30-choix{display:grid;gap:10px}
+.p30-choix button{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:16px 18px;font-size:17px;font-weight:600;text-align:left;cursor:pointer;color:var(--ink)}
+.p30-choix button:hover{border-color:var(--ink-3)}
+.p30-choix button.choisi{border-color:var(--glow);background:var(--glow-soft)}
+.p30-q-pied{display:grid;gap:8px}
+.p30-passer{border:0;background:none;color:var(--ink-2)}
+.p30-date{display:grid;gap:6px;font-weight:600;font-size:14px;margin-top:6px}
+@media (max-width:860px){.p30-q h2{font-size:25px}.p30-q-pied{position:sticky;bottom:calc(62px + env(safe-area-inset-bottom));background:var(--paper);padding:10px 0}}
+
 .p30-carte{display:flex;align-items:center;justify-content:space-between;gap:18px 24px;flex-wrap:wrap;background:linear-gradient(135deg,#271B2D 0%,#45264F 100%);color:#fff;border-radius:var(--r-l);padding:22px 24px;margin-bottom:18px;box-shadow:var(--shadow)}
 .p30-carte-txt{flex:1 1 380px;min-width:0}
 .p30-carte h2{font-size:21px;margin:4px 0 6px;color:#fff}
@@ -2452,26 +2472,27 @@ async function renduPlan30() {
   renduCalendrier30();
 }
 
-// ---- Le brief : 4 étapes courtes, enregistrées au fil de la saisie
-const ETAPES30 = ["Mon offre", "Ma cliente", "Ma voix", "Mon plan"];
-function champ30(cle, label, aide, opts = {}) {
-  const v = S.p30.brief[cle] ?? "";
-  const ctl = opts.long ? `<textarea data-b="${cle}" maxlength="${opts.max || 800}" placeholder="${esc(opts.ex || "")}">${esc(v)}</textarea>`
-    : `<input data-b="${cle}" type="${opts.type || "text"}" maxlength="${opts.max || 300}" value="${esc(v)}" placeholder="${esc(opts.ex || "")}">`;
-  return `<div class="champ"><label>${label}${opts.facultatif ? ' <span class="p30-fac">facultatif</span>' : ""}</label>${ctl}${aide ? `<span class="aide">${aide}</span>` : ""}</div>`;
-}
-function liste30(cle, label, aide, n, ex, opts = {}) {
-  const v = S.p30.brief[cle] || [];
-  return `<div class="champ"><label>${label}${opts.facultatif ? ' <span class="p30-fac">facultatif</span>' : ""}</label>
-    ${Array.from({length: n}, (_, i) => opts.long ? `<textarea class="court" data-l="${cle}" data-i="${i}" maxlength="600" placeholder="${esc(ex[i] || "")}">${esc(v[i] || "")}</textarea>`
-      : `<input data-l="${cle}" data-i="${i}" maxlength="200" value="${esc(v[i] || "")}" placeholder="${esc(ex[i] || "")}">`).join("")}
-    ${aide ? `<span class="aide">${aide}</span>` : ""}</div>`;
-}
-function choix30(cle, label, options) {
-  const v = S.p30.brief[cle];
-  return `<div class="champ"><label>${label}</label><div class="seg p30-seg">${options.map(([id, t]) =>
-    `<button type="button" data-c="${cle}" data-v="${esc(id)}" aria-pressed="${v === id}">${esc(t)}</button>`).join("")}</div></div>`;
-}
+// ---- Le brief : une question par écran, enregistrée au fil de la saisie
+// t : texte court · long : texte long · liste : plusieurs lignes · choix : boutons (touchés = étape suivante) · fin : création du plan
+const Q30 = [
+  {cle: "produit", type: "t", q: "Qu'est-ce que tu vends ce mois-ci ?", aide: "Tout ton plan mènera à cette offre.", ex: "Coaching glow-up 6 semaines", max: 100},
+  {cle: "prix", type: "t", q: "Combien ça coûte ?", ex: "297 €", max: 30},
+  {cle: "lien", type: "t", q: "Comment on l'achète ?", aide: "Le lien de ta boutique, ou le mot à t'envoyer en message privé.", ex: "GLOW", max: 300},
+  {cle: "date_cle", type: "date", q: "Une date de lancement ?", aide: "Ta vente tombera juste avant.", facultatif: true},
+  {cle: "transformation", type: "long", q: "Qu'est-ce qui change pour ta cliente ?", aide: "Avant, après. En une phrase.", ex: "Elle passe de fatiguée et débordée à rayonnante, sans y passer des heures", max: 300},
+  {cle: "cible", type: "t", q: "À qui tu parles ?", ex: "Mamans actives de 30 à 45 ans", max: 200},
+  {cle: "problemes", type: "liste", n: 3, min: 2, q: "Ses plus gros problèmes ?", aide: "Au moins 2.", ex: ["Elle n'a jamais de temps pour elle", "Elle se trouve fatiguée", "Elle a tout essayé"]},
+  {cle: "objections", type: "liste", n: 3, min: 1, q: "Qu'est-ce qui la freine pour acheter ?", ex: ["C'est trop cher", "Je n'aurai pas le temps", "Ça ne marchera pas pour moi"]},
+  {cle: "temoignages", type: "liste", long: true, n: 3, q: "Tu as des avis de clientes ?", aide: "Colle-les tels quels. Sans avis, on montrera les coulisses de ta méthode.", ex: ["« Sarah : en 3 semaines j'ai retrouvé confiance en moi »", "Un deuxième avis", "Un troisième avis"], facultatif: true, accord: true},
+  {cle: "histoire", type: "long", q: "Raconte ton histoire", aide: "Ton déclic, pourquoi tu fais ce métier.", ex: "En 2021, j'ai fait un burn-out. Je ne me reconnaissais plus…", max: 800},
+  {cle: "ton", type: "choix", q: "Quel ton pour tes textes ?", options: () => (S.p30.tons || []).map(t => [t, t])},
+  {cle: "tutoiement", type: "choix", q: "Tu tutoies ou tu vouvoies ?", options: () => [["tu", "Je tutoie"], ["vous", "Je vouvoie"]]},
+  {cle: "emojis", type: "choix", q: "Des emojis dans tes légendes ?", options: () => [["aucun", "Aucun"], ["quelques", "Quelques-uns"], ["beaucoup", "Beaucoup 🎉"]]},
+  {type: "fin", q: "Ton plan est prêt à être construit"},
+];
+const DERNIERE30 = Q30.length - 1;
+const remplie30 = (q, b) => q.facultatif || q.type === "choix" || q.type === "fin" ? true
+  : q.type === "liste" ? (b[q.cle] || []).filter(x => (x || "").trim()).length >= (q.min || 1) : !!(b[q.cle] || "").trim();
 function sauveBrief30(immediat) {
   clearTimeout(S.p30Sauve);
   const go = async () => { try { const r = await api("/api/plan30/brief", {method: "PUT", body: S.p30.brief}); S.p30.brief_manque = r.brief_manque; } catch (e) { toast(e.message); } };
@@ -2480,55 +2501,48 @@ function sauveBrief30(immediat) {
 }
 function renduBrief30() {
   const el = $("#studio"), r = S.p30, b = r.brief;
-  const k = Math.min(S.p30Etape || 0, 3);
-  const corps = [
-    () => `<h2>Qu'est-ce que tu vends ce mois-ci ?</h2><p class="sous">Tout le plan mène à cette offre : le dernier carrousel la présente, les autres préparent le terrain.</p>
-      ${champ30("produit", "Ton offre", "Un seul produit ou service par plan, c'est plus clair pour tes abonnées.", {ex: "Ex. Coaching glow-up 6 semaines", max: 100})}
-      <div class="ligne">${champ30("prix", "Son prix", "", {ex: "Ex. 297 €", max: 30})}${champ30("date_cle", "Date de lancement ou de clôture", "Le plan se cale pour que la vente tombe juste avant.", {type: "date", facultatif: true})}</div>
-      ${champ30("lien", "Lien d'achat ou mot-clé à envoyer en message privé", "Ex. le lien de ta boutique Virallink, ou « GLOW » si tu réponds en DM.", {ex: "Ex. GLOW", max: 300})}
-      ${champ30("transformation", "La transformation que tu promets", "Avant / après pour ta cliente, en une phrase. Pas de promesse chiffrée ou médicale.", {ex: "Ex. Passer de fatiguée et débordée à rayonnante, sans y passer des heures", long: true, max: 300})}`,
-    () => `<h2>À qui tu parles ?</h2><p class="sous">Ses problèmes nourrissent les carrousels éducatifs, ses objections ton storytelling et ta vente.</p>
-      ${champ30("cible", "Ta cliente idéale", "", {ex: "Ex. Femmes de 30 à 45 ans, mamans actives, qui n'ont plus de temps pour elles", max: 200})}
-      ${liste30("problemes", "Ses 3 problèmes principaux", "Au moins 2.", 3, ["Ex. Elle n'a jamais le temps de prendre soin d'elle", "Ex. Elle a la peau terne et se trouve fatiguée", "Ex. Elle a tout essayé sans résultat"])}
-      ${liste30("objections", "Ce qui l'empêche d'acheter", "Au moins 1. Ex. « trop cher », « pas le temps », « ça ne marchera pas pour moi ».", 3, ["Ex. C'est trop cher pour moi", "Ex. Je n'aurai pas le temps de suivre", "Ex. J'ai déjà essayé, ça n'a pas marché"])}
-      ${liste30("temoignages", "Témoignages de tes clientes", "La seule source de tes carrousels de preuve sociale : Virall.ai n'invente jamais d'avis.", 3, ["Colle un avis tel quel, ex. « Sarah : en 3 semaines j'ai retrouvé confiance en moi »", "Un deuxième avis", "Un troisième avis"], {long: true, facultatif: true})}
-      <label class="p30-accord"><input type="checkbox" data-accord ${b.accord_temoignages ? "checked" : ""}> J'ai l'accord de mes clientes pour publier leurs avis</label>
-      ${(b.temoignages || []).length ? "" : `<p class="p30-note">Pas encore d'avis ? Pas de souci : tes carrousels de preuve sociale montreront les coulisses de ta méthode.</p>`}
-      ${liste30("resultats", "Résultats chiffrés réels", "Uniquement des chiffres vrais.", 2, ["Ex. 40 clientes accompagnées depuis 2023", "Ex. 4,9/5 sur 60 avis"], {facultatif: true})}`,
-    () => `<h2>Comment tu parles ?</h2><p class="sous">Virall.ai écrit dans ta voix : il s'appuie aussi sur ce qu'il a appris de ton compte.</p>
-      ${champ30("histoire", "Ton histoire", "Pourquoi tu fais ce métier, ton déclic, une difficulté surmontée. C'est la base de tes carrousels storytelling.", {ex: "Ex. En 2021, j'ai fait un burn-out. Je ne me reconnaissais plus dans le miroir…", long: true, max: 800})}
-      ${choix30("ton", "Ton", (r.tons || []).map(t => [t, t]))}
-      ${choix30("tutoiement", "Tu tutoies ou tu vouvoies ?", [["tu", "Tutoiement"], ["vous", "Vouvoiement"]])}
-      ${choix30("emojis", "Les emojis dans tes légendes", [["aucun", "Aucun"], ["quelques", "Quelques-uns"], ["beaucoup", "Beaucoup"]])}`,
-    () => {
-      const v = r.veille || {}, total = Object.values(v).reduce((a, x) => a + x, 0);
-      return `<h2>On construit ton plan</h2><p class="sous">Virall.ai part de ta veille : pour chaque carrousel, il reprend la structure de la publication virale la mieux notée de son type.</p>
-      <div class="p30-veille">${Object.keys(CAT30).map(c => `<div style="--c:${CAT30[c][3]}"><b>${v[c] || 0}</b><span>${CAT30[c][2]} ${CAT30[c][0]}</span></div>`).join("")}</div>
-      <p class="aide">${total ? "Modèles viraux trouvés dans ta veille, par type." : "Ta veille ne contient encore aucune publication classée : lance d'abord une veille."}</p>
-      <div class="champ"><label>Premier jour du plan</label><input type="date" id="p30-debut" value="${esc(S.p30Debut || r.debut_conseille)}">
-        <span class="aide">Le plan démarre le lundi de cette semaine : 2 carrousels par semaine, le mardi et le vendredi, pendant 4 semaines.</span></div>
-      ${r.brief_manque ? `<p class="p30-alerte">${esc(r.brief_manque)}</p>` : ""}
-      <p class="aide">${r.reste >= 9000 ? "" : r.reste > 0 ? `Il te reste ${r.reste} plan${r.reste > 1 ? "s" : ""} sur ${r.quota} pour cette période.` : `Tu as utilisé ${r.quota > 1 ? "tes " + r.quota + " plans" : "ton plan"} de la période.`}</p>`;
-    }][k]();
-  el.innerHTML = `<div class="p30 p30-brief">
-    <button class="btn petit" id="p30-retour">← ${r.plan ? "Mon plan" : "Studio"}</button>
-    <ol class="p30-etapes">${ETAPES30.map((t, i) => `<li class="${i < k ? "fait" : i === k ? "actif" : ""}"><button type="button" data-etape="${i}"><i></i>${t}</button></li>`).join("")}</ol>
-    <div class="p30-feuille">${corps}</div>
-    <div class="p30-pied">${k ? '<button class="btn" id="p30-prec">Retour</button>' : "<span></span>"}
-      ${k < 3 ? '<button class="btn prim" id="p30-suiv">Continuer</button>'
-        : r.reste > 0 ? `<button class="btn prim" id="p30-cree" ${r.brief_manque || !Object.values(r.veille || {}).some(Boolean) ? "disabled" : ""}>Créer mon plan des 30 jours</button>`
-        : '<button class="btn prim" onclick="va(\'abonnement\')">Voir les formules</button>'}</div></div>`;
-  $("#p30-retour").onclick = () => { sauveBrief30(true); if (r.plan) { S.p30Brief = false; renduPlan30(); } else { S.plan30Vue = false; renduStudio(); } };
-  $$("[data-b]", el).forEach(i => i.oninput = () => { b[i.dataset.b] = i.value; sauveBrief30(); });
-  $$("[data-l]", el).forEach(i => i.oninput = () => {
-    const l = $$(`[data-l="${i.dataset.l}"]`, el).map(x => x.value); b[i.dataset.l] = l; sauveBrief30(); });
-  $$("[data-c]", el).forEach(x => x.onclick = () => { b[x.dataset.c] = x.dataset.v; $$(`[data-c="${x.dataset.c}"]`, el).forEach(y => y.setAttribute("aria-pressed", y === x)); sauveBrief30(); });
-  $("[data-accord]", el)?.addEventListener("change", e => { b.accord_temoignages = e.target.checked; sauveBrief30(); });
-  $("#p30-debut")?.addEventListener("change", e => { S.p30Debut = e.target.value; });
+  const k = Math.max(0, Math.min(S.p30Etape || 0, DERNIERE30)), q = Q30[k];
+  let corps = "";
+  if (q.type === "t" || q.type === "date") corps = `<input class="p30-grand" data-b="${q.cle}" type="${q.type === "date" ? "date" : "text"}" maxlength="${q.max || 300}" value="${esc(b[q.cle] || "")}" placeholder="${esc(q.ex ? "Ex. " + q.ex : "")}" autocomplete="off">`;
+  else if (q.type === "long") corps = `<textarea class="p30-grand" data-b="${q.cle}" maxlength="${q.max}" placeholder="${esc("Ex. " + q.ex)}">${esc(b[q.cle] || "")}</textarea>`;
+  else if (q.type === "liste") corps = Array.from({length: q.n}, (_, i) => q.long
+      ? `<textarea class="p30-grand court" data-l="${q.cle}" data-i="${i}" maxlength="600" placeholder="${esc(q.ex[i])}">${esc((b[q.cle] || [])[i] || "")}</textarea>`
+      : `<input class="p30-grand" data-l="${q.cle}" data-i="${i}" maxlength="200" value="${esc((b[q.cle] || [])[i] || "")}" placeholder="${esc(i ? q.ex[i] : "Ex. " + q.ex[i])}" autocomplete="off">`).join("")
+    + (q.accord ? `<label class="p30-accord"><input type="checkbox" data-accord ${b.accord_temoignages ? "checked" : ""}> Mes clientes sont d'accord pour que je les publie</label>` : "");
+  else if (q.type === "choix") corps = `<div class="p30-choix">${q.options().map(([id, t]) => `<button type="button" data-c="${q.cle}" data-v="${esc(id)}" class="${b[q.cle] === id ? "choisi" : ""}">${esc(t)}</button>`).join("")}</div>`;
+  else {
+    const v = r.veille || {}, total = Object.values(v).reduce((a, x) => a + x, 0);
+    corps = `<div class="p30-veille">${Object.keys(CAT30).map(c => `<div style="--c:${CAT30[c][3]}"><b>${v[c] || 0}</b><span>${CAT30[c][2]} ${CAT30[c][0]}</span></div>`).join("")}</div>
+      <p class="p30-aide">${total ? "Les modèles viraux de ta veille, par type." : "Lance d'abord une veille : le plan part de ce qui marche dans ta niche."}</p>
+      <label class="p30-date">Début du plan <input type="date" id="p30-debut" value="${esc(S.p30Debut || r.debut_conseille)}"></label>
+      ${r.brief_manque ? `<p class="p30-alerte">${esc(r.brief_manque)}</p>` : ""}`;
+  }
+  const ok = remplie30(q, b);
+  const bouton = q.type === "fin"
+    ? (r.reste > 0 ? `<button class="btn prim large" id="p30-cree" ${r.brief_manque || !Object.values(r.veille || {}).some(Boolean) ? "disabled" : ""}>Créer mon plan</button>`
+      : `<button class="btn prim large" onclick="va('abonnement')">Voir les formules</button><p class="p30-aide">Tu as utilisé ${r.quota > 1 ? "tes " + r.quota + " plans" : "ton plan"} de la période.</p>`)
+    : q.type === "choix" ? "" : `<button class="btn prim large" id="p30-suiv" ${ok ? "" : "disabled"}>Continuer</button>${q.facultatif ? '<button class="btn large p30-passer" id="p30-passer">Passer</button>' : ""}`;
+  el.innerHTML = `<div class="p30 p30-q">
+    <div class="p30-q-haut"><button class="p30-q-retour" id="p30-retour" aria-label="Retour">←</button>
+      <div class="p30-q-barre" aria-label="Question ${k + 1} sur ${Q30.length}"><i style="width:${(k + 1) / Q30.length * 100}%"></i></div>
+      <button class="p30-q-fermer" id="p30-fermer" aria-label="Fermer">✕</button></div>
+    <h2>${esc(q.q)}</h2>${q.aide ? `<p class="p30-aide">${esc(q.aide)}</p>` : ""}
+    <div class="p30-q-corps">${corps}</div>
+    <div class="p30-q-pied">${bouton}</div></div>`;
   const vers = async i => { await sauveBrief30(true); S.p30Etape = i; renduBrief30(); window.scrollTo(0, 0); };
-  $$("[data-etape]", el).forEach(x => x.onclick = () => vers(+x.dataset.etape));
-  $("#p30-prec")?.addEventListener("click", () => vers(k - 1));
+  const quitte = () => { sauveBrief30(true); S.p30Etape = 0; if (r.plan) { S.p30Brief = false; renduPlan30(); } else { S.plan30Vue = false; renduStudio(); } };
+  $("#p30-retour").onclick = () => k ? vers(k - 1) : quitte();
+  $("#p30-fermer").onclick = quitte;
+  const maj = () => { const s = $("#p30-suiv"); if (s) s.disabled = !remplie30(q, b); sauveBrief30(); };
+  $$("[data-b]", el).forEach(i => i.oninput = () => { b[i.dataset.b] = i.value; maj(); });
+  $$("[data-l]", el).forEach(i => i.oninput = () => { b[i.dataset.l] = $$(`[data-l="${i.dataset.l}"]`, el).map(x => x.value); maj(); });
+  $("[data-accord]", el)?.addEventListener("change", e => { b.accord_temoignages = e.target.checked; sauveBrief30(); });
+  $$("[data-c]", el).forEach(x => x.onclick = () => { b[x.dataset.c] = x.dataset.v; x.classList.add("choisi"); setTimeout(() => vers(k + 1), 180); });
   $("#p30-suiv")?.addEventListener("click", () => vers(k + 1));
+  $("#p30-passer")?.addEventListener("click", () => vers(k + 1));
+  $$("input.p30-grand", el).forEach(i => i.addEventListener("keydown", e => { if (e.key === "Enter" && remplie30(q, b)) { e.preventDefault(); vers(k + 1); } }));
+  if (!MOBILE.matches) $(".p30-grand", el)?.focus();
+  $("#p30-debut")?.addEventListener("change", e => { S.p30Debut = e.target.value; });
   $("#p30-cree")?.addEventListener("click", async e => {
     e.target.disabled = true;
     try {
@@ -2603,7 +2617,7 @@ function renduCalendrier30() {
   </div>`;
   $("#p30-retour").onclick = () => { S.plan30Vue = false; renduStudio(); };
   $("#p30-brief").onclick = () => { S.p30Brief = true; S.p30Etape = 0; renduPlan30(); };
-  const nouveau = () => { S.p30Brief = true; S.p30Etape = 3; S.p30Debut = ""; renduPlan30(); };
+  const nouveau = () => { S.p30Brief = true; S.p30Etape = DERNIERE30; S.p30Debut = ""; renduPlan30(); };
   $("#p30-nouveau")?.addEventListener("click", nouveau);
   $("#p30-suivant")?.addEventListener("click", nouveau);
   $("#p30-choix")?.addEventListener("change", async e => { await chargePlan30(e.target.value); renduPlan30(); });
