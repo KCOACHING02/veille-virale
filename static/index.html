@@ -402,6 +402,15 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 @media (max-width:860px){.as-voir-haut{display:inline-flex}}
 .mb-suppr{color:var(--ink-2)}
 .mb-avert{grid-column:1/-1;margin:2px 0 0;font-size:13px;color:var(--warn)}
+.np-types{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.np-types button{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:16px 12px;font-weight:600;font-size:15px;display:grid;gap:6px;justify-items:start;cursor:pointer;color:var(--ink);text-align:left}
+.np-types button span{font-size:26px}.np-types button:hover{border-color:var(--glow)}
+.np-type-choisi{margin:0 0 12px;font-weight:600}
+.np-liste{display:grid;gap:8px;margin-bottom:14px}
+.np-prod{border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
+.np-prod span{color:var(--ink-3);font-size:13px}
+.np-fichier{display:block;border:1.5px dashed var(--line);border-radius:12px;padding:14px;text-align:center;cursor:pointer;color:var(--ink-2);font-weight:600}
+.np-liv{margin-bottom:8px}
 .bt-explique{color:var(--ink-2);margin:0 0 14px;font-size:15px;line-height:1.6}
 .bt-faux-bouton{display:inline-block;background:var(--ink);color:var(--paper);border-radius:99px;padding:1px 10px;font-size:13px;font-weight:600;white-space:nowrap}
 .bt-lien-carte{border:1px solid var(--line);border-radius:12px;padding:12px 12px 0;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
@@ -1198,7 +1207,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 @media (max-width:860px){.bt-sec .duo{grid-template-columns:1fr}}
 /* Parcours de création */
 .bt-assist2{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:26px;max-width:1140px;margin:0 auto;align-items:start}
-.bt-assist2 > .bt-assist{max-width:none}
+.bt-assist2 > .bt-assist{max-width:none;width:100%;min-width:0}
 .bt-etapes{display:flex;gap:8px;margin-bottom:18px}
 .bt-etapes span{flex:1;font-size:12px;font-weight:600;color:var(--ink-3);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bt-etapes span::before{content:"";display:block;height:5px;border-radius:9px;background:var(--sunk);margin-bottom:6px}
@@ -4078,18 +4087,31 @@ function etapesBoutique(A) {
           <div class="champ"><label>Adresse</label><input data-i="${i}" data-k="url" value="${esc(l.url)}" placeholder="monsite.fr" inputmode="url" autocapitalize="off"></div></div>`).join("")}
         ${(A.nbLiens || 1) < 6 && (A.liens[0].titre || A.liens[0].url) ? '<button type="button" class="btn petit" id="as-plus">+ Un autre bouton</button>' : ""}`}] : []),
   ];
-  if (o("vendre") && !(BQ.page?.produits || []).length) E.push(
-    {nom: "Ton premier produit", q: "Qu'est-ce que tu vends ?", pourquoi: "Commence simple : un cadeau gratuit pour récolter des e-mails, ou un petit produit à moins de 30 €. Tu ajouteras le fichier à livrer juste après la publication.",
-      corps: () => `<div class="tn-exemples"><span>💡 Idées :</span>${[["Guide offert", "Mon guide offert", "0"], ["Guide PDF", "Mon guide complet", "17"], ["Séance découverte", "Séance découverte", "47"]].map(([l, t, p]) => `<button type="button" data-prod='${esc(JSON.stringify([t, p]))}'>${l}${p === "0" ? " (gratuit)" : ` (${p} €)`}</button>`).join("")}</div>
-        <div class="duo"><div class="champ"><label for="as-pt">Nom du produit</label><input id="as-pt" data-pr="titre" value="${esc(A.produit.titre)}" maxlength="120" placeholder="Mon guide 7 jours pour…"></div>
-        <div class="champ"><label for="as-pp">Prix (€)</label><input id="as-pp" data-pr="prix" value="${esc(A.produit.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="0 = gratuit"></div></div>
-`});
+  // Produits : créés ici pour de vrai (enregistrés dans la boutique, fichier à livrer compris), un par un
+  if (o("vendre")) E.push({nom: "Tes produits", q: (BQ.page?.produits || []).length ? "Tes produits" : "Crée ton premier produit", produits: true,
+    corps: () => { const L = BQ.page?.produits || [], n = A.np ||= {type: "", titre: "", prix: "", desc: "", livraison: "fichier", lien: ""};
+      const TYPES = [["guide", "📘", "Guide ou PDF", "fichier", "Mon guide pour…", "17"], ["formation", "🎓", "Formation", "lien", "Ma formation…", "97"],
+                     ["seance", "📅", "Séance ou coaching", "lien", "Séance découverte", "47"], ["cadeau", "🎁", "Cadeau gratuit", "fichier", "Mon guide offert", "0"]];
+      const liste = L.length ? `<div class="np-liste">${L.map(p => `<div class="np-prod"><b>${esc(p.titre)}</b><span>${euros(p.prix)}${p.fichier_nom ? " · 📎 " + esc(p.fichier_nom) : p.lien ? " · 🔗 lien" : ""}</span></div>`).join("")}</div>` : "";
+      if (L.length && !A.npOuvert) return liste + `<button type="button" class="btn large np-autre" id="np-nouveau">+ Ajouter un autre produit</button>`;
+      if (!n.type) return liste + `<p class="bt-explique">Ce que tes abonnées pourront acheter ou recevoir sur ta page. Choisis le type :</p>
+        <div class="np-types">${TYPES.map(([k, e, t]) => `<button type="button" data-np-type="${k}"><span>${e}</span>${t}</button>`).join("")}</div>`;
+      const ty = TYPES.find(x => x[0] === n.type);
+      return liste + `<p class="np-type-choisi">${ty[1]} ${ty[2]} · <button type="button" class="lien" id="np-type-x">changer</button></p>
+        <div class="champ"><label for="np-t">Son nom</label><input id="np-t" data-np="titre" value="${esc(n.titre)}" maxlength="120" placeholder="${esc(ty[4])}"></div>
+        <div class="champ"><label for="np-p">Son prix (€)</label><input id="np-p" data-np="prix" value="${esc(n.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="${ty[5] === "0" ? "0 = gratuit" : "Ex. " + ty[5]}"></div>
+        <div class="champ"><label for="np-d">En une phrase, ce qu'il apporte</label><input id="np-d" data-np="desc" value="${esc(n.desc)}" maxlength="160" placeholder="Ex. 7 jours pour retrouver de l'énergie le matin"></div>
+        <div class="champ"><label>Ce que ta cliente reçoit après l'achat</label>
+          <div class="seg np-liv"><button type="button" data-np-liv="fichier" aria-pressed="${n.livraison === "fichier"}">Un fichier</button><button type="button" data-np-liv="lien" aria-pressed="${n.livraison === "lien"}">Un lien</button></div>
+          ${n.livraison === "fichier" ? `<label class="np-fichier"><input type="file" id="np-f" hidden><span>${n.fichier ? "📎 " + esc(n.fichier.name) : "📎 Choisir le fichier (PDF, vidéo, ZIP…)"}</span></label><small class="aide">Il est envoyé automatiquement après le paiement. Tu peux aussi l'ajouter plus tard.</small>`
+            : `<input data-np="lien" value="${esc(n.lien)}" placeholder="Lien de ta formation ou de ton agenda (Calendly…)" inputmode="url" autocapitalize="off"><small class="aide">Ta cliente le reçoit après le paiement.</small>`}</div>
+        <button type="button" class="btn prim large" id="np-ajoute">Ajouter ce produit à ma boutique</button>`; }});
   E.push({nom: "C'est prêt", q: "Ta page est prête", fin: true, pourquoi: "Relis ta page dans l'aperçu. Rien n'est figé : tu pourras tout modifier ensuite, même après la publication.",
     corps: () => `<ul class="tn-coches-ed">
         <li>✓ <b>${esc(A.nom)}</b>${A.bio ? " · " + esc(A.bio.slice(0, 60)) + (A.bio.length > 60 ? "…" : "") : ""}</li>
         <li>✓ Adresse : <b>${esc(hote)}/@${esc(A.pseudo)}</b></li>
         <li>✓ ${OBJECTIFS_BQ.filter(([k]) => o(k)).map(([, e, t]) => e + " " + t).join(" · ")}</li>
-        ${produitAssistant(A) ? `<li>✓ Produit : <b>${esc(A.produit.titre)}</b> · ${euros(produitAssistant(A).prix)}</li>` : ""}</ul>
+        ${(BQ.page?.produits || []).length ? `<li>✓ ${(BQ.page.produits).length} produit${BQ.page.produits.length > 1 ? "s" : ""} : ${BQ.page.produits.slice(0, 3).map(p => `<b>${esc(p.titre)}</b>`).join(", ")}</li>` : ""}</ul>
         ${A.relance ? '<p class="aide" style="margin-top:12px">Tes blocs et ton design actuels seront remplacés par ceux préparés ici. Tes produits, tes inscrits, tes ventes et tes tunnels ne bougent pas. Tu pourras annuler juste après.</p>' : ""}`});
   return E;
 }
@@ -4105,7 +4127,7 @@ function renduAssistantBoutique(el) {
       <div class="tn-prog"><i style="width:${(A.etape + 1) / n * 100}%"></i></div>
       <section class="bt-sec bt-q"><h3>${e.fin ? "🎉 " : ""}${esc(e.q || e.nom)}</h3>${e.corps()}</section>
       <div class="bt-pied">${A.etape ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}
-        <button class="btn prim" id="as-suite">${e.fin ? "Mettre ma boutique en ligne 🚀" : "Continuer"}</button></div></div>
+        ${e.produits && A.np?.type && (!(BQ.page?.produits || []).length || A.npOuvert) ? "" : `<button class="btn prim" id="as-suite">${e.fin ? "Mettre ma boutique en ligne 🚀" : "Continuer"}</button>`}</div></div>
       <aside class="bt-droite"><div class="bt-tel"><iframe id="as-ap" title="Aperçu de ta page"></iframe></div><small class="aide">Aperçu en direct</small></aside></div>
     <div class="bt-plein" id="bt-plein" role="dialog" aria-modal="true" aria-label="Aperçu de ta boutique"><div class="barre"><b>Aperçu de ta boutique</b><button class="ferme-x" id="bt-fermer-x" type="button" aria-label="Fermer l'aperçu">✕</button></div><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap" type="button">Fermer l'aperçu</button></div>`;
   if (BQ.htmlAssist) $("#as-ap").srcdoc = BQ.htmlAssist;
@@ -4132,6 +4154,32 @@ function renduAssistantBoutique(el) {
   $$("[data-bio]").forEach(b => b.onclick = () => { A.bio = b.dataset.bio; $("#as-bio").value = A.bio; apercuAssistant(); });
   $$("[data-prod]").forEach(b => b.onclick = () => { const [t, p] = JSON.parse(b.dataset.prod); A.produit.titre = t; A.produit.prix = p; $("#as-pt").value = t; $("#as-pp").value = p; apercuAssistant(); });
   const ajouteLien = () => { A.nbLiens = Math.min(6, (A.nbLiens || 1) + 1); while (A.liens.length < A.nbLiens) A.liens.push({titre: "", url: ""}); };
+  if (e.produits) {
+    const n = A.np;
+    $$("[data-np-type]").forEach(b => b.onclick = () => { n.type = b.dataset.npType; n.livraison = ["formation", "seance"].includes(n.type) ? "lien" : "fichier"; rendu(); });
+    $("#np-type-x")?.addEventListener("click", () => { n.type = ""; rendu(); });
+    $$("[data-np]").forEach(i => i.oninput = () => { n[i.dataset.np] = i.value; });
+    $$("[data-np-liv]").forEach(b => b.onclick = () => { n.livraison = b.dataset.npLiv; rendu(); });
+    $("#np-f")?.addEventListener("change", ev => { n.fichier = ev.target.files[0] || null; rendu(); });
+    $("#np-nouveau")?.addEventListener("click", () => { A.npOuvert = true; A.np = {type: "", titre: "", prix: "", desc: "", livraison: "fichier", lien: ""}; rendu(); });
+    $("#np-ajoute")?.addEventListener("click", async ev => {
+      if (!n.titre.trim()) return toast("Donne un nom à ton produit");
+      const bt = ev.target; bt.disabled = true; bt.innerHTML = '<span class="spin"></span>Enregistrement…';
+      try {
+        const prix = Math.round((+String(n.prix).replace(",", ".") || 0) * 100);
+        const prod = {id: idCourt(), titre: n.titre.trim(), sous_titre: n.desc.trim(), prix, visible: true, type: "telechargement",
+                      lien: n.livraison === "lien" ? n.lien.trim() : "", bouton: prix ? "Je le veux" : "Je le reçois"};
+        await api("/api/boutique", {method: "PUT", body: {produits: [...(BQ.page?.produits || []), prod]}});
+        if (n.livraison === "fichier" && n.fichier) {
+          const fd = new FormData(); fd.append("fichier", n.fichier);
+          const r = await fetch(`/api/boutique/produits/${prod.id}/fichier`, {method: "POST", body: fd});
+          if (!r.ok) toast((await r.json().catch(() => ({}))).erreur || "Le fichier n'a pas pu être envoyé : ajoute-le ensuite dans Produits.", {duree: 6000});
+        }
+        await chargeBoutique(); A.npOuvert = false; A.np = null; A.produit = {titre: "", prix: ""};
+        toast("Produit ajouté ✓"); apercuAssistant(true); rendu();
+      } catch (er) { toast(er.message); bt.disabled = false; bt.textContent = "Ajouter ce produit à ma boutique"; }
+    });
+  }
   $("#as-plus") && ($("#as-plus").onclick = () => { ajouteLien(); rendu(); });
   $$("[data-lien-nom]").forEach(b => b.onclick = () => {
     let k = A.liens.slice(0, A.nbLiens || 1).findIndex(x => !x.titre);
@@ -4177,8 +4225,10 @@ function renduAssistantBoutique(el) {
     let t; $("#as-pseudo").oninput = () => { clearTimeout(t); t = setTimeout(verifie, 350); };
     if (A.pseudo) verifie();
   }
-  $("#as-suite").onclick = async () => {
+  if ($("#as-suite")) $("#as-suite").onclick = async () => {
     const msg = e.valide?.(); if (typeof msg === "string") return toast(msg);
+    if (e.produits && !(BQ.page?.produits || []).length) return toast(A.np?.titre?.trim() ? "Touche « Ajouter ce produit à ma boutique » pour l'enregistrer" : "Ajoute au moins un produit : c'est ce que ta page va vendre");
+    if (e.produits && A.npOuvert && A.np?.titre?.trim()) return toast("Touche « Ajouter ce produit à ma boutique » pour l'enregistrer");
     const b = $("#as-suite"); b.disabled = true;
     try {
       if (e.cree) {
