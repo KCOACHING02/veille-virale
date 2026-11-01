@@ -90,6 +90,36 @@ def idees(esp: Espace, cfg: dict, demo: bool = False) -> dict:
     return r
 
 
+def page_vente(esp: Espace, cfg: dict, produit: dict, demo: bool = False) -> dict:
+    """Textes de la page de vente d'une offre (écrits dans la voix de la marque). Renvoie les champs à poser dans le tunnel."""
+    log("J'écris ta page de vente…")
+    t = (produit.get("titre") or "ton offre").strip()
+    if demo:
+        r = {"surtitre": "Nouveau", "titre": t + ",", "titre_accent": "pour enfin passer à l'action",
+             "chapo": "[démo] Pour celles qui veulent un résultat concret, sans y passer leurs soirées.",
+             "probleme": ["[démo] Tu as tout essayé, sans résultat durable", "[démo] Tu manques de temps", "[démo] Tu ne sais pas par où commencer"],
+             "benefices": [{"titre": "[démo] Un plan clair", "texte": "Tu sais quoi faire chaque semaine."},
+                           {"titre": "[démo] Du temps gagné", "texte": "Tu arrêtes de chercher partout."},
+                           {"titre": "[démo] De la confiance", "texte": "Tu avances à ton rythme, sans culpabilité."}],
+             "contenu": ["[démo] La méthode pas à pas", "[démo] Des exemples concrets", "[démo] Un accès immédiat"],
+             "faq": [{"q": "Combien de temps faut-il ?", "r": "[démo] Une heure par semaine suffit."},
+                     {"q": "Et si ce n'est pas pour moi ?", "r": "[démo] Écris-moi, on en parle."}],
+             "offre_titre": "Je commence aujourd'hui", "offre_texte": "[démo] Accès immédiat après l'achat.", "bouton": "Je le veux"}
+    else:
+        from ia import ecrit_page_vente
+        r = ecrit_page_vente(cfg, _voix(esp, cfg), produit, contexte(esp, cfg))
+        if r.get("erreur"):
+            raise RuntimeError(r["erreur"])
+    s = lambda x, n: str(x or "").strip()[:n]  # noqa: E731
+    return {"accroche": {"surtitre": s(r.get("surtitre"), 60), "titre": s(r.get("titre"), 120), "titre_accent": s(r.get("titre_accent"), 120),
+                         "texte": s(r.get("chapo"), 400), "bouton": s(r.get("bouton"), 40)},
+            "probleme": {"items": [s(x, 200) for x in _liste(r.get("probleme"))[:6] if x]},
+            "benefices": {"items": [{"titre": s(x.get("titre"), 80), "texte": s(x.get("texte"), 300)} for x in _liste(r.get("benefices"))[:6] if isinstance(x, dict)]},
+            "contenu": {"items": [s(x, 200) for x in _liste(r.get("contenu"))[:10] if x]},
+            "faq": {"items": [{"q": s(x.get("q"), 200), "r": s(x.get("r"), 800)} for x in _liste(r.get("faq"))[:8] if isinstance(x, dict)]},
+            "offre": {"titre": s(r.get("offre_titre"), 120), "texte": s(r.get("offre_texte"), 400), "bouton": s(r.get("bouton"), 40)}}
+
+
 def _guide_demo(p: dict) -> dict:
     plan = p.get("plan") or ["Comprendre", "Les erreurs à éviter", "La méthode", "Ton plan d'action"]
     return {"titre": p.get("titre") or "Mon guide", "sous_titre": p.get("sous_titre") or "",

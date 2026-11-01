@@ -827,6 +827,40 @@ def idees_produits(cfg: dict, voix: str, contexte: str) -> dict:
                                   max_tokens=3500, systeme=_systeme_marque(cfg, voix, "Tu es stratège en produits numériques pour créatrices de contenu."))
 
 
+OUTIL_PAGE_VENTE = {
+    "name": "ecrire_page_vente",
+    "description": "Textes d'une page de vente courte et sincère pour un produit de la boutique en lien dans la bio, lue sur téléphone.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "surtitre": {"type": "string", "description": "2 à 4 mots au-dessus du titre (ex. « Formation en ligne »)."},
+            "titre": {"type": "string", "description": "Début du titre : le résultat promis, concret (moins de 6 mots)."},
+            "titre_accent": {"type": "string", "description": "Fin du titre, mise en valeur : pour qui ou en combien de temps (moins de 7 mots)."},
+            "chapo": {"type": "string", "description": "Sous-titre : pour qui c'est et ce qu'elle obtient, 1 à 2 phrases."},
+            "probleme": {"type": "array", "items": {"type": "string"}, "description": "3 à 4 blocages de la cible, dits avec ses mots à elle (une phrase chacun)."},
+            "benefices": {"type": "array", "items": {"type": "object", "properties": {"titre": {"type": "string"}, "texte": {"type": "string"}},
+                                                    "required": ["titre", "texte"]}, "description": "3 bénéfices : ce qui change dans sa vie, pas ce que contient le produit."},
+            "contenu": {"type": "array", "items": {"type": "string"}, "description": "3 à 6 éléments concrets de ce qu'elle reçoit. N'invente pas de chiffres précis que la fiche ne donne pas."},
+            "faq": {"type": "array", "items": {"type": "object", "properties": {"q": {"type": "string"}, "r": {"type": "string"}}, "required": ["q", "r"]},
+                    "description": "3 questions qui freinent l'achat (temps, prix, « et si ça ne marche pas pour moi ? ») avec des réponses honnêtes, sans promesse que la fiche ne permet pas."},
+            "offre_titre": {"type": "string", "description": "Titre du bloc d'achat (moins de 6 mots)."},
+            "offre_texte": {"type": "string", "description": "Une phrase sous le prix : ce qui se passe après l'achat."},
+            "bouton": {"type": "string", "description": "Texte du bouton, verbe d'action à la première personne (2 à 4 mots)."}},
+        "required": ["surtitre", "titre", "titre_accent", "chapo", "probleme", "benefices", "contenu", "faq", "offre_titre", "offre_texte", "bouton"],
+    },
+}
+
+
+def ecrit_page_vente(cfg: dict, voix: str, produit: dict, contexte: str) -> dict:
+    prix = produit.get("prix") or 0
+    texte = (f"Écris la page de vente du produit « {produit.get('titre')} » ({'gratuit' if not prix else f'{prix / 100:.0f} €'}).\n"
+             f"Accroche de la fiche : {produit.get('sous_titre') or ''}\nDescription : {produit.get('description') or ''}\n"
+             f"Nature : {produit.get('nature') or 'produit numérique'}\n\n"
+             f"Ce que l'on sait de la niche et de l'audience :\n{contexte}\n\n"
+             "Pas de faux témoignages, pas de chiffres inventés, pas de superlatifs creux. Phrases courtes, lisibles sur téléphone.")
+    return _ia_simple(cfg)._appel(OUTIL_PAGE_VENTE, texte, max_tokens=2500, systeme=_systeme_marque(cfg, voix, "Tu écris des pages de vente sincères pour une créatrice de contenu."))
+
+
 def ecrit_guide(cfg: dict, voix: str, produit: dict, contexte: str) -> dict:
     texte = (f"Écris le guide « {produit.get('titre')} » ({produit.get('sous_titre') or ''}).\n"
              f"Fiche produit : {produit.get('description') or ''}\n"

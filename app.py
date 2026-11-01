@@ -526,7 +526,8 @@ def _avancement_boutique(uid) -> dict:
     prods = [p for p in page.get("produits") or [] if p.get("visible", True)]
     payants = sum(1 for p in prods if p.get("prix") and not p.get("externe"))  # vendus ailleurs : pas besoin de Stripe
     st = page.get("stripe") or {}
-    return {"cree": bool(bq.pseudo_de(uid)), "produits": len(prods), "payants": payants,
+    a_livrer = lambda p: p.get("type") in ("rdv", "pack") or p.get("fichier") or p.get("lien")  # noqa: E731
+    return {"cree": bool(bq.pseudo_de(uid)), "produits": len(prods), "payants": payants, "prets": sum(1 for p in prods if a_livrer(p)),
             "paiements": bool(st.get("pret")) or not bq.stripe_actif() or not payants, "publie": bool(page.get("publie"))}
 
 
@@ -1460,7 +1461,7 @@ def _tunnel(pseudo: str, tid: str):
     uid, page = _vitrine(pseudo)
     t = next((x for x in page.get("tunnels") or [] if x.get("id") == tid), None)
     proprio = ab.get(bq.proprio(uid))
-    if not t or (not t.get("publie") and session.get("uid") != bq.proprio(uid)) or not proprio or reserve(proprio, "tunnels"):
+    if not t or (not bq.tunnel_en_ligne(t, page) and session.get("uid") != bq.proprio(uid)) or not proprio or reserve(proprio, "tunnels"):
         abort(404)
     return uid, page, t
 
@@ -1509,7 +1510,7 @@ def boutique_clic(pseudo, bid):
     uid, page = _vitrine(pseudo)
     b = next((x for x in page["blocs"] if x.get("id") == bid and x.get("type") == "lien"), None)
     pr = next((x for x in page["produits"] if b and x.get("id") == b.get("produit") and x.get("visible", True)), None)
-    tn = next((t for t in page.get("tunnels") or [] if b and b.get("tunnel") and t.get("id") == b["tunnel"] and t.get("publie")), None)
+    tn = next((t for t in page.get("tunnels") or [] if b and b.get("tunnel") and t.get("id") == b["tunnel"] and bq.tunnel_en_ligne(t, page)), None)
     u = (f"/@{pseudo.lower()}/p/{pr['id']}?src=bouton" if pr  # bouton → page de paiement
          else f"/@{pseudo.lower()}/t/{tn['id']}" if tn  # bouton → tunnel de vente
          else bq.url_sure((b or {}).get("url")))
@@ -2352,6 +2353,29 @@ def boutique_idees():
         return jsonify({"erreur": msg, "quota": True}), 402
     uid = g.u["id"]
     return jsonify({"job": lance(uid, "Idées de produits", boutique_ia.idees, g.esp, g.esp.lit_config(), demo=en_demo(), file_=FILE_STUDIO,
+                                 apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
+
+
+@app.post("/api/boutique/page_vente")
+@connecte
+def boutique_page_vente():
+    """Page de vente d'une offre écrite par Claude (file du studio, quotas). Sans IA dans la formule : 402, le client garde le modèle."""
+    import boutique_ia
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    msg = reserve(g.u, "ia") or reserve(g.u, "tunnels") or refus(g.u, adaptations=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    c = request.get_json(force=True) or {}
+    prod = {k: str(c.get(k) or "")[:1500] for k in ("titre", "sous_titre", "description", "nature")}
+    try:
+        prod["prix"] = int(c.get("prix") or 0)
+    except (TypeError, ValueError):
+        prod["prix"] = 0
+    if not prod["titre"].strip():
+        return jsonify({"erreur": "Donne d'abord un nom à ton offre."}), 400
+    uid = g.u["id"]
+    return jsonify({"job": lance(uid, "Page de vente", boutique_ia.page_vente, g.esp, g.esp.lit_config(), prod, demo=en_demo(), file_=FILE_STUDIO,
                                  apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
 
 

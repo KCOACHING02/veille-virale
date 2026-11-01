@@ -1123,6 +1123,28 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-prod .meta span{font-size:12px;border-radius:99px;padding:2px 8px;background:var(--sunk);color:var(--ink-2)}
 .bt-prod .meta span.prix{background:var(--ok-soft);color:var(--ok);font-weight:600}
 .bt-tunnel-prod{display:flex;gap:12px;align-items:center;justify-content:space-between;border-radius:14px;padding:12px 14px;margin:12px 0;background:var(--glow-soft)}
+.of-q{font-size:22px;font-weight:800;line-height:1.2;margin:4px 0 14px;letter-spacing:-.01em}
+.of-tuiles{display:grid;gap:10px}
+.of-tuile{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;text-align:left;padding:14px 16px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font:inherit;color:inherit;transition:border-color .15s,transform .15s}
+.of-tuile:hover{border-color:var(--glow);transform:translateY(-1px)}
+.of-tuile .e{grid-row:1/3;font-size:28px;display:grid;place-items:center}
+.of-tuile b{font-size:16px}.of-tuile small{color:var(--ink-3);font-size:13.5px;line-height:1.35}
+.of-tuile.bloque{opacity:.6}
+.of-conseil{font-style:normal;font-size:11px;font-weight:700;background:var(--glow);color:#fff;border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:2px}
+.of-mode{margin:0 0 4px;color:var(--ink-3);font-size:14px}
+.of-ligne{display:flex;gap:12px;align-items:flex-start}
+.of-img{width:96px;height:96px;flex:0 0 96px;border-radius:16px;background-size:cover;background-position:center;display:grid;place-items:center;text-align:center;font-size:24px;margin-top:22px}
+.of-img span{display:block;font-size:12px;color:var(--ink-3)}
+.of-apercu{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.of-apercu iframe{width:100%;height:min(520px,52vh);border:0;display:block}
+.of-pied{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;position:sticky;bottom:0;z-index:5;background:var(--bg,#f6f4f8);padding:10px 0 12px;margin-top:4px}
+@media (max-width:760px){.of-pied{bottom:calc(68px + env(safe-area-inset-bottom))}}
+.of-pied .large{flex:1 1 200px;justify-content:center}
+.of-fin{text-align:center}
+.bt-etat-prod{display:inline-block;margin-top:4px;font-size:12.5px;font-weight:600}
+.bt-etat-prod.ok{color:var(--ok)}.bt-etat-prod.ko{color:var(--warn)}.bt-etat-prod.off{color:var(--ink-3)}
+.en-offre .bt-haut,.en-offre #bt-suite,.en-offre .bt-onglets,.en-offre .bt-droite,.en-offre .bt-flottant{display:none!important}
+.en-offre .bt-grille{display:block;max-width:640px;margin:0 auto}
 .bt-suite{border-radius:16px;padding:14px 16px;margin:0 0 14px;background:var(--glow-soft);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .bt-suite .txt{flex:1 1 200px;min-width:0}.bt-suite small{display:block;color:var(--ink-3);font-size:12px;font-weight:600;letter-spacing:.02em;margin-bottom:2px}
 .bt-suite b{font-size:16px}.bt-suite .pts{display:flex;gap:4px;margin-top:6px}.bt-suite .pts i{width:22px;height:5px;border-radius:3px;background:var(--line)}.bt-suite .pts i.f{background:var(--glow)}
@@ -1626,9 +1648,8 @@ async function renduAccueil() {
   const jobV = jobAnalyse(), nbC = (S.etat.comptes?.instagram || []).length + (S.etat.comptes?.tiktok || []).length;
   const be = S.etat.boutique_etat || {}, publies = (bi.publies || 0) + pubPlan;
   const sousB = [["Crée ta page", !!be.cree, "Créer ma boutique", "va('boutique')"],
-                 ["Ajoute ce que tu vends", be.produits > 0, "Ajouter mon produit", "BQ.onglet='produits';va('boutique')"],
-                 ["Active les paiements", be.cree && be.produits > 0 && be.paiements, "Activer les paiements", "BQ.onglet='produits';va('boutique')"],
-                 ["Mets-la en ligne", be.cree && be.publie, "Mettre ma boutique en ligne", "va('boutique')"]];
+                 ["Ajoute ta première offre", be.cree && be.produits > 0 && (be.prets ?? be.produits) > 0 && be.paiements, be.produits > 0 ? "Terminer mon offre" : "Ajouter mon offre", be.produits > 0 ? "BQ.onglet='produits';va('boutique')" : "nouvelleOffre()"],
+                 ["Partage ton lien", be.cree && be.publie, "Mettre en ligne et partager", "va('boutique')"]];
   const sousB1 = sousB.find(x => !x[1]);
   const verrou = gratuitAcc && !S.etat.admin;
   const etapesP = [
@@ -4092,27 +4113,7 @@ function etapesBoutique(A) {
           <div class="champ"><label>Adresse</label><input data-i="${i}" data-k="url" value="${esc(l.url)}" placeholder="monsite.fr" inputmode="url" autocapitalize="off"></div></div>`).join("")}
         ${(A.nbLiens || 1) < 6 && (A.liens[0].titre || A.liens[0].url) ? '<button type="button" class="btn petit" id="as-plus">+ Un autre bouton</button>' : ""}`}] : []),
   ];
-  // Produits : créés ici pour de vrai (enregistrés dans la boutique, fichier à livrer compris), un par un
-  if (o("vendre")) E.push({nom: "Tes produits", q: (BQ.page?.produits || []).length ? "Tes produits" : "Crée ton premier produit", produits: true,
-    corps: () => { const L = BQ.page?.produits || [], n = A.np ||= {type: "", titre: "", prix: "", desc: "", livraison: "fichier", lien: ""};
-      const TYPES = [["guide", "📘", "Guide ou PDF", "fichier", "Mon guide pour…", "17"], ["formation", "🎓", "Formation", "lien", "Ma formation…", "97"],
-                     ["seance", "📅", "Séance ou coaching", "lien", "Séance découverte", "47"], ["cadeau", "🎁", "Cadeau gratuit", "fichier", "Mon guide offert", "0"],
-                     ["affil", "🛒", "Vendre via un lien d'affiliation", "externe", "Nom de la formation", "497"]];
-      const liste = L.length ? `<div class="np-liste">${L.map(p => `<div class="np-prod"><b>${esc(p.titre)}</b><span>${euros(p.prix)}${p.fichier_nom ? " · 📎 " + esc(p.fichier_nom) : p.lien ? " · 🔗 lien" : ""}</span></div>`).join("")}</div>` : "";
-      if (L.length && !A.npOuvert) return liste + `<button type="button" class="btn large np-autre" id="np-nouveau">+ Ajouter un autre produit</button>`;
-      if (!n.type) return liste + `<p class="bt-explique">Ce que tes abonnées pourront acheter ou recevoir sur ta page. Choisis le type :</p>
-        <div class="np-types">${TYPES.map(([k, e, t]) => `<button type="button" data-np-type="${k}"><span>${e}</span>${t}</button>`).join("")}</div>`;
-      const ty = TYPES.find(x => x[0] === n.type);
-      return liste + `<p class="np-type-choisi">${ty[1]} ${ty[2]} · <button type="button" class="lien" id="np-type-x">changer</button></p>
-        <div class="champ"><label for="np-t">Son nom</label><input id="np-t" data-np="titre" value="${esc(n.titre)}" maxlength="120" placeholder="${esc(ty[4])}"></div>
-        <div class="champ"><label for="np-p">Son prix (€)</label><input id="np-p" data-np="prix" value="${esc(n.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="${ty[5] === "0" ? "0 = gratuit" : "Ex. " + ty[5]}"></div>
-        <div class="champ"><label for="np-d">En une phrase, ce qu'il apporte</label><input id="np-d" data-np="desc" value="${esc(n.desc)}" maxlength="160" placeholder="Ex. 7 jours pour retrouver de l'énergie le matin"></div>
-        <div class="champ"><label>${n.livraison === "externe" ? "Où on l'achète" : "Ce que ta cliente reçoit après l'achat"}</label>
-          ${n.livraison === "externe" ? "" : `<div class="seg np-liv"><button type="button" data-np-liv="fichier" aria-pressed="${n.livraison === "fichier"}">Un fichier</button><button type="button" data-np-liv="lien" aria-pressed="${n.livraison === "lien"}">Un lien</button></div>`}
-          ${n.livraison === "externe" ? `<input data-np="lien" value="${esc(n.lien)}" placeholder="Lien de la page de vente (ton lien d'affiliation)" inputmode="url" autocapitalize="off"><small class="aide">Le bouton « Acheter » mènera directement à cette page : le paiement se fait là-bas.</small>`
-          : n.livraison === "fichier" ? `<label class="np-fichier"><input type="file" id="np-f" hidden><span>${n.fichier ? "📎 " + esc(n.fichier.name) : "📎 Choisir le fichier (PDF, vidéo, ZIP…)"}</span></label><small class="aide">Il est envoyé automatiquement après le paiement. Tu peux aussi l'ajouter plus tard.</small>`
-            : `<input data-np="lien" value="${esc(n.lien)}" placeholder="Lien de ta formation ou de ton agenda (Calendly…)" inputmode="url" autocapitalize="off"><small class="aide">Ta cliente le reçoit après le paiement.</small>`}</div>
-        <button type="button" class="btn prim large" id="np-ajoute">Ajouter ce produit à ma boutique</button>`; }});
+  // Les produits ne se créent plus ici : la boutique en ligne, on enchaîne sur « Ajoute ta première offre » (nouvelleOffre).
   E.push({nom: "C'est prêt", q: "Ta page est prête", fin: true, pourquoi: "Relis ta page dans l'aperçu. Rien n'est figé : tu pourras tout modifier ensuite, même après la publication.",
     corps: () => `<ul class="tn-coches-ed">
         <li>✓ <b>${esc(A.nom)}</b>${A.bio ? " · " + esc(A.bio.slice(0, 60)) + (A.bio.length > 60 ? "…" : "") : ""}</li>
@@ -4253,7 +4254,9 @@ function renduAssistantBoutique(el) {
         if (pr) corps.produits = [...(BQ.page?.produits || []).filter(x => x.id !== pr.id), pr];
         if (o("marques")) corps.kit = {...(BQ.page?.kit || {}), actif: true};
         await api("/api/boutique", {method: "PUT", body: corps});
-        await chargeBoutique(); A.fini = true; BQ.htmlAssist = null; rendu();
+        await chargeBoutique();
+        if (o("vendre") && !A.relance && !(BQ.page?.produits || []).length) { BQ.assist = null; BQ.htmlAssist = null; return nouvelleOffre(true); }
+        A.fini = true; BQ.htmlAssist = null; rendu();
         if (A.relance && BQ.avantAssist) { const av = BQ.avantAssist; BQ.avantAssist = null;
           toastAnnuler("Ta boutique a été refaite", async () => { await api("/api/boutique", {method: "PUT", body: av}); await chargeBoutique(); BQ.assist = null; renduBoutique(); }, () => {}, 15000); }
         return;
@@ -4311,7 +4314,7 @@ function relanceAssistantBoutique() {
 }
 function bravoBoutique(el) {
   const url = BQ.etat.url, A = BQ.assist || {objectifs: []};
-  const suite = A.objectifs.includes("vendre") ? ["produits", A.produit?.titre?.trim() ? "Ajouter le fichier de mon produit" : "Ajouter mon premier produit"] : A.objectifs.includes("marques") ? ["kit", "Compléter mon kit média"] : ["contenu", "Ajouter d'autres blocs"];
+  const suite = A.objectifs.includes("vendre") ? ["produits", (BQ.page?.produits || []).length ? "Voir mes offres" : "Ajouter ma première offre"] : A.objectifs.includes("marques") ? ["kit", "Compléter mon kit média"] : ["contenu", "Ajouter d'autres blocs"];
   el.innerHTML = `<div class="bt-assist"><div class="panneau bt-bravo">
     <div class="gros">🎉</div><h2>Ta boutique est en ligne !</h2>
     <p class="sous" style="margin:0">Voici ton lien. Mets-le dans ta bio : tout le monde peut le voir dès maintenant.</p>
@@ -4322,7 +4325,9 @@ function bravoBoutique(el) {
       <button class="btn" data-aller="design">Personnaliser le design</button>
       <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Voir ma page ↗</a>
     </div>${carteEssai("bravo", "Prochaine étape : des visites", "Une boutique vend quand des gens arrivent dessus. Virallink repère les Reels qui explosent dans ta niche et te les réécrit, prêts à tourner.")}</div></div>`;
-  $$("[data-aller]").forEach(b => b.onclick = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.onglet = b.dataset.aller; renduBoutique(); });
+  $$("[data-aller]").forEach(b => b.onclick = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.onglet = b.dataset.aller;
+    if (b.dataset.aller === "produits" && !(BQ.page?.produits || []).length) return nouvelleOffre(true);
+    renduBoutique(); });
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-copier]"); if (!b) return;
@@ -4363,7 +4368,7 @@ function remplitThemes(zone, ambiance, actif, palette) {
 }
 
 // ---------------------------------------------------------------- Éditeur
-const ONGLETS_BQ = [["contenu", "Contenu"], ["design", "Design"], ["produits", "Produits"], ["tunnels", "Tunnels"], ["emails", "E-mails"], ["kit", "Kit média"], ["stats", "Statistiques"]];
+const ONGLETS_BQ = [["contenu", "Contenu"], ["design", "Design"], ["produits", "Produits"], ["emails", "E-mails"], ["kit", "Kit média"], ["stats", "Statistiques"]];
 const ONGLETS_AVANCES = ["emails", "kit"];
 // Mode simple par défaut : l'essentiel seulement. Le mode avancé (mémorisé dans le navigateur) montre toutes les options.
 BQ.avance = (() => { try { return localStorage.getItem("bt-avance") === "1"; } catch { return false; } })();
@@ -4376,6 +4381,7 @@ function renduEditeur(el) {
   const p = BQ.page, url = BQ.etat.url;
   if (ONGLETS_AVANCES.includes(BQ.onglet) && !BQ.avance) { BQ.avance = true; try { localStorage.setItem("bt-avance", "1"); } catch {} }
   el.classList.toggle("bt-simple", !BQ.avance);
+  el.classList.toggle("en-offre", !!BQ.offre);  // parcours « Ajouter une offre » : seule l'étape en cours est visible
   el.innerHTML = `
     <div class="bt-haut">
       <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button><button class="btn petit" id="bt-qr" title="QR code">QR</button></div>
@@ -4421,7 +4427,7 @@ function etapesBoutiqueRestantes() {
   const vide = prods.find(x => !aLivrer(x));
   const payants = prods.some(x => x.prix && !x.externe);
   return [
-    {fait: prods.length > 0, titre: "Ajoute ton premier produit", bouton: "+ Ajouter un produit", go: () => { BQ.onglet = "produits"; renduEditeur($("#boutique")); editeProduit(null); }},
+    {fait: prods.length > 0, titre: "Ajoute ta première offre", bouton: "+ Ajouter une offre", go: () => nouvelleOffre()},
     {fait: !vide, titre: vide ? `Ajoute ce que reçoit la cliente pour « ${vide.titre || "Sans titre"} »` : "", bouton: "Compléter le produit", go: () => { BQ.onglet = "produits"; renduEditeur($("#boutique")); editeProduit(p.produits.indexOf(vide)); }},
     {fait: !payants || pay.demo || !pay.plateforme || st.pret, titre: st.relie ? "Termine ton inscription Stripe pour encaisser tes ventes" : "Active les paiements pour encaisser tes ventes", bouton: st.relie ? "Continuer sur Stripe" : "Activer les paiements",
       go: async e => { e.target.disabled = true; try { location.href = (await api("/api/boutique/stripe", {method: "POST"})).url; } catch (er) { toast(er.message); e.target.disabled = false; } }},
@@ -4436,8 +4442,7 @@ function majSuite() {
     let vue = false; try { vue = localStorage.getItem("bt-suite-" + BQ.etat.pseudo) === "1"; } catch {}
     if (vue) { z.innerHTML = ""; return; }
     z.innerHTML = `<div class="bt-suite fini"><div class="txt"><small>BOUTIQUE PRÊTE</small><b>🎉 Partage ton lien dans ta bio</b>${pts}</div>
-      <button class="btn prim" id="bt-suite-go" data-copier="${esc(BQ.etat.url)}">Copier mon lien</button>${(BQ.page.tunnels || []).length ? "" : `<button class="btn" id="bt-suite-tn">🎯 Créer un tunnel de vente</button>`}<button class="ferme-x" id="bt-suite-x" type="button" aria-label="Fermer">✕</button></div>`;
-    $("#bt-suite-tn")?.addEventListener("click", () => { BQ.onglet = "tunnels"; BQ.tunnelId = null; BQ.tnAssist = {etape: 0, type: null, id: null}; renduEditeur($("#boutique")); });
+      <button class="btn prim" id="bt-suite-go" data-copier="${esc(BQ.etat.url)}">Copier mon lien</button><button class="ferme-x" id="bt-suite-x" type="button" aria-label="Fermer">✕</button></div>`;
     $("#bt-suite-x").onclick = () => { try { localStorage.setItem("bt-suite-" + BQ.etat.pseudo, "1"); } catch {} z.innerHTML = ""; };
     return;
   }
@@ -5085,7 +5090,7 @@ function assistantTunnel(z) {
   const quitter = () => { BQ.tnAssist = null; BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true); };
   if (!t) {  // étape 0 : le type de tunnel, puis le point de départ
     const ty = A.type;
-    z.innerHTML = `<div class="tn-assist"><div class="tn-tete-as"><button class="btn petit" id="tn-quitter">← Mes tunnels</button><span class="aide">Étape 1 · Le type de tunnel</span></div>
+    z.innerHTML = `<div class="tn-assist"><div class="tn-tete-as"><button class="btn petit" id="tn-quitter">← Mes produits</button><span class="aide">Étape 1 · Le type de tunnel</span></div>
       <section class="bt-sec"><h3>${ty ? "Par quel modèle commencer ?" : "Quel tunnel veux-tu créer ?"}</h3>
       <p class="aide">${ty ? "Chaque modèle est déjà rédigé : on va l'adapter à ta niche étape par étape." : "Choisis selon où en est ta visiteuse avec toi."}</p>
       ${ty ? `<div class="tn-modeles">${modeles.filter(m => m.type === ty).map(m => `<button class="tn-modele" data-modele="${m.id}"><span class="e">${TYPES_TUNNEL[ty][0]}</span><b>${esc(m.nom)}</b><small>${esc(m.description)}</small></button>`).join("")}</div>
@@ -5105,7 +5110,7 @@ function assistantTunnel(z) {
     return;
   }
   const etapes = etapesTunnel(t), n = etapes.length, e = etapes[A.etape];
-  z.innerHTML = `<div class="tn-assist"><div class="tn-tete-as"><button class="btn petit" id="tn-quitter">← Mes tunnels</button><span class="aide">Étape ${A.etape + 2} sur ${n + 1} · ${esc(e.nom)}</span></div>
+  z.innerHTML = `<div class="tn-assist"><div class="tn-tete-as"><button class="btn petit" id="tn-quitter">← Mes produits</button><span class="aide">Étape ${A.etape + 2} sur ${n + 1} · ${esc(e.nom)}</span></div>
     <div class="tn-prog"><i style="width:${(A.etape + 2) / (n + 1) * 100}%"></i></div>
     <section class="bt-sec"><h3>${e.fin ? "🎉 " : ""}${esc(e.nom)}</h3><p class="tn-pourquoi">${e.pourquoi}</p>${e.corps()}</section>
     <div class="bt-pied">${A.etape ? '<button class="btn" id="tn-prec">← Retour</button>' : "<span></span>"}
@@ -5143,6 +5148,7 @@ function ongletTunnels(z) {
   if (BQ.tnAssist) return assistantTunnel(z);
   const t = p.tunnels.find(x => x.id === BQ.tunnelId);
   if (t) return editeTunnel(z, t);
+  BQ.onglet = "produits"; $$("[data-onglet]").forEach(x => x.setAttribute("aria-pressed", x.dataset.onglet === "produits")); return ongletProduits(z);
   BQ.tunnelId = null;
   const st = BQ.etat.tunnels_stats || {};
   const modeles = BQ.etat.options.modeles_tunnels || [];
@@ -5168,8 +5174,10 @@ function editeTunnel(z, t) {
   const {ch, liste} = outilsTunnel(t);
   const prods = p.produits.filter(x => x.visible !== false);
   const sec = (titre, aide, corps, ouvert) => `<details class="bt-sec tn-sec-ed" ${ouvert ? "open" : ""}><summary><h3>${titre}</h3></summary>${aide ? `<p class="aide">${aide}</p>` : ""}${corps}</details>`;
-  let html = `<div class="tn-barre"><button class="btn petit" id="tn-retour">← Mes tunnels</button>
-      <label class="bt-publie"><input type="checkbox" id="tn-publie" ${t.publie ? "checked" : ""}><span>${t.publie ? "En ligne" : "Masqué"}</span></label></div>
+  const prodT = p.produits.find(x => x.id === t.offre?.produit);
+  let html = `<div class="tn-barre"><button class="btn petit" id="tn-retour">← Mes produits</button>
+      ${prodT ? `<span class="aide">${t.type === "quiz" ? "Quiz" : "Page de vente"} de « ${esc(prodT.titre || "Sans titre")} » · ${prodT.visible !== false ? "🟢 en ligne avec le produit" : "masquée avec le produit"}</span>`
+        : `<label class="bt-publie"><input type="checkbox" id="tn-publie" ${t.publie ? "checked" : ""}><span>${t.publie ? "En ligne" : "Masqué"}</span></label>`}</div>
     <section class="bt-sec"><div class="champ"><label for="tn-titre">Nom du tunnel (pour toi)</label><input id="tn-titre" data-tp="titre" value="${esc(t.titre)}" maxlength="80"></div>
       <div class="bt-url" style="margin-top:4px"><a href="${esc(urlTunnel(t))}" target="_blank" rel="noopener">${esc(urlTunnel(t).replace(/^https?:\/\//, ""))}</a><button class="btn petit prim" data-copier="${esc(urlTunnel(t))}">Copier</button></div>
       ${BQ.page.publie ? "" : '<p class="aide" style="margin:8px 0 0">⚠️ Ta boutique est en brouillon : publie-la pour que ce lien fonctionne.</p>'}</section>`;
@@ -5223,8 +5231,8 @@ function editeTunnel(z, t) {
   };
   const zs = $("#tn-zone-style"), rStyle = () => { zs.innerHTML = choixStyleTunnel(t); lieStyleTunnel(zs, t, rStyle); };
   zs.closest("details").addEventListener("toggle", function f() { if (this.open) { lieStyleTunnel(zs, t, rStyle); this.removeEventListener("toggle", f); } });
-  $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; renduOnglet(); apercu(true); };
-  $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué";
+  $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; BQ.onglet = "produits"; renduEditeur($("#boutique")); };
+  if ($("#tn-publie")) $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué";
     if (t.publie && metTunnelSurPage(t, true)) toast("Un bouton vers ce tunnel est ajouté en haut de ta boutique"); sauveBoutique(true); apercu(true); };
   z.querySelectorAll("[data-tadd]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tadd) || []; L.push(JSON.parse(b.dataset.modele)); fixe(t, b.dataset.tadd, L); maj(true); });
   z.querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { const L = chemin(t, b.dataset.tdel); L.splice(+b.dataset.i, 1); maj(true); });
@@ -5233,7 +5241,189 @@ function editeTunnel(z, t) {
     toastAnnuler("Tunnel supprimé", () => { p.tunnels.splice(i, 0, t); renduOnglet(); }, () => sauveBoutique(true), 5000, {boutique: true});
   };
 }
+// ---------------------------------------------------------------- Ajouter une offre (un seul parcours)
+// Une offre = le produit + sa présentation (page de vente, quiz ou fiche simple), mis en ligne d'un seul geste.
+// Écrans : 0 comment tu la vends → 1 ton offre → 2 la présentation → 3 vérifie et mets en vente → 4 c'est en vente.
+const MODES_OFFRE = {
+  fichier: ["📄", "Un fichier ou une formation", "Elle paie, puis reçoit ton PDF, ta vidéo ou ton accès."],
+  rdv: ["📅", "Une séance", "Elle choisit un créneau et paie en ligne."],
+  affil: ["🤝", "Un lien d'affiliation", "Le paiement se fait sur le site du vendeur."],
+  cadeau: ["🎁", "Un cadeau gratuit", "Contre son e-mail : idéal pour commencer."],
+};
+function nouvelleOffre(depuisCreation) {
+  BQ.offre = {etape: 0, mode: "", x: {titre: "", prix: "", sous_titre: "", lien: "", image: "", duree: 30, lieu: ""}, pres: "", depuisCreation: !!depuisCreation};
+  BQ.onglet = "produits"; BQ.tnAssist = null; BQ.tunnelId = null;
+  if (S.vue !== "boutique") return va("boutique");
+  renduEditeur($("#boutique")); scrollTo({top: 0, behavior: "smooth"});
+}
+// Ajouter une page de vente à un produit déjà créé : on reprend le parcours à l'écran « présentation »
+function pageVenteProduit(pid) {
+  const p = BQ.page.produits.find(x => x.id === pid); if (!p) return;
+  const mode = p.externe ? "affil" : p.type === "rdv" ? "rdv" : p.prix ? "fichier" : "cadeau";
+  BQ.offre = {etape: 2, mode, existant: pid, x: {titre: p.titre, prix: p.prix ? String(p.prix / 100) : "", sous_titre: p.sous_titre || "", lien: p.lien || "", image: p.image || ""}, pres: ""};
+  BQ.onglet = "produits"; renduEditeur($("#boutique")); scrollTo({top: 0, behavior: "smooth"});
+}
+function centimesOffre(O) { return O.mode === "cadeau" ? 0 : Math.round((parseFloat(String(O.x.prix || "0").replace(",", ".")) || 0) * 100); }
+// Le produit tel qu'il sera enregistré
+function produitOffre(O) {
+  const x = O.x, prix = centimesOffre(O), ancien = O.existant ? BQ.page.produits.find(p => p.id === O.existant) : null;
+  const p = {...(ancien || {}), id: O.existant || (O.id ||= idCourt()), titre: x.titre.trim(), sous_titre: x.sous_titre.trim(), prix, image: x.image || "", visible: true,
+    devise: "eur", type: O.mode === "rdv" ? "rdv" : "telechargement", externe: O.mode === "affil",
+    lien: O.mode === "affil" ? x.lien.trim() : (ancien?.lien || ""), bouton: ancien?.bouton || (O.mode === "rdv" ? "Je réserve" : prix ? "Je le veux" : "Je le reçois")};
+  if (O.mode === "rdv") p.rdv = {...(ancien?.rdv || {jours: [0, 1, 2, 3, 4], plages: "09:00-12:00, 14:00-18:00", delai_h: 12, horizon_j: 21}), duree: +x.duree || 30, lieu: x.lieu.trim() || "Lien de visio envoyé par e-mail"};
+  return p;
+}
+// La page de vente (tunnel) à partir d'un modèle, avec le nom et le prix de l'offre déjà posés
+function tunnelOffre(O, modeleId) {
+  const m = (BQ.etat.options.modeles_tunnels || []).find(x => x.id === modeleId); if (!m) return null;
+  const t = {...structuredClone(m.contenu), id: idCourt(), publie: true, modele: m.id};
+  t.titre = (m.type === "quiz" ? "Quiz : " : "Page de vente : ") + O.x.titre.trim();
+  t.offre = {...t.offre, produit: produitOffre(O).id, titre: O.x.titre.trim()};
+  if (m.type === "vente") { t.accroche = {...t.accroche, titre: O.x.titre.trim() + ",", ...(O.x.sous_titre ? {texte: O.x.sous_titre} : {})};
+    if (O.mode === "affil") t.offre.texte = "Tu seras redirigée vers la page de paiement officielle."; }
+  return t;
+}
+async function ecritPageVente(O) {
+  O.ia = "ecrit"; renduOnglet();
+  try {
+    const p = produitOffre(O);
+    const r = await api("/api/boutique/page_vente", {method: "POST", body: {titre: p.titre, sous_titre: p.sous_titre, prix: p.prix,
+      nature: O.mode === "rdv" ? "séance ou accompagnement" : O.mode === "affil" ? "formation vendue en affiliation" : O.mode === "cadeau" ? "cadeau gratuit contre un e-mail" : "produit numérique"}});
+    const c = await attendsTache(r.job, m => { const l = $("#of-ia-log"); if (l) l.innerHTML = spin(" " + esc(m)); });
+    if (BQ.offre !== O || !O.tunnel) return;
+    const t = O.tunnel;
+    t.accroche = {...t.accroche, ...Object.fromEntries(Object.entries(c.accroche).filter(([, v]) => v))};
+    for (const k of ["probleme", "benefices", "contenu", "faq"]) if (c[k].items.length) t[k] = {...t[k], items: c[k].items};
+    t.offre = {...t.offre, ...Object.fromEntries(Object.entries(c.offre).filter(([, v]) => v))};
+    if (O.mode === "affil") t.offre.garantie = "";
+    O.ia = "ok";
+  } catch (e) { O.ia = "modele"; if (!/quota|formule|abonn|essai/i.test(e.message)) toast(e.message); }
+  if (BQ.offre === O) renduOnglet();
+}
+async function metEnVente(O, bt) {
+  const p = produitOffre(O), P = BQ.page;
+  bt.disabled = true; bt.innerHTML = spin(" Mise en vente…");
+  try {
+    const k = P.produits.findIndex(y => y.id === p.id);
+    if (k < 0) P.produits.push(p); else P.produits[k] = p;
+    P.tunnels ||= [];
+    if (O.tunnel) { P.tunnels = P.tunnels.filter(t => t.offre?.produit !== p.id || t.id === O.tunnel.id); const j = P.tunnels.findIndex(t => t.id === O.tunnel.id);
+      if (j < 0) P.tunnels.push(O.tunnel); else P.tunnels[j] = O.tunnel; }
+    if (!P.blocs.some(b => b.type === "produits" || (b.type === "produit" && b.produit === p.id))) P.blocs.push({id: idCourt(), type: "produits", titre: "Ma boutique", visible: true});
+    P.publie = true;
+    await sauveBoutique(true);
+    if (O.fichier) {
+      const fd = new FormData(); fd.append("fichier", O.fichier);
+      const r = await fetch(`/api/boutique/produits/${p.id}/fichier`, {method: "POST", body: fd});
+      if (!r.ok) toast((await r.json().catch(() => ({}))).erreur || "Le fichier n'a pas pu être envoyé : ajoute-le depuis la fiche du produit.", {duree: 6000});
+      else await chargeBoutique();
+    }
+    O.etape = 4; O.pid = p.id; renduEditeur($("#boutique")); scrollTo({top: 0, behavior: "smooth"});
+  } catch (e) { toast(e.message); bt.disabled = false; bt.textContent = "Mettre en vente 🚀"; }
+}
+function assistantOffre(z) {
+  const O = BQ.offre, x = O.x, m = MODES_OFFRE[O.mode], tnOk = BQ.etat.tunnels_ok;
+  const rendu = () => assistantOffre(z), aller = n => { O.etape = n; rendu(); scrollTo({top: 0, behavior: "smooth"}); };
+  const quitter = () => { BQ.offre = null; renduEditeur($("#boutique")); };
+  const nb = 4, prog = Math.min(O.etape + 1, nb);
+  const tete = O.etape < 4 ? `<div class="tn-tete-as"><button class="btn petit" id="of-quitter">${O.etape && !O.existant ? "← Retour" : "✕ Annuler"}</button><span class="aide">Étape ${prog} sur ${nb}</span></div>
+    <div class="tn-prog"><i style="width:${prog / nb * 100}%"></i></div>` : "";
+  let corps = "", pied = "";
+  if (O.etape === 0) {
+    corps = `<h3 class="of-q">Comment tu la vends ?</h3><div class="of-tuiles">${Object.entries(MODES_OFFRE).map(([k, [e, t, d]]) =>
+      `<button type="button" class="of-tuile" data-mode="${k}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div>`;
+  } else if (O.etape === 1) {
+    const ph = {fichier: ["Mon guide anti-fatigue", "27"], rdv: ["Séance découverte", "60"], affil: ["L'indépendance digitale", "497"], cadeau: ["Ma checklist offerte", ""]}[O.mode];
+    corps = `<p class="of-mode">${m[0]} ${m[1]} · <button type="button" class="lien" id="of-mode-x">changer</button></p><h3 class="of-q">Ton offre</h3>
+      <div class="of-ligne"><label class="bt-depot of-img" style="${x.image ? `background-image:url('${urlImg(x.image)}')` : ""}">${x.image ? "" : "🖼️<span>Image</span>"}<input type="file" accept="image/*" id="of-img" hidden></label>
+        <div style="flex:1;min-width:0"><div class="champ"><label for="of-t">Son nom</label><input id="of-t" data-ox="titre" value="${esc(x.titre)}" maxlength="120" placeholder="${esc(ph[0])}"></div>
+        ${O.mode === "cadeau" ? "" : `<div class="champ"><label for="of-p">Son prix (€)</label><input id="of-p" data-ox="prix" value="${esc(x.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="${ph[1]}"></div>`}</div></div>
+      <div class="champ"><label for="of-st">En une phrase, ce qu'elle obtient</label><input id="of-st" data-ox="sous_titre" value="${esc(x.sous_titre)}" maxlength="160" placeholder="Ex. 7 jours pour retrouver de l'énergie le matin"></div>
+      ${O.mode === "affil" ? `<div class="champ"><label for="of-l">Ton lien d'affiliation</label><input id="of-l" data-ox="lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="https://…"><small class="aide">Le bouton « acheter » y mènera : le paiement se fait là-bas.</small></div>`
+      : O.mode === "rdv" ? `<div class="duo"><div class="champ"><label for="of-d">Durée</label><select id="of-d" data-ox="duree">${[30, 45, 60, 90].map(d => `<option value="${d}" ${+x.duree === d ? "selected" : ""}>${d} min</option>`).join("")}</select></div>
+          <div class="champ"><label for="of-li">Lien de visio (facultatif)</label><input id="of-li" data-ox="lieu" value="${esc(x.lieu)}" placeholder="Zoom, Google Meet…" autocapitalize="off"></div></div><small class="aide">Tes horaires se règlent ensuite dans la fiche du produit.</small>`
+      : `<div class="champ"><label>Le fichier qu'elle reçoit</label><label class="np-fichier"><input type="file" id="of-f" hidden><span>${O.fichier ? "📎 " + esc(O.fichier.name) : "📎 Choisir le fichier (PDF, vidéo, ZIP…)"}</span></label>
+          <small class="aide">Envoyé tout seul après ${O.mode === "cadeau" ? "l'inscription" : "le paiement"}. Pas encore prêt ? Tu pourras l'ajouter ensuite.</small></div>`}`;
+    pied = `<button class="btn prim large" id="of-suite">Continuer</button>`;
+  } else if (O.etape === 2) {
+    const conseil = O.mode === "cadeau" ? "fiche" : "vente";
+    const tuile = (k, e, t, d) => { const bloque = k !== "fiche" && !tnOk;
+      return `<button type="button" class="of-tuile ${bloque ? "bloque" : ""}" data-pres="${k}"><span class="e">${bloque ? "🔒" : e}</span><b>${t}${k === conseil ? ' <em class="of-conseil">Conseillé</em>' : ""}</b><small>${d}</small></button>`; };
+    corps = `<h3 class="of-q">Comment tu veux la présenter ?</h3><div class="of-tuiles">
+      ${tuile("vente", "📝", "Une page de vente", "Promesse, bénéfices, questions fréquentes : écrite pour toi, tu n'as qu'à relire.")}
+      ${tuile("quiz", "🎯", "Un quiz", "Quelques questions, une note, puis ton offre comme solution.")}
+      ${tuile("fiche", "🏷️", "Une fiche simple", "Image, prix et bouton. Le plus rapide.")}</div>`;
+  } else if (O.etape === 3) {
+    if (O.choixQuiz) {
+      corps = `<h3 class="of-q">Quel quiz ?</h3><div class="of-tuiles">${(BQ.etat.options.modeles_tunnels || []).filter(q => q.type === "quiz").map(q =>
+        `<button type="button" class="of-tuile" data-quiz="${q.id}"><span class="e">🎯</span><b>${esc(q.nom.replace(/^Quiz-audit : /, ""))}</b><small>${esc(q.description)}</small></button>`).join("")}</div>`;
+    } else {
+      corps = `<h3 class="of-q">Vérifie ta page</h3>
+        ${O.ia === "ecrit" ? `<p class="aide" id="of-ia-log">${spin(" J'écris ta page de vente…")}</p>` : O.ia === "modele" && O.pres === "vente" ? `<p class="aide">Page pré-rédigée : adapte les textes à ton offre avec « Modifier les textes ».</p>` : ""}
+        <div class="of-apercu"><iframe id="of-ap" title="Aperçu de ta page"></iframe></div>`;
+      pied = `<button class="btn" id="of-textes" ${O.ia === "ecrit" ? "disabled" : ""}>${O.tunnel ? "Modifier les textes" : "Modifier la fiche"}</button><button class="btn prim large" id="of-vente" ${O.ia === "ecrit" ? "disabled" : ""}>Mettre en vente 🚀</button>`;
+    }
+  } else {
+    const p = BQ.page.produits.find(y => y.id === O.pid) || {}, url = BQ.etat.url, pay = BQ.etat.paiement || {}, st = BQ.page.stripe || {};
+    const stripe = p.prix && !p.externe && pay.plateforme && !pay.demo && !st.pret;
+    corps = `<div class="bt-bravo of-fin"><div class="gros">🎉</div><h3 class="of-q">${stripe ? "Presque en vente !" : "C'est en vente !"}</h3>
+      ${stripe ? `<p class="sous">Dernière étape pour encaisser : relie ton compte Stripe. L'argent arrive directement chez toi.</p><button class="btn prim large" id="of-stripe">Activer les paiements</button>`
+        : `<p class="sous">« ${esc(p.titre || "")} » est sur ta boutique${O.tunnel ? ", avec sa page de vente" : ""}. Partage ton lien :</p>`}
+      <div class="bt-url"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit ${stripe ? "" : "prim"}" data-copier="${esc(url)}">Copier</button></div>
+      ${O.depuisCreation ? `<ol class="bt-etapes-ig"><li>Ouvre Instagram, puis <b>Modifier le profil</b>.</li><li>Touche <b>Liens</b> → <b>Ajouter un lien externe</b>.</li><li>Colle ton lien et enregistre.</li></ol>` : ""}
+      ${!aLivrer(p) ? `<p class="bt-stripe info" style="display:block">📎 Pense à ajouter le fichier depuis la fiche du produit : en attendant, il s'affiche « bientôt disponible ».</p>` : ""}
+      <div class="bt-rangee" style="justify-content:center"><button class="btn" id="of-autre">+ Une autre offre</button><button class="btn" id="of-fini">Voir mes produits</button></div></div>`;
+  }
+  z.innerHTML = `<div class="tn-assist of-assist">${tete}<section class="bt-sec">${corps}</section>${pied ? `<div class="bt-pied of-pied">${pied}</div>` : ""}</div>`;
+  // Liaisons
+  $("#of-quitter")?.addEventListener("click", () => {
+    if (!O.etape || O.existant) return quitter();
+    if (O.etape === 3 && O.choixQuiz) { O.choixQuiz = false; return aller(2); }
+    aller(O.etape === 3 ? 2 : O.etape - 1);
+  });
+  z.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { O.mode = b.dataset.mode; aller(1); });
+  $("#of-mode-x")?.addEventListener("click", () => aller(0));
+  z.querySelectorAll("[data-ox]").forEach(i => i.oninput = i.onchange = () => { x[i.dataset.ox] = i.value; });
+  $("#of-f")?.addEventListener("change", e => { O.fichier = e.target.files[0] || null; rendu(); });
+  $("#of-img")?.addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return;
+    try { x.image = (await envoieImageBoutique(f, "produit")).nom; rendu(); } catch (er) { toast(er.message); } });
+  $("#of-suite")?.addEventListener("click", () => {
+    if (!x.titre.trim()) return toast("Donne un nom à ton offre");
+    const pr = centimesOffre(O);
+    if (O.mode !== "cadeau" && pr && pr < 50) return toast("Prix minimum : 0,50 €");
+    if (O.mode === "affil" && !/^https?:\/\/\S+\.\S+/.test(x.lien.trim())) return toast("Colle ton lien d'affiliation complet (il commence par https://)");
+    if (O.mode === "affil" && !pr) return toast("Indique le prix affiché sur la page du vendeur");
+    aller(2);
+  });
+  z.querySelectorAll("[data-pres]").forEach(b => b.onclick = () => {
+    const k = b.dataset.pres;
+    if (k !== "fiche" && !tnOk) return essaiDispo() ? proposeEssai("Les pages de vente et les quiz sont inclus dans l'essai et dans toutes les formules payantes.") : va("abonnement");
+    O.pres = k; O.tunnel = null; O.ia = "";
+    if (k === "quiz") { O.choixQuiz = true; return aller(3); }
+    if (k === "vente") { O.tunnel = tunnelOffre(O, O.mode === "rdv" ? "vente_accompagnement" : "vente_formation"); aller(3); ecritPageVente(O); return; }
+    aller(3);
+  });
+  z.querySelectorAll("[data-quiz]").forEach(b => b.onclick = () => { O.choixQuiz = false; O.tunnel = tunnelOffre(O, b.dataset.quiz); rendu(); });
+  if ($("#of-ap")) {
+    const p = produitOffre(O), prods = [...BQ.page.produits.filter(y => y.id !== p.id), p];
+    htmlApercu(contenuApercu({produits: prods, tunnels: O.tunnel ? [...(BQ.page.tunnels || []).filter(t => t.id !== O.tunnel.id), O.tunnel] : BQ.page.tunnels, vue: O.tunnel ? "t:" + O.tunnel.id : "p:" + p.id}))
+      .then(h => { const f = $("#of-ap"); if (f) f.srcdoc = h; });
+  }
+  $("#of-vente")?.addEventListener("click", e => metEnVente(O, e.currentTarget));
+  $("#of-textes")?.addEventListener("click", async e => {
+    // Enregistre d'abord (le produit et sa page restent en ligne), puis ouvre l'éditeur détaillé
+    await metEnVente(O, e.currentTarget); const t = O.tunnel, pid = O.pid; BQ.offre = null;
+    if (t) { BQ.onglet = "tunnels"; BQ.tunnelId = t.id; BQ.vueAp = "t:" + t.id; renduEditeur($("#boutique")); scrollTo({top: 0}); }
+    else { renduEditeur($("#boutique")); editeProduit(BQ.page.produits.findIndex(y => y.id === pid)); }
+  });
+  $("#of-stripe")?.addEventListener("click", async e => { e.target.disabled = true;
+    try { location.href = (await api("/api/boutique/stripe", {method: "POST"})).url; } catch (er) { toast(er.message); e.target.disabled = false; } });
+  $("#of-autre")?.addEventListener("click", () => nouvelleOffre());
+  $("#of-fini")?.addEventListener("click", quitter);
+}
+
 function ongletProduits(z) {
+  if (BQ.offre) return assistantOffre(z);
   const p = BQ.page, pay = BQ.etat.paiement, st = p.stripe || {};
   const payants = p.produits.some(x => x.prix && !x.externe);
   let bandeau = "";
@@ -5246,19 +5436,31 @@ function ongletProduits(z) {
   const aRdv = p.produits.some(x => x.type === "rdv");
   const vides = p.produits.filter(x => x.visible !== false && !aLivrer(x));
   if (vides.length) bandeau += `<div class="bt-stripe info"><p><b>${vides.length === 1 ? "1 produit n'a" : vides.length + " produits n'ont"} rien à livrer</b> (${vides.map(x => esc(x.titre || "Sans titre")).join(", ")}) : ajoute le fichier, un lien ou fais écrire le guide par Virall.ai. En attendant, ${vides.length === 1 ? "il s'affiche" : "ils s'affichent"} « bientôt disponible ».</p></div>`;
+  // État de chaque offre en une ligne : prête, ou ce qu'il manque
+  const stT = BQ.etat.tunnels_stats || {}, tnDe = x => (p.tunnels || []).find(t => t.offre?.produit === x.id);
+  const etatProd = x => x.visible === false ? ["off", "Masqué"] : !aLivrer(x) ? ["ko", x.type === "telechargement" && !x.externe ? "⚠️ Il manque le fichier" : "⚠️ Il manque le lien"]
+    : x.prix && !x.externe && pay.plateforme && !pay.demo && !st.pret ? ["ko", "⚠️ Paiements à activer"] : ["ok", "✓ En vente"];
+  const orphelins = (p.tunnels || []).filter(t => !p.produits.some(x => x.id === t.offre?.produit));
   z.innerHTML = `${bandeau}
-    <section class="bt-sec bt-idees"><h3>✨ Quoi vendre ?</h3><p class="aide">Virall.ai s'appuie sur ta niche, tes Reels qui marchent et ceux qui cartonnent dans ta veille pour te proposer 3 produits, avec la fiche prête et le prix conseillé.</p>
-      <div id="bt-idees">${BQ.idees ? ideesHTML(BQ.idees) : `<button class="btn prim" id="bt-lance-idees">Trouve-moi quoi vendre</button>`}</div></section>
-    <button class="btn prim" id="bt-nouveau-prod" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px">+ Nouveau produit</button>
-    <div class="bt-prods">${p.produits.map((x, i) => `<button class="bt-prod" data-prod="${i}">
+    <button class="btn prim" id="bt-nouvelle-offre" style="width:100%;justify-content:center;padding:14px;margin-bottom:6px;font-size:16px">+ Ajouter une offre</button>
+    <p style="text-align:center;margin:0 0 14px"><button class="lien" id="bt-nouveau-prod">ou créer une fiche produit à la main</button></p>
+    <div class="bt-prods">${p.produits.map((x, i) => { const [cl, et] = etatProd(x), tn = tnDe(x), sv = tn ? stT[tn.id] || {} : null;
+      return `<button class="bt-prod" data-prod="${i}">
       <span class="vig" style="${x.image ? `background-image:url('${urlImg(x.image)}')` : ""}">${x.image ? "" : "🎁"}</span>
-      <span><b>${esc(x.titre || "Sans titre")}</b><span class="meta"><span class="prix">${euros(x.prix)}</span>${promo(x)}<span>${type(x)}</span>${x.mot_cle ? `<span>💬 ${esc(x.mot_cle)}</span>` : ""}${x.visible === false ? "<span>Masqué</span>" : ""}</span></span>
-      <span aria-hidden="true" style="color:var(--ink-3)">›</span></button>`).join("") || `<div class="vide" style="padding:20px;text-align:center;color:var(--ink-3)">Pas encore de produit. Commence par un cadeau gratuit pour récolter des e-mails.</div>`}</div>
+      <span><b>${esc(x.titre || "Sans titre")}</b><span class="meta"><span class="prix">${euros(x.prix)}</span>${promo(x)}<span>${type(x)}</span>${tn ? `<span>${tn.type === "quiz" ? "🎯 Quiz" : "📝 Page de vente"} · 👁 ${sv.vues || 0}</span>` : ""}${x.mot_cle ? `<span>💬 ${esc(x.mot_cle)}</span>` : ""}</span>
+        <span class="bt-etat-prod ${cl}">${et}</span></span>
+      <span aria-hidden="true" style="color:var(--ink-3)">›</span></button>`; }).join("") || `<div class="vide" style="padding:20px;text-align:center;color:var(--ink-3)">Pas encore d'offre. Commence par un cadeau gratuit pour récolter des e-mails, ou ce que tu vends déjà.</div>`}</div>
+    ${orphelins.length ? `<section class="bt-sec" style="margin-top:14px"><h3>Pages sans produit</h3><p class="aide">Choisis le produit à vendre dans chacune pour qu'elle apparaisse sur ta boutique.</p>
+      <div class="bt-rangee">${orphelins.map(t => `<button class="btn petit" data-tn-ouvre="${t.id}">${t.type === "quiz" ? "🎯" : "📝"} ${esc(t.titre || "Sans titre")}</button>`).join("")}</div></section>` : ""}
+    <section class="bt-sec bt-idees" style="margin-top:14px"><h3>✨ Pas d'idée ?</h3><p class="aide">Virall.ai s'appuie sur ta niche et ce qui cartonne dans ta veille pour te proposer 3 produits, avec la fiche prête et le prix conseillé.</p>
+      <div id="bt-idees">${BQ.idees ? ideesHTML(BQ.idees) : `<button class="btn" id="bt-lance-idees">Trouve-moi quoi vendre</button>`}</div></section>
     <section class="bt-sec" style="margin-top:14px"><h3>Codes promo</h3><p class="aide">À donner en story ou par e-mail. La cliente le tape sur la page du produit (ou ouvre le lien avec le code déjà appliqué).</p>
       <div id="bt-promos"></div><button class="btn petit" id="bt-ajout-promo" style="margin-top:8px">+ Un code promo</button></section>
     ${aRdv ? `<section class="bt-sec"><h3>Rendez-vous à venir</h3><div id="bt-rdv"><p class="aide">Chargement…</p></div></section>` : ""}
     <section class="bt-sec"><h3>Avis clients</h3><p class="aide">Trois jours après un achat, la cliente reçoit un e-mail pour donner son avis (un seul par achat : uniquement de vrais avis). Tu peux masquer un avis.</p><div id="bt-avis"><p class="aide">Chargement…</p></div></section>`;
   $("#bt-nouveau-prod").onclick = () => editeProduit(null);
+  $("#bt-nouvelle-offre").onclick = () => nouvelleOffre();
+  z.querySelectorAll("[data-tn-ouvre]").forEach(b => b.onclick = () => { BQ.onglet = "tunnels"; BQ.tunnelId = b.dataset.tnOuvre; BQ.vueAp = "t:" + BQ.tunnelId; renduEditeur($("#boutique")); });
   z.querySelectorAll("[data-prod]").forEach(b => b.onclick = () => editeProduit(+b.dataset.prod));
   $("#bt-stripe")?.addEventListener("click", async e => {
     e.target.disabled = true;
@@ -5402,7 +5604,9 @@ function editeProduit(i, lancerGuide) {
           <div class="champ"><label for="pr-up-prix">À un prix spécial (€)</label><input id="pr-up-prix" type="number" min="0" step="0.01" value="${enEuros(x.upsell.prix)}" placeholder="Ex. 9"></div></div>
         <span class="aide">Affiché sur la page de remerciement, réservé aux deux heures qui suivent l'achat.</span>` : ""}
       </details>
-      ${livraison !== "externe" || x.lien ? `<div class="bt-tunnel-prod"><span><b>🎯 Tunnel de vente</b><br><small class="aide">Une page de vente ou un quiz qui mène à ce produit.</small></span><button type="button" class="btn prim petit" id="pr-tunnel">Créer un tunnel</button></div>` : ""}
+      ${neuf ? "" : (() => { const tn = (p.tunnels || []).find(t => t.offre?.produit === x.id);
+        return `<div class="bt-tunnel-prod"><span><b>${tn ? (tn.type === "quiz" ? "🎯 Son quiz" : "📝 Sa page de vente") : "📝 Page de vente"}</b><br><small class="aide">${tn ? "Un clic sur le produit dans ta boutique y mène." : "Une page écrite pour toi qui donne envie d'acheter."}</small></span>
+          <button type="button" class="btn prim petit" id="pr-tunnel" data-tn="${tn ? tn.id : ""}">${tn ? "Modifier" : "Ajouter"}</button></div>`; })()}
       <label class="bt-interr"><span>Visible dans ma boutique</span><input type="checkbox" id="pr-visible" ${x.visible !== false ? "checked" : ""}></label>
       <div class="pied-modale" style="justify-content:space-between;margin-top:16px">${neuf ? "<span></span>" : `<button class="btn" id="pr-suppr" style="color:var(--warn)">Supprimer</button>`}
         <span class="bt-rangee"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="pr-ok">${neuf ? "Ajouter le produit" : "Enregistrer"}</button></span></div></div>`;
@@ -5446,8 +5650,9 @@ function editeProduit(i, lancerGuide) {
     $("#pr-tunnel")?.addEventListener("click", async () => {
       lit(); if (!x.titre) return toast("Donne d'abord un nom à ton produit");
       await enregistre(); fermeModale();
-      BQ.onglet = "tunnels"; BQ.tunnelId = null; BQ.tnAssist = {etape: 0, type: null, id: null, produit: x.id};
-      renduEditeur($("#boutique")); scrollTo({top: 0, behavior: "smooth"});
+      const tid = $("#pr-tunnel")?.dataset.tn;
+      if (tid) { BQ.onglet = "tunnels"; BQ.tunnelId = tid; BQ.vueAp = "t:" + tid; renduEditeur($("#boutique")); scrollTo({top: 0, behavior: "smooth"}); }
+      else pageVenteProduit(x.id);
     });
     $("#pr-guide")?.addEventListener("click", async () => {
       lit(); if (!x.titre) return toast("Donne d'abord un titre au guide");
