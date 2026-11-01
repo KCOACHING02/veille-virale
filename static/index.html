@@ -471,6 +471,91 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .formats b{font:700 19px/1.2 var(--display)}
 .formats span:not(.ic){color:var(--ink-2);font-size:14px}
 .st-quota{margin:0 0 14px}
+/* ---------- Plan 30 jours (tunnel de vente) ---------- */
+.p30-carte{display:flex;align-items:center;justify-content:space-between;gap:18px 24px;flex-wrap:wrap;background:linear-gradient(135deg,#271B2D 0%,#45264F 100%);color:#fff;border-radius:var(--r-l);padding:22px 24px;margin-bottom:18px;box-shadow:var(--shadow)}
+.p30-carte-txt{flex:1 1 380px;min-width:0}
+.p30-carte h2{font-size:21px;margin:4px 0 6px;color:#fff}
+.p30-carte p{margin:0;color:#E6D9EE;max-width:600px;font-size:14.5px}
+.p30-sur{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#FFB3C6}
+.p30-barre{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:14px;max-width:420px}
+.p30-barre span{display:grid;gap:4px;font-size:12px}
+.p30-barre i{display:block;height:7px;border-radius:99px;background:var(--c)}
+.p30 h2{font-size:24px;font-stretch:88%}
+.p30 .sous{color:var(--ink-2);margin:4px 0 18px}
+.p30 input:not([type=checkbox]),.p30 select,.p30 textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink)}
+.p30 textarea{min-height:96px}.p30 textarea.court{min-height:64px}
+.p30 .champ input+input,.p30 .champ textarea+textarea{margin-top:2px}
+.p30-fac{font-weight:400;color:var(--ink-3);font-size:12.5px;margin-left:4px}
+.p30-brief{max-width:680px;margin:0 auto}
+.p30-etapes{list-style:none;padding:0;margin:14px 0 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.p30-etapes button{width:100%;border:0;background:none;padding:0;cursor:pointer;text-align:left;font-size:13px;color:var(--ink-3);font-weight:600;display:grid;gap:6px}
+.p30-etapes i{display:block;height:5px;border-radius:99px;background:var(--line)}
+.p30-etapes .fait i{background:var(--ink-2)}.p30-etapes .actif i{background:var(--glow)}.p30-etapes .actif button{color:var(--ink)}
+.p30-feuille{background:var(--surface);border-radius:var(--r-l);box-shadow:var(--shadow);padding:24px}
+.p30-pied{display:flex;justify-content:space-between;gap:10px;margin-top:16px;position:sticky;bottom:0;padding:12px 0;background:var(--paper)}
+.p30-seg{flex-wrap:wrap}
+.p30-accord{display:flex;gap:8px;align-items:center;font-size:14px;margin:-6px 0 14px;cursor:pointer}
+.p30-note{font-size:13px;color:var(--ink-3);margin:0 0 14px}
+.p30-alerte{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0}
+.p30-veille{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 8px}
+.p30-veille div{border-radius:12px;padding:12px;background:var(--sunk);border-top:4px solid var(--c);display:grid;gap:2px}
+.p30-veille b{font:700 24px/1 var(--display)}.p30-veille span{font-size:12.5px;color:var(--ink-2)}
+.p30-attente{text-align:center;padding:56px 16px}
+.p30-cartes-anim{display:flex;justify-content:center;gap:10px;margin-bottom:22px}
+.p30-cartes-anim span{width:54px;height:68px;border-radius:12px;background:var(--surface);box-shadow:var(--shadow);border-top:5px solid var(--c);display:grid;place-items:center;font-size:22px;animation:p30-saut 1.6s ease-in-out infinite;animation-delay:calc(var(--i) * .2s)}
+@keyframes p30-saut{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}}
+@media (prefers-reduced-motion:reduce){.p30-cartes-anim span{animation:none}}
+.p30-haut{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.p30-haut-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.p30-entete{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.p30-entete h2 span{font-weight:500;color:var(--ink-2);font-size:17px}
+.p30-entete .aide{margin:4px 0 0}
+.p30-jauge{width:180px;height:8px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.p30-jauge i{display:block;height:100%;width:var(--p);background:var(--glow);border-radius:99px;transition:width .4s}
+.p30-tunnel{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:18px 0 6px;padding-bottom:22px}
+.p30-tunnel div{display:grid;gap:3px}
+.p30-tunnel i{display:block;height:10px;border-radius:99px;background:var(--c)}
+.p30-tunnel b{font-size:13.5px}.p30-tunnel span{font-size:12px;color:var(--ink-3)}
+.p30-curseur{position:absolute;top:-6px;transform:translateX(-50%);font-style:normal;font-size:11px;font-weight:700;color:var(--glow);white-space:nowrap;padding-top:26px;pointer-events:none}
+.p30-curseur::before{content:"";position:absolute;left:50%;top:0;width:3px;height:22px;margin-left:-1.5px;border-radius:2px;background:var(--glow)}
+.p30-bandeau{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);padding:12px 16px;margin:12px 0 16px;font-size:14px}
+.p30-bandeau.action{border-left:4px solid var(--glow)}.p30-bandeau.ok{border-left:4px solid var(--ok)}
+.p30-bandeau .spin{flex:none}
+.p30-semaines{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
+.p30-sem{display:grid;gap:12px}
+.p30-sem h3{font-size:14px;display:flex;align-items:center;gap:8px;font-family:var(--body);font-weight:700;color:var(--ink-2)}
+.p30-sem h3 i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.p30-case{background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);padding:12px;display:grid;gap:8px;border-top:4px solid var(--c);min-width:0}
+.p30-case.publie{opacity:.72}
+.p30-case-tete{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.p30-jour{font-size:12.5px;font-weight:700;color:var(--ink-2);text-transform:capitalize}.p30-jour.auj{color:var(--glow)}
+.p30-titre{font-size:14.5px;line-height:1.35}
+.p30-angle{font-size:13px;color:var(--ink-2);margin:0}
+.p30-cta{margin:0;font-size:12.5px;color:var(--ink-2);display:grid;gap:1px}.p30-cta span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+.p30-vignette{border:0;padding:0;background:var(--sunk);border-radius:10px;overflow:hidden;cursor:pointer;aspect-ratio:4/5}
+.p30-vignette img{width:100%;height:100%;object-fit:cover;display:block}
+.p30-source{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;background:var(--sunk);border-radius:10px;padding:6px;font-size:12px;color:var(--ink-2)}
+.p30-source img,.p30-source i{width:34px;height:42px;border-radius:6px;object-fit:cover;background:var(--line);display:block}
+.p30-source a{color:var(--ink-3);text-decoration:none;font-size:15px;padding:0 4px}
+.p30-actions{display:flex;gap:6px;flex-wrap:wrap}
+.p30-actions .btn.fait{color:var(--ok);border-color:var(--ok)}
+.p30-encours{font-size:13px;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+.p30-reglages summary{cursor:pointer;font-size:12.5px;color:var(--ink-3)}
+.p30-reglages label{display:grid;gap:3px;font-size:12px;color:var(--ink-3);margin-top:6px}
+.p30-reglages input,.p30-reglages select{padding:7px 9px !important;font-size:13px !important}
+@media (max-width:1100px){.p30-semaines{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){
+  .p30-semaines{grid-template-columns:1fr}
+  .p30-veille{grid-template-columns:repeat(2,1fr)}
+  .p30-carte{padding:18px}.p30-carte .btn{width:100%;justify-content:center}
+  .p30-feuille{padding:18px 16px}
+  .p30-pied{bottom:calc(62px + env(safe-area-inset-bottom))}
+  .p30-etapes button{font-size:11.5px}
+  .p30-tunnel span{display:none}
+  .p30-jauge{width:100%}
+  .p30-case{grid-template-columns:1fr}
+  .p30-vignette{aspect-ratio:auto;max-height:260px}
+}
 .st-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
 .st-carte{background:var(--surface);border-radius:var(--r-m);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
 .st-ouvre{border:0;padding:0;background:var(--sunk);cursor:pointer;position:relative;aspect-ratio:4/5;display:block}
@@ -1310,7 +1395,7 @@ function va(vue, depuisHistorique) {
   window.scrollTo(0, 0);
   rendu();
 }
-$$(".nav").forEach(b => b.onclick = () => va(b.dataset.vue));
+$$(".nav").forEach(b => b.onclick = () => { if (b.dataset.vue === "studio") S.plan30Vue = false; va(b.dataset.vue); });
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
 
 function rendu() {
@@ -2239,10 +2324,15 @@ async function choisirFormat(cle) {
 async function renduStudio() {
   const el = $("#studio");
   if (S.projetId) return renduProjet();
+  if (S.plan30Vue) return renduPlan30();
   if (!S.optionsStudio?.projets) el.innerHTML = squelette("cartes", 4);
-  const r = await api("/api/studio");
+  const gratuitP30 = !!S.etat?.abonnement?.gratuit;
+  const [r, p30] = await Promise.all([api("/api/studio"), gratuitP30 ? null : api("/api/plan30").catch(() => null)]);
   S.optionsStudio = r;
-  if (S.vue !== "studio" || S.projetId) return;
+  if (p30) S.p30 = p30;
+  if (S.vue !== "studio" || S.projetId || S.plan30Vue) return;
+  const plan30 = cartePlan30(p30, gratuitP30);
+  const branchePlan30 = () => $("#p30-ouvre")?.addEventListener("click", () => ouvrePlan30(!p30?.plan));
   const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} sur ${r.quota}${S.etat?.abonnement?.renouvellement_fr ? ` jusqu'au ${esc(S.etat.abonnement.renouvellement_fr)}` : ""}`} · retoucher et refaire une création ne compte pas.</p>`;
   const gratuit = !!S.etat?.abonnement?.gratuit;
   const nouveau = `<button class="btn${gratuit ? " prim" : ""}" id="st-vierge">+ Nouveau carrousel</button>`;
@@ -2253,7 +2343,8 @@ async function renduStudio() {
     el.innerHTML = gratuit ? `<div class="vide"><h2>Ton studio est vide</h2><p>Écris ton carrousel slide par slide, ajoute tes photos (ou celles de la banque d'images),<br>et récupère les slides prêtes à publier.</p>${nouveau}</div>${quota}`
       : `<div class="vide"><h2>Ton studio est vide</h2><p>Ouvre un Reel <b>Prêt pour toi</b> dans la galerie et clique sur <b>Créer le contenu</b> :<br>tu choisis carrousel ou Reel, tu ajoutes tes photos ou ta vidéo, et tu récupères tout prêt à publier.</p>
       <button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels prêts pour toi</button> ${nouveau}</div>${quota}`;
-    brancheVierge();
+    el.insertAdjacentHTML("afterbegin", plan30);
+    brancheVierge(); branchePlan30();
     return;
   }
   const vignette = p => {
@@ -2265,18 +2356,18 @@ async function renduStudio() {
       gratuit ? "Clique <b>Nouveau carrousel</b> et écris tes slides." : "Depuis un Reel <b>Prêt pour toi</b>, clique <b>Créer le contenu</b> (ou <b>Nouveau carrousel</b> pour partir de zéro).",
       "Ajoute tes photos ou ta vidéo (ou celles de la banque d'images).",
       "Clique <b>Créer</b>, puis <b>Enregistrer dans mes photos</b> et <b>Copier la légende</b>.",
-      "Publie sur Instagram, puis reviens cliquer <b>J'ai publié</b> sur la fiche du Reel."]) + `<div class="st-haut">${quota}${nouveau}</div>` + `<div class="st-liste">${r.projets.map(p => `
+      "Publie sur Instagram, puis reviens cliquer <b>J'ai publié</b> sur la fiche du Reel."]) + plan30 + `<div class="st-haut">${quota}${nouveau}</div>` + `<div class="st-liste">${r.projets.map(p => `
     <article class="st-carte">
       <button class="st-ouvre" data-projet="${p.id}" aria-label="Ouvrir ${esc(p.titre)}">
         ${vignette(p) ? `<img src="${vignette(p)}" alt="" loading="lazy">` : '<div class="ph"></div>'}
-        <span class="st-type">${p.type === "reel" ? "Reel" : "Carrousel"}</span>
+        <span class="st-type">${p.type === "reel" ? "Reel" : "Carrousel"}${p.plan30 ? " · Plan 30 j" : ""}</span>
         <span class="st-statut ${p.statut}">${STATUTS[p.statut] || p.statut}</span>
       </button>
       <div class="st-pied"><b>${esc(p.titre)}</b><span>${new Date(p.cree).toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}${p.compte ? " · d'après @" + esc(p.compte) : ""}</span>
         <div class="st-actions">${p.zip ? `<a class="btn petit prim" href="/studio/${p.id}/sortie/${encodeURIComponent(p.zip)}?telecharger=1">Télécharger</a>` : ""}<button class="btn petit" data-projet="${p.id}">Ouvrir</button><button class="btn petit" data-suppr="${p.id}" aria-label="Supprimer">Supprimer</button></div>
       </div>
     </article>`).join("")}</div>`;
-  brancheVierge();
+  brancheVierge(); branchePlan30();
   $$("[data-projet]", el).forEach(b => b.onclick = () => ouvreProjet(b.dataset.projet));
   $$("[data-suppr]", el).forEach(b => b.onclick = () => {
     const sid = b.dataset.suppr, carte = b.closest("article"); if (carte) carte.hidden = true;
@@ -2284,6 +2375,233 @@ async function renduStudio() {
       () => fetch("/api/studio/" + sid, {method: "DELETE", keepalive: true}).then(() => { if (S.optionsStudio) S.optionsStudio.projets = (S.optionsStudio.projets || []).filter(x => x.id !== sid); }));
   });
 }
+// ---------------------------------------------------------------- Plan 30 jours
+// Un mois de carrousels qui forme un tunnel de vente (storytelling → éducatif → preuve sociale → vente), construit à partir
+// des publications virales de la veille classées par type. Côté serveur : plan30.py et /api/plan30.
+const CAT30 = {storytelling: ["Storytelling", "t-storytelling", "💬", "#A35BC9"], educatif: ["Éducatif", "t-educatif", "💡", "#3B7BE0"],
+               preuve: ["Preuve sociale", "t-preuve-sociale", "⭐", "#1F9C9E"], vente: ["Vente", "t-commercial", "🏷️", "#2E9B5A"]};
+const SEM30 = [["Attirer", "#A35BC9"], ["Éduquer", "#3B7BE0"], ["Convaincre", "#1F9C9E"], ["Vendre", "#2E9B5A"]];
+const pastille30 = c => CAT30[c] ? `<span class="type-c ${CAT30[c][1]}">${CAT30[c][2]} ${CAT30[c][0]}</span>` : "";
+const jour30 = (j, opts = {weekday: "short", day: "numeric", month: "short"}) => new Date(j + "T12:00:00").toLocaleDateString("fr-FR", opts);
+async function chargePlan30(pid) {
+  S.p30 = await api("/api/plan30" + (pid ? "?plan=" + encodeURIComponent(pid) : ""));
+  return S.p30;
+}
+function ouvrePlan30(brief) { S.plan30Vue = true; S.p30Brief = !!brief; S.projetId = null; S.projet = null; if (S.vue !== "studio") va("studio"); else renduPlan30(); window.scrollTo(0, 0); }
+function barreTunnel(mini) {
+  return `<div class="p30-barre${mini ? " mini" : ""}" aria-hidden="true">${SEM30.map(([n, c]) => `<span style="--c:${c}"><i></i>${mini ? "" : `<b>${n}</b>`}</span>`).join("")}</div>`;
+}
+// Carte en haut du studio : point d'entrée du plan
+function cartePlan30(r, gratuit) {
+  const plan = r?.plans?.[0];
+  const btn = gratuit ? `<button class="btn prim" onclick="va('abonnement')">Débloquer avec une formule</button>`
+    : plan ? `<button class="btn prim" id="p30-ouvre">Ouvrir mon plan · ${plan.prets}/${plan.total} prêts</button>`
+    : `<button class="btn prim" id="p30-ouvre">Créer mon plan du mois</button>`;
+  return `<section class="p30-carte"><div class="p30-carte-txt"><span class="p30-sur">Plan 30 jours</span>
+    <h2>${plan ? esc(plan.titre) + " : ton tunnel de vente du mois" : "Ton mois de contenu qui mène à la vente"}</h2>
+    <p>8 carrousels prêts à publier, construits à partir de ce qui marche dans ta niche : ta veille classe les publications virales, puis Virall.ai enchaîne storytelling, éducatif, preuve sociale et vente.</p>
+    ${barreTunnel(true)}</div>${btn}</section>`;
+}
+async function renduPlan30() {
+  const el = $("#studio");
+  if (!S.p30) { el.innerHTML = squelette("lignes", 6); try { await chargePlan30(); } catch (e) { el.innerHTML = `<p class="aide">${esc(e.message)}</p>`; return; } }
+  if (S.vue !== "studio" || !S.plan30Vue || S.projetId) return;
+  if (S.p30Attente) return renduAttente30();
+  if (S.p30Brief || !S.p30.plan) return renduBrief30();
+  renduCalendrier30();
+}
+
+// ---- Le brief : 4 étapes courtes, enregistrées au fil de la saisie
+const ETAPES30 = ["Mon offre", "Ma cliente", "Ma voix", "Mon plan"];
+function champ30(cle, label, aide, opts = {}) {
+  const v = S.p30.brief[cle] ?? "";
+  const ctl = opts.long ? `<textarea data-b="${cle}" maxlength="${opts.max || 800}" placeholder="${esc(opts.ex || "")}">${esc(v)}</textarea>`
+    : `<input data-b="${cle}" type="${opts.type || "text"}" maxlength="${opts.max || 300}" value="${esc(v)}" placeholder="${esc(opts.ex || "")}">`;
+  return `<div class="champ"><label>${label}${opts.facultatif ? ' <span class="p30-fac">facultatif</span>' : ""}</label>${ctl}${aide ? `<span class="aide">${aide}</span>` : ""}</div>`;
+}
+function liste30(cle, label, aide, n, ex, opts = {}) {
+  const v = S.p30.brief[cle] || [];
+  return `<div class="champ"><label>${label}${opts.facultatif ? ' <span class="p30-fac">facultatif</span>' : ""}</label>
+    ${Array.from({length: n}, (_, i) => opts.long ? `<textarea class="court" data-l="${cle}" data-i="${i}" maxlength="600" placeholder="${esc(ex[i] || "")}">${esc(v[i] || "")}</textarea>`
+      : `<input data-l="${cle}" data-i="${i}" maxlength="200" value="${esc(v[i] || "")}" placeholder="${esc(ex[i] || "")}">`).join("")}
+    ${aide ? `<span class="aide">${aide}</span>` : ""}</div>`;
+}
+function choix30(cle, label, options) {
+  const v = S.p30.brief[cle];
+  return `<div class="champ"><label>${label}</label><div class="seg p30-seg">${options.map(([id, t]) =>
+    `<button type="button" data-c="${cle}" data-v="${esc(id)}" aria-pressed="${v === id}">${esc(t)}</button>`).join("")}</div></div>`;
+}
+function sauveBrief30(immediat) {
+  clearTimeout(S.p30Sauve);
+  const go = async () => { try { const r = await api("/api/plan30/brief", {method: "PUT", body: S.p30.brief}); S.p30.brief_manque = r.brief_manque; } catch (e) { toast(e.message); } };
+  if (immediat) return go();
+  S.p30Sauve = setTimeout(go, 700);
+}
+function renduBrief30() {
+  const el = $("#studio"), r = S.p30, b = r.brief;
+  const k = Math.min(S.p30Etape || 0, 3);
+  const corps = [
+    () => `<h2>Qu'est-ce que tu vends ce mois-ci ?</h2><p class="sous">Tout le plan mène à cette offre : le dernier carrousel la présente, les autres préparent le terrain.</p>
+      ${champ30("produit", "Ton offre", "Un seul produit ou service par plan, c'est plus clair pour tes abonnées.", {ex: "Ex. Coaching glow-up 6 semaines", max: 100})}
+      <div class="ligne">${champ30("prix", "Son prix", "", {ex: "Ex. 297 €", max: 30})}${champ30("date_cle", "Date de lancement ou de clôture", "Le plan se cale pour que la vente tombe juste avant.", {type: "date", facultatif: true})}</div>
+      ${champ30("lien", "Lien d'achat ou mot-clé à envoyer en message privé", "Ex. le lien de ta boutique Virallink, ou « GLOW » si tu réponds en DM.", {ex: "Ex. GLOW", max: 300})}
+      ${champ30("transformation", "La transformation que tu promets", "Avant / après pour ta cliente, en une phrase. Pas de promesse chiffrée ou médicale.", {ex: "Ex. Passer de fatiguée et débordée à rayonnante, sans y passer des heures", long: true, max: 300})}`,
+    () => `<h2>À qui tu parles ?</h2><p class="sous">Ses problèmes nourrissent les carrousels éducatifs, ses objections ton storytelling et ta vente.</p>
+      ${champ30("cible", "Ta cliente idéale", "", {ex: "Ex. Femmes de 30 à 45 ans, mamans actives, qui n'ont plus de temps pour elles", max: 200})}
+      ${liste30("problemes", "Ses 3 problèmes principaux", "Au moins 2.", 3, ["Ex. Elle n'a jamais le temps de prendre soin d'elle", "Ex. Elle a la peau terne et se trouve fatiguée", "Ex. Elle a tout essayé sans résultat"])}
+      ${liste30("objections", "Ce qui l'empêche d'acheter", "Au moins 1. Ex. « trop cher », « pas le temps », « ça ne marchera pas pour moi ».", 3, ["Ex. C'est trop cher pour moi", "Ex. Je n'aurai pas le temps de suivre", "Ex. J'ai déjà essayé, ça n'a pas marché"])}
+      ${liste30("temoignages", "Témoignages de tes clientes", "La seule source de tes carrousels de preuve sociale : Virall.ai n'invente jamais d'avis.", 3, ["Colle un avis tel quel, ex. « Sarah : en 3 semaines j'ai retrouvé confiance en moi »", "Un deuxième avis", "Un troisième avis"], {long: true, facultatif: true})}
+      <label class="p30-accord"><input type="checkbox" data-accord ${b.accord_temoignages ? "checked" : ""}> J'ai l'accord de mes clientes pour publier leurs avis</label>
+      ${(b.temoignages || []).length ? "" : `<p class="p30-note">Pas encore d'avis ? Pas de souci : tes carrousels de preuve sociale montreront les coulisses de ta méthode.</p>`}
+      ${liste30("resultats", "Résultats chiffrés réels", "Uniquement des chiffres vrais.", 2, ["Ex. 40 clientes accompagnées depuis 2023", "Ex. 4,9/5 sur 60 avis"], {facultatif: true})}`,
+    () => `<h2>Comment tu parles ?</h2><p class="sous">Virall.ai écrit dans ta voix : il s'appuie aussi sur ce qu'il a appris de ton compte.</p>
+      ${champ30("histoire", "Ton histoire", "Pourquoi tu fais ce métier, ton déclic, une difficulté surmontée. C'est la base de tes carrousels storytelling.", {ex: "Ex. En 2021, j'ai fait un burn-out. Je ne me reconnaissais plus dans le miroir…", long: true, max: 800})}
+      ${choix30("ton", "Ton", (r.tons || []).map(t => [t, t]))}
+      ${choix30("tutoiement", "Tu tutoies ou tu vouvoies ?", [["tu", "Tutoiement"], ["vous", "Vouvoiement"]])}
+      ${choix30("emojis", "Les emojis dans tes légendes", [["aucun", "Aucun"], ["quelques", "Quelques-uns"], ["beaucoup", "Beaucoup"]])}`,
+    () => {
+      const v = r.veille || {}, total = Object.values(v).reduce((a, x) => a + x, 0);
+      return `<h2>On construit ton plan</h2><p class="sous">Virall.ai part de ta veille : pour chaque carrousel, il reprend la structure de la publication virale la mieux notée de son type.</p>
+      <div class="p30-veille">${Object.keys(CAT30).map(c => `<div style="--c:${CAT30[c][3]}"><b>${v[c] || 0}</b><span>${CAT30[c][2]} ${CAT30[c][0]}</span></div>`).join("")}</div>
+      <p class="aide">${total ? "Modèles viraux trouvés dans ta veille, par type." : "Ta veille ne contient encore aucune publication classée : lance d'abord une veille."}</p>
+      <div class="champ"><label>Premier jour du plan</label><input type="date" id="p30-debut" value="${esc(S.p30Debut || r.debut_conseille)}">
+        <span class="aide">Le plan démarre le lundi de cette semaine : 2 carrousels par semaine, le mardi et le vendredi, pendant 4 semaines.</span></div>
+      ${r.brief_manque ? `<p class="p30-alerte">${esc(r.brief_manque)}</p>` : ""}
+      <p class="aide">${r.reste >= 9000 ? "" : r.reste > 0 ? `Il te reste ${r.reste} plan${r.reste > 1 ? "s" : ""} sur ${r.quota} pour cette période.` : `Tu as utilisé ${r.quota > 1 ? "tes " + r.quota + " plans" : "ton plan"} de la période.`}</p>`;
+    }][k]();
+  el.innerHTML = `<div class="p30 p30-brief">
+    <button class="btn petit" id="p30-retour">← ${r.plan ? "Mon plan" : "Studio"}</button>
+    <ol class="p30-etapes">${ETAPES30.map((t, i) => `<li class="${i < k ? "fait" : i === k ? "actif" : ""}"><button type="button" data-etape="${i}"><i></i>${t}</button></li>`).join("")}</ol>
+    <div class="p30-feuille">${corps}</div>
+    <div class="p30-pied">${k ? '<button class="btn" id="p30-prec">Retour</button>' : "<span></span>"}
+      ${k < 3 ? '<button class="btn prim" id="p30-suiv">Continuer</button>'
+        : r.reste > 0 ? `<button class="btn prim" id="p30-cree" ${r.brief_manque || !Object.values(r.veille || {}).some(Boolean) ? "disabled" : ""}>Créer mon plan des 30 jours</button>`
+        : '<button class="btn prim" onclick="va(\'abonnement\')">Voir les formules</button>'}</div></div>`;
+  $("#p30-retour").onclick = () => { sauveBrief30(true); if (r.plan) { S.p30Brief = false; renduPlan30(); } else { S.plan30Vue = false; renduStudio(); } };
+  $$("[data-b]", el).forEach(i => i.oninput = () => { b[i.dataset.b] = i.value; sauveBrief30(); });
+  $$("[data-l]", el).forEach(i => i.oninput = () => {
+    const l = $$(`[data-l="${i.dataset.l}"]`, el).map(x => x.value); b[i.dataset.l] = l; sauveBrief30(); });
+  $$("[data-c]", el).forEach(x => x.onclick = () => { b[x.dataset.c] = x.dataset.v; $$(`[data-c="${x.dataset.c}"]`, el).forEach(y => y.setAttribute("aria-pressed", y === x)); sauveBrief30(); });
+  $("[data-accord]", el)?.addEventListener("change", e => { b.accord_temoignages = e.target.checked; sauveBrief30(); });
+  $("#p30-debut")?.addEventListener("change", e => { S.p30Debut = e.target.value; });
+  const vers = async i => { await sauveBrief30(true); S.p30Etape = i; renduBrief30(); window.scrollTo(0, 0); };
+  $$("[data-etape]", el).forEach(x => x.onclick = () => vers(+x.dataset.etape));
+  $("#p30-prec")?.addEventListener("click", () => vers(k - 1));
+  $("#p30-suiv")?.addEventListener("click", () => vers(k + 1));
+  $("#p30-cree")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    try {
+      await sauveBrief30(true);
+      const x = await api("/api/plan30", {method: "POST", body: {debut: S.p30Debut || r.debut_conseille}});
+      S.p30Attente = {titre: "Je construis ton plan des 30 jours", log: "Je classe les publications virales de ta veille…"}; renduPlan30();
+      await attendsTache(x.job, m => { if (S.p30Attente) { S.p30Attente.log = m; const l = $("#p30-log"); if (l) l.textContent = m; } });
+      S.p30Attente = null; S.p30Brief = false; S.p30Etape = 0; await chargePlan30(); renduPlan30(); toast("Ton plan est prêt");
+    } catch (err) { S.p30Attente = null; toast(err.message, {duree: 6000}); if (S.plan30Vue) renduPlan30(); }
+  });
+}
+function renduAttente30() {
+  $("#studio").innerHTML = `<div class="p30 p30-attente"><div class="p30-cartes-anim">${Object.keys(CAT30).map((c, i) => `<span style="--c:${CAT30[c][3]};--i:${i}">${CAT30[c][2]}</span>`).join("")}</div>
+    <h2>${esc(S.p30Attente.titre)}</h2><p id="p30-log" class="aide">${esc(S.p30Attente.log || "")}</p><p class="aide">Moins d'une minute. Tu peux quitter cette page, ton plan t'attendra ici.</p></div>`;
+}
+
+// ---- Le calendrier : 4 semaines, 8 carrousels, chacun relié à la publication virale dont il reprend la structure
+function renduCalendrier30() {
+  const el = $("#studio"), r = S.p30, plan = r.plan;
+  const cases = plan.cases.map((c, i) => ({...c, i})).sort((a, b) => a.jour < b.jour ? -1 : 1);
+  const prets = cases.filter(c => c.projet).length, publies = cases.filter(c => c.publie).length;
+  const enCours = S.p30Job ? new Set(S.p30Job.cases) : new Set();
+  const restants = cases.filter(c => !c.projet && !enCours.has(c.i));
+  const possibles = r.reste_studio >= 9000 ? restants : restants.filter(c => c.source).slice(0, Math.max(r.reste_studio, 0));
+  const aujd = new Date().toISOString().slice(0, 10);
+  const pos = Math.max(0, Math.min(100, (new Date(aujd) - new Date(plan.debut)) / (new Date(plan.fin) - new Date(plan.debut) + 864e5) * 100));
+  const carte = c => {
+    const cat = CAT30[c.categorie] || CAT30.educatif, s = c.source || {}, attente = enCours.has(c.i);
+    const passe = c.jour < aujd && !c.publie;
+    return `<article class="p30-case ${c.publie ? "publie" : ""}" style="--c:${cat[3]}" data-case="${c.i}">
+      <div class="p30-case-tete"><span class="p30-jour${c.jour === aujd ? " auj" : ""}">${c.jour === aujd ? "Aujourd'hui" : esc(jour30(c.jour))}</span>${pastille30(c.categorie)}</div>
+      ${c.vignette ? `<button class="p30-vignette" data-ouvre="${c.projet}" aria-label="Ouvrir le carrousel"><img src="${esc(c.vignette)}" alt="" loading="lazy"></button>` : ""}
+      <b class="p30-titre">${esc(c.titre)}</b>
+      ${c.angle && !c.vignette ? `<p class="p30-angle">${esc(c.angle)}</p>` : ""}
+      <p class="p30-cta"><span>Appel à l'action</span>${esc(c.cta)}</p>
+      ${s.compte ? `<div class="p30-source">${s.miniature ? `<img src="/media/${encodeURIComponent(s.miniature)}" alt="" loading="lazy">` : "<i></i>"}
+        <span>Structure reprise de <b>@${esc(s.compte)}</b>${s.score ? ` · ${String(s.score).replace(".", ",")}× sa moyenne` : ""}${s.niche_proche ? " · autre type, faute de modèle" : ""}</span>
+        ${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener" aria-label="Voir la publication virale">↗</a>` : ""}</div>` : `<p class="p30-alerte">Aucun modèle viral : relance une veille ou change le type.</p>`}
+      <div class="p30-actions">${attente ? `<span class="p30-encours">${spin(" Création…")}</span>`
+        : c.projet ? `${c.zip ? `<a class="btn petit prim" href="${esc(c.zip)}">Télécharger</a>` : ""}<button class="btn petit" data-ouvre="${c.projet}">Ouvrir</button>
+          <button class="btn petit${c.publie ? " fait" : ""}" data-publie="${c.i}">${c.publie ? "✓ Publié" : "J'ai publié"}</button>`
+        : `<button class="btn petit prim" data-fab="${c.i}" ${s.compte ? "" : "disabled"}>Créer ce carrousel</button><button class="btn petit" data-autre="${c.i}" title="Prendre une autre publication virale du même type">Autre modèle</button>`}</div>
+      ${!c.projet && !attente ? `<details class="p30-reglages"><summary>Modifier</summary>
+        <label>Date<input type="date" data-jour="${c.i}" value="${esc(c.jour)}"></label>
+        <label>Type<select data-cat="${c.i}">${Object.keys(CAT30).map(k => `<option value="${k}" ${k === c.categorie ? "selected" : ""}>${CAT30[k][0]}</option>`).join("")}</select></label>
+        <label>Sujet<input data-titre="${c.i}" value="${esc(c.titre)}" maxlength="110"></label></details>` : ""}
+      ${passe && c.projet ? `<p class="p30-note">Date passée : publie-le dès que tu peux.</p>` : ""}
+    </article>`;
+  };
+  const semaines = [0, 1, 2, 3].map(w => {
+    const d0 = new Date(plan.debut + "T12:00:00"); d0.setDate(d0.getDate() + w * 7);
+    const d1 = new Date(d0); d1.setDate(d1.getDate() + 6);
+    return {w, du: d0.toISOString().slice(0, 10), au: d1.toISOString().slice(0, 10), cases: cases.filter(c => semaine30(c, plan) === w)};
+  });
+  const autres = r.plans.length > 1 ? `<select class="select" id="p30-choix" aria-label="Choisir un plan">${r.plans.map(p => `<option value="${p.id}" ${p.id === plan.id ? "selected" : ""}>${esc(p.titre)}</option>`).join("")}</select>` : "";
+  el.innerHTML = `<div class="p30 p30-cal">
+    <div class="p30-haut"><button class="btn petit" id="p30-retour">← Studio</button><div class="p30-haut-actions">${autres}
+      <button class="btn petit" id="p30-brief">Modifier mon brief</button>${r.reste > 0 ? '<button class="btn petit" id="p30-nouveau">Nouveau plan</button>' : ""}</div></div>
+    <div class="p30-entete"><div><h2>${esc(plan.titre)}${plan.offre ? ` <span>→ ${esc(plan.offre)}</span>` : ""}</h2>
+      <p class="aide">${jour30(plan.debut, {day: "numeric", month: "long"})} au ${jour30(plan.fin, {day: "numeric", month: "long"})} · ${prets}/8 carrousels prêts${publies ? ` · ${publies} publié${publies > 1 ? "s" : ""}` : ""}</p></div>
+      <div class="p30-jauge" style="--p:${prets / 8 * 100}%" aria-label="${prets} carrousels prêts sur 8"><i></i></div></div>
+    <div class="p30-tunnel">${SEM30.map(([n, c], w) => `<div style="--c:${c}"><i></i><b>${n}</b><span>${jour30(semaines[w].du, {day: "numeric", month: "short"})} – ${jour30(semaines[w].au, {day: "numeric", month: "short"})}</span></div>`).join("")}
+      ${aujd >= plan.debut && aujd <= plan.fin ? `<em class="p30-curseur" style="left:${pos}%">Aujourd'hui</em>` : ""}</div>
+    ${plan.alerte ? `<p class="p30-alerte">⚠️ ${esc(plan.alerte)}</p>` : ""}
+    ${S.p30Job ? `<div class="p30-bandeau">${spin("")}<span id="p30-joblog">${esc(S.p30Job.log || "Je m'en occupe…")}</span></div>`
+      : restants.length ? `<div class="p30-bandeau action"><span><b>${restants.length} carrousel${restants.length > 1 ? "s" : ""} à créer.</b> Textes, images et slides prêts à publier, dans ta voix.${possibles.length < restants.length ? (possibles.length ? ` Il te reste ${possibles.length} création${possibles.length > 1 ? "s" : ""} au studio ce mois-ci` : " Tu as utilisé toutes tes créations du studio ce mois-ci") + " : passe à la formule supérieure pour créer tout ton plan." : ""}</span>
+        ${possibles.length ? `<button class="btn prim" id="p30-tout">Créer ${possibles.length > 1 ? (possibles.length < restants.length ? "les " + possibles.length + " prochains" : "les " + possibles.length + " carrousels") : possibles.length < restants.length ? "le prochain" : "le carrousel"}</button>`
+          : '<button class="btn prim" onclick="va(\'abonnement\')">Voir les formules</button>'}</div>`
+      : prets === 8 && publies < 8 ? `<div class="p30-bandeau ok"><span><b>Ton tunnel est complet.</b> Il ne reste qu'à publier aux dates prévues.</span></div>` : ""}
+    <div class="p30-semaines">${semaines.map(s => `<section class="p30-sem"><h3><i style="background:${SEM30[s.w][1]}"></i>Semaine ${s.w + 1} · ${SEM30[s.w][0]}</h3>${s.cases.map(carte).join("")}</section>`).join("")}</div>
+    ${publies === 8 ? `<div class="p30-bandeau ok"><span><b>Ton tunnel du mois est bouclé.</b> On prépare le mois prochain ?</span><button class="btn prim" id="p30-suivant">Préparer le mois prochain</button></div>` : ""}
+  </div>`;
+  $("#p30-retour").onclick = () => { S.plan30Vue = false; renduStudio(); };
+  $("#p30-brief").onclick = () => { S.p30Brief = true; S.p30Etape = 0; renduPlan30(); };
+  const nouveau = () => { S.p30Brief = true; S.p30Etape = 3; S.p30Debut = ""; renduPlan30(); };
+  $("#p30-nouveau")?.addEventListener("click", nouveau);
+  $("#p30-suivant")?.addEventListener("click", nouveau);
+  $("#p30-choix")?.addEventListener("change", async e => { await chargePlan30(e.target.value); renduPlan30(); });
+  $$("[data-ouvre]", el).forEach(b => b.onclick = () => ouvreProjet(b.dataset.ouvre));
+  const majCase = async (i, champs) => {
+    try { const x = await api(`/api/plan30/${plan.id}/cases/${i}`, {method: "PUT", body: champs}); S.p30.plan = x.plan; renduCalendrier30(); }
+    catch (e) { toast(e.message); }
+  };
+  $$("[data-publie]", el).forEach(b => b.onclick = () => { const c = plan.cases[+b.dataset.publie]; majCase(+b.dataset.publie, {publie: !c.publie}); if (!c.publie) toast("Bravo, un de plus ✓"); });
+  $$("[data-autre]", el).forEach(b => b.onclick = () => { majCase(+b.dataset.autre, {autre_modele: true}); toast("Nouveau modèle viral choisi"); });
+  $$("[data-jour]", el).forEach(i => i.onchange = () => i.value && majCase(+i.dataset.jour, {jour: i.value}));
+  $$("[data-cat]", el).forEach(i => i.onchange = () => majCase(+i.dataset.cat, {categorie: i.value}));
+  $$("[data-titre]", el).forEach(i => i.onchange = () => i.value.trim() && majCase(+i.dataset.titre, {titre: i.value}));
+  $$("[data-fab]", el).forEach(b => b.onclick = () => fabrique30([+b.dataset.fab]));
+  $("#p30-tout")?.addEventListener("click", () => fabrique30(possibles.map(c => c.i)));
+}
+// Semaine d'une case d'après sa date (une case déplacée change de colonne)
+const semaine30 = (c, plan) => Math.max(0, Math.min(3, Math.floor((new Date(c.jour + "T12:00:00") - new Date(plan.debut + "T12:00:00")) / (7 * 864e5))));
+async function fabrique30(indices) {
+  const plan = S.p30.plan;
+  try {
+    const x = await api(`/api/plan30/${plan.id}/fabriquer`, {method: "POST", body: {cases: indices}});
+    S.p30Job = {id: x.job, cases: indices, log: "Je m'en occupe…"}; renduCalendrier30();
+    let dernier = 1;
+    await attendsTache(x.job, async m => {
+      if (!S.p30Job) return;
+      S.p30Job.log = m; const l = $("#p30-joblog"); if (l) l.textContent = m;
+      const n = +((m.match(/^Carrousel (\d+) sur/) || [])[1] || 0);
+      if (n > dernier) {  // le carrousel précédent est fini : on l'affiche sans attendre les autres
+        dernier = n;
+        try { const r = await api("/api/plan30?plan=" + encodeURIComponent(plan.id)); S.p30 = r; S.p30Job.cases = indices.filter(i => !r.plan.cases[i].projet);
+          if (S.plan30Vue && S.vue === "studio" && !S.projetId && !S.p30Brief) renduCalendrier30(); } catch {}
+      }
+    });
+    S.p30Job = null; await chargePlan30(plan.id); toast(indices.length > 1 ? "Tes carrousels sont prêts" : "Ton carrousel est prêt");
+  } catch (e) { S.p30Job = null; if (!e.data?.quota) toast(e.message, {duree: 6000}); try { await chargePlan30(plan.id); } catch {} }
+  if (S.plan30Vue && S.vue === "studio" && !S.projetId && !S.p30Brief) renduCalendrier30();
+}
+
 async function ouvreProjet(sid, depuisHistorique) {
   S.projetId = sid; S.projet = await api("/api/studio/" + sid); S.optionsStudio = {...(S.optionsStudio || {}), ...S.projet.options};
   if (S.vue !== "studio") va("studio", depuisHistorique); else { renduProjet(); if (!depuisHistorique) pousseHistorique(); }

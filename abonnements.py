@@ -396,7 +396,7 @@ def droits(u: dict) -> dict:
         "options": {k: bool(plan.get(k, v)) for k, v in OPTIONS_DEFAUT.items()},
         "commission_boutique": plan.get("commission_boutique"),
         "quotas": {**{k: plan[k] for k in ("analyses_par_mois", "adaptations_par_mois", "comptes_surveilles")},
-                   "studio_par_mois": plan.get("studio_par_mois", 10)},
+                   "studio_par_mois": plan.get("studio_par_mois", 10), "plans_30j_par_mois": plan.get("plans_30j_par_mois", 1)},
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
         "usage": {k: us[k] for k in ("analyses", "adaptations", "studio")},  # le coût réel reste côté administrateur
         "renouvellement": periode(u)[1].isoformat(), "renouvellement_fr": date_fr(periode(u)[1]),

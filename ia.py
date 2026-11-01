@@ -422,7 +422,8 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
                 res["legende_reprise"] = p.legende
         return res
 
-    def carrousel(self, ad: dict, nb: int | None = None, style: str = "", reel: bool = False, source: dict | None = None) -> dict:
+    def carrousel(self, ad: dict, nb: int | None = None, style: str = "", reel: bool = False, source: dict | None = None,
+                  tunnel: str = "") -> dict:
         """
         Transforme le Reel modèle et son adaptation en textes de slides (+ script pour un Reel), dans le style demandé.
         La structure du modèle est reproduite : une slide par temps fort, et pour chaque slide la photo à prévoir.
@@ -453,16 +454,17 @@ Script du Reel :
 \"\"\"{ad.get('script_reel') or ''}\"\"\"
 CTA : {ad.get('cta_conversation') or ''}
 
+{("CE CARROUSEL FAIT PARTIE D'UN PLAN DE 30 JOURS QUI MÈNE À LA VENTE :" + chr(10) + tunnel + chr(10)) if tunnel else ""}
 Règles :
-- Slide 1 : le hook viral repris tel quel (ou traduit fidèlement), rien d'autre. Il doit donner envie de faire glisser.
+- Slide 1 : {"une accroche construite exactement comme le hook viral (même mécanique, même longueur, même force) mais sur le SUJET DE CE CARROUSEL, rien d'autre." if tunnel else "le hook viral repris tel quel (ou traduit fidèlement), rien d'autre."} Elle doit donner envie de faire glisser.
 - Slides suivantes : une seule idée par slide, phrases courtes, concrètes, dans le ton de la marque. Chaque slide donne envie de passer à la suivante.
-- Dernière slide : le CTA qui fait commenter le mot-clé « {self.cfg['objectifs']['mot_cle_cta']} ».
+- Dernière slide : {"l'appel à l'action indiqué dans le plan." if tunnel else f"le CTA qui fait commenter le mot-clé « {self.cfg['objectifs']['mot_cle_cta']} »."}
 - Rien qui sonne publicité ou texte d'IA, pas de liste de bénéfices creux, pas d'emoji dans les titres.
 
 STYLE D'ÉCRITURE DEMANDÉ : {style or "sa voix habituelle, exactement comme sur son compte"}
 Le style change la construction (récit, rythme, angle). Il ne change JAMAIS sa voix : garde son vocabulaire, son tutoiement ou vouvoiement, sa ponctuation, son usage des emojis dans la légende et ses expressions signature.
 Remplis l'outil enregistrer_carrousel."""
-        return self._appel(OUTIL_CARROUSEL, texte, max_tokens=2000)
+        return self._appel(OUTIL_CARROUSEL, texte, max_tokens=2500 if tunnel else 2000)
 
     def adapte_tous(self, posts: list[Post], apres_chaque=None):
         log(f"Analyse et adaptation par Virall.ai de {len(posts)} Reels…")
@@ -841,3 +843,24 @@ def ecrit_sequence(cfg: dict, voix: str, produits: list[dict], boutique: str) ->
              "1) bienvenue + ce qu'elles vont recevoir, 2) un conseil utile sans rien vendre, 3) une histoire ou un témoignage qui amène "
              "doucement au produit payant le plus adapté, 4) éventuellement une dernière relance courte. Pas de pression, pas de fausse urgence.")
     return _ia_simple(cfg)._appel(OUTIL_SEQUENCE, texte, max_tokens=3500, systeme=_systeme_marque(cfg, voix, "Tu écris des e-mails pour une créatrice de contenu."))
+
+
+OUTIL_PLAN30 = {
+    "name": "enregistrer_plan",
+    "description": "Sujets des 8 carrousels d'un plan de contenu de 30 jours qui mène à la vente.",
+    "input_schema": {"type": "object", "properties": {
+        "carrousels": {"type": "array", "description": "Un élément par carrousel, dans l'ordre donné.", "items": {"type": "object", "properties": {
+            "titre": {"type": "string", "description": "Le sujet du carrousel en une phrase courte (8 à 14 mots), concret, dans la voix de la marque. Pas une accroche putaclic."},
+            "angle": {"type": "string", "description": "1 à 2 phrases : ce que raconte ou apprend ce carrousel, et comment il prépare le suivant."}},
+            "required": ["titre", "angle"]}}},
+        "required": ["carrousels"]},
+}
+
+
+def ecrit_plan30(cfg: dict, voix: str, contexte: str, cases: str, consigne_voix: str) -> dict:
+    texte = (f"BRIEF DU MOIS :\n{contexte}\n\n{consigne_voix}\n\nLES 8 CARROUSELS DU PLAN, dans l'ordre :\n\n{cases}\n\n"
+             "Donne à chaque carrousel un sujet précis tiré du brief (ses problèmes, ses objections, son histoire, son offre), "
+             "qui remplit son rôle et prépare le suivant : storytelling → éducatif → preuve sociale → vente. Les sujets ne se répètent pas. "
+             "Le modèle viral indique seulement le type d'accroche qui marche dans la niche. N'invente aucun témoignage ni chiffre.")
+    return _ia_simple(cfg)._appel(OUTIL_PLAN30, texte, max_tokens=2500,
+                                  systeme=_systeme_marque(cfg, voix, "Tu es stratège de contenu Instagram : tu construis des plans mensuels qui mènent à la vente."))

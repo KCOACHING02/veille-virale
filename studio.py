@@ -257,7 +257,7 @@ def liste(esp: Espace) -> list[dict]:
     for f in sorted(r.glob("*/projet.json"), reverse=True) if r.exists() else []:
         try:
             p = json.loads(f.read_text(encoding="utf-8"))
-            res.append({k: p.get(k) for k in ("id", "cree", "titre", "type", "statut", "miniature", "compte", "cle", "fichiers", "zip")})
+            res.append({k: p.get(k) for k in ("id", "cree", "titre", "type", "statut", "miniature", "compte", "cle", "fichiers", "zip", "plan30")})
         except ValueError:
             continue
     return sorted(res, key=lambda p: p.get("cree") or "", reverse=True)
@@ -385,12 +385,13 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
     p = charge(esp, sid)
     nom_style, _, consigne = STYLES.get(p.get("style") or "ma_voix", STYLES["ma_voix"])
     reel = p["type"] == "reel"
+    tunnel = p.get("consigne_plan") or ""  # carrousel d'un plan 30 jours (plan30.py) : sujet, rôle dans le tunnel, CTA
     log(f"J'écris tes textes, style « {nom_style} »…")
     if demo:
-        res = {"slides": [{"titre": p["hook"] or "[démo] Ton hook", "texte": "", "photo": "[démo] Toi en gros plan, l'air surpris, lumière naturelle"},
+        res = {"slides": [{"titre": (p["titre"] if tunnel else p["hook"]) or "[démo] Ton hook", "texte": "", "photo": "[démo] Toi en gros plan, l'air surpris, lumière naturelle"},
                           *({"titre": f"[démo · {nom_style}] Étape {i} du Reel modèle", "texte": "[démo] Une phrase courte qui développe l'idée, dans ton ton.",
                              "photo": "[démo] Ton bol du matin vu de dessus" if i in (2, 4) else ""} for i in range(1, 6)),
-                          {"titre": f"Commente {cfg['objectifs']['mot_cle_cta']}", "texte": "[démo] et je t'envoie le guide en privé", "photo": ""}],
+                          {"titre": (p.get("cta") if tunnel else "") or f"Commente {cfg['objectifs']['mot_cle_cta']}", "texte": "[démo] et je t'envoie le guide en privé", "photo": ""}],
                "legende": f"[démo · {nom_style}] " + ((p.get("adaptation") or {}).get("legende_adaptee") or ""),
                "script": f"[0-3 s] {p['hook']}\n[corps] [démo · {nom_style}] trois phrases dans ce style\n[fin] Commente {cfg['objectifs']['mot_cle_cta']}" if reel else ""}
     else:
@@ -398,7 +399,7 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
         from ia import IA
         nb_modele = len((p.get("source") or {}).get("slides_modele") or [])
         res = IA(cfg, voix=voix(cfg, esp.racine, [])).carrousel(p.get("adaptation") or {}, nb=(nb_modele or None) if not reel else None,
-                                                             style=consigne, reel=reel, source=p.get("source") or {})
+                                                             style=consigne, reel=reel, source=p.get("source") or {}, tunnel=tunnel)
         if res.get("erreur"):
             raise RuntimeError(res["erreur"])
     slides = res.get("slides")

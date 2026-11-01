@@ -26,7 +26,7 @@ import threading
 import time
 import traceback
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 from pathlib import Path
 from urllib.parse import quote
@@ -1113,6 +1113,109 @@ def studio_generer(sid):
     titre = "Création du carrousel" if p["type"] == "carrousel" else "Montage du Reel"
     jid = lance(uid, titre, studio.genere, g.esp, sid, demo=en_demo(), filigrane=droits(g.u)["options"]["filigrane"], file_=FILE_STUDIO,
                 apres=None if deja else _apres_studio(uid, sid))
+    return jsonify({"job": jid})
+
+
+# ------------------------------------------------------------
+#  Plan 30 jours : 8 carrousels en tunnel de vente, construits à partir de la veille classée (plan30.py)
+# ------------------------------------------------------------
+import plan30  # noqa: E402
+
+
+def _plans_restants(u: dict) -> tuple[int, int]:
+    quota = int(droits(u)["quotas"].get("plans_30j_par_mois", 1))
+    if est_admin(u):
+        return 9999, quota
+    return quota - plan30.nb_depuis(espace_client(u["id"]), ab.periode(u)[0]), quota
+
+
+def _plan(pid):
+    try:
+        return plan30.charge(g.esp, pid)
+    except (FileNotFoundError, ValueError):
+        abort(404)
+
+
+@app.get("/api/plan30")
+@connecte
+def plan30_etat():
+    cfg = g.esp.lit_config()
+    plans = plan30.liste(g.esp)
+    reste, quota = _plans_restants(g.u)
+    classees = plan30.publications_classees(g.esp)
+    courant = request.args.get("plan") or (plans[0]["id"] if plans else None)
+    b = plan30.brief(g.esp, cfg)
+    return jsonify({"brief": b, "brief_manque": plan30.brief_complet(b), "plans": plans, "reste": reste, "quota": quota,
+                    "veille": plan30.resume_veille(classees), "tons": plan30.TONS,
+                    "categories": {k: v["nom"] for k, v in plan30.CATEGORIES.items()},
+                    "debut_conseille": plan30.debut_par_defaut(b).isoformat(), "reste_studio": droits(g.u)["reste"]["studio"],
+                    "plan": plan30.vue(g.esp, plan30.charge(g.esp, courant)) if courant and any(p["id"] == courant for p in plans) else None})
+
+
+@app.put("/api/plan30/brief")
+@connecte
+def plan30_brief():
+    b = plan30.sauve_brief(g.esp, request.get_json(force=True) or {})
+    return jsonify({"brief": b, "brief_manque": plan30.brief_complet(b)})
+
+
+@app.post("/api/plan30")
+@connecte
+def plan30_cree():
+    msg = reserve(g.u, "ia") or refus(g.u)
+    if msg:
+        return bloque(msg)
+    reste, quota = _plans_restants(g.u)
+    if reste <= 0:
+        return bloque(f"Tu as utilisé {'ton plan' if quota == 1 else f'tes {quota} plans'} de 30 jours de la période. "
+                      f"{ab._suite(g.u, droits(g.u))}")
+    b = plan30.brief(g.esp)
+    manque = plan30.brief_complet(b)
+    if manque:
+        return jsonify({"erreur": manque}), 400
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    c = request.get_json(force=True) or {}
+    try:
+        debut = date.fromisoformat(str(c.get("debut") or "")[:10]) if c.get("debut") else None
+    except ValueError:
+        debut = None
+    jid = lance(g.u["id"], "Création de ton plan du mois", plan30.cree, g.esp, g.esp.lit_config(), debut, demo=en_demo(), file_=FILE_STUDIO)
+    return jsonify({"job": jid})
+
+
+@app.put("/api/plan30/<pid>/cases/<int:i>")
+@connecte
+def plan30_case(pid, i):
+    plan = _plan(pid)
+    if not 0 <= i < len(plan["cases"]):
+        abort(404)
+    plan = plan30.modifie_case(g.esp, pid, i, request.get_json(force=True) or {})
+    return jsonify({"plan": plan30.vue(g.esp, plan)})
+
+
+@app.post("/api/plan30/<pid>/fabriquer")
+@connecte
+def plan30_fabrique(pid):
+    plan = _plan(pid)
+    c = request.get_json(force=True) or {}
+    indices = [i for i in (c.get("cases") if isinstance(c.get("cases"), list) else range(len(plan["cases"])))
+               if isinstance(i, int) and 0 <= i < len(plan["cases"])]
+    if not c.get("refaire"):
+        indices = [i for i in indices if not plan["cases"][i].get("projet")]
+    if not indices:
+        return jsonify({"erreur": "Ces carrousels sont déjà prêts."}), 400
+    msg = reserve(g.u, "ia")
+    nouveaux = sum(1 for i in indices if not plan["cases"][i].get("projet"))
+    msg = msg or (refus(g.u, studio=nouveaux) if nouveaux else None)
+    if msg:
+        return bloque(msg)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    uid = g.u["id"]
+    titre = "Création de tes carrousels" if len(indices) > 1 else "Création du carrousel"
+    jid = lance(uid, titre, plan30.fabrique, g.esp, g.esp.lit_config(), pid, indices, demo=en_demo(),
+                filigrane=droits(g.u)["options"]["filigrane"], apres_chaque=lambda _sid: ab.compte_usage(uid, studio=1), file_=FILE_STUDIO)
     return jsonify({"job": jid})
 
 

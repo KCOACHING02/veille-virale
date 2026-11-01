@@ -10,6 +10,7 @@ essai:
   adaptations_par_mois: 35      # publications adaptées (une veille en consomme 7)
   comptes_surveilles: 5
   studio_par_mois: 3           # carrousels et Reels montés
+  plans_30j_par_mois: 1          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: false
   budget_usd: 3             # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   boutiques: 1                  # boutiques en lien dans la bio
@@ -26,6 +27,7 @@ gratuit:
   adaptations_par_mois: 0
   comptes_surveilles: 3         # comptes par classement
   studio_par_mois: 2            # carrousels avec ses propres textes
+  plans_30j_par_mois: 0          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: false
   ia: false                     # adaptations, assistant, comptes suggérés, écriture par Claude
   montage_reel: false           # montage des Reels (ffmpeg + transcription)
@@ -46,6 +48,7 @@ createur:
   adaptations_par_mois: 80      # 4 veilles × 7 + ~52 à la demande
   comptes_surveilles: 10
   studio_par_mois: 20          # carrousels et Reels montés
+  plans_30j_par_mois: 1          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: true
   budget_usd: 10            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   boutiques: 2                  # boutiques en lien dans la bio
@@ -58,6 +61,7 @@ pro:
   adaptations_par_mois: 250
   comptes_surveilles: 30
   studio_par_mois: 60          # carrousels et Reels montés
+  plans_30j_par_mois: 3          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: true
   budget_usd: 35            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   boutiques: 5                  # boutiques en lien dans la bio
@@ -70,6 +74,7 @@ agence:
   adaptations_par_mois: 600
   comptes_surveilles: 100
   studio_par_mois: 200         # carrousels et Reels montés
+  plans_30j_par_mois: 20          # plans de contenu de 30 jours (8 carrousels en tunnel de vente) : environ un par compte client géré
   veille_auto: true
   budget_usd: 60            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
   boutiques: 20                  # boutiques en lien dans la bio
