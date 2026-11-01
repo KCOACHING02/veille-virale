@@ -406,6 +406,14 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .bt-faux-bouton{display:inline-block;background:var(--ink);color:var(--paper);border-radius:99px;padding:1px 10px;font-size:13px;font-weight:600;white-space:nowrap}
 .bt-lien-carte{border:1px solid var(--line);border-radius:12px;padding:12px 12px 0;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 @media (max-width:860px){.bt-lien-carte{grid-template-columns:1fr}}
+.nav.verrou{opacity:.42;position:relative}
+.nav.verrou::after{content:"🔒";font-size:10px;position:absolute;top:4px;right:10px}
+.etapes-v .verrou .n{font-size:14px;background:var(--sunk)}
+.sous-etapes{list-style:none;margin:2px 0 4px;padding:0;display:grid;gap:4px;font-size:14px;color:var(--ink-3)}
+.etapes-v .sous-etapes li{display:block;padding:0}.etapes-v .sous-etapes li::before{display:none}
+.sous-etapes .ok{color:var(--ok)}.sous-etapes .ici{color:var(--ink);font-weight:600}
+.debloque{background:var(--surface);border:1.5px solid var(--glow);border-radius:var(--r-m);padding:16px;box-shadow:var(--shadow);margin:0 0 16px;max-width:760px;display:grid;gap:8px}
+.debloque b{font:700 19px/1.2 var(--display)}.debloque p{margin:0;color:var(--ink-2)}
 /* Accueil : les étapes, verticales, l'étape en cours ouverte */
 .parcours-sous{color:var(--ink-2);margin:-4px 0 14px;font-size:14.5px}
 .etapes-v{list-style:none;margin:0;padding:0;display:grid;gap:0;max-width:760px;position:relative}
@@ -1430,7 +1438,7 @@ async function chargeEtat() {
   const u = S.etat.utilisateur, ab = S.etat.abonnement;
   $("#utilisateur").innerHTML = `<span>${esc(u.prenom || u.email)}${ab ? ` — ${esc(ab.nom_plan)}` : ""}</span><button onclick="deconnexion()">Se déconnecter</button>${S.etat.admin ? '<a class="lien-admin" href="/admin">Administration</a>' : ""}`;
   $("#bandeau-demo").innerHTML = S.etat.demo ? "<b>Mode démo.</b> Les analyses utilisent des données fictives." : "";
-  majBandeauOffre();
+  majBandeauOffre(); majVerrous();
   const nonConfirmee = !u.email_verifie;
   $("#bandeau-confirm").hidden = !nonConfirmee;
   if (nonConfirmee) $("#bandeau-confirm").innerHTML = `<b>Confirme ton adresse e-mail.</b> On t'a envoyé un lien à ${esc(u.email)} (pense aux indésirables). <button class="lien" type="button" onclick="renvoieConfirmation(this)">Renvoyer l'e-mail</button>`;
@@ -1470,7 +1478,11 @@ function pousseHistorique(extra = {}) {
   if (h.vue === st.vue && (h.projet || null) === st.projet && !!h.tiroir === !!st.tiroir && !!h.modale === !!st.modale && !!h.apercuBoutique === !!st.apercuBoutique) return;
   history.pushState(st, "", "#" + st.vue);
 }
+// Formule gratuite (après l'essai, sans abonnement) : la boutique reste ouverte, le reste est grisé
+const VUES_PAYANTES = ["reels", "planning", "studio"];
+const verrouille = () => !!S.etat?.abonnement?.gratuit && !S.etat?.admin;
 function va(vue, depuisHistorique) {
+  if (VUES_PAYANTES.includes(vue) && verrouille()) vue = "abonnement";
   S.vue = vue;
   if (!depuisHistorique) setTimeout(() => pousseHistorique(), 0);
   const g = groupeDe(vue);
@@ -1486,7 +1498,10 @@ function va(vue, depuisHistorique) {
   window.scrollTo(0, 0);
   rendu();
 }
-$$(".nav").forEach(b => b.onclick = () => { if (b.dataset.vue === "studio") S.plan30Vue = false; va(b.dataset.vue); });
+$$(".nav").forEach(b => b.onclick = () => {
+  if (b.classList.contains("verrou")) { toast("Inclus dans les formules payantes", {duree: 3500}); return va("abonnement"); }
+  if (b.dataset.vue === "studio") S.plan30Vue = false; va(b.dataset.vue); });
+function majVerrous() { $$(".nav").forEach(b => b.classList.toggle("verrou", verrouille() && VUES_PAYANTES.includes(b.dataset.vue))); }
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
 
 function rendu() {
@@ -1592,40 +1607,51 @@ async function renduAccueil() {
   let sb = null;
   if (S.etat.boutique) { try { sb = await api("/api/boutique/stats"); } catch {} if (S.vue !== "accueil") return; }
   const pubPlan = plan ? plan.cases.filter(c => c.publie).length : 0, pretsPlan = plan ? plan.cases.filter(c => c.projet).length : 0;
-  // Les 5 étapes, dans l'ordre : l'étape en cours est grande, avec ce qu'elle apporte et un seul bouton
+  // Les 5 étapes, dans l'ordre : l'étape en cours est grande, avec ce qu'elle apporte et un seul bouton.
+  // 1. La boutique (gratuite, sans limite de durée : l'aimant à abonnées) ; 2 à 5 : fonctions payantes (grisées hors essai/abonnement).
   const jobV = jobAnalyse(), nbC = (S.etat.comptes?.instagram || []).length + (S.etat.comptes?.tiktok || []).length;
-  const aProduit = !!S.etat.boutique && (gratuitAcc || !!(p30?.produits || []).length), publies = (bi.publies || 0) + pubPlan;
+  const be = S.etat.boutique_etat || {}, publies = (bi.publies || 0) + pubPlan;
+  const sousB = [["Crée ta page", !!be.cree, "Créer ma boutique", "va('boutique')"],
+                 ["Ajoute ce que tu vends", be.produits > 0, "Ajouter mon produit", "BQ.onglet='produits';va('boutique')"],
+                 ["Active les paiements", be.cree && be.produits > 0 && be.paiements, "Activer les paiements", "BQ.onglet='produits';va('boutique')"],
+                 ["Mets-la en ligne", be.cree && be.publie, "Mettre ma boutique en ligne", "va('boutique')"]];
+  const sousB1 = sousB.find(x => !x[1]);
+  const verrou = gratuitAcc && !S.etat.admin;
   const etapesP = [
-    {etat: jobV ? "encours" : veilleOk ? "fait" : "", titre: "Trouve ce qui cartonne", ic: "🔎",
+    {etat: sousB1 ? "" : "fait", titre: "Crée ta boutique", ic: "🛍️",
+      pourquoi: "Ta page « lien en bio » pour vendre tes produits. Gratuite, sans limite de durée.",
+      liste: sousB, fait: sb ? (sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} cette semaine` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`) : "En ligne",
+      bouton: sousB1?.[2], action: sousB1?.[3], revoir: "va('boutique')"},
+    {etat: jobV ? "encours" : veilleOk ? "fait" : "", titre: "Trouve ce qui cartonne", ic: "🔎", payant: true,
       pourquoi: "Virallink repère les Reels qui explosent dans ta niche et les réécrit pour toi.",
-      fait: veilleOk ? `${ad} contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi` : "",
-      bouton: jobV ? "Suivre ma veille" : !nbC ? "Choisir les comptes à suivre" : "Lancer ma veille",
-      action: jobV ? "montreProgression()" : !nbC ? "va('comptes')" : veilleOk ? "S.filtre='adaptes';va('reels')" : "lanceVeilleDirecte()",
-      revoir: "S.filtre='adaptes';va('reels')"},
-    {etat: aProduit ? "fait" : "", titre: "Crée ta boutique", ic: "🛍️",
-      pourquoi: S.etat.boutique ? "Ajoute ce que tu vends : tes contenus y enverront tes abonnées." : "Ta page « lien en bio », avec ce que tu vends. Tes contenus y mèneront.",
-      fait: sb ? (sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} cette semaine` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`) : "En ligne",
-      bouton: S.etat.boutique ? "Ajouter ce que je vends" : "Créer ma boutique",
-      action: S.etat.boutique && !aProduit ? "BQ.onglet='produits';va('boutique')" : "va('boutique')", revoir: "va('boutique')"},
-    ...(gratuitAcc ? [] : [{etat: planActif ? "fait" : "", titre: "Prépare ton mois", ic: "🗓️",
+      fait: `${ad} contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi`,
+      bouton: !nbC ? "Choisir les comptes à suivre" : "Lancer ma veille",
+      action: jobV ? "montreProgression()" : !nbC ? "va('comptes')" : "lanceVeilleDirecte()", revoir: "S.filtre='adaptes';va('reels')"},
+    {etat: planActif ? "fait" : "", titre: "Prépare ton mois", ic: "🗓️", payant: true,
       pourquoi: "8 carrousels, de ton histoire jusqu'à ton offre : un vrai chemin vers la vente.",
-      fait: planActif ? `${pretsPlan}/8 carrousels prêts` : "", bouton: "Créer mon plan du mois", action: "ouvrePlan30(true)", revoir: "ouvrePlan30(false)"}]),
-    {etat: (planActif ? pretsPlan === 8 : crees >= 3) ? "fait" : "", titre: "Crée tes contenus", ic: "✨",
+      fait: `${pretsPlan}/8 carrousels prêts`, bouton: "Créer mon plan du mois", action: "ouvrePlan30(true)", revoir: "ouvrePlan30(false)"},
+    {etat: (planActif ? pretsPlan === 8 : crees >= 3) ? "fait" : "", titre: "Crée tes contenus", ic: "✨", payant: true,
       pourquoi: "Un clic : textes, images et slides prêts à publier.",
       fait: planActif ? "Tes 8 carrousels sont prêts" : `${crees} contenus cette semaine`,
       bouton: planActif ? `Créer mes carrousels (${pretsPlan}/8)` : "Créer un contenu", action: planActif ? "ouvrePlan30(false)" : "S.filtre='adaptes';va('reels')", revoir: "va('studio')"},
-    {etat: publies >= (bi.objectif_publies || 1) ? "fait" : "", titre: "Publie et vends", ic: "📲",
+    {etat: publies >= (bi.objectif_publies || 1) ? "fait" : "", titre: "Publie et vends", ic: "📲", payant: true,
       pourquoi: "Publie aux dates prévues, puis touche « J'ai publié » : on suit tes vues pour toi.",
       fait: `${publies} publié${publies > 1 ? "s" : ""} cette semaine`, bouton: planActif ? "Voir quoi publier" : "Voir mes résultats",
       action: planActif ? "ouvrePlan30(false)" : "va('resultats')", revoir: "va('resultats')"},
   ];
+  if (verrou) etapesP.forEach(x => { if (x.payant) x.etat = "verrou"; });
   const prochaine = etapesP.findIndex(x => !x.etat);  // une veille en cours ne bloque pas : on passe à l'étape suivante pendant ce temps
-  S.setupFini = prochaine < 0 || prochaine >= (gratuitAcc ? 2 : 3);
-  const parcours = `<section class="bloc-accueil"><h2>${prochaine < 0 ? "Tout est en place 🎉" : `Étape ${prochaine + 1} sur ${etapesP.length}`}</h2>
-    <p class="parcours-sous">${prochaine < 0 ? "Continue chaque semaine : nouvelle veille le lundi, nouveau plan chaque mois." : "Suis les étapes dans l'ordre : chacune prépare la suivante."}</p>
-    <ol class="etapes-v">${etapesP.map((x, k) => k === prochaine
+  S.setupFini = verrou || prochaine < 0 || prochaine >= 3;
+  const ligneVerrou = (x, k) => `<li class="avenir verrou"><span class="n">🔒</span><div class="corps"><b>${x.titre}</b></div></li>`;
+  const carteDebloque = verrou && !sousB1 ? `<div class="debloque"><b>🔓 Passe à la suite</b><p>Veille, plan du mois et création de tes contenus : tout ce qui amène des clientes sur ta boutique.</p>
+      <button class="btn prim large" onclick="va('abonnement')">Débloquer dès ${esc(prixOffre())}</button></div>` : "";
+  const parcours = `<section class="bloc-accueil"><h2>${prochaine < 0 && !verrou ? "Tout est en place 🎉" : sousB1 ? "Commence par ta boutique" : verrou ? "Ta boutique est prête" : `Étape ${prochaine + 1} sur ${etapesP.length}`}</h2>
+    <p class="parcours-sous">${prochaine < 0 && !verrou ? "Continue chaque semaine : nouvelle veille le lundi, nouveau plan chaque mois." : sousB1 ? "C'est là que tes abonnées achèteront. Ensuite, Virallink t'aide à leur donner envie." : verrou ? "La suite est réservée aux abonnées." : "Suis les étapes dans l'ordre : chacune prépare la suivante."}</p>
+    ${carteDebloque}
+    <ol class="etapes-v">${etapesP.map((x, k) => x.etat === "verrou" ? ligneVerrou(x, k) : k === prochaine
       ? `<li class="actuelle"><span class="n">${k + 1}</span><div class="corps"><b>${x.ic} ${x.titre}</b><p>${x.pourquoi}</p>
-          <button class="btn prim large" onclick="${x.action}">${x.etat === "encours" ? '<span class="spin"></span>' : ""}${x.bouton}</button></div></li>`
+          ${x.liste ? `<ul class="sous-etapes">${x.liste.map(([t, ok]) => `<li class="${ok ? "ok" : x.liste.find(y => !y[1])?.[0] === t ? "ici" : ""}">${ok ? "✓" : "○"} ${t}</li>`).join("")}</ul>` : ""}
+          <button class="btn prim large" onclick="${x.action}">${x.bouton}</button></div></li>`
       : x.etat === "encours" ? `<li class="faite en-cours"><span class="n"><span class="spin"></span></span><button class="corps" onclick="${x.action}"><b>${x.titre}</b><small>En cours… tu peux passer à la suite</small><span class="go">›</span></button></li>`
       : x.etat === "fait" ? `<li class="faite"><span class="n">✓</span><button class="corps" onclick="${x.revoir}"><b>${x.titre}</b><small>${x.fait}</small><span class="go">›</span></button></li>`
       : `<li class="avenir"><span class="n">${k + 1}</span><div class="corps"><b>${x.titre}</b></div></li>`).join("")}</ol></section>`;
@@ -1636,10 +1662,8 @@ async function renduAccueil() {
       <b>${ad} publication${ad > 1 ? "s" : ""} écrite${ad > 1 ? "s" : ""} pour toi pendant ton essai</b>
       <p>Chaque lundi, ta veille continue : de nouveaux Reels viraux, réécrits pour ta niche, avec ton planning. ${esc(S.etat.offre?.nom || "")} : ${prixOffre()}, sans engagement.</p>
       <button class="btn petit prim" type="button" onclick="va('abonnement')">Garder ma veille</button></div>`; })() : "";
-  if (!S.setupFini) $$("#accueil > .hero:not(#hero-job):not([data-garde])").forEach(h => h.remove());
-  let html = (boutiqueSeule() && !a
-    ? carteEssai("accueil", "Et si ta boutique avait plus de visites ?", "Les visites d'une boutique viennent des contenus qui accrochent. Virallink repère chaque semaine les Reels qui explosent dans ta niche et te les réécrit.")
-    : parcours) + bilanEssai;
+  if (!S.setupFini || verrou) $$("#accueil > .hero:not(#hero-job):not([data-garde])").forEach(h => h.remove());
+  let html = parcours + bilanEssai;
   // Reels prévus aujourd'hui (sinon les meilleurs Reels adaptés)
   if (a) {
     const jour = JOURS[(new Date().getDay() + 6) % 7];
@@ -1668,7 +1692,7 @@ async function renduAccueil() {
   const ab = S.etat.abonnement;
   if (ab?.gratuit) {
     html += essaiDispo() ? `<p class="note-essai">Formule gratuite : ta boutique est incluse, sans limite de durée. <a href="#" onclick="proposeEssai();return false">Essaie la veille ${ab.essai_jours} jours</a></p>`
-      : `<p class="note-essai">Formule gratuite : tu vois les Reels viraux et leurs sons. Pour les adapter à ta niche, <a href="#" onclick="va('abonnement');return false">choisis une formule</a>.</p>`;
+      : `<p class="note-essai">Formule gratuite : ta boutique est incluse, sans limite de durée.</p>`;
   }
   // Tout ce qui suit le parcours est replié : l'écran garde une seule action en vue
   const coupe = html.indexOf('<section', html.indexOf('</section>'));

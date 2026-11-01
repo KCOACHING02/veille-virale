@@ -95,8 +95,8 @@ let mode = params.get("t") ? "nouveau" : (location.hash.includes("connexion") ||
 const suite = (params.get("suite") || "").match(/^\/(?!\/)[^\\]*$/) ? params.get("suite") : "/app";
 const offre = params.get("offre") === "boutique" ? "boutique" : "";  // boutique gratuite (page /boutique-gratuite)
 const TEXTES = {
-  inscription: offre ? ["Crée ta boutique", "Gratuite, sans carte bancaire. En ligne en deux minutes.", "Créer ma boutique gratuite"]
-    : ["Crée ton compte", "7 jours d'essai gratuit, sans carte bancaire.", "Commencer mon essai"],
+  inscription: offre ? ["Crée ta boutique", "Gratuite pour toujours, sans carte bancaire. Et 7 jours d'essai de toutes les fonctions Virallink.", "Créer ma boutique gratuite"]
+    : ["Crée ton compte", "Ta boutique gratuite pour toujours, et 7 jours d'essai de toutes les fonctions, sans carte bancaire.", "Commencer"],
   connexion: ["Bon retour", "Connecte-toi pour retrouver tes Reels.", "Se connecter"],
   oubli: ["Mot de passe oublié", "Indique ton e-mail : tu reçois un lien pour en choisir un nouveau.", "Recevoir le lien"],
   nouveau: ["Nouveau mot de passe", "Choisis ton nouveau mot de passe (8 caractères minimum).", "Enregistrer et me connecter"],

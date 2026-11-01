@@ -70,7 +70,7 @@ def init():
 #  Utilisateurs
 # ------------------------------------------------------------
 def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False, offre: str = "") -> dict:
-    """offre="boutique" : boutique gratuite (aimant à prospects) ; l'essai de la veille reste disponible pour plus tard."""
+    """offre="boutique" : arrivée par la boutique gratuite (aimant à prospects), notée dans « origine »."""
     email = email.strip().lower()
     if "@" not in email or len(mdp) < 8:
         raise ValueError("Adresse e-mail invalide ou mot de passe trop court (8 caractères minimum).")
@@ -79,14 +79,15 @@ def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False, offre: str =
     duree = plans()["essai"].get("duree_jours", 7)
     with _verrou, _db() as c:
         try:
-            boutique = offre == "boutique" and "gratuit" in plans()
+            # Tout nouveau compte a 7 jours d'essai de toutes les fonctions, même inscrit par la boutique gratuite ;
+            # à la fin de l'essai, sans abonnement, il passe en formule gratuite (boutique seule, le reste grisé).
+            boutique = offre == "boutique"
             c.execute("INSERT INTO utilisateurs(email, mdp, prenom, fin_essai, cree, cgv_acceptees, plan, statut, origine, essai_utilise) "
                       "VALUES (?,?,?,?,?,?,?,?,?,?)",
                       (email, generate_password_hash(mdp), prenom.strip(),
-                       None if boutique else (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"),
+                       (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"),
                        datetime.now().isoformat(timespec="minutes"), datetime.now().isoformat(timespec="minutes") if cgv else None,
-                       "gratuit" if boutique else "essai", "gratuit" if boutique else "essai", "boutique" if boutique else None,
-                       0 if boutique else 1))
+                       "essai", "essai", "boutique" if boutique else None, 1))
         except sqlite3.IntegrityError:
             raise ValueError("Un compte existe déjà avec cette adresse.") from None
     return verifie(email, mdp)

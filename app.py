@@ -513,8 +513,21 @@ def etat():
         "abonnement": droits(g.u), "demo": en_demo(), "admin": est_admin(g.u),
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
-        "boutique": bq.pseudo_de(g.u["id"]),
+        "boutique": bq.pseudo_de(g.u["id"]), "boutique_etat": _avancement_boutique(g.u["id"]),
     })
+
+
+def _avancement_boutique(uid) -> dict:
+    """Étape 1 de l'accueil : boutique créée, produit ajouté, paiements actifs (si produit payant), en ligne."""
+    try:
+        page = bq.lit_page(uid) or {}
+    except Exception:  # noqa: BLE001
+        page = {}
+    prods = [p for p in page.get("produits") or [] if p.get("visible", True)]
+    payants = sum(1 for p in prods if p.get("prix"))
+    st = page.get("stripe") or {}
+    return {"cree": bool(bq.pseudo_de(uid)), "produits": len(prods), "payants": payants,
+            "paiements": bool(st.get("pret")) or not bq.stripe_actif() or not payants, "publie": bool(page.get("publie"))}
 
 
 @app.get("/api/analyses")
