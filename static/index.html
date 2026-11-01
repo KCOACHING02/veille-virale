@@ -385,6 +385,17 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .bloc-accueil h2{font-size:20px;margin:0 0 12px}
 .titre-bloc{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .lien{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0;font-size:14px}
+/* ---------- Accueil : le parcours, une ligne par étape ---------- */
+.parcours{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-width:760px}
+.parcours button{width:100%;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-m);padding:12px 14px;text-align:left;cursor:pointer;color:var(--ink)}
+.parcours button:hover{border-color:var(--ink-3)}
+.parcours .ic{width:40px;height:40px;border-radius:12px;background:var(--sunk);display:grid;place-items:center;font-size:19px}
+.parcours .fait .ic{background:var(--ok);color:#fff;font-weight:700;font-size:17px}
+.parcours .txt{display:grid;gap:1px;min-width:0}.parcours b{font-size:15.5px}.parcours small{color:var(--ink-3);font-size:13px}
+.parcours .go{color:var(--ink-3);font-size:20px}
+.parcours .suivante{border-color:var(--glow);box-shadow:var(--shadow)}
+.parcours .suivante .go{font-size:13px;font-weight:700;color:var(--glow-ink);background:var(--glow);border-radius:99px;padding:6px 12px}
+.parcours .fait b{color:var(--ink-2)}
 .etapes-s{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .etape-s{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-m);padding:14px;text-align:left;cursor:pointer;display:grid;gap:2px;box-shadow:var(--shadow)}
 .etape-s:hover{border-color:var(--glow)}
@@ -1465,19 +1476,53 @@ function carteAujourdhui(st) {
   S.cleDuJour = null;
   return `<div class="hero hero-jour"><div class="ic-hero">🎉</div><div><span class="sur">Aujourd'hui</span><h2>Tout est fait pour cette semaine</h2><p>Chaque contenu prêt a été créé ou publié. Bravo ! Ta prochaine veille arrive lundi.</p><div class="actions"><button class="btn prim" onclick="va('resultats')">Voir mes résultats</button></div></div></div>`;
 }
+// Plan 30 jours : le carrousel du plan à créer ou à publier aujourd'hui (ou en retard), sinon rien
+function casePlanDuJour(p30) {
+  const plan = p30?.plan; if (!plan) return null;
+  const auj = new Date().toISOString().slice(0, 10);
+  return plan.cases.map((c, i) => ({...c, i})).filter(c => !c.publie && c.jour <= auj).sort((x, y) => x.jour < y.jour ? 1 : -1)[0] || null;
+}
+function cartePlanJour(c) {
+  const cat = CAT30[c.categorie] || CAT30.educatif, auj = new Date().toISOString().slice(0, 10);
+  const quand = c.jour === auj ? "aujourd'hui" : "en retard";
+  const vign = c.vignette ? `<button class="vign-hero" onclick="ouvreProjet('${esc(c.projet)}')" aria-label="Ouvrir le carrousel"><img src="${esc(c.vignette)}" alt=""></button>` : `<div class="ic-hero" style="background:${cat[3]}">${cat[2]}</div>`;
+  if (c.projet && c.statut === "pret") return `<div class="hero hero-jour">${vign}<div><span class="sur">Plan du mois · à publier ${quand}</span><h2>${esc(c.titre)}</h2>
+    <p>Ton carrousel ${esc(cat[0].toLowerCase())} est prêt.</p>
+    <div class="actions">${c.zip ? `<a class="btn prim" href="${esc(c.zip)}">Télécharger</a>` : `<button class="btn prim" onclick="ouvreProjet('${esc(c.projet)}')">Ouvrir</button>`}<button class="btn clair" data-p30pub="${c.i}">J'ai publié</button></div></div></div>`;
+  return `<div class="hero hero-jour">${vign}<div><span class="sur">Plan du mois · à créer ${quand}</span><h2>${esc(c.titre)}</h2>
+    <p>Un carrousel ${esc(cat[0].toLowerCase())}. Virall.ai l'écrit et le met en page pour toi.</p>
+    <div class="actions"><button class="btn prim" data-p30fab="${c.i}">Créer ce carrousel</button></div></div></div>`;
+}
 async function renduAccueil() {
   const el = $("#accueil"), a = S.analyse, bi = S.bilan || {};
   el.innerHTML = heroAccueil() + '<div id="accueil-suite"></div>';
-  let st = S.optionsStudio;
-  try { st = await api("/api/studio"); S.optionsStudio = st; } catch {}
+  let st = S.optionsStudio, p30 = null;
+  const gratuitAcc = !!S.etat?.abonnement?.gratuit;
+  try { [st, p30] = await Promise.all([api("/api/studio"), gratuitAcc ? null : api("/api/plan30").catch(() => null)]); S.optionsStudio = st; if (p30) S.p30 = p30; } catch {}
   if (S.vue !== "accueil") return;
+  const plan = p30?.plan, auj = new Date().toISOString().slice(0, 10);
+  const planActif = plan && plan.fin >= auj;
+  const duJour = planActif ? casePlanDuJour(p30) : null;
   const semaine = Date.now() - 7 * 864e5;
   const crees = (st?.projets || []).filter(p => p.statut === "pret" && new Date(p.cree) > semaine).length;
   const veilleOk = a && (Date.now() - new Date(a.date)) / 864e5 <= 6;
   const ad = a ? a.posts.filter(adapte).length : 0;
-  if ($("#hero-jour")) $("#hero-jour").outerHTML = carteAujourdhui(st);
-  const etape = (fait, n, titre, detail, action) => `<button class="etape-s ${fait ? "fait" : ""}" ${action ? `onclick="${action}"` : "disabled"}>
-      <span class="num">${fait ? "✓" : n}</span><b>${titre}</b><small>${detail}</small></button>`;
+  if ($("#hero-jour")) $("#hero-jour").outerHTML = duJour ? cartePlanJour(duJour) : carteAujourdhui(st);
+  else if (duJour && !jobAnalyse() && S.etat.abonnement?.actif !== false && a && $("#accueil .hero")) $("#accueil .hero").outerHTML = cartePlanJour(duJour);
+  // Le parcours : 5 étapes, une ligne chacune, la prochaine mise en avant
+  let sb = null;
+  if (S.etat.boutique) { try { sb = await api("/api/boutique/stats"); } catch {} if (S.vue !== "accueil") return; }
+  const pubPlan = plan ? plan.cases.filter(c => c.publie).length : 0, pretsPlan = plan ? plan.cases.filter(c => c.projet).length : 0;
+  const etapesP = [
+    {fait: !!veilleOk, ic: "🔎", titre: "Ma veille", detail: veilleOk ? `${ad} contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi` : a ? "À relancer cette semaine" : "Trouve ce qui cartonne dans ta niche", action: veilleOk ? "S.filtre='adaptes';va('reels')" : "lanceVeilleDirecte()"},
+    ...(gratuitAcc ? [] : [{fait: !!planActif && pretsPlan === 8, commence: !!planActif, ic: "🗓️", titre: "Mon plan du mois", detail: planActif ? `${pretsPlan}/8 carrousels prêts` : "8 carrousels qui mènent à la vente", action: `ouvrePlan30(${planActif ? "false" : "true"})`}]),
+    {fait: crees >= 3, commence: crees > 0, ic: "✨", titre: "Créer", detail: `${crees} contenu${crees > 1 ? "s" : ""} créé${crees > 1 ? "s" : ""} cette semaine`, action: "va('studio')"},
+    {fait: (bi.publies || 0) + pubPlan >= (bi.objectif_publies || 1), ic: "📲", titre: "Publier", detail: `${(bi.publies || 0) + pubPlan} publié${(bi.publies || 0) + pubPlan > 1 ? "s" : ""} cette semaine`, action: "va('resultats')"},
+    {fait: !!(sb && sb.ventes_7j), ic: "🛍️", titre: "Ma boutique", detail: !S.etat.boutique ? "Ton lien en bio pour vendre" : sb ? (sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} · ${euros(sb.chiffre_7j)}` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`) : "Ouvrir", action: "BQ.onglet='stats';va('boutique')"},
+  ];
+  const prochaine = etapesP.findIndex(x => !x.fait);
+  const parcours = `<section class="bloc-accueil"><h2>Mon parcours</h2><ol class="parcours">${etapesP.map((x, k) => `<li><button class="${x.fait ? "fait" : ""}${k === prochaine ? " suivante" : ""}" onclick="${x.action}">
+      <span class="ic">${x.fait ? "✓" : x.ic}</span><span class="txt"><b>${x.titre}</b><small>${x.detail}</small></span><span class="go">${k === prochaine ? (x.commence ? "Continuer" : "Commencer") : "›"}</span></button></li>`).join("")}</ol></section>`;
   // Pendant l'essai, après une première veille : ce qu'elle a déjà reçu, et comment le garder (refermable)
   const bilanEssai = etatEssai() === "essai" && a && ad ? (() => {
     try { const v = +localStorage.getItem("vv-masque-bilan-essai"); if (v && Date.now() - v < 2 * 864e5) return ""; } catch {}
@@ -1485,14 +1530,9 @@ async function renduAccueil() {
       <b>${ad} publication${ad > 1 ? "s" : ""} écrite${ad > 1 ? "s" : ""} pour toi pendant ton essai</b>
       <p>Chaque lundi, ta veille continue : de nouveaux Reels viraux, réécrits pour ta niche, avec ton planning. ${esc(S.etat.offre?.nom || "")} : ${prixOffre()}, sans engagement.</p>
       <button class="btn petit prim" type="button" onclick="va('abonnement')">Garder ma veille</button></div>`; })() : "";
-  let html = bilanEssai + (boutiqueSeule() && !a
+  let html = (boutiqueSeule() && !a
     ? carteEssai("accueil", "Et si ta boutique avait plus de visites ?", "Les visites d'une boutique viennent des contenus qui accrochent. Virallink repère chaque semaine les Reels qui explosent dans ta niche et te les réécrit.")
-    : `<section class="bloc-accueil"><h2>Ta semaine</h2><div class="etapes-s">
-    ${etape(veilleOk, 1, "Trouver", veilleOk ? `${ad} prêt${ad > 1 ? "s" : ""} pour toi` : "Lancer la veille", veilleOk ? "va('reels')" : "lanceVeilleDirecte()")}
-    ${etape(crees >= 3, 2, "Créer", `${crees} contenu${crees > 1 ? "s" : ""} prêt${crees > 1 ? "s" : ""}`, "va('studio')")}
-    ${etape((bi.publies || 0) >= (bi.objectif_publies || 1), 3, "Publier", `${bi.publies || 0} / ${bi.objectif_publies || 0} Reels`, "va('resultats')")}
-    ${etape((bi.conversations || 0) >= (bi.objectif_conversations || 1), 4, "Converser", `${bi.conversations || 0} / ${bi.objectif_conversations || 0} conversations`, "va('resultats')")}
-  </div></section>`);
+    : parcours) + bilanEssai;
   // Reels prévus aujourd'hui (sinon les meilleurs Reels adaptés)
   if (a) {
     const jour = JOURS[(new Date().getDay() + 6) % 7];
@@ -1512,26 +1552,25 @@ async function renduAccueil() {
     <div class="crea-recentes">${recents.map(p => { const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
       const src = img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
       return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section>`;
-  if (S.etat.boutique) {
+  if (sb) {
     try {
-      const sb = await api("/api/boutique/stats");
-      if (S.vue !== "accueil") return;
-      html = html.replace('<div class="etapes-s">', `<div class="etapes-s cinq">`).replace("</div></section>", `${etape(sb.ventes_7j > 0, 5, "Vendre", sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} · ${euros(sb.chiffre_7j)}` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`, "BQ.onglet='stats';va('boutique')")}</div></section>`);
       if (sb.vues_7j || sb.inscrits_7j || sb.ventes_7j) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Ta boutique cette semaine</h2><button class="lien" onclick="BQ.onglet='stats';va('boutique')">Statistiques →</button></div>
         <div class="bt-kpis"><div class="bt-kpi"><b>${sb.vues_7j}</b><span>visites</span></div><div class="bt-kpi"><b>${sb.inscrits_7j}</b><span>nouvelles inscrites</span></div><div class="bt-kpi"><b>${sb.ventes_7j}</b><span>ventes</span></div><div class="bt-kpi"><b>${euros(sb.chiffre_7j).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div></div></section>`;
     } catch {}
   }
-  if (!S.etat.boutique) html += `<section class="bt-promo"><span class="ic">🛍️</span><div><b>Crée ta boutique en lien dans la bio</b><p>Tes liens, tes produits numériques, tes e-mails et ton kit média sur une seule page. 2 minutes, sans rien installer.</p></div><button class="btn prim" onclick="va('boutique')">Créer ma boutique</button></section>`;
   const ab = S.etat.abonnement;
   if (ab?.gratuit) {
     html += essaiDispo() ? `<p class="note-essai">Formule gratuite : ta boutique est incluse, sans limite de durée. <a href="#" onclick="proposeEssai();return false">Essaie la veille ${ab.essai_jours} jours</a></p>`
       : `<p class="note-essai">Formule gratuite : tu vois les Reels viraux et leurs sons. Pour les adapter à ta niche, <a href="#" onclick="va('abonnement');return false">choisis une formule</a>.</p>`;
   }
-  // Sur téléphone, tout ce qui suit « Ta semaine » est replié pour garder l'action du jour en vue
+  // Tout ce qui suit le parcours est replié : l'écran garde une seule action en vue
   const coupe = html.indexOf('<section', html.indexOf('</section>'));
-  if (coupe > 0 && MOBILE.matches) html = html.slice(0, coupe) + `<details class="plus-accueil"><summary>Voir le reste : programme, créations${S.etat.boutique ? ", boutique" : ""}</summary>${html.slice(coupe)}</details>`;
+  if (coupe > 0) html = html.slice(0, coupe) + `<details class="plus-accueil"><summary>Voir plus : programme, créations${sb ? ", boutique" : ""}</summary>${html.slice(coupe)}</details>`;
   $("#accueil-suite").innerHTML = html;
   $$("[data-studio-acc]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); choisirFormat(b.dataset.studioAcc); });
+  $$("[data-p30fab]", el).forEach(b => b.onclick = () => { S.p30AutoFab = +b.dataset.p30fab; ouvrePlan30(false); });
+  $$("[data-p30pub]", el).forEach(b => b.onclick = async () => {
+    try { await api(`/api/plan30/${plan.id}/cases/${b.dataset.p30pub}`, {method: "PUT", body: {publie: true}}); toast("Bravo, un de plus ✓"); renduAccueil(); } catch (e) { toast(e.message); } });
 }
 function majAccueilJob() {
   const j = jobAnalyse(); if (S.vue !== "accueil") return;
@@ -1748,7 +1787,9 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape") fermeMenus(); });
 // Aide « que faire ici ? » en haut de chaque onglet (masquable, mémorisée dans le navigateur)
+// Encadrés d'explication retirés (un écran = une action) : l'accueil guide pas à pas à la place
 function guide(id, titre, etapes) {
+  return "";
   try { if (localStorage.getItem("guide-" + id)) return ""; } catch {}
   return `<div class="guide" data-guide="${id}"><div><b>${titre}</b><ol>${etapes.map(e => `<li>${e}</li>`).join("")}</ol></div>
     <button class="guide-x" aria-label="Masquer cette aide" onclick="masqueGuide('${id}', this)">✕</button></div>`;
@@ -2578,6 +2619,7 @@ function renduCalendrier30() {
   $$("[data-titre]", el).forEach(i => i.onchange = () => i.value.trim() && majCase(+i.dataset.titre, {titre: i.value}));
   $$("[data-fab]", el).forEach(b => b.onclick = () => fabrique30([+b.dataset.fab]));
   $("#p30-tout")?.addEventListener("click", () => fabrique30(possibles.map(c => c.i)));
+  if (S.p30AutoFab != null) { const i = S.p30AutoFab; S.p30AutoFab = null; if (!plan.cases[i]?.projet && !S.p30Job) fabrique30([i]); }
 }
 // Semaine d'une case d'après sa date (une case déplacée change de colonne)
 const semaine30 = (c, plan) => Math.max(0, Math.min(3, Math.floor((new Date(c.jour + "T12:00:00") - new Date(plan.debut + "T12:00:00")) / (7 * 864e5))));
