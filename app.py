@@ -1129,6 +1129,20 @@ def _plans_restants(u: dict) -> tuple[int, int]:
     return quota - plan30.nb_depuis(espace_client(u["id"]), ab.periode(u)[0]), quota
 
 
+def _produits_plan30(bid) -> list[dict]:
+    """Produits de la boutique ouverte, pour choisir en un geste ce que le plan doit vendre (payants d'abord)."""
+    try:
+        page = bq.lit_page(bid) or {}
+        pseudo = bq.pseudo_de(bid) or ""
+    except Exception:  # noqa: BLE001
+        return []
+    res = [{"id": p["id"], "titre": p.get("titre") or "", "prix": p.get("prix") or 0,
+            "prix_txt": (f"{p['prix'] / 100:,.2f}".replace(",", " ").replace(".", ",").replace(",00", "") + " €") if p.get("prix") else "Gratuit",
+            "lien": f"{url_site()}/@{pseudo}/p/{p['id']}" if pseudo else ""}
+           for p in page.get("produits") or [] if p.get("visible", True) and p.get("titre")]
+    return sorted(res, key=lambda p: -p["prix"])[:12]
+
+
 def _plan(pid):
     try:
         return plan30.charge(g.esp, pid)
@@ -1144,8 +1158,9 @@ def plan30_etat():
     reste, quota = _plans_restants(g.u)
     classees = plan30.publications_classees(g.esp)
     courant = request.args.get("plan") or (plans[0]["id"] if plans else None)
-    b = plan30.brief(g.esp, cfg)
-    return jsonify({"brief": b, "brief_manque": plan30.brief_complet(b), "plans": plans, "reste": reste, "quota": quota,
+    bid = bq_active()
+    b = plan30.brief(g.esp, cfg, bid)
+    return jsonify({"brief": b, "produits": _produits_plan30(bid), "brief_manque": plan30.brief_complet(b), "plans": plans, "reste": reste, "quota": quota,
                     "veille": plan30.resume_veille(classees), "tons": plan30.TONS,
                     "categories": {k: v["nom"] for k, v in plan30.CATEGORIES.items()},
                     "debut_conseille": plan30.debut_par_defaut(b).isoformat(), "reste_studio": droits(g.u)["reste"]["studio"],
@@ -1155,7 +1170,7 @@ def plan30_etat():
 @app.put("/api/plan30/brief")
 @connecte
 def plan30_brief():
-    b = plan30.sauve_brief(g.esp, request.get_json(force=True) or {})
+    b = plan30.sauve_brief(g.esp, request.get_json(force=True) or {}, bq_active())
     return jsonify({"brief": b, "brief_manque": plan30.brief_complet(b)})
 
 
@@ -1169,7 +1184,8 @@ def plan30_cree():
     if reste <= 0:
         return bloque(f"Tu as utilisé {'ton plan' if quota == 1 else f'tes {quota} plans'} de 30 jours de la période. "
                       f"{ab._suite(g.u, droits(g.u))}")
-    b = plan30.brief(g.esp)
+    bid = bq_active()
+    b = plan30.brief(g.esp, None, bid)
     manque = plan30.brief_complet(b)
     if manque:
         return jsonify({"erreur": manque}), 400
@@ -1180,7 +1196,8 @@ def plan30_cree():
         debut = date.fromisoformat(str(c.get("debut") or "")[:10]) if c.get("debut") else None
     except ValueError:
         debut = None
-    jid = lance(g.u["id"], "Création de ton plan du mois", plan30.cree, g.esp, g.esp.lit_config(), debut, demo=en_demo(), file_=FILE_STUDIO)
+    jid = lance(g.u["id"], "Création de ton plan du mois", plan30.cree, g.esp, g.esp.lit_config(), debut, demo=en_demo(), bid=bid,
+                file_=FILE_STUDIO)
     return jsonify({"job": jid})
 
 

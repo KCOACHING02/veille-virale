@@ -6,7 +6,8 @@ Ces types sont regroupés en 4 catégories du tunnel : storytelling → éducati
 Chaque case du plan reprend la STRUCTURE de la publication virale la mieux notée de sa catégorie (accroche, nombre de slides,
 rythme), jamais son texte ni ses images, et le sujet vient du brief de la cliente.
 
-Données : data/espaces/<id>/plan30/brief.json et plan30/<pid>.json. Un carrousel fabriqué = un projet du studio (studio.py),
+Données : data/espaces/<id>/plan30/brief.json (infos de vente, une fois par boutique : brief_<bid>.json pour les boutiques
+suivantes) et plan30/<pid>.json. Un carrousel fabriqué = un projet du studio (studio.py),
 relié à sa case par p["plan30"] = {"plan": pid, "case": i} ; il compte 1 création au studio comme les autres.
 """
 
@@ -56,7 +57,7 @@ JOURS_PUBLICATION = (1, 4)  # mardi, vendredi (0 = lundi)
 
 CHAMPS_BRIEF = {
     "produit": 100, "prix": 30, "lien": 300, "date_cle": 10, "transformation": 300, "cible": 200, "histoire": 800,
-    "ton": 20, "tutoiement": 5, "emojis": 12,
+    "ton": 20, "tutoiement": 5, "emojis": 12, "produit_id": 12,
 }
 TONS = ["Complice", "Experte", "Inspirante", "Directe"]
 
@@ -76,9 +77,15 @@ def _ecrit(f: Path, data: dict):
     tmp.replace(f)
 
 
-def brief(esp: Espace, cfg: dict | None = None) -> dict:
+def _f_brief(esp: Espace, bid=None) -> Path:
+    """Infos de vente renseignées une seule fois par boutique (la première boutique garde brief.json)."""
+    b = str(bid or "")
+    return _racine(esp) / (f"brief_{b}.json" if "-" in b else "brief.json")
+
+
+def brief(esp: Espace, cfg: dict | None = None, bid=None) -> dict:
     """Brief enregistré, ou pré-rempli à partir du profil de la marque (niche, cible, problèmes, offre, ton)."""
-    f = _racine(esp) / "brief.json"
+    f = _f_brief(esp, bid)
     if f.exists():
         try:
             return json.loads(f.read_text(encoding="utf-8"))
@@ -91,8 +98,8 @@ def brief(esp: Espace, cfg: dict | None = None) -> dict:
             "ton": "Complice", "tutoiement": "tu", "emojis": "quelques", "neuf": True}
 
 
-def sauve_brief(esp: Espace, champs: dict) -> dict:
-    b = brief(esp)
+def sauve_brief(esp: Espace, champs: dict, bid=None) -> dict:
+    b = brief(esp, None, bid)
     for k, n in CHAMPS_BRIEF.items():
         if k in champs:
             b[k] = str(champs[k] or "").strip()[:n]
@@ -109,7 +116,7 @@ def sauve_brief(esp: Espace, champs: dict) -> dict:
         b["emojis"] = "quelques"
     b.pop("neuf", None)
     b["modifie"] = datetime.now().isoformat(timespec="minutes")
-    _ecrit(_racine(esp) / "brief.json", b)
+    _ecrit(_f_brief(esp, bid), b)
     return b
 
 
@@ -136,7 +143,7 @@ def sauve(esp: Espace, plan: dict):
 def liste(esp: Espace) -> list[dict]:
     res = []
     for f in _racine(esp).glob("*.json"):
-        if f.name == "brief.json":
+        if f.name.startswith("brief"):
             continue
         try:
             p = json.loads(f.read_text(encoding="utf-8"))
@@ -232,9 +239,9 @@ def debut_par_defaut(b: dict) -> date:
     return lundi(date.today()) + timedelta(days=7)
 
 
-def cree(esp: Espace, cfg: dict, debut: date | None = None, demo: bool = False) -> dict:
+def cree(esp: Espace, cfg: dict, debut: date | None = None, demo: bool = False, bid=None) -> dict:
     """Tâche de fond : choisit les publications virales de chaque case puis fait écrire titres et angles par Virall.ai."""
-    b = brief(esp, cfg)
+    b = brief(esp, cfg, bid)
     debut = lundi(debut or debut_par_defaut(b))
     log("Je classe les publications virales de ta veille par étape du tunnel…")
     classees = publications_classees(esp)
@@ -258,7 +265,7 @@ def cree(esp: Espace, cfg: dict, debut: date | None = None, demo: bool = False) 
     pid = datetime.now().strftime("%Y%m%d-") + uuid.uuid4().hex[:5]
     plan = {"id": pid, "cree": datetime.now().isoformat(timespec="minutes"), "debut": debut.isoformat(),
             "fin": (debut + timedelta(days=27)).isoformat(), "titre": f"Plan du {debut.day} {MOIS[debut.month - 1]}",
-            "offre": b.get("produit") or "", "cases": cases, "demo": demo}
+            "offre": b.get("produit") or "", "boutique": str(bid or ""), "cases": cases, "demo": demo}
     sauve(esp, plan)
     log("✅ Ton plan des 30 jours est prêt")
     return {"id": pid}
@@ -399,7 +406,7 @@ def _post_source(esp: Espace, src: dict) -> dict:
 def fabrique(esp: Espace, cfg: dict, pid: str, indices: list[int], demo: bool = False, filigrane: bool = False,
              apres_chaque=None) -> dict:
     """Tâche de fond : pour chaque case, crée le projet du studio, fait écrire les slides, choisit les images et dessine les slides."""
-    b = brief(esp, cfg)
+    b = brief(esp, cfg, charge(esp, pid).get("boutique") or None)
     faits = []
     for n, i in enumerate(indices):
         plan = charge(esp, pid)
