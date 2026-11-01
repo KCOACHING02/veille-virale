@@ -1122,6 +1122,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-prod .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .bt-prod .meta span{font-size:12px;border-radius:99px;padding:2px 8px;background:var(--sunk);color:var(--ink-2)}
 .bt-prod .meta span.prix{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.bt-tunnel-prod{display:flex;gap:12px;align-items:center;justify-content:space-between;border-radius:14px;padding:12px 14px;margin:12px 0;background:var(--glow-soft)}
 .bt-suite{border-radius:16px;padding:14px 16px;margin:0 0 14px;background:var(--glow-soft);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .bt-suite .txt{flex:1 1 200px;min-width:0}.bt-suite small{display:block;color:var(--ink-3);font-size:12px;font-weight:600;letter-spacing:.02em;margin-bottom:2px}
 .bt-suite b{font-size:16px}.bt-suite .pts{display:flex;gap:4px;margin-top:6px}.bt-suite .pts i{width:22px;height:5px;border-radius:3px;background:var(--line)}.bt-suite .pts i.f{background:var(--glow)}
@@ -4435,7 +4436,8 @@ function majSuite() {
     let vue = false; try { vue = localStorage.getItem("bt-suite-" + BQ.etat.pseudo) === "1"; } catch {}
     if (vue) { z.innerHTML = ""; return; }
     z.innerHTML = `<div class="bt-suite fini"><div class="txt"><small>BOUTIQUE PRÊTE</small><b>🎉 Partage ton lien dans ta bio</b>${pts}</div>
-      <button class="btn prim" id="bt-suite-go" data-copier="${esc(BQ.etat.url)}">Copier mon lien</button><button class="ferme-x" id="bt-suite-x" type="button" aria-label="Fermer">✕</button></div>`;
+      <button class="btn prim" id="bt-suite-go" data-copier="${esc(BQ.etat.url)}">Copier mon lien</button>${(BQ.page.tunnels || []).length ? "" : `<button class="btn" id="bt-suite-tn">🎯 Créer un tunnel de vente</button>`}<button class="ferme-x" id="bt-suite-x" type="button" aria-label="Fermer">✕</button></div>`;
+    $("#bt-suite-tn")?.addEventListener("click", () => { BQ.onglet = "tunnels"; BQ.tunnelId = null; BQ.tnAssist = {etape: 0, type: null, id: null}; renduEditeur($("#boutique")); });
     $("#bt-suite-x").onclick = () => { try { localStorage.setItem("bt-suite-" + BQ.etat.pseudo, "1"); } catch {} z.innerHTML = ""; };
     return;
   }
@@ -5077,7 +5079,7 @@ function assistantTunnel(z) {
     z.querySelectorAll("[data-modele]").forEach(b => b.onclick = () => {
       const m = modeles.find(x => x.id === b.dataset.modele);
       const nt = {...structuredClone(m.contenu), id: idCourt(), publie: false, modele: m.id};
-      const prod = p.produits.find(x => x.visible !== false && x.prix) || p.produits.find(x => x.visible !== false);
+      const prod = p.produits.find(x => x.id === A.produit) || p.produits.find(x => x.visible !== false && x.prix) || p.produits.find(x => x.visible !== false);
       if (prod) nt.offre.produit = prod.id;
       p.tunnels.push(nt); A.id = nt.id; A.etape = 0; BQ.vueAp = "t:" + nt.id;
       modifieBoutique(false); apercu(true); rendu();
@@ -5373,6 +5375,7 @@ function editeProduit(i, lancerGuide) {
           <div class="champ"><label for="pr-up-prix">À un prix spécial (€)</label><input id="pr-up-prix" type="number" min="0" step="0.01" value="${enEuros(x.upsell.prix)}" placeholder="Ex. 9"></div></div>
         <span class="aide">Affiché sur la page de remerciement, réservé aux deux heures qui suivent l'achat.</span>` : ""}
       </details>
+      ${livraison !== "externe" || x.lien ? `<div class="bt-tunnel-prod"><span><b>🎯 Tunnel de vente</b><br><small class="aide">Une page de vente ou un quiz qui mène à ce produit.</small></span><button type="button" class="btn prim petit" id="pr-tunnel">Créer un tunnel</button></div>` : ""}
       <label class="bt-interr"><span>Visible dans ma boutique</span><input type="checkbox" id="pr-visible" ${x.visible !== false ? "checked" : ""}></label>
       <div class="pied-modale" style="justify-content:space-between;margin-top:16px">${neuf ? "<span></span>" : `<button class="btn" id="pr-suppr" style="color:var(--warn)">Supprimer</button>`}
         <span class="bt-rangee"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="pr-ok">${neuf ? "Ajouter le produit" : "Enregistrer"}</button></span></div></div>`;
@@ -5413,6 +5416,12 @@ function editeProduit(i, lancerGuide) {
     $("#pr-mot")?.addEventListener("input", e => { const m = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); x.mot_cle = m;
       $("#pr-mot-aide").innerHTML = m ? `Lien direct à envoyer en DM : <b>${esc(lienMot())}</b>` : ""; });
     $$("[data-voir-guide]").forEach(bt => bt.onclick = async () => { await enregistre(); apercuGuide(bt.dataset.voirGuide); });
+    $("#pr-tunnel")?.addEventListener("click", async () => {
+      lit(); if (!x.titre) return toast("Donne d'abord un nom à ton produit");
+      await enregistre(); fermeModale();
+      BQ.onglet = "tunnels"; BQ.tunnelId = null; BQ.tnAssist = {etape: 0, type: null, id: null, produit: x.id};
+      renduEditeur($("#boutique")); scrollTo({top: 0, behavior: "smooth"});
+    });
     $("#pr-guide")?.addEventListener("click", async () => {
       lit(); if (!x.titre) return toast("Donne d'abord un titre au guide");
       if (guideEnCours) return; guideEnCours = true;
