@@ -74,6 +74,16 @@ main{min-width:0;padding:20px 28px 80px}
 .plan .conseil{align-self:flex-start;background:var(--glow);color:#fff;font-size:12px;font-weight:600;border-radius:99px;padding:3px 10px}
 
 /* ---------- Résumé ---------- */
+.resume-ligne{margin:0;font-size:15.5px;color:var(--ink-2)}.resume .resume-ligne b{font:inherit;font-weight:700;color:var(--ink);margin:0}
+#sons-tendance summary{cursor:pointer;font-weight:600;list-style:none}#sons-tendance summary::-webkit-details-marker{display:none}
+#sons-tendance summary::after{content:" ›";color:var(--ink-3)}#sons-tendance details[open] summary::after{content:" ⌄"}
+.infos-veille{width:100%;font-size:13.5px;color:var(--ink-2);display:grid;gap:4px}.infos-veille p{margin:0}
+.infos-veille:empty{display:none}
+.reel .pied{position:relative}
+.reel-act{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:8px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:600;font-size:14px;color:var(--ink);background:var(--surface)}
+.reel-act.prim{background:var(--glow);border-color:var(--glow);color:var(--glow-ink)}
+.reel-act.attente{opacity:.7}
+@media (max-width:860px){.f-plus-txt{display:none}}
 .resume{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;margin:4px 0 22px}
 .resume div{display:flex;flex-direction:column}
 .resume b{font:700 34px/1 var(--display);font-stretch:75%;font-variant-numeric:tabular-nums}
@@ -1251,10 +1261,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
           <button data-v="cdc" aria-pressed="false">Les plus viraux<span class="c"></span></button>
           <button data-v="tous" aria-pressed="false">Tout<span class="c"></span></button>
         </div>
-        <select class="select" id="f-format" aria-label="Format"><option value="">Reels et carrousels</option><option value="Reel">Reels</option><option value="Carrousel">Carrousels</option></select>
-        <input class="recherche" id="f-texte" type="search" placeholder="Chercher un mot, un hook…" aria-label="Chercher">
-        <button class="btn" id="f-plus" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtres</button>
+        <button class="btn" id="f-plus" aria-expanded="false" aria-label="Filtres"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span class="f-plus-txt">Filtres</span></button>
         <div class="filtres-plus" id="filtres-plus" hidden>
+        <input class="recherche" id="f-texte" type="search" placeholder="Chercher un mot, un hook…" aria-label="Chercher">
+        <select class="select" id="f-format" aria-label="Format"><option value="">Reels et carrousels</option><option value="Reel">Reels</option><option value="Carrousel">Carrousels</option></select>
         <select class="select" id="f-plateforme" aria-label="Plateforme"><option value="">Instagram et TikTok</option><option>Instagram</option><option>TikTok</option></select>
         <select class="select" id="f-compte" aria-label="Compte"></select>
         <select class="select" id="f-type" aria-label="Type de contenu"><option value="">Tous les types</option><option>Éducatif</option><option>Storytelling</option><option>Inspirant</option><option>Divertissant</option><option>Commercial</option><option>Preuve sociale</option><option>Coulisses</option></select>
@@ -1265,6 +1275,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
           <option value="viral">Trier : surperformance</option>
           <option value="date">Trier : plus récents</option>
         </select>
+        <div id="infos-veille" class="infos-veille"></div>
         </div>
       </div>
       <div class="grille" id="grille"></div>
@@ -1665,21 +1676,15 @@ function carte(p) {
         <span class="plat" title="${p.plateforme}">${ICONES[p.plateforme]}</span>
       </div>
       <div class="bas">
-        ${estCarrousel(p) ? `<div class="vues">${nb(p.likes)}<small>j'aime</small></div>
-        <div class="jauges">
-          ${jauge("Interac.", p.interactions, p.seuil_vues || 1, "×" + (p.interactions && p.seuil_vues ? (p.interactions / p.seuil_vues).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "–"))}
-          ${jauge("Habit.", p.score_viral, c.seuil_multiple || 3, "×" + (p.score_viral || 0).toLocaleString("fr-FR",{maximumFractionDigits:1}))}
-        </div>` : `<div class="vues">${nb(p.vues)}<small>vues</small></div>
-        <div class="jauges">
-          ${(() => { const sv = p.seuil_vues || c.vues_min; return jauge("Vues", p.vues, sv, "×" + (p.vues && sv ? (p.vues / sv).toLocaleString("fr-FR",{maximumFractionDigits:1}) : "–")); })()}
-          ${jauge("Engag.", p.taux_engagement, c.taux_engagement_min, pc(p.taux_engagement))}
-        </div>`}
+        <div class="vues">${estCarrousel(p) ? nb(p.likes) + "<small>j'aime</small>" : nb(p.vues) + "<small>vues</small>"}</div>
       </div>
     </div>
     <div class="pied">
-      ${p.type_contenu ? `<div class="types">${pastilleType(p)}${adapte(p) && p.adaptation?.mecanique ? `<span class="type-c">${esc(p.adaptation.mecanique)}</span>` : ""}</div>` : ""}
-      <div class="compte">@${esc(p.compte)}<span>${p.date ? new Date(p.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}) : ""}</span></div>
+      ${p.type_contenu ? `<div class="types">${pastilleType(p)}</div>` : ""}
       <div class="hook ${adapte(p) ? "adapte" : ""}">${esc(hook) || "<i>Sans légende</i>"}</div>
+      <div class="compte">@${esc(p.compte)}</div>
+      ${adapte(p) ? `<span class="reel-act prim" data-reel-act="creer" data-k="${esc(p.cle)}">Créer</span>`
+        : !S.analyse.classement_seul && !S.etat?.abonnement?.gratuit ? `<span class="reel-act" data-reel-act="adapter" data-k="${esc(p.cle)}">Adapter pour moi</span>` : ""}
     </div>
   </button>`;
 }
@@ -1704,17 +1709,17 @@ function renduReels() {
         "Clique <b>Créer le contenu</b> pour fabriquer ton carrousel ou ton Reel.",
         "Après l'avoir publié, clique <b>J'ai publié</b> pour suivre ses résultats."]);
   renduSonsTendance(a);
-  $("#resume").innerHTML = (a.en_cours ? `<p class="encours" style="width:100%;margin:0 0 4px"><span class="spin"></span>Analyse en cours : les Reels apparaissent au fur et à mesure (${s.adaptes} adapté${s.adaptes > 1 ? "s" : ""} pour l'instant).</p>` : "") + `
-    <div><b>${nbLong(s.videos)}</b><span>publications passées au crible sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}</span></div>
-    <div class="cible"><b>${cdc}</b><span>vraiment virale${cdc > 1 ? "s" : ""}</span></div>
-    ${a.classement_seul ? "" : `<div><b>${ad}</b><span>prête${ad > 1 ? "s" : ""} à reproduire pour toi</span></div>`}
-    ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<div><b>${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $</b><span>coût réel (collecte ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, IA ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</span></div>` : ""}
-    <p class="note-criteres"><b>Viral</b> = ${texteCriteres(a.criteres)}. <button class="lien" onclick="ouvreAssistant('criteres', true)">Modifier</button></p>`;
-  if (criteresDifferents(a.criteres, S.etat?.criteres) && !a.en_cours) $("#resume").insertAdjacentHTML("beforeend", `<p class="note-criteres">Tu as changé tes critères depuis cette analyse (maintenant : ${texteCriteres(S.etat.criteres)}). Ils s'appliqueront à ta prochaine veille.${gratuit ? "" : ` <button class="lien" onclick="ouvreNouvelle('veille')">Relancer la veille maintenant</button>`}</p>`);
+  // Une seule phrase en haut ; les détails (critères, coût, notes) sont rangés dans le panneau « Filtres »
+  $("#resume").innerHTML = a.en_cours ? `<p class="encours" style="width:100%;margin:0"><span class="spin"></span>Ta veille tourne : les Reels arrivent au fur et à mesure.</p>`
+    : `<p class="resume-ligne">${a.classement_seul ? `<b>${cdc}</b> publication${cdc > 1 ? "s" : ""} virale${cdc > 1 ? "s" : ""} trouvée${cdc > 1 ? "s" : ""}. Ouvre-en une pour voir pourquoi elle a marché.`
+        : ad ? `<b>${ad}</b> contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi. Touche <b>Créer</b> sur celui qui te plaît.` : `Ouvre une publication et touche <b>Adapter</b> : Virall.ai l'écrit pour ta niche.`}</p>`;
   const completes = a.posts.filter(p => adapte(p) && !p.criteres_ok && !p.demande).length;
-  if (completes && !a.en_cours) $("#resume").insertAdjacentHTML("beforeend", `<p class="note-criteres">Pas assez de Reels viraux cette fois ${a.mode === "veille" ? "pour remplir ton planning" : "pour atteindre le nombre demandé"} : ${completes} des contenus prêts pour toi viennent des meilleurs Reels suivants, qui n'atteignent pas tous tes critères (ils n'ont pas le badge 🔥 Viral). Pour en avoir plus, ajoute des comptes à surveiller.</p>`);
-  if (a.classement_seul && !a.en_cours) $("#resume").insertAdjacentHTML("beforeend", `<p class="note-gratuit">Classement sans adaptation (formule gratuite) : ouvre un Reel pour voir son hook, sa légende et son son.
-    <a href="#" onclick="va('abonnement');return false">Passer à une formule</a> pour que chaque Reel soit adapté à ta niche, avec script, légende et messages privés.</p>`);
+  $("#infos-veille").innerHTML = `<p><b>Viral</b> = ${texteCriteres(a.criteres)}. <button class="lien" onclick="ouvreAssistant('criteres', true)">Modifier</button></p>
+    <p>${nbLong(s.videos)} publications passées au crible sur ${s.comptes} compte${s.comptes > 1 ? "s" : ""}, ${cdc} vraiment virale${cdc > 1 ? "s" : ""}.</p>
+    ${criteresDifferents(a.criteres, S.etat?.criteres) && !a.en_cours ? `<p>Tes nouveaux critères s'appliqueront à ta prochaine veille.${gratuit ? "" : ` <button class="lien" onclick="ouvreNouvelle('veille')">Relancer maintenant</button>`}</p>` : ""}
+    ${completes && !a.en_cours ? `<p>${completes} contenu${completes > 1 ? "s" : ""} prêt${completes > 1 ? "s" : ""} pour toi n'ont pas le badge 🔥 Viral : ajoute des comptes à surveiller pour en avoir plus.</p>` : ""}
+    ${a.classement_seul && !a.en_cours ? `<p>Formule gratuite : classement sans adaptation. <a href="#" onclick="va('abonnement');return false">Passer à une formule</a></p>` : ""}
+    ${S.etat?.admin && s.cout_apify_usd != null && !a.en_cours ? `<p>Coût réel : ${(s.cout_apify_usd + (s.cout_claude_usd || 0)).toLocaleString("fr-FR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} $ (collecte ${s.cout_apify_usd.toLocaleString("fr-FR", {maximumFractionDigits: 2})} $, IA ${(s.cout_claude_usd || 0).toLocaleString("fr-FR", {maximumFractionDigits: 2})} $)</p>` : ""}`;
   const counts = {cdc, adaptes: ad, tous: a.posts.length};
   $$("#f-statut button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === S.filtre); $(".c", b).textContent = counts[b.dataset.v]; });
   $("#n-reels").textContent = cdc;
@@ -1726,6 +1731,17 @@ $$("#f-statut button").forEach(b => b.onclick = () => { S.filtre = b.dataset.v; 
 $("#f-plus").onclick = () => { const f = $("#filtres-plus"); f.hidden = !f.hidden; $("#f-plus").setAttribute("aria-expanded", !f.hidden); };
 $("#f-texte").oninput = renduReels;
 document.addEventListener("click", e => { const r = e.target.closest("[data-cle]"); if (r) ouvreReel(r.dataset.cle); });
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-reel-act]"); if (!b) return;
+  e.stopPropagation(); e.preventDefault();
+  if (b.dataset.reelAct === "creer") return choisirFormat(b.dataset.k);
+  if (b.classList.contains("attente")) return;
+  try {
+    const r = await api(`/api/analyses/${S.analyse.id}/adapter`, {method: "POST", body: {cle: b.dataset.k}});
+    b.classList.add("attente"); b.innerHTML = '<span class="spin"></span>Écriture…';
+    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); rendu(); toast("C'est prêt : touche Créer"); });
+  } catch (err) { toast(err.message); }
+}, true);
 
 // ---------------------------------------------------------------- Tiroir
 function copiable(texte, grand) {
@@ -1849,11 +1865,11 @@ function renduSonsTendance(a) {
   const el = $("#sons-tendance"), sons = a ? sonsTendance(a.posts) : [];
   el.hidden = !sons.length;
   if (!sons.length) return;
-  el.innerHTML = `<h3>🎵 Sons des Reels viraux</h3>
-    <p>À ajouter dans Instagram au moment de publier. Un son repris par plusieurs comptes est une tendance en cours.</p>
+  el.innerHTML = `<details><summary>🎵 ${sons.length} son${sons.length > 1 ? "s" : ""} tendance à utiliser</summary>
+    <p>À ajouter dans Instagram au moment de publier.</p>
     <ol>${sons.map(g => `<li><div><b>${esc(g.son.titre)}${g.son.artiste ? ` — ${esc(g.son.artiste)}` : ""}</b>
       <small>${g.n} Reel${g.n > 1 ? "s viraux" : " viral"}${g.comptes.size > 1 ? ` sur ${g.comptes.size} comptes` : ""}${g.vues ? ` · ${nbLong(g.vues)} vues` : ""}</small></div>
-      ${g.son.url ? `<a href="${esc(g.son.url)}" target="_blank" rel="noopener">Écouter</a>` : ""}</li>`).join("")}</ol>`;
+      ${g.son.url ? `<a href="${esc(g.son.url)}" target="_blank" rel="noopener">Écouter</a>` : ""}</li>`).join("")}</ol></details>`;
 }
 function blocSon(p) {
   const so = p.son || {};
@@ -2360,14 +2376,13 @@ async function choisirFormat(cle) {
   const estCar = estCarrousel(modele), nbSl = (modele.adaptation?.slides_modele || []).length;
   let format = estCar ? "carrousel" : "reel";
   $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:26px;font-stretch:85%">Que veux-tu créer ?</h2>
-    <p style="color:var(--ink-2);margin:6px 0 18px">1. Choisis le format · 2. le style d'écriture · 3. clique sur « Créer ». Tu ajoutes ensuite tes photos ou ta vidéo et tu récupères tout prêt à publier.</p>
+<div style="height:14px"></div>
     <div class="formats">
       ${(() => { const bc = `<button type="button" data-format="carrousel" aria-pressed="${estCar}" class="${estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span>${estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Carrousel</b><span>${estCar && nbSl ? `Les ${nbSl} mêmes slides, réécrites pour toi, avec tes photos.` : "Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350."}</span></button>`;
         const br = `<button type="button" data-format="reel" aria-pressed="${!estCar}" class="${!estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>${!estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>`;
         return estCar ? bc + br : br + bc; })()}
     </div>
     <h3 style="font-size:16px;margin:0 0 4px">Style d'écriture</h3>
-    <p style="color:var(--ink-2);margin:0 0 10px;font-size:14px">Le hook viral reste tel quel. Le reste est écrit dans ta voix, avec la construction choisie. Tu pourras en changer ensuite.</p>
     ${pucesStyles(opts, style)}${astuceVoix(opts)}
     <div class="pied-modale pied-creer" style="margin-top:18px"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="f-creer">${format === "carrousel" ? "Créer le carrousel" : "Créer le Reel"} →</button></div>`;
   $("#modale").classList.add("ouvert");
@@ -3235,7 +3250,8 @@ function suisJob(id, montrer, fini, surLog) {
       if (j.statut === "terminé") {
         const f = S.jobFini; S.jobFini = null;
         if (f) await f();
-        else { fermeModale(); await chargeEtat(); await chargeListe(j.resultat?.id); S.filtre = "adaptes"; if (S.vue === "accueil") renduAccueil(); else va("reels"); toast("Ta veille est prête"); }
+        else if (!j.analyse_id) { if (S.analyse) await chargeAnalyse(S.analyse.id); }  // petite tâche (adaptation…) suivie sans rappel : on rafraîchit sans rien annoncer
+        else { fermeModale(); await chargeEtat(); await chargeListe(j.analyse_id); S.filtre = "adaptes"; if (S.vue === "accueil") renduAccueil(); else va("reels"); toast("Ta veille est prête"); }
       } else if (!$("#modale").classList.contains("ouvert")) { toast("Erreur : " + j.erreur); if (S.ouvert) ouvreReel(S.ouvert);
         if ($("#assistant").classList.contains("ouvert")) renduAssistant(); }
     }
