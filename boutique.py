@@ -1183,7 +1183,8 @@ def tunnel_du_produit(page: dict, pid: str) -> dict | None:
     """Tunnel de vente en ligne qui vend ce produit : la carte du produit y mène plutôt qu'à la page de paiement."""
     if not page.get("_tunnels_ok"):
         return None
-    return next((t for t in page.get("tunnels") or [] if t.get("publie") and (t.get("offre") or {}).get("produit") == pid), None)
+    vus = [t for t in page.get("tunnels") or [] if (t.get("offre") or {}).get("produit") == pid]
+    return next((t for t in vus if t.get("publie")), None) or (vus[0] if vus and page.get("_proprio_vue") else None)
 
 
 def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None = None, page: dict | None = None) -> str:

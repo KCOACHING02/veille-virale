@@ -1414,6 +1414,7 @@ def _vitrine(pseudo: str):
     page["_parrain"] = ab.code_parrain(bq.proprio(uid))
     proprio = ab.get(bq.proprio(uid))
     page["_tunnels_ok"] = bool(proprio) and not reserve(proprio, "tunnels")
+    page["_proprio_vue"] = session.get("uid") == bq.proprio(uid)  # la propriétaire voit aussi ses tunnels pas encore en ligne
     return uid, page
 
 
