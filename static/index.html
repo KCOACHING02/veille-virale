@@ -501,6 +501,7 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .p30-q-pied{display:grid;gap:8px}
 .p30-produits button{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .p30-produits button span{font-weight:500;color:var(--ink-2);white-space:nowrap}
+.p30-choix .p30-sous{display:block;font-weight:400;font-size:14px;color:var(--ink-2);margin-top:3px}
 .p30-autre{border:1.5px dashed var(--line)!important;background:none!important;color:var(--ink-2)!important;font-weight:500!important}
 .p30-offre{margin-top:14px}.p30-offre .lien{font-size:inherit}
 
@@ -1540,10 +1541,12 @@ async function renduAccueil() {
   const pubPlan = plan ? plan.cases.filter(c => c.publie).length : 0, pretsPlan = plan ? plan.cases.filter(c => c.projet).length : 0;
   const etapesP = [
     {fait: !!veilleOk, ic: "🔎", titre: "Ma veille", detail: veilleOk ? `${ad} contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi` : a ? "À relancer cette semaine" : "Trouve ce qui cartonne dans ta niche", action: veilleOk ? "S.filtre='adaptes';va('reels')" : "lanceVeilleDirecte()"},
+    {fait: !!S.etat.boutique && (gratuitAcc || !!(p30?.produits || []).length), ic: "🛍️", titre: "Ma boutique",
+      detail: !S.etat.boutique ? "Ton lien en bio et ce que tu vends" : !(p30?.produits || []).length && !gratuitAcc ? "Ajoute ce que tu vends" : sb ? (sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} · ${euros(sb.chiffre_7j)}` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`) : "Ouvrir",
+      action: S.etat.boutique && !(p30?.produits || []).length ? "BQ.onglet='produits';va('boutique')" : "BQ.onglet='stats';va('boutique')", commence: !!S.etat.boutique},
     ...(gratuitAcc ? [] : [{fait: !!planActif && pretsPlan === 8, commence: !!planActif, ic: "🗓️", titre: "Mon plan du mois", detail: planActif ? `${pretsPlan}/8 carrousels prêts` : "8 carrousels qui mènent à la vente", action: `ouvrePlan30(${planActif ? "false" : "true"})`}]),
     {fait: crees >= 3, commence: crees > 0, ic: "✨", titre: "Créer", detail: `${crees} contenu${crees > 1 ? "s" : ""} créé${crees > 1 ? "s" : ""} cette semaine`, action: "va('studio')"},
     {fait: (bi.publies || 0) + pubPlan >= (bi.objectif_publies || 1), ic: "📲", titre: "Publier", detail: `${(bi.publies || 0) + pubPlan} publié${(bi.publies || 0) + pubPlan > 1 ? "s" : ""} cette semaine`, action: "va('resultats')"},
-    {fait: !!(sb && sb.ventes_7j), ic: "🛍️", titre: "Ma boutique", detail: !S.etat.boutique ? "Ton lien en bio pour vendre" : sb ? (sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} · ${euros(sb.chiffre_7j)}` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`) : "Ouvrir", action: "BQ.onglet='stats';va('boutique')"},
   ];
   const prochaine = etapesP.findIndex(x => !x.fait);
   const parcours = `<section class="bloc-accueil"><h2>Mon parcours</h2><ol class="parcours">${etapesP.map((x, k) => `<li><button class="${x.fait ? "fait" : ""}${k === prochaine ? " suivante" : ""}" onclick="${x.action}">
@@ -2512,6 +2515,9 @@ function renduBrief30() {
   const produits = r.produits || [];
   if (q.type === "produit" && produits.length && !S.p30Autre) corps = `<div class="p30-choix p30-produits">${produits.map(p => `<button type="button" data-prod="${esc(p.id)}" class="${b.produit_id === p.id ? "choisi" : ""}"><b>${esc(p.titre)}</b><span>${esc(p.prix_txt)}</span></button>`).join("")}
       <button type="button" class="p30-autre" id="p30-autre">Autre chose</button></div>`;
+  else if (q.type === "produit" && !S.p30Autre && !(b.produit || "").trim()) corps = `<div class="p30-choix">
+      <button type="button" id="p30-creeprod"><b>${S.etat?.boutique ? "Créer mon produit dans ma boutique" : "Créer ma boutique et mon produit"}</b><span class="p30-sous">Le plan mènera tes abonnées vers sa page de paiement.</span></button>
+      <button type="button" id="p30-autre"><b>Je le vends ailleurs</b><span class="p30-sous">En message privé, sur mon site…</span></button></div>`;
   else if (q.type === "t" || q.type === "date" || q.type === "produit") corps = `<input class="p30-grand" data-b="${q.cle}" type="${q.type === "date" ? "date" : "text"}" maxlength="${q.max || 300}" value="${esc(b[q.cle] || "")}" placeholder="${esc(q.ex ? "Ex. " + q.ex : "")}" autocomplete="off">`;
   else if (q.type === "long") corps = `<textarea class="p30-grand" data-b="${q.cle}" maxlength="${q.max}" placeholder="${esc("Ex. " + q.ex)}">${esc(b[q.cle] || "")}</textarea>`;
   else if (q.type === "liste") corps = Array.from({length: q.n}, (_, i) => q.long
@@ -2532,7 +2538,7 @@ function renduBrief30() {
   const bouton = q.type === "fin"
     ? (r.reste > 0 ? `<button class="btn prim large" id="p30-cree" ${r.brief_manque || !Object.values(r.veille || {}).some(Boolean) ? "disabled" : ""}>Créer mon plan</button>`
       : `<button class="btn prim large" onclick="va('abonnement')">Voir les formules</button><p class="p30-aide">Tu as utilisé ${r.quota > 1 ? "tes " + r.quota + " plans" : "ton plan"} de la période.</p>`)
-    : q.type === "choix" || (q.type === "produit" && produits.length && !S.p30Autre) ? "" : `<button class="btn prim large" id="p30-suiv" ${ok ? "" : "disabled"}>Continuer</button>${q.facultatif ? '<button class="btn large p30-passer" id="p30-passer">Passer</button>' : ""}`;
+    : q.type === "choix" || (q.type === "produit" && !S.p30Autre && (produits.length || !(b.produit || "").trim())) ? "" : `<button class="btn prim large" id="p30-suiv" ${ok ? "" : "disabled"}>Continuer</button>${q.facultatif ? '<button class="btn large p30-passer" id="p30-passer">Passer</button>' : ""}`;
   el.innerHTML = `<div class="p30 p30-q">
     <div class="p30-q-haut"><button class="p30-q-retour" id="p30-retour" aria-label="Retour">←</button>
       <div class="p30-q-barre" aria-label="Question ${k + 1} sur ${Q30.length}"><i style="width:${(k + 1) / Q30.length * 100}%"></i></div>
@@ -2547,6 +2553,8 @@ function renduBrief30() {
   $$("[data-prod]", el).forEach(x => x.onclick = () => { const p = produits.find(y => y.id === x.dataset.prod);
     Object.assign(b, {produit: p.titre, prix: p.prix_txt, lien: p.lien || b.lien, produit_id: p.id}); x.classList.add("choisi"); setTimeout(() => vers(k + 1), 180); });
   $("#p30-autre")?.addEventListener("click", () => { S.p30Autre = true; b.produit_id = ""; b.produit = ""; renduBrief30(); });
+  $("#p30-creeprod")?.addEventListener("click", () => { sauveBrief30(true); S.plan30Vue = false; S.p30Brief = false; S.p30 = null; BQ.onglet = "produits"; va("boutique");
+    toast("Crée ton produit, puis reviens dans Studio : ton plan t'attend", {duree: 6000}); });
   $("#p30-infos")?.addEventListener("click", () => vers(0));
   const quitte = () => { sauveBrief30(true); S.p30Etape = 0; if (r.plan) { S.p30Brief = false; renduPlan30(); } else { S.plan30Vue = false; renduStudio(); } };
   $("#p30-retour").onclick = () => k ? vers(k - 1) : quitte();
