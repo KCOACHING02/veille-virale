@@ -840,6 +840,18 @@ a.btn{text-decoration:none}
 .utilisateur{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-bottom:10px;color:var(--ink-2)}
 .utilisateur .lien-admin{flex-basis:100%;margin:0}
 .utilisateur button{border:0;background:none;color:var(--ink-3);cursor:pointer;text-decoration:underline;font-size:12.5px;padding:0}
+/* Onglet Moi : listes touchables et blocs repliés */
+.liste-rg{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;margin-bottom:14px}
+.ligne-rg{width:100%;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:none;border:0;border-bottom:1px solid var(--line);padding:13px 16px;text-align:left;cursor:pointer;color:var(--ink)}
+.ligne-rg:last-child{border-bottom:0}.ligne-rg:hover{background:var(--sunk)}
+.ligne-rg .t{display:grid;gap:2px;min-width:0}.ligne-rg b{font-size:15px}
+.ligne-rg small{color:var(--ink-3);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ligne-rg .go{color:var(--ink-3);font-size:20px}
+details.plie>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+details.plie>summary::-webkit-details-marker{display:none}
+details.plie>summary h2{margin:0;font-size:18px}
+details.plie>summary::after{content:"›";color:var(--ink-3);font-size:22px;transition:transform .2s}
+details.plie[open]>summary::after{transform:rotate(90deg)}
 .reglages{display:grid;gap:10px}
 .reglage{display:grid;grid-template-columns:200px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
 .reglage span{color:var(--ink-2);font-size:14px;overflow:hidden;text-overflow:ellipsis}
@@ -2150,17 +2162,17 @@ async function renduResultats() {
         <td><input type="number" min="0" value="${p.clients ?? ""}" data-pub="${p.id}" data-champ="clients" aria-label="Clients obtenus" style="width:64px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 8px"></td>
         <td><button class="btn petit" data-retire-pub="${p.id}" aria-label="Retirer">✕</button></td></tr>`).join("")}
       </tbody></table></div>
-      <p class="aide" style="margin:10px 0 0">Vues et commentaires relevés automatiquement à J+2 et J+7. Note les conversations obtenues : elles comptent double dans l'apprentissage.</p>`
-    : `<p style="color:var(--ink-2);margin:0">Quand tu publies un Reel inspiré de la galerie, ouvre sa fiche et clique sur <b>« J'ai publié ce Reel »</b>, ou colle son lien ci-dessus. L'outil relève ses résultats et apprend ce qui marche pour toi.</p>`}
+      <p class="aide" style="margin:10px 0 0">Note tes conversations et tes clients : ils comptent double.</p>`
+    : `<p style="color:var(--ink-2);margin:0">Tu as publié ? Colle le lien : on suit ses vues pour toi.</p>`}
   </div>`;
   if (ap && ap.par_mecanique?.length) {
     const max = Math.max(...ap.par_mecanique.map(l => l.indice || 0), 1);
-    html += `<div class="panneau"><h2>Tes mécaniques, de la plus rentable à la moins rentable</h2>
-    <p style="color:var(--ink-2);margin:-4px 0 14px">D'après ${ap.nb_reels || 0} Reels de ton compte et ${ap.nb_suivi || 0} publications suivies. Indice 1 = ta moyenne ; les conversations comptent double. Les mécaniques en vert sont favorisées dans le planning.</p>
+    html += `<details class="panneau plie"><summary><h2>Ce qui marche le mieux pour toi</h2></summary>
+    <p style="color:var(--ink-2);margin:4px 0 14px">D'après ${ap.nb_reels || 0} Reels de ton compte. Indice 1 = ta moyenne.</p>
     <div style="overflow-x:auto"><table><thead><tr><th>Mécanique</th><th>Reels</th><th>Vues</th><th>Commentaires</th><th>Conversations</th><th>Indice</th><th></th></tr></thead><tbody>
     ${ap.par_mecanique.map(l => { const cl = ap.mecaniques_top.includes(l.mecanique) ? "top" : ap.mecaniques_flop.includes(l.mecanique) ? "flop" : "";
       return `<tr><td><b>${esc(l.mecanique)}</b></td><td class="num">${l.n_reels + l.n_suivi}</td><td class="num">${l.vues_vs_moyenne != null ? "×" + l.vues_vs_moyenne : ""}</td><td class="num">${l.commentaires_vs_moyenne != null ? "×" + l.commentaires_vs_moyenne : ""}</td><td class="num">${l.conversations_moy ?? ""}</td><td class="num"><b>${l.indice ?? ""}</b></td><td><div class="barre-ind ${cl}"><i style="width:${(l.indice || 0) / max * 100}%"></i></div></td></tr>`; }).join("")}
-    </tbody></table></div></div>`;
+    </tbody></table></div></details>`;
   }
   el.innerHTML = html;
   $("#pub-ajout").onsubmit = async e => { e.preventDefault(); try { await api("/api/publications", {method: "POST", body: {url: $("#pub-url").value}}); toast("Reel ajouté au suivi"); renduResultats(); } catch (err) { toast(err.message); } };
@@ -2184,10 +2196,10 @@ async function renduComptes() {
       <div style="margin-top:14px"><div class="duo-sugg"><button type="button" class="btn" data-sugg="Instagram" data-zone="c">✨ Comptes Instagram qui cartonnent</button><button type="button" class="btn" data-sugg="TikTok" data-zone="c">✨ Comptes TikTok qui cartonnent</button></div><div id="c-sugg-res" style="margin-top:10px"></div></div>
       <form class="ajout" id="form-ajout"><input id="ajout-txt" placeholder="@compte ou lien du profil" aria-label="Compte à ajouter"><select class="select" id="ajout-pl"><option>Instagram</option><option>TikTok</option></select><button class="btn prim">Ajouter</button></form>
     </div>
-    ${dec.length ? `<div class="panneau"><h2>Comptes repérés dans ta niche</h2><p style="color:var(--ink-2);margin:-4px 0 12px">Ils dépassent régulièrement ${nbLong(S.analyse.criteres.vues_min)} vues sur les hashtags de ta niche.</p>
+    ${dec.length ? `<details class="panneau plie"><summary><h2>${dec.length} compte${dec.length > 1 ? "s" : ""} repéré${dec.length > 1 ? "s" : ""} dans ta niche</h2></summary><p style="color:var(--ink-2);margin:4px 0 12px">Ils dépassent souvent ${nbLong(S.analyse.criteres.vues_min)} vues.</p>
       <div style="overflow-x:auto"><table><thead><tr><th>Compte</th><th>Reels au-dessus du seuil</th><th>Meilleur</th><th>Engagement</th><th></th></tr></thead><tbody>
       ${dec.map(d => `<tr><td><b>@${esc(d.compte)}</b> <span style="color:var(--ink-3)">${d.plateforme}</span></td><td class="num">${d.reels_au_dessus_seuil}</td><td class="num"><a href="${esc(d.exemple)}" target="_blank" rel="noopener">${nb(d.vues_max)} vues</a></td><td class="num">${pc(d.engagement_median)}</td><td><button class="btn petit" data-ajoute="${d.plateforme}|${esc(d.compte)}">Ajouter</button></td></tr>`).join("")}
-      </tbody></table></div></div>` : ""}`;
+      </tbody></table></div></details>` : ""}`;
   $$("[data-sugg][data-zone=c]").forEach(b => b.onclick = () => suggereComptes($("#c-sugg-res"), async comptes => {
     try { const r = await api("/api/comptes", {method: "POST", body: {texte: comptes.map(c => (c.plateforme === "TikTok" ? "tt:" : "ig:") + c.compte).join("\n")}});
       toast("Ajouté : " + r.ajoutes.join(", ")); }
@@ -3668,13 +3680,13 @@ const APRES = {
 // ================================================================ Paramètres
 async function renduParametres() {
   const p = await api("/api/profil"), n = p.niche, o = p.objectifs, a = p.analyse, nbC = (p.comptes.instagram || []).length + (p.comptes.tiktok || []).length;
-  const r = (t, v, e) => `<div class="reglage"><b>${t}</b><span>${v}</span><button class="btn petit" data-param="${e}">Modifier</button></div>`;
+  const r = (t, v, e) => `<button type="button" class="ligne-rg" data-param="${e}"><span class="t"><b>${t}</b><small>${v}</small></span><span class="go" aria-hidden="true">›</span></button>`;
   // Administrateur : accès au tableau de bord (le lien du menu latéral n'existe pas sur téléphone)
   const admin = S.etat?.admin ? `<div class="panneau" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div><b>Administration</b><br><span style="color:var(--ink-2);font-size:14px">Abonnées, essais, revenus, coûts et santé du serveur.</span></div><a class="btn prim" href="/admin">Ouvrir le tableau de bord</a></div>` : "";
   $("#parametres").innerHTML = admin + guide("reglages", "Tes réglages servent à chaque veille", [
       "Clique <b>Modifier</b> sur la ligne à changer.",
       "Les changements s'appliquent à ta prochaine veille (pas aux analyses déjà faites).",
-      "Pour repartir de zéro, utilise <b>Refaire le démarrage rapide</b> en bas de page."]) + `<div class="reglages">
+      "Pour repartir de zéro, utilise <b>Refaire le démarrage rapide</b> en bas de page."]) + `<div class="liste-rg">
     ${r("Ton compte", [p.mon_compte.instagram && "@" + esc(p.mon_compte.instagram), p.mon_compte.tiktok && "TikTok @" + esc(p.mon_compte.tiktok)].filter(Boolean).join(", ") || "Non renseigné", "compte")}
     ${r("Ton activité", esc(n.nom || n.description || "Non renseignée"), "activite")}
     ${r("Ton client idéal", esc(n.cible || "Non renseigné"), "client")}
@@ -3781,12 +3793,12 @@ async function renduParrainage() {
   const z = $("#ab-parrainage"); if (!z) return;
   let r; try { r = await api("/api/parrainage"); } catch { z.remove(); return; }
   const message = `Je t'ai parlé de Virallink : l'outil qui me trouve les Reels qui cartonnent dans ma niche et les adapte pour moi. Avec mon lien, tu as ${r.jours_filleule + 7} jours d'essai gratuit : ${r.lien}`;
-  z.innerHTML = `<h2>💌 Parraine une amie</h2>
-    <p style="margin:0 0 12px;color:var(--ink-2)">Elle a <b>un mois d'essai en plus</b>. Toi, tu gagnes <b>un mois offert</b> dès qu'elle s'abonne.</p>
+  z.innerHTML = `<details class="plie"><summary><h2>💌 Parraine une amie : un mois offert</h2></summary>
+    <p style="margin:10px 0 12px;color:var(--ink-2)">Elle a <b>un mois d'essai en plus</b>. Toi, tu gagnes <b>un mois offert</b> dès qu'elle s'abonne.</p>
     ${copiable(r.lien)}
     <div class="bt-rangee" style="margin-top:10px">${navigator.share ? `<button class="btn prim" id="ab-partager">Partager mon lien</button>` : ""}<button class="btn" data-copier="${esc(message)}">Copier un message tout prêt</button></div>
     <div class="parr-chiffres"><div><b>${r.inscrites}</b><span>amie${r.inscrites > 1 ? "s" : ""} inscrite${r.inscrites > 1 ? "s" : ""}</span></div><div><b>${r.abonnees}</b><span>abonnée${r.abonnees > 1 ? "s" : ""}</span></div><div><b>${r.mois_offerts}</b><span>mois gagné${r.mois_offerts > 1 ? "s" : ""}</span></div></div>
-    <p class="aide" style="margin:10px 0 0">Ton lien figure aussi sur la pastille « Créé avec Virallink » de ta boutique.</p>`;
+    </details>`;
   $("#ab-partager")?.addEventListener("click", () => navigator.share({title: "Virallink", text: message, url: r.lien}).catch(() => {}));
 }
 
