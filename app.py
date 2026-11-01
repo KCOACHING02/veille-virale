@@ -2744,6 +2744,9 @@ def admin_modifie(uid):
         champs["plan"] = c["plan"]
     if c.get("statut") in ("essai", "actif", "impaye", "resilie", "suspendu", "gratuit"):
         champs["statut"] = c["statut"]
+    elif champs.get("plan") and champs["plan"] not in ("essai", "gratuit") and u["statut"] in ("essai", "resilie", "impaye"):
+        # Formule payante attribuée à la main : elle s'applique tout de suite (sinon un essai expiré la ramène en gratuit)
+        champs["statut"] = "actif"
     if c.get("prolonger_jours"):
         base = max(datetime.now(), datetime.fromisoformat(u["fin_essai"]) if u.get("fin_essai") else datetime.now())
         champs.update(fin_essai=(base + timedelta(days=int(c["prolonger_jours"]))).isoformat(timespec="minutes"), statut="essai")
