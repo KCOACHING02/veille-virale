@@ -1122,6 +1122,10 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-prod .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .bt-prod .meta span{font-size:12px;border-radius:99px;padding:2px 8px;background:var(--sunk);color:var(--ink-2)}
 .bt-prod .meta span.prix{background:var(--ok-soft);color:var(--ok);font-weight:600}
+.bt-suite{border-radius:16px;padding:14px 16px;margin:0 0 14px;background:var(--glow-soft);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.bt-suite .txt{flex:1 1 200px;min-width:0}.bt-suite small{display:block;color:var(--ink-3);font-size:12px;font-weight:600;letter-spacing:.02em;margin-bottom:2px}
+.bt-suite b{font-size:16px}.bt-suite .pts{display:flex;gap:4px;margin-top:6px}.bt-suite .pts i{width:22px;height:5px;border-radius:3px;background:var(--line)}.bt-suite .pts i.f{background:var(--glow)}
+.bt-suite.fini{background:var(--ok-soft);position:relative}.bt-suite .ferme-x{position:absolute;top:8px;right:8px;border:0;background:none;font-size:16px;color:var(--ink-3);cursor:pointer}.bt-suite.fini .pts i.f{background:var(--ok)}
 .bt-stripe{border-radius:14px;padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
 .bt-stripe.ok{background:var(--ok-soft);color:var(--ok)}
 .bt-stripe.info{background:var(--warn-soft);color:var(--warn)}
@@ -4380,6 +4384,7 @@ function renduEditeur(el) {
       <label class="bt-mode" title="Afficher toutes les options"><input type="checkbox" id="bt-avance" ${BQ.avance ? "checked" : ""}><span>Mode avancé</span></label>
       <span class="bt-statut" id="bt-statut"></span>
     </div>
+    <div id="bt-suite"></div>
     <div class="seg bt-onglets" role="tablist">${ONGLETS_BQ.filter(([k]) => BQ.avance || !ONGLETS_AVANCES.includes(k)).map(([k, t]) => `<button role="tab" aria-pressed="${k === BQ.onglet}" data-onglet="${k}">${t}</button>`).join("")}</div>
     <div class="bt-grille"><div id="bt-panneau"></div>
       <aside class="bt-droite"><div class="bt-tel"><iframe id="bt-ap" title="Aperçu de ta page"></iframe></div>
@@ -4405,7 +4410,38 @@ function renduEditeur(el) {
   // Toucher le fond sombre ferme aussi (pointerup : l'iPhone n'envoie pas toujours « click » sur une zone non cliquable)
   $("#bt-plein").addEventListener("pointerup", e => { if (e.target.id === "bt-plein") fermeAp(); });
   BQ.vueAp = BQ.onglet === "kit" ? "kit" : "page";
-  renduOnglet(); apercu(true);
+  renduOnglet(); apercu(true); majSuite();
+}
+// Carte « Prochaine étape » : ce qu'il reste à faire pour que la boutique soit prête (une seule action à la fois).
+const aLivrer = x => x.type === "rdv" || x.type === "pack" || x.fichier || x.lien;
+function etapesBoutiqueRestantes() {
+  const p = BQ.page, pay = BQ.etat.paiement || {}, st = p.stripe || {};
+  const prods = (p.produits || []).filter(x => x.visible !== false);
+  const vide = prods.find(x => !aLivrer(x));
+  const payants = prods.some(x => x.prix && !x.externe);
+  return [
+    {fait: prods.length > 0, titre: "Ajoute ton premier produit", bouton: "+ Ajouter un produit", go: () => { BQ.onglet = "produits"; renduEditeur($("#boutique")); editeProduit(null); }},
+    {fait: !vide, titre: vide ? `Ajoute ce que reçoit la cliente pour « ${vide.titre || "Sans titre"} »` : "", bouton: "Compléter le produit", go: () => { BQ.onglet = "produits"; renduEditeur($("#boutique")); editeProduit(p.produits.indexOf(vide)); }},
+    {fait: !payants || pay.demo || !pay.plateforme || st.pret, titre: st.relie ? "Termine ton inscription Stripe pour encaisser tes ventes" : "Active les paiements pour encaisser tes ventes", bouton: st.relie ? "Continuer sur Stripe" : "Activer les paiements",
+      go: async e => { e.target.disabled = true; try { location.href = (await api("/api/boutique/stripe", {method: "POST"})).url; } catch (er) { toast(er.message); e.target.disabled = false; } }},
+    {fait: !!p.publie, titre: "Mets ta boutique en ligne", bouton: "Mettre en ligne", go: () => { const c = $("#bt-publie"); c.checked = true; c.onchange({target: c}); majSuite(); }},
+  ];
+}
+function majSuite() {
+  const z = $("#bt-suite"); if (!z || !BQ.page) return;
+  const et = etapesBoutiqueRestantes(), n = et.filter(e => e.fait).length, e = et.find(x => !x.fait);
+  const pts = `<span class="pts">${et.map(x => `<i class="${x.fait ? "f" : ""}"></i>`).join("")}</span>`;
+  if (!e) {
+    let vue = false; try { vue = localStorage.getItem("bt-suite-" + BQ.etat.pseudo) === "1"; } catch {}
+    if (vue) { z.innerHTML = ""; return; }
+    z.innerHTML = `<div class="bt-suite fini"><div class="txt"><small>BOUTIQUE PRÊTE</small><b>🎉 Partage ton lien dans ta bio</b>${pts}</div>
+      <button class="btn prim" id="bt-suite-go" data-copier="${esc(BQ.etat.url)}">Copier mon lien</button><button class="ferme-x" id="bt-suite-x" type="button" aria-label="Fermer">✕</button></div>`;
+    $("#bt-suite-x").onclick = () => { try { localStorage.setItem("bt-suite-" + BQ.etat.pseudo, "1"); } catch {} z.innerHTML = ""; };
+    return;
+  }
+  z.innerHTML = `<div class="bt-suite"><div class="txt"><small>PROCHAINE ÉTAPE · ${n + 1} SUR ${et.length}</small><b>${esc(e.titre)}</b>${pts}</div>
+    <button class="btn prim" id="bt-suite-go">${esc(e.bouton)}</button></div>`;
+  $("#bt-suite-go").onclick = e.go;
 }
 function navApercu() {
   const n = $("#bt-ap-nav"); if (!n) return;
@@ -4450,6 +4486,7 @@ function sauveBoutique(immediat) {
         (r.promos || []).forEach((c, k) => { if (P.promos?.[k]) P.promos[k].utilisations = c.utilisations; });
         if (r.sequence && P.sequence) P.sequence.depuis = r.sequence.depuis;
         if ($("#bt-statut")) $("#bt-statut").textContent = "✓ Enregistré";
+        majSuite();
       } catch (e) { if ($("#bt-statut")) $("#bt-statut").textContent = "⚠️ " + e.message; }
       res();
     }, immediat ? 0 : 700);
@@ -5169,16 +5206,16 @@ function editeTunnel(z, t) {
 }
 function ongletProduits(z) {
   const p = BQ.page, pay = BQ.etat.paiement, st = p.stripe || {};
-  const payants = p.produits.some(x => x.prix);
+  const payants = p.produits.some(x => x.prix && !x.externe);
   let bandeau = "";
   if (pay.demo) bandeau = `<div class="bt-stripe info"><p><b>Mode démo :</b> les achats sont simulés (aucun paiement). Tout le reste fonctionne pour de vrai.</p></div>`;
   else if (!pay.plateforme) bandeau = `<div class="bt-stripe info"><p><b>Le paiement en ligne arrive bientôt.</b> En attendant, les produits gratuits et les liens externes (Systeme.io, Gumroad…) fonctionnent déjà.</p></div>`;
   else if (st.pret) bandeau = `<div class="bt-stripe ok"><p>✓ <b>Stripe est relié.</b> L'argent de tes ventes arrive directement sur ton compte.</p></div>`;
-  else bandeau = `<div class="bt-stripe info"><p><b>${st.relie ? "Termine ton inscription Stripe" : "Relie ton compte Stripe"}</b> pour encaisser tes ventes. L'argent arrive directement chez toi${pay.commission ? ` (commission Virallink : ${pay.commission} %)` : ""}.${payants ? "" : " Pas besoin si tu ne proposes que des produits gratuits."}</p><button class="btn prim" id="bt-stripe">${st.relie ? "Continuer sur Stripe" : "Relier Stripe"}</button></div>`;
-  const type = x => x.type === "rdv" ? "📅 Rendez-vous" : x.type === "pack" ? `🎁 Pack de ${(x.inclus || []).length}` : x.fichier ? "📄 Téléchargement" : x.lien ? "🔗 Lien" : "⚠️ Rien à livrer";
+  else if (payants) bandeau = `<div class="bt-stripe info"><p><b>${st.relie ? "Termine ton inscription Stripe" : "Relie ton compte Stripe"}</b> pour encaisser tes ventes. L'argent arrive directement chez toi${pay.commission ? ` (commission Virallink : ${pay.commission} %)` : ""}.${payants ? "" : " Pas besoin si tu ne proposes que des produits gratuits."}</p><button class="btn prim" id="bt-stripe">${st.relie ? "Continuer sur Stripe" : "Relier Stripe"}</button></div>`;
+  const type = x => x.type === "rdv" ? "📅 Rendez-vous" : x.type === "pack" ? `🎁 Pack de ${(x.inclus || []).length}` : x.externe && x.lien ? "🤝 Affiliation" : x.fichier ? "📄 Téléchargement" : x.lien ? "🔗 Lien" : "⚠️ Rien à livrer";
   const promo = x => x.promo_prix && x.promo_fin && new Date(x.promo_fin) > new Date() ? `<span class="prix" style="background:var(--glow-soft);color:var(--glow)">⏳ ${euros(x.promo_prix)}</span>` : "";
   const aRdv = p.produits.some(x => x.type === "rdv");
-  const vides = p.produits.filter(x => x.visible !== false && x.type !== "rdv" && x.type !== "pack" && !x.fichier && !x.lien);
+  const vides = p.produits.filter(x => x.visible !== false && !aLivrer(x));
   if (vides.length) bandeau += `<div class="bt-stripe info"><p><b>${vides.length === 1 ? "1 produit n'a" : vides.length + " produits n'ont"} rien à livrer</b> (${vides.map(x => esc(x.titre || "Sans titre")).join(", ")}) : ajoute le fichier, un lien ou fais écrire le guide par Virall.ai. En attendant, ${vides.length === 1 ? "il s'affiche" : "ils s'affichent"} « bientôt disponible ».</p></div>`;
   z.innerHTML = `${bandeau}
     <section class="bt-sec bt-idees"><h3>✨ Quoi vendre ?</h3><p class="aide">Virall.ai s'appuie sur ta niche, tes Reels qui marchent et ceux qui cartonnent dans ta veille pour te proposer 3 produits, avec la fiche prête et le prix conseillé.</p>
