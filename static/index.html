@@ -395,6 +395,8 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .bloc-accueil h2{font-size:20px;margin:0 0 12px}
 .titre-bloc{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .lien{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0;font-size:14px}
+.bt-q h3{font:700 26px/1.15 var(--display);margin:0 0 16px}
+@media (max-width:860px){.bt-q h3{font-size:23px}.bt-assist .bt-pied #as-suite{flex:1;justify-content:center;padding:12px 16px;font-size:15.5px}}
 /* ---------- Accueil : le parcours, une ligne par étape ---------- */
 .parcours{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-width:760px}
 .parcours button{width:100%;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-m);padding:12px 14px;text-align:left;cursor:pointer;color:var(--ink)}
@@ -3939,42 +3941,42 @@ const vignette = (v, nom, actif, fond) => `<button type="button" class="bt-th" d
 function etapesBoutique(A) {
   const hote = location.host, o = k => A.objectifs.includes(k);
   const E = [
-    {nom: "Ton nom", pourquoi: "C'est la première chose que voient tes visiteuses. Mets le nom sous lequel on te connaît sur Instagram, et une photo de toi souriante : on achète à une personne, pas à un logo.",
+    {nom: "Ton nom", q: "Comment tu t'appelles ?", pourquoi: "C'est la première chose que voient tes visiteuses. Mets le nom sous lequel on te connaît sur Instagram, et une photo de toi souriante : on achète à une personne, pas à un logo.",
       corps: () => `<div class="bt-profil">
           <label class="bt-photo ${A.photo ? "pleine" : ""}" style="${A.photoUrl ? `background-image:url('${A.photoUrl}')` : A.photo ? `background-image:url('${BQ.etat.pseudo ? urlImg(A.photo) : "/api/boutique/i/" + A.photo}')` : ""}" id="as-photo">
             ${A.photo ? "" : "Ajoute<br>ta photo"}<input type="file" accept="image/*" aria-label="Ta photo"></label>
           <div style="flex:1"><div class="champ"><label for="as-nom">Ton nom ou ta marque</label><input id="as-nom" data-a="nom" value="${esc(A.nom)}" maxlength="60" placeholder="Brille & Vibre"></div></div></div>
-        <p class="aide">La photo est facultative, mais une page avec un visage inspire beaucoup plus confiance. Ses couleurs te seront proposées pour ta page.</p>`,
+`,
       valide: () => A.nom.trim() ? null : "Indique ton nom ou celui de ta marque"},
-    {nom: "Ta présentation", pourquoi: "En une phrase : à qui tu t'adresses et ce que tu leur apportes. C'est elle qui donne envie de rester sur ta page, ou de partir.",
+    {nom: "Ta présentation", q: "Tu aides qui, à faire quoi ?", pourquoi: "En une phrase : à qui tu t'adresses et ce que tu leur apportes. C'est elle qui donne envie de rester sur ta page, ou de partir.",
       corps: () => `<div class="tn-exemples"><span>💡 Exemples :</span>${[
           "J'aide les mamans débordées à retrouver du temps pour elles.",
           "Naturopathe · J'aide les femmes actives à retrouver leur énergie.",
           "Coach pour créatrices : tes premières ventes en ligne, sans y passer tes soirées."].map(x => `<button type="button" data-bio="${esc(x)}">${esc(x.split(/[:.·]/)[0].slice(0, 34))}…</button>`).join("")}</div>
         <div class="champ"><label for="as-bio">Ta phrase de présentation</label><textarea id="as-bio" data-a="bio" maxlength="280" style="min-height:90px" placeholder="J'aide les … à … sans …">${esc(A.bio)}</textarea>
-        <small class="aide">La formule qui marche : « J'aide [qui] à [résultat] sans [ce qu'elle redoute] ».</small></div>`},
-    {nom: "Tes réseaux", pourquoi: "Tes icônes s'affichent sous ta présentation. Ça rassure : on voit que tu existes vraiment, et on peut te suivre en un clic.",
+</div>`},
+    {nom: "Tes réseaux", q: "Où peut-on te suivre ?", pourquoi: "Tes icônes s'affichent sous ta présentation. Ça rassure : on voit que tu existes vraiment, et on peut te suivre en un clic.",
       corps: () => `<div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
         <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
-        <p class="aide">YouTube, Pinterest, WhatsApp… s'ajoutent ensuite, dans l'onglet Contenu. Laisse vide ce que tu n'utilises pas.</p>`},
-    {nom: "Ton adresse", pourquoi: "C'est le lien que tu mettras dans ta bio Instagram. Court et facile à retenir : idéalement ton nom de compte.",
+`},
+    {nom: "Ton adresse", q: "Choisis l'adresse de ta page", pourquoi: "C'est le lien que tu mettras dans ta bio Instagram. Court et facile à retenir : idéalement ton nom de compte.",
       corps: () => `<div class="champ"><label for="as-pseudo">L'adresse de ta page</label>
         <div class="bt-adresse"><span>${esc(hote)}/@</span><input id="as-pseudo" value="${esc(A.pseudo)}" maxlength="30" autocapitalize="off" spellcheck="false" placeholder="ton-nom"></div>
-        <div class="bt-dispo" id="as-dispo"></div></div><p class="aide">Lettres, chiffres, tirets et points. Tu pourras la changer plus tard.</p>`,
+        <div class="bt-dispo" id="as-dispo"></div></div>`,
       cree: true},
-    {nom: "Ton objectif", pourquoi: "On prépare ta page selon ce que tu veux en faire : les bons blocs, dans le bon ordre. Coche tout ce qui te concerne, tu pourras changer ensuite.",
+    {nom: "Ton objectif", q: "Ta page doit servir à quoi ?", pourquoi: "On prépare ta page selon ce que tu veux en faire : les bons blocs, dans le bon ordre. Coche tout ce qui te concerne, tu pourras changer ensuite.",
       corps: () => `<div class="bt-objectifs">${OBJECTIFS_BQ.map(([k, e, t, d]) => `<button type="button" class="bt-obj" data-obj="${k}" aria-pressed="${o(k)}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div>`,
       valide: () => A.objectifs.length ? null : "Choisis au moins un objectif"},
-    {nom: "Ta mise en page", pourquoi: "La structure de ta page. Chaque vignette montre TA page : la colonne est simple et efficace, le bento fait moderne, le magazine fait « marque ».",
+    {nom: "Ta mise en page", q: "Quelle mise en page te plaît ?", pourquoi: "La structure de ta page. Chaque vignette montre TA page : la colonne est simple et efficace, le bento fait moderne, le magazine fait « marque ».",
       corps: () => `<div class="bt-themes tn-styles">${Object.entries(BQ.etat.options.mises_en_page || {}).map(([k, n]) => vignette(k, n, A.mep === k)).join("")}</div><p class="aide" id="as-desc-mep" style="text-align:center">${DESC_MEP[A.mep] || ""}</p>`,
       vignettes: "mep"},
-    {nom: "Tes couleurs", pourquoi: "L'ambiance de ta page. Choisis des couleurs qui te ressemblent et qui vont avec ton feed Instagram : ta visiteuse doit sentir qu'elle est toujours chez toi.",
+    {nom: "Tes couleurs", q: "Quelles couleurs ?", pourquoi: "L'ambiance de ta page. Choisis des couleurs qui te ressemblent et qui vont avec ton feed Instagram : ta visiteuse doit sentir qu'elle est toujours chez toi.",
       corps: () => { const amb = BQ.ambiance ||= "Classique";
         return (A.palettes ? `<p class="bt-sous-titre" style="margin-top:0">✨ Les couleurs de ta photo</p><div class="bt-themes tn-styles">${A.palettes.map((p, i) => vignette(i, p.nom, A.palette === i, p.fond1.slice(0, 7))).join("")}</div><p class="bt-sous-titre">Ou un thème</p>` : "")
           + `<div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${BQ.etat.options.ambiances.map(a => `<button type="button" aria-pressed="${a === amb}" data-amb="${a}">${a}</button>`).join("")}</div>
           <div class="bt-themes tn-styles" id="as-themes">${BQ.etat.options.themes.filter(t => t.ambiance === amb).map(t => vignette(t.id, t.nom, A.palette == null && A.theme === t.id, (t.design.fond1 || "#eee").slice(0, 7)).replace('data-v="', 'data-th="1" data-v="')).join("")}</div>`; },
       vignettes: "couleurs"},
-    {nom: "Tes liens", pourquoi: "Les boutons de ta page. Mets en premier ce qui compte le plus pour toi. Laisse vide ce que tu n'as pas encore : ta page sera quand même en ligne.",
+    {nom: "Tes liens", q: "Quels liens afficher ?", pourquoi: "Les boutons de ta page. Mets en premier ce qui compte le plus pour toi. Laisse vide ce que tu n'as pas encore : ta page sera quand même en ligne.",
       corps: () => (o("rdv") ? `<p class="bt-sous-titre" style="margin-top:0">📅 Ton agenda</p>
           <div class="bt-liens-rapides"><div><input data-rdv="titre" value="${esc(A.rdv.titre)}" placeholder="Texte du bouton" aria-label="Texte du bouton de rendez-vous"><input data-rdv="url" value="${esc(A.rdv.url)}" placeholder="calendly.com/toi" aria-label="Adresse de ton agenda" inputmode="url" autocapitalize="off"></div></div>` : "")
         + `<p class="bt-sous-titre"${o("rdv") ? "" : ' style="margin-top:0"'}>🔗 ${o("liens") ? "Tes liens" : "D'autres liens (facultatif)"}</p>
@@ -3982,12 +3984,12 @@ function etapesBoutique(A) {
           ${A.liens.length < 6 ? '<button type="button" class="btn petit" id="as-plus">+ Un autre lien</button>' : ""}`},
   ];
   if (o("vendre") && !(BQ.page?.produits || []).length) E.push(
-    {nom: "Ton premier produit", pourquoi: "Commence simple : un cadeau gratuit pour récolter des e-mails, ou un petit produit à moins de 30 €. Tu ajouteras le fichier à livrer juste après la publication.",
+    {nom: "Ton premier produit", q: "Qu'est-ce que tu vends ?", pourquoi: "Commence simple : un cadeau gratuit pour récolter des e-mails, ou un petit produit à moins de 30 €. Tu ajouteras le fichier à livrer juste après la publication.",
       corps: () => `<div class="tn-exemples"><span>💡 Idées :</span>${[["Guide offert", "Mon guide offert", "0"], ["Guide PDF", "Mon guide complet", "17"], ["Séance découverte", "Séance découverte", "47"]].map(([l, t, p]) => `<button type="button" data-prod='${esc(JSON.stringify([t, p]))}'>${l}${p === "0" ? " (gratuit)" : ` (${p} €)`}</button>`).join("")}</div>
         <div class="duo"><div class="champ"><label for="as-pt">Nom du produit</label><input id="as-pt" data-pr="titre" value="${esc(A.produit.titre)}" maxlength="120" placeholder="Mon guide 7 jours pour…"></div>
         <div class="champ"><label for="as-pp">Prix (€)</label><input id="as-pp" data-pr="prix" value="${esc(A.produit.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="0 = gratuit"></div></div>
-        <p class="aide">Pas encore d'idée ? Laisse vide : tu pourras demander des idées de produits à Virall.ai dans l'onglet Produits.</p>`});
-  E.push({nom: "C'est prêt", fin: true, pourquoi: "Relis ta page dans l'aperçu. Rien n'est figé : tu pourras tout modifier ensuite, même après la publication.",
+`});
+  E.push({nom: "C'est prêt", q: "Ta page est prête", fin: true, pourquoi: "Relis ta page dans l'aperçu. Rien n'est figé : tu pourras tout modifier ensuite, même après la publication.",
     corps: () => `<ul class="tn-coches-ed">
         <li>✓ <b>${esc(A.nom)}</b>${A.bio ? " · " + esc(A.bio.slice(0, 60)) + (A.bio.length > 60 ? "…" : "") : ""}</li>
         <li>✓ Adresse : <b>${esc(hote)}/@${esc(A.pseudo)}</b></li>
@@ -4003,12 +4005,12 @@ function renduAssistantBoutique(el) {
   const E = etapesBoutique(A); A.etape = Math.min(A.etape, E.length - 1);
   const e = E[A.etape], n = E.length;
   el.innerHTML = `<div class="bt-assist2"><div class="bt-assist">
-      <div class="tn-tete-as"><b>Ta boutique en lien dans la bio</b><span class="aide">Étape ${A.etape + 1} sur ${n} · ${esc(e.nom)}</span></div>
+      <div class="tn-tete-as"><span class="aide">Ta boutique · ${A.etape + 1}/${n}</span></div>
       ${A.relance ? '<button class="btn petit" id="as-quitter" style="margin-bottom:10px">← Revenir à ma boutique sans rien changer</button>' : BQ.plusieurs ? '<button class="btn petit" id="as-mes" style="margin-bottom:10px">← Mes boutiques</button>' : ""}
       <div class="tn-prog"><i style="width:${(A.etape + 1) / n * 100}%"></i></div>
-      <section class="bt-sec"><h3>${e.fin ? "🎉 " : ""}${esc(e.nom)}</h3><p class="tn-pourquoi">${e.pourquoi}</p>${e.corps()}</section>
+      <section class="bt-sec bt-q"><h3>${e.fin ? "🎉 " : ""}${esc(e.q || e.nom)}</h3>${e.corps()}</section>
       <div class="bt-pied">${A.etape ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}
-        <button class="btn prim" id="as-suite">${e.fin ? "Mettre ma boutique en ligne 🚀" : "Continuer →"}</button></div></div>
+        <button class="btn prim" id="as-suite">${e.fin ? "Mettre ma boutique en ligne 🚀" : "Continuer"}</button></div></div>
       <aside class="bt-droite"><div class="bt-tel"><iframe id="as-ap" title="Aperçu de ta page"></iframe></div><small class="aide">Aperçu en direct</small></aside></div>
     <button class="bt-flottant" id="as-voir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button>
     <div class="bt-plein" id="bt-plein" role="dialog" aria-modal="true" aria-label="Aperçu de ta boutique"><div class="barre"><b>Aperçu de ta boutique</b><button class="ferme-x" id="bt-fermer-x" type="button" aria-label="Fermer l'aperçu">✕</button></div><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap" type="button">Fermer l'aperçu</button></div>`;
