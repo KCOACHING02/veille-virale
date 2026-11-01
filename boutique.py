@@ -81,10 +81,9 @@ def nouvelle_boutique(uid: int):
 
 
 def supprime_boutique(bid):
-    """Boutique supplémentaire uniquement : libère son adresse et efface son dossier."""
+    """Libère l'adresse de la boutique et efface son dossier (page, produits, inscrites, ventes).
+    La première boutique peut aussi être supprimée : la cliente repart alors de la création pas à pas."""
     import shutil
-    if "-" not in str(bid):
-        raise ValueError("La première boutique ne peut pas être supprimée.")
     with ab._verrou, ab._db() as c:
         c.execute("DELETE FROM boutiques WHERE uid=?", (str(bid),))
     shutil.rmtree(dossier(bid), ignore_errors=True)

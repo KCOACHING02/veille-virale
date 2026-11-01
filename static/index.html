@@ -400,6 +400,8 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .as-tete{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .as-voir-haut{display:none}
 @media (max-width:860px){.as-voir-haut{display:inline-flex}}
+.mb-suppr{color:var(--ink-2)}
+.mb-avert{grid-column:1/-1;margin:2px 0 0;font-size:13px;color:var(--warn)}
 .bt-explique{color:var(--ink-2);margin:0 0 14px;font-size:15px;line-height:1.6}
 .bt-faux-bouton{display:inline-block;background:var(--ink);color:var(--paper);border-radius:99px;padding:1px 10px;font-size:13px;font-weight:600;white-space:nowrap}
 .bt-lien-carte{border:1px solid var(--line);border-radius:12px;padding:12px 12px 0;margin-bottom:10px;display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
@@ -4145,7 +4147,7 @@ async function mesBoutiques() {
         <span class="mb-txt"><b>${esc(b.nom)}</b><small>${b.pseudo ? esc(location.host + "/@" + b.pseudo) : "Pas encore d'adresse"} · ${b.publie ? "🟢 En ligne" : "⚪ Brouillon"}${b.produits ? ` · ${b.produits} produit${b.produits > 1 ? "s" : ""}` : ""}</small></span>
         <span class="mb-act">${b.active ? '<span class="mb-ici">Ouverte</span>' : `<button class="btn petit prim" data-mb-ouvre="${b.id}">Modifier</button>`}
           ${b.url && b.publie ? `<a class="btn petit" href="${esc(b.url)}" target="_blank" rel="noopener" aria-label="Voir">↗</a>` : ""}
-          ${b.premiere ? "" : `<button class="icone-btn" data-mb-suppr="${b.id}" aria-label="Supprimer ${esc(b.nom)}">🗑</button>`}</span></div>`).join("")}</div>
+          <button class="btn petit mb-suppr" data-mb-suppr="${b.id}" aria-label="Supprimer ${esc(b.nom)}">🗑 Supprimer</button></span></div>`).join("")}</div>
     ${reste > 0 ? `<button class="btn prim" id="mb-nouvelle" style="width:100%;justify-content:center;margin-top:12px">+ Créer une nouvelle boutique</button>
       <p class="aide" style="text-align:center;margin:6px 0 0">Ta formule en comprend ${r.max} : il t'en reste ${reste}.</p>`
       : `<p class="note-gratuit" style="margin-top:12px">Ta formule comprend ${r.max} boutique${r.max > 1 ? "s" : ""}. <a href="#" id="mb-formules">Passe à la formule supérieure</a> pour en créer d'autres.</p>`}
@@ -4160,8 +4162,10 @@ async function mesBoutiques() {
   });
   $$("[data-mb-suppr]").forEach(b => b.onclick = async () => {
     const carte = b.closest(".mb-carte"), nom = carte.querySelector("b").textContent;
-    if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Supprimer définitivement ?"; b.classList.add("btn", "petit"); b.style.color = "var(--warn)"; return; }
-    try { await api("/api/boutiques/" + b.dataset.mbSuppr, {method: "DELETE"}); toast(`« ${nom} » supprimée`); BQ.etat = null; await renduBoutique(); mesBoutiques(); }
+    if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Tout effacer ? Toucher pour confirmer"; b.style.color = "var(--warn)"; b.style.borderColor = "var(--warn)";
+      if (!carte.querySelector(".mb-avert")) carte.insertAdjacentHTML("beforeend", `<p class="mb-avert">Sa page, ses produits, ses inscrites et ses ventes seront effacés, et son adresse libérée. C'est définitif.</p>`); return; }
+    try { await api("/api/boutiques/" + b.dataset.mbSuppr, {method: "DELETE"}); toast(`« ${nom} » supprimée`); BQ.etat = null; BQ.page = null; BQ.assist = null; BQ.htmlAssist = null;
+      await chargeEtat(); fermeModale(); await renduBoutique(); scrollTo({top: 0}); }
     catch (er) { toast(er.message); }
   });
 }

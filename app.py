@@ -1893,8 +1893,8 @@ def boutiques_nouvelle():
 @app.delete("/api/boutiques/<bid>")
 @connecte
 def boutiques_supprime(bid):
-    if not (bq.MOTIF_BID.match(bid) and bq.proprio(bid) == g.u["id"] and "-" in bid):
-        return jsonify({"erreur": "Ta première boutique ne peut pas être supprimée : tu peux la mettre hors ligne."}), 400
+    if not (bq.MOTIF_BID.match(bid) and bq.proprio(bid) == g.u["id"]):
+        abort(404)
     bq.supprime_boutique(bid)
     if str(session.get("bq")) == bid:
         session.pop("bq", None)
