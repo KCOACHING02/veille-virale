@@ -4092,7 +4092,7 @@ function etapesBoutique(A) {
     corps: () => { const L = BQ.page?.produits || [], n = A.np ||= {type: "", titre: "", prix: "", desc: "", livraison: "fichier", lien: ""};
       const TYPES = [["guide", "📘", "Guide ou PDF", "fichier", "Mon guide pour…", "17"], ["formation", "🎓", "Formation", "lien", "Ma formation…", "97"],
                      ["seance", "📅", "Séance ou coaching", "lien", "Séance découverte", "47"], ["cadeau", "🎁", "Cadeau gratuit", "fichier", "Mon guide offert", "0"],
-                     ["affil", "🛒", "Produit vendu sur un autre site (affiliation)", "externe", "Nom de la formation", "497"]];
+                     ["affil", "🛒", "Vendre via un lien d'affiliation", "externe", "Nom de la formation", "497"]];
       const liste = L.length ? `<div class="np-liste">${L.map(p => `<div class="np-prod"><b>${esc(p.titre)}</b><span>${euros(p.prix)}${p.fichier_nom ? " · 📎 " + esc(p.fichier_nom) : p.lien ? " · 🔗 lien" : ""}</span></div>`).join("")}</div>` : "";
       if (L.length && !A.npOuvert) return liste + `<button type="button" class="btn large np-autre" id="np-nouveau">+ Ajouter un autre produit</button>`;
       if (!n.type) return liste + `<p class="bt-explique">Ce que tes abonnées pourront acheter ou recevoir sur ta page. Choisis le type :</p>
@@ -5308,7 +5308,7 @@ function editeProduit(i, lancerGuide) {
       </div>
       <div class="champ"><label for="pr-desc">Description</label><textarea id="pr-desc" maxlength="4000" placeholder="Ce qu'elle va apprendre, ce qu'il y a dedans, pour qui c'est…">${esc(x.description)}</textarea></div>
       <div class="champ"><label>Ce que reçoit ta cliente</label>
-        <div class="bt-puces">${[["fichier", "📄 Un fichier"], ["lien", "🔗 Un lien"], ["rdv", "📅 Un rendez-vous"], ["pack", "🎁 Un pack"], ["externe", "🛒 Vendu sur un autre site"]].map(([k, l]) => `<button type="button" data-liv="${k}" aria-pressed="${livraison === k}">${l}</button>`).join("")}</div></div>
+        <div class="bt-puces">${[["fichier", "📄 Un fichier"], ["lien", "🔗 Un lien"], ["rdv", "📅 Un rendez-vous"], ["pack", "🎁 Un pack"], ["externe", "🤝 Vendre via un lien d'affiliation"]].map(([k, l]) => `<button type="button" data-liv="${k}" aria-pressed="${livraison === k}">${l}</button>`).join("")}</div></div>
       ${livraison === "fichier" ? `<label class="bt-depot" style="margin-bottom:8px">📄<span id="pr-fichier-nom">${esc(fichierEnvoye?.name || x.fichier_nom || "Choisis ton fichier (PDF, ZIP, vidéo, audio…)")}</span><input type="file" id="pr-fichier"></label>
           ${(BQ.etat.guides_brouillons || []).includes(x.id) ? `<div class="bt-guide-ia gd-attente"><div><b>📄 Un guide attend ta relecture</b><span>Il n'est pas encore en ligne : relis-le, corrige-le si besoin, puis valide.</span></div><button type="button" class="btn petit prim" data-voir-guide="${x.id}">Relire le guide</button></div>` : ""}
           <div class="bt-guide-ia"><div><b>✨ Pas encore de fichier ?</b><span>Virall.ai écrit le guide dans ta voix et le met en page en PDF, à tes couleurs.</span></div><button type="button" class="btn petit prim" id="pr-guide">${x.fichier ? "Réécrire le guide" : "Écrire le guide"}</button></div>
