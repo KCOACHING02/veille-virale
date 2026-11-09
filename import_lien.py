@@ -47,7 +47,8 @@ def _telecharge(url: str, limite: int, accepte: tuple[str, ...]) -> tuple[bytes,
     """Suit les redirections une par une en revérifiant chaque adresse ; renvoie (contenu, type, url finale)."""
     for _ in range(6):
         _adresse_publique(url)
-        r = requests.get(url, headers=ENTETES, timeout=12, stream=True, allow_redirects=False)
+        entetes = {**ENTETES, "Accept": "image/jpeg,image/png,image/webp,image/*;q=0.5"} if accepte == ("image/",) else ENTETES
+        r = requests.get(url, headers=entetes, timeout=12, stream=True, allow_redirects=False)
         if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("Location"):
             url = urljoin(url, r.headers["Location"])
             r.close()
@@ -77,6 +78,9 @@ class _Lecteur(HTMLParser):
         self.jsonld: list[str] = []
         self.titre = ""
         self.images: list[str] = []
+        self.imgs: list[tuple[str, str]] = []      # (src, alt) des images du contenu
+        self.texte: list[str] = []                  # texte visible (pour trouver un prix affiché)
+        self._cache = 0
         self._dans = None
         self._tampon: list[str] = []
 
@@ -92,14 +96,22 @@ class _Lecteur(HTMLParser):
             self._dans, self._tampon = "titre", []
         elif tag == "link" and a.get("rel", "").lower() in ("image_src",) and a.get("href"):
             self.images.append(a["href"])
-        elif tag == "img" and len(self.images) < 12 and a.get("src") and not a["src"].startswith("data:"):
-            self.images.append(a["src"])
+        elif tag in ("script", "style", "noscript", "svg"):
+            self._cache += 1
+        elif tag in ("img", "source") and len(self.imgs) < 80:
+            src = a.get("src") or a.get("data-src") or (a.get("srcset") or a.get("data-srcset") or "").split(",")[-1].strip().split(" ")[0]
+            if src and not src.startswith("data:"):
+                self.imgs.append((src, a.get("alt", "")))
 
     def handle_data(self, data):
         if self._dans:
             self._tampon.append(data)
+        elif not self._cache and sum(map(len, self.texte)) < 200_000 and data.strip():
+            self.texte.append(data.strip())
 
     def handle_endtag(self, tag):
+        if tag in ("script", "style", "noscript", "svg") and self._cache and self._dans != "ld":
+            self._cache -= 1
         if self._dans == "ld" and tag == "script":
             self.jsonld.append("".join(self._tampon))
             self._dans = None
@@ -143,6 +155,44 @@ def _prix(v) -> float | None:
     except ValueError:
         return None
     return p if 0 < p < 100_000 else None
+
+
+GENERIQUE = re.compile(r"default|logo|brand|placeholder|favicon|share[-_]?image|og[-_]?image|social|banner-site|fallback", re.I)
+IMAGE_A_EVITER = re.compile(r"\.svg($|\?)|logo|icon|favicon|sprite|cookie|pixel|tracking|avatar|flag|badge|payment|paypal|visa|mastercard|spinner|loader|emoji|lockup|wordmark|[-_/]mark([-_.?]|$)", re.I)
+PRIX_TEXTE = re.compile(r"(?:(€|EUR|\$|£|USD|GBP)\s?(\d{1,5}(?:[ .,\u202f\u00a0]\d{3})*(?:[.,]\d{1,2})?))|(?:(\d{1,5}(?:[ .,\u202f\u00a0]\d{3})*(?:[.,]\d{1,2})?)\s?(€|EUR|\$|£))")
+DEVISES = {"€": "EUR", "EUR": "EUR", "$": "USD", "USD": "USD", "£": "GBP", "GBP": "GBP"}
+
+
+def _mots(t: str) -> set[str]:
+    import unicodedata
+    t = unicodedata.normalize("NFD", t.lower())
+    return {m for m in re.findall(r"[a-z0-9]{3,}", "".join(c for c in t if unicodedata.category(c) != "Mn"))}
+
+
+def _meilleure_image(imgs: list[tuple[str, str]], titre: str) -> str:
+    """L'image du contenu qui ressemble le plus au produit : alt ou nom de fichier proches du titre, pas un logo ni une icône."""
+    cles = _mots(re.sub(r"\s*[-|–—].*$", "", titre or "")) or _mots(titre or "")
+    meilleure, score_max = "", -1
+    for rang, (src, alt) in enumerate(imgs):
+        if IMAGE_A_EVITER.search(src) or IMAGE_A_EVITER.search(alt):
+            continue
+        largeur = max([int(x) for x in re.findall(r"(?:\bw_|width=|[?&]w=)(\d{2,4})", src)] or [0])
+        score = (3 * len(cles & _mots(alt)) + 2 * len(cles & _mots(src.rsplit("/", 1)[-1] + " " + src))
+                 + (1 if largeur >= 800 else 0) + (0.5 if len(alt) > 12 else 0) - rang * 0.05)
+        if score > score_max:
+            meilleure, score_max = src, score
+    return meilleure
+
+
+def _prix_affiche(textes: list[str]) -> tuple[float | None, str]:
+    for t in textes:
+        m = PRIX_TEXTE.search(t)
+        if m:
+            sym = m.group(1) or m.group(4)
+            p = _prix(m.group(2) or m.group(3))
+            if p:
+                return p, DEVISES.get(sym, "EUR")
+    return None, ""
 
 
 def lit_page(url: str) -> dict:
@@ -190,13 +240,22 @@ def lit_page(url: str) -> dict:
                     prix, devise = p, (_texte(off.get("priceCurrency")) or devise).upper()
             if prix:
                 break
-    if not image and L.images:
-        image = L.images[0]
+    # Image générique (logo du site, image de partage par défaut) : on cherche la vraie photo du produit dans la page
+    if not image or GENERIQUE.search(image):
+        image = _meilleure_image(L.imgs, titre or L.titre) or image or (L.images[0] if L.images else "")
+    # Pas de prix déclaré : on prend le premier prix affiché dans la page
+    if not prix:
+        prix, d = _prix_affiche(L.texte)
+        devise = devise or d
     titre = re.sub(r"\s*[|–—-]\s*[^|–—-]{2,40}$", "", unescape(titre or "")).strip() if titre and len(titre) > 25 else unescape(titre or "").strip()
     desc = " ".join(unescape(desc).split())
     if len(desc) > 160:
         desc = desc[:157].rsplit(" ", 1)[0] + "…"
     hote = urlparse(finale).hostname or ""
+    # « Gen3 - JIFU » → « Gen3 » : on retire le nom du site en fin de titre
+    m = re.match(r"^(.{3,}?)\s*[|–—-]\s*([^|–—-]{2,30})$", titre or "")
+    if m and (_mots(m.group(2)) & _mots(hote.replace(".", " ")) or len(titre) > 60):
+        titre = m.group(1).strip()
     return {"titre": titre[:120], "sous_titre": desc, "image_url": urljoin(finale, image) if image else "",
             "prix": prix, "devise": devise or ("EUR" if prix else ""), "site": hote.removeprefix("www."), "url": url}
 
