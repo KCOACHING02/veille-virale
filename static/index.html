@@ -1209,6 +1209,37 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .gd-pied{flex-wrap:wrap}.gd-pied #gd-abandon{margin-right:auto}
 .gd-attente{border:1.5px solid var(--glow);background:var(--glow-soft)}
 @media (max-width:860px){.gd-grille{grid-template-columns:1fr}.gd-pages{height:60vh}.gd-pied .btn{flex:1 1 100%;justify-content:center}}
+/* Messages automatiques */
+.ma-vide{text-align:center;padding:30px 20px}.ma-vide h2{margin:14px 0 6px}.ma-vide .sous{max-width:480px;margin:0 auto 18px}
+.ma-sch{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.ma-sch .b{padding:9px 14px;border-radius:16px;font-weight:600;font-size:14px}.ma-sch .com{background:var(--sunk)}.ma-sch .dm{background:var(--glow);color:#fff}.ma-sch .vente{background:#E6F6EC;color:#1F6B3A}.ma-sch .fl{color:var(--ink-3)}
+.ma-tete{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ma-compte{display:flex;gap:10px;align-items:center}.ma-compte img{width:42px;height:42px;border-radius:50%;object-fit:cover}.ma-compte small{display:block;color:var(--ink-3)}
+.ma-liste{display:grid;gap:10px;margin-bottom:12px}
+.ma-regle{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}.ma-regle.eteinte{opacity:.6}
+.ma-mots{display:flex;flex-wrap:wrap;gap:4px}.ma-mots span{background:var(--glow);color:#fff;font-weight:800;font-size:13px;border-radius:8px;padding:4px 9px;letter-spacing:.04em}
+.ma-dest{margin:0;font-weight:600}.ma-dest small{display:block;color:var(--ink-3);font-weight:400}
+.ma-act{display:flex;gap:6px;align-items:center}
+.ma-test-ligne{display:flex;gap:8px}.ma-test-ligne .btn{flex:none}.ma-test-ligne input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;background:var(--surface);color:var(--ink)}
+.ma-apercu{display:grid;gap:8px;margin-top:12px;max-width:360px}
+.ma-pub,.ma-dm{border-radius:18px;padding:10px 14px;font-size:14.5px}.ma-pub{background:var(--sunk)}.ma-dm{background:linear-gradient(135deg,#7B5CF5,#E8457A);color:#fff}
+.ma-pub small,.ma-dm small{display:block;font-size:11px;opacity:.75;margin-bottom:3px}.ma-dm p{margin:0}
+.ma-btn-dm{display:block;margin-top:10px;background:#fff;color:#1A1A1A;border-radius:10px;padding:8px;text-align:center;font-weight:700}
+.ma-ligne{display:grid;grid-template-columns:20px 1fr auto;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}.ma-ligne small{color:var(--ink-3)}.ma-ligne span small{display:block;color:var(--warn)}
+.ma-journal summary,.ma-test b{cursor:pointer}
+.ma-choix,.ma-liens{display:grid;gap:8px}
+.ma-choix button,.ma-liens button{text-align:left;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:13px 14px;font:inherit;color:var(--ink);cursor:pointer;display:flex;gap:10px;align-items:center}
+.ma-choix button{display:block}.ma-choix small{display:block;color:var(--ink-3)}
+.ma-choix [aria-pressed=true],.ma-liens [aria-pressed=true],.ma-pubs [aria-pressed=true]{border-color:var(--glow);background:color-mix(in srgb,var(--glow) 7%,var(--surface))}
+.ma-pubs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:12px}
+.ma-pubs button{border:2px solid var(--line);border-radius:12px;background:var(--surface);padding:4px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.ma-pubs img,.ma-pub-vide{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;display:grid;place-items:center;background:var(--sunk);font-size:24px}
+.ma-pubs small{display:block;font-size:11.5px;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ma-pub-in{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:6px;font:inherit;background:var(--surface);color:var(--ink)}
+.ma-assist .champ input,.ma-assist .champ textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--surface);color:var(--ink)}
+.ma-meta{text-align:left;margin-top:16px}.ma-meta-l{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;margin-bottom:8px}.ma-meta-l small{grid-column:1/-1;color:var(--ink-3)}
+.ma-meta-l code{font-size:12px;word-break:break-all;background:var(--sunk);padding:6px 8px;border-radius:8px}
+@media (max-width:640px){.ma-regle{grid-template-columns:1fr}.ma-act{justify-content:space-between}}
 /* Tunnels de vente */
 .tn-modeles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .tn-modele{text-align:left;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;cursor:pointer;color:var(--ink);font:inherit}
@@ -1378,7 +1409,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <section data-section="studio" hidden><div id="studio"></div></section>
 
     <!-- RÉSULTATS -->
-    <section data-section="boutique" hidden><div id="boutique"></div></section>
+    <section data-section="boutique" hidden><div class="sous-nav"></div><div id="boutique"></div></section>
+    <section data-section="messages" hidden><div class="sous-nav"></div><div id="messages"></div></section>
     <section data-section="resultats" hidden><div class="sous-nav" data-groupe="parametres"></div><div id="resultats"></div></section>
 
     <!-- PARAMÈTRES -->
@@ -1496,10 +1528,10 @@ async function chargeAnalyse(id) {
 }
 
 // ---------------------------------------------------------------- Navigation
-const TITRES = {boutique: "Ma boutique", accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
+const TITRES = {boutique: "Ma boutique", messages: "Messages automatiques", accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
 const titreDe = vue => MOBILE.matches && groupeDe(vue) === "parametres" ? "Moi" : TITRES[vue];
 // Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
-const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]],
+const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]], boutique: [["boutique", "Ma boutique"], ["messages", "Messages auto"]],
                  parametres: [["parametres", "Mon profil"], ["comptes", "Comptes surveillés"], ["abonnement", "Abonnement"]]};
 // Sur téléphone, la barre du bas n'a que 5 entrées : « Moi » regroupe résultats, profil, comptes et abonnement
 const MOBILE = matchMedia("(max-width:860px)");
@@ -1541,7 +1573,7 @@ function majVerrous() { $$(".nav").forEach(b => b.classList.toggle("verrou", ver
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
 
 function rendu() {
-  ({accueil: renduAccueil, reels: renduReels, planning: renduPlanning, studio: renduStudio, boutique: renduBoutique, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
+  ({accueil: renduAccueil, reels: renduReels, planning: renduPlanning, studio: renduStudio, boutique: renduBoutique, messages: renduMessages, voix: renduVoix, resultats: renduResultats, comptes: renduComptes, parametres: renduParametres, abonnement: renduAbonnement})[S.vue]();
 }
 
 // ---------------------------------------------------------------- Accueil
@@ -5901,20 +5933,158 @@ function ongletKit(z) {
   $("#kit-bloc")?.addEventListener("click", () => { p.blocs.push({id: idCourt(), type: "kit", titre: "Kit média", texte: "Mes chiffres et collaborations", visible: true}); modifieBoutique(true); toast("Lien ajouté en bas de ta page"); });
 }
 
+// ---------------------------------------------------------------- Messages privés automatiques (Instagram)
+const MA = {etat: null, assist: null};
+const MOTS_EXEMPLES = ["GUIDE", "INFO", "PRIX", "OUI", "LIEN"];
+const PUBLIQUES_DEFAUT = ["Je t'ai envoyé le lien en privé 💌", "C'est dans tes messages ✨", "Regarde tes DM 😉"];
+async function chargeMessages() { MA.etat = await api("/api/messages"); }
+async function renduMessages() {
+  const el = $("#messages");
+  if (!MA.etat) { el.innerHTML = squelette("lignes", 4); try { await chargeMessages(); } catch (e) { el.innerHTML = `<p class="vide">${esc(e.message)}</p>`; return; } }
+  const M = MA.etat;
+  if (MA.assist) return assistantMessage(el);
+  if (M.verrou) {
+    el.innerHTML = `<div class="ma-vide panneau"><div class="ma-schema">${schemaMessages()}</div><h2>Réponds automatiquement en privé</h2>
+      <p class="sous">Quand quelqu'un commente « GUIDE » sous ton Reel, il reçoit tout de suite ton lien en message privé.</p>
+      <button class="btn prim" id="ma-debloque">${essaiDispo() ? `Essayer ${S.etat.abonnement.essai_jours} jours gratuitement` : "Voir les formules"}</button></div>`;
+    $("#ma-debloque").onclick = () => essaiDispo() ? proposeEssai("Les messages privés automatiques sont inclus dans toutes les formules payantes.") : va("abonnement");
+    return;
+  }
+  if (!M.compte) {
+    const pret = M.configure || M.demo;
+    el.innerHTML = `<div class="ma-vide panneau"><div class="ma-schema">${schemaMessages()}</div><h2>Réponds automatiquement en privé</h2>
+      <p class="sous">Quand quelqu'un commente ton mot-clé, il reçoit ton lien en message privé, même la nuit.</p>
+      ${pret ? `<a class="btn prim" href="/instagram/connexion">Relier mon Instagram</a>
+        <p class="aide" style="margin-top:10px">Il faut un compte Instagram professionnel (créatrice ou entreprise).</p>`
+        : `<p class="note-gratuit">Bientôt disponible : la connexion à Instagram est en cours d'ouverture.</p>`}
+      ${M.admin && M.webhook && !M.configure ? reglagesMeta(M.webhook) : ""}</div>`;
+    return;
+  }
+  const st = M.stats || {}, total = Object.values(st).reduce((a, x) => a + x.envois, 0);
+  el.innerHTML = `<div class="ma-tete panneau"><span class="ma-compte">${M.compte.photo ? `<img src="${esc(M.compte.photo)}" alt="">` : "📸"}<span><b>@${esc(M.compte.pseudo)}</b><small>${M.compte.demo ? "Mode démo" : "Relié"} · ${total} message${total > 1 ? "s" : ""} envoyé${total > 1 ? "s" : ""}</small></span></span>
+      <button class="btn prim" id="ma-nouveau">+ Nouvelle réponse automatique</button></div>
+    ${M.regles.length ? `<div class="ma-liste">${M.regles.map((r, i) => { const s = st[r.id] || {};
+      return `<div class="ma-regle panneau ${r.actif ? "" : "eteinte"}"><div class="ma-mots">${r.mots.map(m => `<span>${esc(m.toUpperCase())}</span>`).join("")}</div>
+        <p class="ma-dest">→ ${esc(lienTitre(r.lien) || "message sans lien")}<small>${r.toutes ? "Toutes tes publications" : `${r.publications.length} publication${r.publications.length > 1 ? "s" : ""}`} · ${s.envois || 0} envoi${(s.envois || 0) > 1 ? "s" : ""}${s.echecs ? ` · ⚠️ ${s.echecs} échec${s.echecs > 1 ? "s" : ""}` : ""}</small></p>
+        <div class="ma-act"><label class="bt-interr" title="Activer"><input type="checkbox" data-ma-actif="${i}" ${r.actif ? "checked" : ""}><span>${r.actif ? "Active" : "En pause"}</span></label>
+          <button class="btn petit" data-ma-modif="${i}">Modifier</button><button class="icone-btn" data-ma-suppr="${i}" aria-label="Supprimer">🗑</button></div></div>`; }).join("")}</div>`
+      : `<div class="ma-vide panneau"><h2>Ta première réponse automatique</h2><p class="sous">Choisis un mot-clé et le lien à envoyer : 5 petites étapes.</p><button class="btn prim" id="ma-nouveau2">Commencer</button></div>`}
+    ${M.regles.length ? `<div class="panneau ma-test"><b>Tester</b><p class="aide" style="margin:2px 0 8px">Écris un commentaire comme le ferait une abonnée :</p>
+      <div class="ma-test-ligne"><input id="ma-test" placeholder="Ex. : guide stp 🙏"><button class="btn" id="ma-test-ok">Tester</button></div><div id="ma-test-res"></div></div>` : ""}
+    ${M.journal.length ? `<details class="panneau ma-journal"><summary><b>Derniers envois</b></summary>${M.journal.map(j => `<div class="ma-ligne"><span>${j.ok ? "✓" : "⚠️"}</span><span><b>@${esc(j.qui || "?")}</b> a commenté « ${esc(j.commentaire)} »${j.ok ? "" : `<small>${esc(j.erreur)}</small>`}</span><small>${new Date(j.date).toLocaleString("fr-FR", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"})}</small></div>`).join("")}</details>` : ""}
+    <p style="text-align:center;margin-top:18px"><button class="btn petit" id="ma-delier">Délier @${esc(M.compte.pseudo)}</button></p>
+    ${M.admin && M.webhook ? `<details class="panneau"><summary><b>Réglages Meta (admin)</b></summary>${reglagesMeta(M.webhook)}</details>` : ""}`;
+  const nouveau = () => { MA.assist = {etape: 0, r: {mots: [], toutes: true, publications: [], message: "Coucou {pseudo} ! Comme promis, voici le lien 👇", lien: "", bouton: "Je découvre", reponses_publiques: [...PUBLIQUES_DEFAUT], actif: true}}; renduMessages(); };
+  $("#ma-nouveau").onclick = nouveau; $("#ma-nouveau2") && ($("#ma-nouveau2").onclick = nouveau);
+  $$("[data-ma-modif]").forEach(b => b.onclick = () => { MA.assist = {etape: 0, idx: +b.dataset.maModif, r: structuredClone(M.regles[+b.dataset.maModif])}; renduMessages(); });
+  $$("[data-ma-actif]").forEach(b => b.onchange = async () => { M.regles[+b.dataset.maActif].actif = b.checked; await sauveMessages(); renduMessages(); });
+  $$("[data-ma-suppr]").forEach(b => b.onclick = async () => { const i = +b.dataset.maSuppr, r = M.regles.splice(i, 1)[0]; await sauveMessages(); renduMessages();
+    toastAnnuler("Réponse automatique supprimée", async () => { M.regles.splice(i, 0, r); await sauveMessages(); renduMessages(); }, () => {}, 5000); });
+  $("#ma-delier").onclick = async () => { const b = $("#ma-delier"); if (b.dataset.ok !== "1") { b.dataset.ok = "1"; b.textContent = "Confirmer : les réponses automatiques s'arrêteront"; b.style.color = "var(--warn)"; return; }
+    await api("/api/messages/deconnecter", {method: "POST"}); MA.etat = null; renduMessages(); };
+  const teste = async () => { const v = $("#ma-test").value.trim(); if (!v) return; const r = await api("/api/messages/tester", {method: "POST", body: {texte: v}});
+    $("#ma-test-res").innerHTML = r.declenche ? bulleDM(r.message, r.lien, r.bouton, r.publique) : `<p class="aide" style="margin-top:8px">Aucun mot-clé reconnu : rien ne serait envoyé.</p>`; };
+  $("#ma-test-ok") && ($("#ma-test-ok").onclick = teste);
+  $("#ma-test") && ($("#ma-test").onkeydown = e => { if (e.key === "Enter") teste(); });
+}
+const lienTitre = url => !url ? "" : (MA.etat.liens.find(l => l.url === url)?.titre || url.replace(/^https?:\/\//, "").slice(0, 50));
+async function sauveMessages() {
+  try { const r = await api("/api/messages", {method: "PUT", body: {regles: MA.etat.regles}}); MA.etat.regles = r.regles; }
+  catch (e) { toast(e.message); }
+}
+function schemaMessages() {
+  return `<div class="ma-sch"><span class="b com">💬 « GUIDE »</span><span class="fl">→</span><span class="b dm">💌 Ton lien en privé</span><span class="fl">→</span><span class="b vente">🛍️ Une vente</span></div>`;
+}
+function bulleDM(message, lien, bouton, publique) {
+  return `<div class="ma-apercu">${publique ? `<div class="ma-pub"><small>Réponse sous le commentaire</small>${esc(publique)}</div>` : ""}
+    <div class="ma-dm"><small>Message privé</small><p>${esc(message).replace(/\n/g, "<br>")}</p>${lien ? `<span class="ma-btn-dm">${esc(bouton || "Ouvrir le lien")}</span>` : ""}</div></div>`;
+}
+function reglagesMeta(w) {
+  return `<div class="ma-meta"><p class="aide">À coller dans ton application Meta (développeurs) :</p>
+    ${[["Adresse du webhook", w.url], ["Jeton de vérification", w.jeton], ["Adresse de retour OAuth", w.retour], ["Désautorisation", w.desautorisation], ["Suppression des données", w.suppression]]
+      .map(([t, v]) => `<div class="ma-meta-l"><small>${t}</small><code>${esc(v)}</code><button class="btn petit" data-copier="${esc(v)}">Copier</button></div>`).join("")}</div>`;
+}
+function etapesMessage(A) {
+  const r = A.r, M = MA.etat;
+  return [
+    {nom: "Le mot-clé", q: "Quel mot tes abonnées doivent-elles commenter ?",
+      corps: () => `<div class="tn-exemples"><span>💡</span>${MOTS_EXEMPLES.map(m => `<button type="button" data-mot="${m}">${m}</button>`).join("")}</div>
+        <div class="champ"><label for="ma-mots">Mot-clé</label><input id="ma-mots" value="${esc(r.mots.join(", "))}" placeholder="GUIDE" autocapitalize="characters"></div>
+        <p class="aide">Majuscules, accents et émojis ne comptent pas : « guide 🙏 » marche aussi. Plusieurs mots ? Sépare-les par une virgule.</p>`,
+      valide: () => r.mots.length ? null : "Écris au moins un mot-clé"},
+    {nom: "Les publications", q: "Sous quelles publications ?",
+      corps: () => `<div class="ma-choix"><button type="button" data-toutes="1" aria-pressed="${r.toutes}"><b>Toutes mes publications</b><small>Le plus simple : le mot-clé marche partout.</small></button>
+        <button type="button" data-toutes="0" aria-pressed="${!r.toutes}"><b>Une ou plusieurs publications</b><small>Pour un mot-clé lié à un Reel précis.</small></button></div>
+        ${r.toutes ? "" : `<div class="ma-pubs" id="ma-pubs">${squelette("lignes", 2)}</div>`}`,
+      valide: () => r.toutes || r.publications.length ? null : "Choisis au moins une publication"},
+    {nom: "Le lien", q: "Quel lien envoyer ?",
+      corps: () => `<div class="ma-liens">${M.liens.map(l => `<button type="button" data-lien="${esc(l.url)}" aria-pressed="${r.lien === l.url}"><span>${l.type === "boutique" ? "🏪" : l.type === "tunnel" ? "📄" : "🛍️"}</span>${esc(l.titre)}</button>`).join("")
+          || '<p class="aide">Ta boutique n\'est pas encore en ligne : tu peux coller une autre adresse.</p>'}</div>
+        <div class="champ" style="margin-top:12px"><label for="ma-lien">Ou une autre adresse</label><input id="ma-lien" value="${esc(M.liens.some(l => l.url === r.lien) ? "" : r.lien)}" placeholder="https://…" inputmode="url" autocapitalize="off"></div>`},
+    {nom: "Le message", q: "Que dit ton message ?",
+      corps: () => `<div class="tn-exemples"><span>💡</span>${["Coucou {pseudo} ! Comme promis, voici le lien 👇", "Merci pour ton commentaire 💛 Voici ton guide offert :", "Hello {pseudo} ! Tout est expliqué ici 👇 Dis-moi si tu as une question."].map(x => `<button type="button" data-msg="${esc(x)}">${esc(x.slice(0, 26))}…</button>`).join("")}</div>
+        <div class="champ"><label for="ma-msg">Message</label><textarea id="ma-msg" maxlength="600" style="min-height:90px">${esc(r.message)}</textarea><small class="aide">{pseudo} sera remplacé par son @.</small></div>
+        ${r.lien ? `<div class="champ"><label for="ma-bt">Texte du bouton</label><input id="ma-bt" value="${esc(r.bouton)}" maxlength="20" placeholder="Je découvre"></div>` : ""}
+        <div id="ma-ap">${bulleDM(r.message.replace("{pseudo}", "@julie"), r.lien, r.bouton)}</div>`,
+      valide: () => r.message.trim() ? null : "Écris ton message"},
+    {nom: "Réponse publique", q: "Répondre aussi sous le commentaire ?",
+      corps: () => `<label class="bt-interr"><span><b>Oui, répondre publiquement</b><br><small class="aide">Ça montre aux autres que ça marche, et ça donne envie de commenter.</small></span><input type="checkbox" id="ma-pub-ok" ${r.reponses_publiques.length ? "checked" : ""}></label>
+        ${r.reponses_publiques.length ? `<p class="aide">Une de ces phrases est choisie au hasard (plus naturel) :</p>${r.reponses_publiques.map((x, i) => `<input class="ma-pub-in" data-pub="${i}" value="${esc(x)}" maxlength="200">`).join("")}` : ""}`},
+    {nom: "C'est prêt", fin: true, q: "Tout est bon ?",
+      corps: () => `<ul class="tn-coches-ed"><li>💬 Mot-clé : <b>${esc(r.mots.join(", ").toUpperCase())}</b> · ${r.toutes ? "toutes tes publications" : r.publications.length + " publication(s)"}</li>
+        <li>🔗 ${esc(lienTitre(r.lien) || "Pas de lien")}</li></ul>${bulleDM(r.message.replace("{pseudo}", "@julie"), r.lien, r.bouton, r.reponses_publiques[0])}
+        <p class="aide" style="margin-top:12px">Pense à dire dans ta publication : « Commente ${esc((r.mots[0] || "GUIDE").toUpperCase())} et je t'envoie le lien ».</p>`},
+  ];
+}
+function assistantMessage(el) {
+  const A = MA.assist, r = A.r, E = etapesMessage(A), e = E[A.etape];
+  el.innerHTML = `<div class="tn-assist ma-assist"><div class="tn-tete-as"><button class="btn petit" id="ma-quitter">← Retour</button><span class="aide">Étape ${A.etape + 1} sur ${E.length} · ${esc(e.nom)}</span></div>
+    <div class="tn-prog"><i style="width:${(A.etape + 1) / E.length * 100}%"></i></div>
+    <section class="bt-sec"><h3>${esc(e.q)}</h3>${e.corps()}</section>
+    <div class="bt-pied">${A.etape ? '<button class="btn" id="ma-prec">← Retour</button>' : "<span></span>"}<button class="btn prim" id="ma-suiv">${e.fin ? (A.idx != null ? "Enregistrer" : "Activer 🚀") : "Continuer →"}</button></div></div>`;
+  const re = () => assistantMessage(el), majAp = () => { const z = $("#ma-ap"); if (z) z.innerHTML = bulleDM(r.message.replace("{pseudo}", "@julie"), r.lien, r.bouton); };
+  $("#ma-quitter").onclick = () => { MA.assist = null; renduMessages(); };
+  $("#ma-prec") && ($("#ma-prec").onclick = () => { A.etape--; re(); });
+  $("#ma-mots") && ($("#ma-mots").oninput = ev => { r.mots = ev.target.value.split(",").map(x => x.trim()).filter(Boolean); });
+  $$("[data-mot]").forEach(b => b.onclick = () => { r.mots = [b.dataset.mot]; $("#ma-mots").value = b.dataset.mot; });
+  $$("[data-toutes]").forEach(b => b.onclick = () => { r.toutes = b.dataset.toutes === "1"; re(); });
+  if ($("#ma-pubs")) api("/api/messages/publications").then(d => {
+    $("#ma-pubs").innerHTML = (d.publications || []).map(p => `<button type="button" data-pub-id="${p.id}" aria-pressed="${r.publications.includes(p.id)}">${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<span class="ma-pub-vide">📷</span>'}<small>${esc(p.legende || "Sans légende")}</small></button>`).join("") || '<p class="aide">Aucune publication trouvée.</p>';
+    $$("[data-pub-id]").forEach(b => b.onclick = () => { const id = b.dataset.pubId, i = r.publications.indexOf(id); i >= 0 ? r.publications.splice(i, 1) : r.publications.push(id); b.setAttribute("aria-pressed", i < 0); });
+  }).catch(er => { $("#ma-pubs").innerHTML = `<p class="aide">${esc(er.message)}</p>`; });
+  $$("[data-lien]").forEach(b => b.onclick = () => { r.lien = b.dataset.lien; $("#ma-lien").value = ""; $$("[data-lien]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  $("#ma-lien") && ($("#ma-lien").oninput = ev => { const v = ev.target.value.trim(); r.lien = v ? (/^https?:\/\//.test(v) ? v : "https://" + v) : ""; $$("[data-lien]").forEach(x => x.setAttribute("aria-pressed", false)); });
+  $("#ma-msg") && ($("#ma-msg").oninput = ev => { r.message = ev.target.value; majAp(); });
+  $("#ma-bt") && ($("#ma-bt").oninput = ev => { r.bouton = ev.target.value; majAp(); });
+  $$("[data-msg]").forEach(b => b.onclick = () => { r.message = b.dataset.msg; $("#ma-msg").value = r.message; majAp(); });
+  $("#ma-pub-ok") && ($("#ma-pub-ok").onchange = ev => { r.reponses_publiques = ev.target.checked ? [...PUBLIQUES_DEFAUT] : []; re(); });
+  $$("[data-pub]").forEach(i => i.oninput = () => { r.reponses_publiques[+i.dataset.pub] = i.value; });
+  $("#ma-suiv").onclick = async () => {
+    const m = e.valide?.(); if (m) return toast(m);
+    if (!e.fin) { A.etape++; return re(); }
+    r.reponses_publiques = r.reponses_publiques.filter(x => x.trim());
+    if (A.idx != null) MA.etat.regles[A.idx] = r; else MA.etat.regles.push(r);
+    await sauveMessages(); MA.assist = null; toast(A.idx != null ? "Enregistré" : "C'est activé : ton lien partira tout seul 💌"); renduMessages();
+  };
+}
+
 // ---------------------------------------------------------------- Démarrage
 (async () => {
-  const q = new URLSearchParams(location.search);
+  const q = new URLSearchParams(location.search), ancre = location.hash;
   S.apercu = ["essai", "fini"].includes(q.get("apercu")) ? q.get("apercu") : ""; S.apercuJours = +(q.get("jours") ?? 5);
   await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", location.pathname);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); va("abonnement"); }
   if (q.get("stripe")) { await chargeBoutique(true); BQ.onglet = "produits"; va("boutique"); toast(BQ.page?.stripe?.pret ? "Stripe est relié : tu peux vendre" : "Inscription Stripe à terminer"); }
   if (q.get("formules")) va("abonnement");  // lien des e-mails de fin d'essai
+  if (ancre === "#messages" || q.get("ig") || q.get("ig_erreur")) { va("messages");
+    if (q.get("ig") === "ok") toast("Instagram est relié 🎉 Crée ta première réponse automatique");
+    if (q.get("ig_erreur")) toast(q.get("ig_erreur"), {duree: 7000}); }
   if (q.get("confirme") === "1") toast("Merci, ton adresse est confirmée", {duree: 4000});
   if (q.get("confirme") === "0") toast("Ce lien de confirmation n'est plus valable : demande un nouvel e-mail depuis le bandeau.", {duree: 6000});
   if (q.get("projet")) ouvreProjet(q.get("projet")).catch(() => toast("Ce contenu n'existe plus."));  // lien de l'e-mail « contenu prêt »
   else if (q.get("essai") && essaiDispo()) { va("boutique"); proposeEssai(); }  // lien des e-mails de suivi
   else if (q.get("boutique") || (boutiqueSeule() && !S.etat.utilisateur.onboarding)) va("boutique");  // inscrite par la boutique gratuite
-  else if (!S.etat.utilisateur.onboarding) ouvreAssistant(0);
+  else if (!S.etat.utilisateur.onboarding && S.vue !== "messages") ouvreAssistant(0);
   majBoutonInstall();
 })();
 </script>

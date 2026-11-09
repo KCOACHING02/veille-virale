@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
+import hmac
 import os
 import secrets
 import threading
@@ -81,7 +83,8 @@ def cle_secrete() -> str:
 
 
 # Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
-for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY", "PIXABAY_API_KEY"):
+for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY", "PIXABAY_API_KEY",
+           "INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET", "INSTAGRAM_WEBHOOK_TOKEN"):
     if os.getenv(_v):
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
 
@@ -2812,6 +2815,173 @@ def admin_modifie(uid):
 # ------------------------------------------------------------
 #  Veille automatique : chaque lundi matin pour les formules qui l'incluent
 # ------------------------------------------------------------
+
+# ============================================================
+#  Messages privés automatiques sur Instagram (messages_auto.py)
+# ============================================================
+import messages_auto as ma  # noqa: E402
+
+
+def _liens_messages(uid: int) -> list[dict]:
+    """Ce que la cliente peut envoyer en privé : ses boutiques, ses produits, ses pages de vente."""
+    res = []
+    for bid in bq.boutiques_de(uid):
+        page, ps = bq.lit_page(bid) or {}, bq.pseudo_de(bid)
+        if not ps or not page.get("publie"):
+            continue
+        base = f"{url_site()}/@{ps}"
+        res.append({"titre": f"Ma boutique ({page.get('nom') or ps})", "url": base, "type": "boutique"})
+        for t in page.get("tunnels") or []:
+            if t.get("publie", True):
+                res.append({"titre": f"Page : {t.get('titre') or 'tunnel'}", "url": f"{base}/t/{t['id']}?src=dm", "type": "tunnel"})
+        for p in page.get("produits") or []:
+            if p.get("visible", True):
+                res.append({"titre": p.get("titre") or "Produit", "url": f"{base}/p/{p['id']}?src=dm", "type": "produit"})
+    return res
+
+
+def _peut_messages(uid: int) -> bool:
+    u = ab.get(uid)
+    return bool(u and droits(u)["actif"] and not reserve(u, "messages_auto"))
+
+
+@app.get("/api/messages")
+@connecte
+def messages_etat():
+    uid = g.u["id"]
+    c = ma.compte(uid)
+    d = ma.lit(uid)
+    demo = en_demo()
+    if demo and not c:
+        c = {"pseudo": "ton_compte", "photo": "", "relie": "", "demo": True} if session.get("ig_demo") else None
+    return jsonify({"configure": ma.configure(), "demo": demo, "verrou": reserve(g.u, "messages_auto"),
+                    "compte": {k: c.get(k) for k in ("pseudo", "photo", "relie", "expire", "demo")} if c else None,
+                    "regles": d.get("regles", []), "stats": ma.stats(uid), "journal": d.get("journal", [])[:30],
+                    "liens": _liens_messages(uid), "admin": est_admin(g.u),
+                    "webhook": {"url": f"{url_site()}/api/instagram/webhook", "jeton": ma.jeton_webhook(app.secret_key),
+                                "retour": f"{url_site()}/instagram/retour", "desautorisation": f"{url_site()}/instagram/desautorisation",
+                                "suppression": f"{url_site()}/instagram/suppression"} if est_admin(g.u) else None})
+
+
+@app.put("/api/messages")
+@connecte
+def messages_maj():
+    if (m := reserve(g.u, "messages_auto")):
+        return jsonify({"erreur": m, "quota": True}), 402
+    regles = ma.enregistre_regles(g.u["id"], (request.get_json(force=True) or {}).get("regles") or [])
+    return jsonify({"ok": True, "regles": regles})
+
+
+@app.get("/api/messages/publications")
+@connecte
+def messages_publications():
+    try:
+        return jsonify({"publications": ma.publications(g.u["id"], demo=en_demo())})
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"erreur": f"Impossible de lire tes publications : {e}"}), 502
+
+
+@app.post("/api/messages/tester")
+@connecte
+def messages_tester():
+    texte = ((request.get_json(force=True) or {}).get("texte") or "")[:300]
+    r = ma.simule(g.u["id"], texte)
+    if r.get("declenche") and en_demo():  # démo : le faux envoi apparaît dans « Derniers envois »
+        ma.traite_commentaire("", {"_uid": g.u["id"], "id": secrets.token_hex(6), "text": texte, "from": {"id": "x", "username": "julie.test"}},
+                              lambda _u: True, demo=True)
+    return jsonify(r)
+
+
+@app.get("/instagram/connexion")
+@connecte
+def instagram_connexion():
+    if (m := reserve(g.u, "messages_auto")):
+        return redirect("/app?formules=1")
+    if en_demo():
+        session["ig_demo"] = True
+        return redirect("/app#messages")
+    if not ma.configure():
+        return redirect("/app?ig_erreur=" + "La connexion Instagram n'est pas encore ouverte." + "#messages")
+    session["ig_etat"] = etat = secrets.token_urlsafe(16)
+    return redirect(ma.url_connexion(f"{url_site()}/instagram/retour", etat))
+
+
+@app.get("/instagram/retour")
+@connecte
+def instagram_retour():
+    if request.args.get("error") or request.args.get("state") != session.pop("ig_etat", None):
+        return redirect("/app?ig=annule#messages")
+    try:
+        ma.termine_connexion(g.u["id"], request.args.get("code", ""), f"{url_site()}/instagram/retour")
+    except Exception as e:  # noqa: BLE001
+        from urllib.parse import quote
+        return redirect("/app?ig_erreur=" + quote(str(e)[:200]) + "#messages")
+    return redirect("/app?ig=ok#messages")
+
+
+@app.post("/api/messages/deconnecter")
+@connecte
+def instagram_deconnecter():
+    ma.delie(g.u["id"])
+    session.pop("ig_demo", None)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/instagram/webhook", methods=["GET", "POST"])
+def instagram_webhook():
+    if request.method == "GET":  # vérification par Meta lors de la configuration
+        if request.args.get("hub.mode") == "subscribe" and request.args.get("hub.verify_token") == ma.jeton_webhook(app.secret_key):
+            return request.args.get("hub.challenge", ""), 200
+        return "", 403
+    corps = request.get_data()
+    if not ma.signature_valide(corps, request.headers.get("X-Hub-Signature-256", "")):
+        return "", 403
+    try:
+        charge = json.loads(corps or b"{}")
+    except ValueError:
+        return "", 400
+    threading.Thread(target=ma.traite_webhook, args=(charge, _peut_messages), daemon=True).start()
+    return "ok", 200
+
+
+def _requete_signee_meta() -> dict | None:
+    """signed_request envoyé par Meta (désautorisation, suppression des données)."""
+    import base64
+    sr = request.form.get("signed_request", "")
+    if "." not in sr or not os.getenv("INSTAGRAM_APP_SECRET"):
+        return None
+    sig, charge = sr.split(".", 1)
+    dec = lambda x: base64.urlsafe_b64decode(x + "=" * (-len(x) % 4))  # noqa: E731
+    attendu = hmac.new(os.environ["INSTAGRAM_APP_SECRET"].encode(), charge.encode(), hashlib.sha256).digest()
+    if not hmac.compare_digest(attendu, dec(sig)):
+        return None
+    return json.loads(dec(charge))
+
+
+@app.post("/instagram/desautorisation")
+def instagram_desautorisation():
+    d = _requete_signee_meta()
+    if d and d.get("user_id"):
+        ma.delie_par_ig(str(d["user_id"]))
+    return "", 200
+
+
+@app.post("/instagram/suppression")
+def instagram_suppression():
+    d = _requete_signee_meta()
+    if not d:
+        return jsonify({"erreur": "requête invalide"}), 400
+    ma.delie_par_ig(str(d.get("user_id") or ""))
+    code = secrets.token_hex(6)
+    return jsonify({"url": f"{url_site()}/instagram/suppression/{code}", "confirmation_code": code})
+
+
+@app.get("/instagram/suppression/<code>")
+def instagram_suppression_etat(code):
+    return _html(f"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>Suppression</title>"
+                 f"<body style='font-family:system-ui;max-width:520px;margin:40px auto;padding:0 16px'><h1>Données supprimées</h1>"
+                 f"<p>Le lien entre ton compte Instagram et Virallink a été supprimé, ainsi que le jeton d'accès. Référence : {bq.E(code)}.</p>")
+
 def planificateur_emails():
     """Séquences d'e-mails des boutiques et demandes d'avis (toutes les 10 minutes)."""
     while True:
@@ -2861,6 +3031,7 @@ def planificateur():
             import nettoyage
             if nettoyage.a_faire():
                 nettoyage.nettoie()
+                ma.renouvelle_jetons()
         except Exception:  # noqa: BLE001
             traceback.print_exc()
         time.sleep(900)

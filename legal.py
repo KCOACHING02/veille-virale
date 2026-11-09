@@ -31,6 +31,7 @@ SOUS_TRAITANTS = [
     ("Fournisseur d'intelligence artificielle", "moteur de Virall.ai (analyse des vidéos et rédaction des adaptations)", "États-Unis"),
     ("Prestataire de collecte de données publiques", "collecte des publications publiques Instagram et TikTok", "Union européenne"),
     ("Resend", "envoi des e-mails du service", "États-Unis"),
+    ("Meta Platforms (Instagram)", "réception des commentaires et envoi des messages automatiques, si l'utilisateur relie son compte Instagram", "Irlande / États-Unis"),
     ("Google Fonts", "affichage des polices de caractères", "États-Unis"),
 ]
 
@@ -52,9 +53,10 @@ def cgv(s: dict) -> str:
 <li>d'en analyser les ressorts (accroche, structure, format) à l'aide d'une intelligence artificielle ;</li>
 <li>de proposer des adaptations à la thématique de l'utilisateur (accroches, scripts, légendes, messages privés) ;</li>
 <li>de fabriquer des carrousels et des vidéos à partir des images et vidéos fournies par l'utilisateur ;</li>
-<li>de suivre les performances des publications de l'utilisateur.</li>
+<li>de suivre les performances des publications de l'utilisateur ;</li>
+<li>si l'utilisateur relie son compte Instagram professionnel, d'envoyer automatiquement un message privé, et le cas échéant une réponse publique, aux personnes qui commentent ses publications avec un mot-clé qu'il a choisi.</li>
 </ul>
-<p>Le Service ne publie rien sur les comptes de l'utilisateur : la publication reste à son initiative.</p>
+<p>En dehors de ces messages automatiques, que l'utilisateur paramètre, active et peut couper à tout moment, le Service ne publie rien sur les comptes de l'utilisateur. L'utilisateur reste responsable du contenu de ces messages et s'engage à respecter les règles d'Instagram ; il peut délier son compte à tout moment depuis le Service ou depuis les paramètres d'Instagram.</p>
 
 <h2>3. Inscription et compte</h2>
 <p>Le Service est réservé aux personnes majeures. L'utilisateur fournit une adresse e-mail valide et choisit un mot de passe qu'il garde confidentiel. Il est responsable de l'utilisation de son compte. Un compte est personnel et ne peut pas être partagé.</p>
@@ -113,6 +115,7 @@ def confidentialite(s: dict) -> str:
 <li><b>Abonnement</b> : formule, historique d'utilisation. Les données de carte bancaire sont traitées uniquement par Stripe et ne sont jamais stockées par l'Éditeur.</li>
 <li><b>Paramétrage</b> : niche, cible, ton, textes de référence, comptes surveillés, hashtags, publications suivies et résultats saisis.</li>
 <li><b>Fichiers importés</b> : images et vidéos utilisées pour créer des contenus.</li>
+<li><b>Compte Instagram relié</b> (messages automatiques, facultatif) : identifiant et nom du compte professionnel, photo de profil, jeton d'accès délivré par Instagram. Pour les personnes qui commentent ses publications : identifiant, nom d'utilisateur et texte du commentaire, utilisés uniquement pour leur envoyer le message demandé et tenir l'historique des envois.</li>
 <li><b>Données publiques de comptes tiers</b> : publications publiques des comptes Instagram et TikTok que l'utilisateur choisit de surveiller (légendes, statistiques, vidéos analysées puis supprimées ; seules des images extraites et la transcription sont conservées).</li>
 </ul>
 
@@ -122,6 +125,7 @@ def confidentialite(s: dict) -> str:
 <li>Facturation et obligations comptables : obligation légale.</li>
 <li>E-mails de service (bienvenue, nouveau mot de passe, veille prête) : exécution du contrat.</li>
 <li>Analyse de publications publiques de tiers : intérêt légitime de l'utilisateur et de l'Éditeur à étudier les tendances de contenus, limité aux informations rendues publiques et à des statistiques agrégées.</li>
+<li>Messages automatiques Instagram : exécution du contrat envers l'utilisateur ; pour les personnes qui commentent, intérêt légitime à recevoir le lien qu'elles ont elles-mêmes demandé en commentant le mot-clé.</li>
 <li>Sécurité et prévention des abus : intérêt légitime.</li>
 </ul>
 <p>Aucune donnée n'est vendue ni utilisée à des fins publicitaires.</p>
@@ -137,6 +141,7 @@ def confidentialite(s: dict) -> str:
 <li>Données de facturation : 10 ans (obligation comptable).</li>
 <li>Données publiques collectées sur les comptes surveillés : au plus 24 heures en mémoire partagée, puis uniquement dans les analyses de l'utilisateur.</li>
 <li>Liens de réinitialisation de mot de passe : 1 heure.</li>
+<li>Messages automatiques : historique des envois 60 jours ; jeton Instagram effacé dès que l'utilisateur délie son compte ou retire l'accès depuis Instagram. Une demande de suppression envoyée par Instagram est traitée sans délai.</li>
 </ul>
 
 <h2>Cookies</h2>

@@ -1,0 +1,365 @@
+"""
+Messages privés automatiques sur Instagram (type « commente GUIDE et je t'envoie le lien »).
+
+Fonctionnement (API Instagram avec connexion Instagram, sans page Facebook) :
+  - la cliente relie son compte Instagram professionnel (OAuth) ;
+  - Meta nous prévient à chaque commentaire (webhook « comments ») ;
+  - si le commentaire contient un mot-clé d'une de ses règles, on envoie UNE réponse privée à la personne
+    (POST /<ig_id>/messages avec recipient.comment_id, dans les 7 jours) et, si elle le veut,
+    une réponse publique sous le commentaire (« Je t'ai envoyé le lien en privé 💌 »).
+
+Variables d'environnement : INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET (application Meta),
+INSTAGRAM_WEBHOOK_TOKEN (facultatif : jeton de vérification du webhook, dérivé de SECRET_KEY sinon).
+
+Données : table `instagram` (compte relié par cliente) dans data/app.db ;
+règles et journal dans data/espaces/<uid>/messages_auto.json.
+Aucun coût d'API payante (ni Claude ni Apify) : seules les limites de Meta s'appliquent.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import os
+import random
+import re
+import secrets
+import threading
+import time
+import unicodedata
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import requests
+
+import abonnements as ab
+from espace import DATA
+
+VERSION = "v23.0"
+GRAPH = "https://graph.instagram.com"
+PORTEES = "instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages"
+MAX_PAR_HEURE = 150          # en dessous de la limite de Meta, pour ne jamais faire bloquer un compte
+JOURS_JOURNAL = 60
+_verrou = threading.Lock()
+
+
+def configure() -> bool:
+    return bool(os.getenv("INSTAGRAM_APP_ID") and os.getenv("INSTAGRAM_APP_SECRET"))
+
+
+def jeton_webhook(secret: str) -> str:
+    return os.getenv("INSTAGRAM_WEBHOOK_TOKEN") or hmac.new(secret.encode(), b"webhook-instagram", hashlib.sha256).hexdigest()[:32]
+
+
+# ------------------------------------------------------------
+#  Comptes reliés
+# ------------------------------------------------------------
+def _table():
+    with ab._db() as c:
+        c.execute("""CREATE TABLE IF NOT EXISTS instagram(uid INTEGER PRIMARY KEY, ig_id TEXT UNIQUE, pseudo TEXT,
+                     jeton TEXT, expire TEXT, relie TEXT, photo TEXT)""")
+
+
+def compte(uid: int) -> dict | None:
+    _table()
+    with ab._db() as c:
+        r = c.execute("SELECT * FROM instagram WHERE uid=?", (uid,)).fetchone()
+    return dict(r) if r else None
+
+
+def compte_par_ig(ig_id: str) -> dict | None:
+    _table()
+    with ab._db() as c:
+        r = c.execute("SELECT * FROM instagram WHERE ig_id=?", (str(ig_id),)).fetchone()
+    return dict(r) if r else None
+
+
+def _enregistre(uid: int, ig_id: str, pseudo: str, jeton: str, duree_s: int, photo: str = ""):
+    _table()
+    expire = (datetime.now() + timedelta(seconds=duree_s or 5_184_000)).isoformat(timespec="seconds")
+    with ab._verrou, ab._db() as c:
+        c.execute("DELETE FROM instagram WHERE uid=? OR ig_id=?", (uid, str(ig_id)))
+        c.execute("INSERT INTO instagram(uid, ig_id, pseudo, jeton, expire, relie, photo) VALUES(?,?,?,?,?,?,?)",
+                  (uid, str(ig_id), pseudo, jeton, expire, datetime.now().isoformat(timespec="seconds"), photo))
+
+
+def delie(uid: int):
+    _table()
+    with ab._verrou, ab._db() as c:
+        c.execute("DELETE FROM instagram WHERE uid=?", (uid,))
+
+
+def delie_par_ig(ig_id: str):
+    _table()
+    with ab._verrou, ab._db() as c:
+        c.execute("DELETE FROM instagram WHERE ig_id=?", (str(ig_id),))
+
+
+# ------------------------------------------------------------
+#  Connexion (OAuth Instagram)
+# ------------------------------------------------------------
+def url_connexion(redirection: str, etat: str) -> str:
+    from urllib.parse import urlencode
+    return "https://www.instagram.com/oauth/authorize?" + urlencode({
+        "client_id": os.environ["INSTAGRAM_APP_ID"], "redirect_uri": redirection, "response_type": "code",
+        "scope": PORTEES, "state": etat, "enable_fb_login": "0", "force_authentication": "1"})
+
+
+def termine_connexion(uid: int, code: str, redirection: str) -> dict:
+    """Code → jeton court → jeton long (60 jours) → compte, puis abonnement aux commentaires."""
+    r = requests.post("https://api.instagram.com/oauth/access_token", data={
+        "client_id": os.environ["INSTAGRAM_APP_ID"], "client_secret": os.environ["INSTAGRAM_APP_SECRET"],
+        "grant_type": "authorization_code", "redirect_uri": redirection, "code": code.removesuffix("#_")}, timeout=30)
+    d = r.json()
+    if r.status_code != 200 or "access_token" not in d:
+        raise RuntimeError(_erreur(d, "Instagram a refusé la connexion."))
+    r = requests.get(f"{GRAPH}/access_token", params={"grant_type": "ig_exchange_token", "client_secret": os.environ["INSTAGRAM_APP_SECRET"],
+                                                     "access_token": d["access_token"]}, timeout=30)
+    longue = r.json()
+    jeton = longue.get("access_token") or d["access_token"]
+    moi = requests.get(f"{GRAPH}/{VERSION}/me", params={"fields": "user_id,username,account_type,profile_picture_url", "access_token": jeton}, timeout=30).json()
+    if "user_id" not in moi:
+        raise RuntimeError(_erreur(moi, "Impossible de lire ton compte Instagram."))
+    if moi.get("account_type") not in (None, "BUSINESS", "MEDIA_CREATOR", "CREATOR"):
+        raise RuntimeError("Ton compte Instagram doit être un compte professionnel (créateur ou entreprise). Change-le dans Instagram : Paramètres → Type de compte.")
+    _enregistre(uid, moi["user_id"], moi.get("username", ""), jeton, int(longue.get("expires_in") or 0), moi.get("profile_picture_url", ""))
+    abonne_webhook(jeton)
+    return compte(uid)
+
+
+def abonne_webhook(jeton: str):
+    r = requests.post(f"{GRAPH}/{VERSION}/me/subscribed_apps", params={"subscribed_fields": "comments,messages", "access_token": jeton}, timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(_erreur(r.json(), "Instagram n'a pas activé les notifications de commentaires."))
+
+
+def renouvelle_jetons():
+    """Une fois par jour : prolonge les jetons qui expirent dans moins de 15 jours (ils durent 60 jours)."""
+    if not configure():
+        return
+    _table()
+    with ab._db() as c:
+        lignes = [dict(r) for r in c.execute("SELECT * FROM instagram").fetchall()]
+    for x in lignes:
+        try:
+            if datetime.fromisoformat(x["expire"]) - datetime.now() > timedelta(days=15):
+                continue
+            d = requests.get(f"{GRAPH}/refresh_access_token", params={"grant_type": "ig_refresh_token", "access_token": x["jeton"]}, timeout=30).json()
+            if d.get("access_token"):
+                expire = (datetime.now() + timedelta(seconds=int(d.get("expires_in") or 5_184_000))).isoformat(timespec="seconds")
+                with ab._verrou, ab._db() as c:
+                    c.execute("UPDATE instagram SET jeton=?, expire=? WHERE uid=?", (d["access_token"], expire, x["uid"]))
+        except Exception as e:  # noqa: BLE001
+            print(f"[messages auto] jeton de {x.get('pseudo')} non renouvelé : {e}")
+
+
+def publications(uid: int, demo: bool = False) -> list[dict]:
+    """Dernières publications du compte relié, pour viser une publication précise."""
+    if demo:
+        return [{"id": f"demo{i}", "legende": t, "image": "", "lien": "", "date": ""} for i, t in enumerate(
+            ["Les 3 erreurs qui te fatiguent le matin…", "Mon guide offert : commente GUIDE", "Avant / après de Julie"])]
+    c = compte(uid)
+    if not c:
+        return []
+    d = requests.get(f"{GRAPH}/{VERSION}/me/media", params={"fields": "id,caption,media_type,thumbnail_url,media_url,permalink,timestamp",
+                                                           "limit": 24, "access_token": c["jeton"]}, timeout=30).json()
+    return [{"id": m["id"], "legende": (m.get("caption") or "")[:120], "image": m.get("thumbnail_url") or m.get("media_url") or "",
+             "lien": m.get("permalink", ""), "date": (m.get("timestamp") or "")[:10]} for m in d.get("data", [])]
+
+
+def _erreur(d: dict, defaut: str) -> str:
+    e = (d or {}).get("error") or {}
+    return f"{defaut} ({e.get('message')})" if isinstance(e, dict) and e.get("message") else (d.get("error_message") or defaut)
+
+
+# ------------------------------------------------------------
+#  Règles (mots-clés) et journal
+# ------------------------------------------------------------
+def _fichier(uid: int) -> Path:
+    d = DATA / "espaces" / str(uid)
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "messages_auto.json"
+
+
+def lit(uid: int) -> dict:
+    try:
+        return json.loads(_fichier(uid).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"regles": [], "journal": [], "repondus": {}}
+
+
+def _ecrit(uid: int, d: dict):
+    f = _fichier(uid)
+    t = f.with_suffix(".tmp")
+    t.write_text(json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    t.replace(f)
+
+
+def _s(x, n: int) -> str:
+    return str(x or "").strip()[:n]
+
+
+def regle_propre(r: dict) -> dict | None:
+    if not isinstance(r, dict):
+        return None
+    mots = [m for m in (_s(x, 30) for x in (r.get("mots") or [])[:8]) if m]
+    if not mots:
+        return None
+    pubs = [_s(x, 40) for x in (r.get("publications") or [])[:30] if _s(x, 40)]
+    publiques = [p for p in (_s(x, 200) for x in (r.get("reponses_publiques") or [])[:6]) if p]
+    return {"id": re.sub(r"\W", "", _s(r.get("id"), 12)) or secrets.token_hex(4), "nom": _s(r.get("nom"), 60) or mots[0].upper(),
+            "mots": mots, "toutes": r.get("toutes", True) is not False or not pubs, "publications": pubs,
+            "message": _s(r.get("message"), 900), "lien": _s(r.get("lien"), 400), "bouton": _s(r.get("bouton"), 40),
+            "reponses_publiques": publiques, "actif": r.get("actif", True) is not False,
+            "cree": _s(r.get("cree"), 25) or datetime.now().isoformat(timespec="seconds")}
+
+
+def enregistre_regles(uid: int, regles: list) -> list:
+    with _verrou:
+        d = lit(uid)
+        d["regles"] = [x for x in (regle_propre(r) for r in (regles or [])[:30]) if x and x["message"]]
+        _ecrit(uid, d)
+    return d["regles"]
+
+
+def _norm(t: str) -> str:
+    t = unicodedata.normalize("NFD", t or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", " ", t).strip()
+
+
+def correspond(regle: dict, texte: str, media_id: str) -> bool:
+    if not regle.get("actif"):
+        return False
+    if not regle.get("toutes") and media_id not in regle.get("publications", []):
+        return False
+    mots_com = f" {_norm(texte)} "
+    return any(f" {_norm(m)} " in mots_com for m in regle["mots"] if _norm(m))
+
+
+def stats(uid: int) -> dict:
+    d = lit(uid)
+    res: dict = {}
+    for j in d.get("journal", []):
+        s = res.setdefault(j.get("regle", ""), {"envois": 0, "echecs": 0, "dernier": ""})
+        s["envois" if j.get("ok") else "echecs"] += 1
+        s["dernier"] = max(s["dernier"], j.get("date", ""))
+    return res
+
+
+# ------------------------------------------------------------
+#  Réception d'un commentaire (webhook) et envoi
+# ------------------------------------------------------------
+def signature_valide(corps: bytes, signature: str) -> bool:
+    secret = os.getenv("INSTAGRAM_APP_SECRET", "")
+    if not secret or not signature.startswith("sha256="):
+        return False
+    attendu = hmac.new(secret.encode(), corps, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(attendu, signature[7:])
+
+
+def traite_webhook(charge: dict, peut_envoyer) -> int:
+    """Parcourt les commentaires reçus ; renvoie le nombre de messages envoyés.
+    peut_envoyer(uid) -> bool : la cliente a-t-elle encore droit à la fonction (formule payante active) ?"""
+    n = 0
+    for entree in charge.get("entry", []) or []:
+        ig_id = str(entree.get("id") or "")
+        for ch in entree.get("changes", []) or []:
+            if ch.get("field") != "comments":
+                continue
+            v = ch.get("value") or {}
+            try:
+                n += traite_commentaire(ig_id, v, peut_envoyer)
+            except Exception as e:  # noqa: BLE001
+                print(f"[messages auto] commentaire non traité : {e}")
+    return n
+
+
+def traite_commentaire(ig_id: str, v: dict, peut_envoyer, demo: bool = False) -> int:
+    c = compte_par_ig(ig_id) if not demo else None
+    uid = c["uid"] if c else v.get("_uid")
+    if not uid or not peut_envoyer(uid):
+        return 0
+    auteur = (v.get("from") or {})
+    if str(auteur.get("id") or "") == ig_id or (c and auteur.get("username") == c.get("pseudo")):
+        return 0  # ses propres réponses ne déclenchent rien
+    com_id, texte, media = str(v.get("id") or ""), v.get("text") or "", str((v.get("media") or {}).get("id") or "")
+    with _verrou:
+        d = lit(uid)
+        if com_id in d.setdefault("repondus", {}):
+            return 0
+        regle = next((r for r in d.get("regles", []) if correspond(r, texte, media)), None)
+        if not regle:
+            return 0
+        recents = [j for j in d.get("journal", []) if j.get("ok") and j.get("date", "") >= (datetime.now() - timedelta(hours=1)).isoformat()]
+        if len(recents) >= MAX_PAR_HEURE:
+            return 0
+        d["repondus"][com_id] = datetime.now().isoformat(timespec="seconds")
+        _ecrit(uid, d)
+    message = regle["message"].replace("{prenom}", "").replace("{pseudo}", "@" + (auteur.get("username") or "")).strip()
+    ok, erreur = True, ""
+    if not demo:
+        try:
+            envoie_reponse_privee(c, com_id, message, regle.get("lien", ""), regle.get("bouton", ""))
+            if regle.get("reponses_publiques"):
+                try:
+                    repond_publiquement(c, com_id, random.choice(regle["reponses_publiques"]))
+                except Exception as e:  # noqa: BLE001
+                    print(f"[messages auto] réponse publique non envoyée : {e}")
+        except Exception as e:  # noqa: BLE001
+            ok, erreur = False, str(e)[:200]
+    with _verrou:
+        d = lit(uid)
+        d.setdefault("journal", []).insert(0, {"date": datetime.now().isoformat(timespec="seconds"), "regle": regle["id"], "mot": regle["mots"][0],
+                                               "qui": auteur.get("username", ""), "commentaire": texte[:140], "ok": ok, "erreur": erreur})
+        limite = (datetime.now() - timedelta(days=JOURS_JOURNAL)).isoformat()
+        d["journal"] = [j for j in d["journal"] if j.get("date", "") >= limite][:2000]
+        d["repondus"] = {k: t for k, t in d["repondus"].items() if t >= (datetime.now() - timedelta(days=8)).isoformat()}
+        _ecrit(uid, d)
+    if ok and not demo:
+        try:
+            import notifications as nt
+            nt.notifie(uid, "💌 Message envoyé", f"@{auteur.get('username', '')} a commenté « {regle['mots'][0]} » : ton lien lui a été envoyé.", "/app#messages")
+        except Exception:  # noqa: BLE001
+            pass
+    return 1 if ok else 0
+
+
+def envoie_reponse_privee(c: dict, comment_id: str, texte: str, lien: str = "", bouton: str = ""):
+    """Une seule réponse privée par commentaire, dans les 7 jours. Avec lien : bouton cliquable, sinon texte seul."""
+    url = f"{GRAPH}/{VERSION}/{c['ig_id']}/messages"
+    if lien:
+        corps = {"recipient": {"comment_id": comment_id}, "message": {"attachment": {"type": "template", "payload": {
+            "template_type": "button", "text": texte[:640], "buttons": [{"type": "web_url", "url": lien, "title": (bouton or "Ouvrir le lien")[:20]}]}}}}
+        r = requests.post(url, json=corps, headers={"Authorization": f"Bearer {c['jeton']}"}, timeout=30)
+        if r.status_code == 200:
+            return
+        # Certains comptes refusent les boutons : on renvoie en texte, lien compris
+        texte = f"{texte}\n\n{lien}"
+    r = requests.post(url, json={"recipient": {"comment_id": comment_id}, "message": {"text": texte[:1000]}},
+                      headers={"Authorization": f"Bearer {c['jeton']}"}, timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(_erreur(r.json(), f"Instagram a refusé l'envoi (code {r.status_code})."))
+
+
+def repond_publiquement(c: dict, comment_id: str, texte: str):
+    r = requests.post(f"{GRAPH}/{VERSION}/{comment_id}/replies", params={"message": texte[:300], "access_token": c["jeton"]}, timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(_erreur(r.json(), "Réponse publique refusée."))
+
+
+def simule(uid: int, texte: str, qui: str = "julie.test") -> dict:
+    """Mode démo et bouton « Tester » : que se passerait-il si quelqu'un commentait ce texte ?"""
+    d = lit(uid)
+    regle = next((r for r in d.get("regles", []) if correspond(r, texte, "")), None)
+    if not regle:
+        return {"declenche": False}
+    return {"declenche": True, "regle": regle["nom"], "message": regle["message"].replace("{pseudo}", "@" + qui),
+            "lien": regle.get("lien", ""), "bouton": regle.get("bouton", ""),
+            "publique": random.choice(regle["reponses_publiques"]) if regle.get("reponses_publiques") else ""}
+
+
+def ajoute_demo(uid: int, regle: dict, qui: str = "julie.test"):
+    """Démo : inscrit un faux envoi au journal pour voir le rendu."""
+    traite_commentaire("", {"_uid": uid, "id": secrets.token_hex(6), "text": regle["mots"][0], "from": {"id": "x", "username": qui}},
+                       lambda _u: True, demo=True)
