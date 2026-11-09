@@ -90,6 +90,23 @@ def idees(esp: Espace, cfg: dict, demo: bool = False) -> dict:
     return r
 
 
+def bios(esp: Espace, cfg: dict, infos: dict, demo: bool = False) -> dict:
+    """Trois propositions de présentation pour la page, à partir de ce que vend la cliente et à qui."""
+    log("J'écris tes présentations…")
+    cible, apport = infos.get("cible") or "mes clientes", infos.get("apport") or "avancer"
+    if demo:
+        return {"bios": [f"J'aide {cible} à {apport}. Tout est ici ⬇️",
+                         f"Pour {cible} qui veulent {apport}, sans se compliquer la vie 💛\nMes ressources juste en dessous.",
+                         f"{apport[:1].upper() + apport[1:]} : c'est possible, et je te montre comment. ✨"]}
+    from ia import ecrit_bios
+    t = (f"Nom de la boutique : {infos.get('nom') or ''}\nSes clientes : {cible}\nElle les aide à : {apport}\n"
+         f"Ce qu'elle vend : {', '.join(infos.get('produits') or []) or 'pas encore de produit'}")
+    r = ecrit_bios(cfg, _voix(esp, cfg), t)
+    if r.get("erreur"):
+        raise RuntimeError(r["erreur"])
+    return {"bios": [str(x).strip()[:280] for x in _liste(r.get("bios")) if str(x).strip()][:3]}
+
+
 def page_vente(esp: Espace, cfg: dict, produit: dict, demo: bool = False) -> dict:
     """Textes de la page de vente d'une offre (écrits dans la voix de la marque). Renvoie les champs à poser dans le tunnel."""
     log("J'écris ta page de vente…")

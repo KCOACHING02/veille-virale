@@ -1248,6 +1248,9 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .as-logo.plein-f{border-style:solid}
 .as-logo input[type=file]{display:none}
 .as-gros{font-size:18px!important;padding:14px!important}
+.as-bios{display:flex;flex-direction:column;gap:8px}
+.as-bio{text-align:left;font:inherit;font-size:15px;line-height:1.45;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);cursor:pointer}
+.as-bio[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .as-liens{min-height:110px;font-size:15px!important;line-height:1.5;resize:vertical}
 .as-lots{display:flex;flex-direction:column;gap:10px}
 .as-lot{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
@@ -4162,15 +4165,25 @@ function etapesBoutique(A) {
       corps: () => `<label class="as-logo ${A.photo ? "plein" : ""}" id="as-photo" style="${A.photo ? `background-image:url('${A.photoUrl || vignetteImg(A.photo)}')` : ""}">
           ${A.photo ? "" : '<span class="e">🖼️</span><b>Choisir mon logo</b><small>Pas de logo ? Une photo de toi marche très bien.</small>'}<input type="file" accept="image/*" aria-label="Ton logo"></label>
         <p class="aide" style="text-align:center">${A.photo ? "✓ Ses couleurs serviront au design de ta boutique. <button type='button' class='lien' id='as-photo-x'>Changer</button>" : "Ses couleurs serviront au design de ta boutique."}</p>`},
-    {nom: "Ta présentation", q: "En une phrase : tu aides qui, à faire quoi ?",
-      corps: () => `<div class="tn-exemples"><span>💡 Exemples :</span>${[
-          "J'aide les mamans débordées à retrouver du temps pour elles.",
-          "Naturopathe · J'aide les femmes actives à retrouver leur énergie.",
-          "Coach pour créatrices : tes premières ventes en ligne, sans y passer tes soirées."].map(x => `<button type="button" data-bio="${esc(x)}">${esc(x.split(/[:.·]/)[0].slice(0, 34))}…</button>`).join("")}</div>
-        <div class="champ"><label for="as-bio">Ta phrase de présentation</label><textarea id="as-bio" data-a="bio" maxlength="280" style="min-height:90px" placeholder="J'aide les … à … sans …">${esc(A.bio)}</textarea></div>`},
     {nom: "Tes produits", produits: true, q: produitsQuestion(A, prods), corps: () => corpsProduits(A, prods)},
     ...(payants ? [{nom: "Les paiements", stripe: true, q: (BQ.page?.stripe || {}).pret || A.stripeDemo ? "Les paiements sont prêts" : "As-tu un compte Stripe ?",
       corps: () => corpsStripe(A, pay)}] : []),
+    {nom: "Tes clientes", q: "Qui sont tes clientes ?",
+      corps: () => `<div class="tn-exemples"><span>💡</span>${["les femmes actives", "les mamans débordées", "les débutantes qui veulent lancer un business en ligne", "les femmes de plus de 40 ans", "les entrepreneures pressées"]
+          .map(x => `<button type="button" data-cible="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+        <div class="champ"><label for="as-cible">J'aide…</label><input id="as-cible" data-a="cible" value="${esc(A.cible || "")}" maxlength="120" placeholder="les femmes actives"></div>`,
+      valide: () => (A.cible || "").trim() ? null : "Dis en quelques mots à qui tu t'adresses"},
+    {nom: "Ce que tu apportes", q: "Tu les aides à quoi ?",
+      corps: () => `<div class="tn-exemples"><span>💡</span>${["retrouver de l'énergie", "gagner un revenu en ligne", "prendre soin de leur peau", "perdre du poids sans régime", "gagner du temps au quotidien"]
+          .map(x => `<button type="button" data-apport="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+        <div class="champ"><label for="as-apport">J'aide ${esc((A.cible || "mes clientes").trim())} à…</label><input id="as-apport" data-a="apport" value="${esc(A.apport || "")}" maxlength="140" placeholder="retrouver de l'énergie"></div>`,
+      valide: () => (A.apport || "").trim() ? null : "Dis en quelques mots ce que tu leur apportes"},
+    {nom: "Ta présentation", q: "Choisis ta présentation", bio: true,
+      corps: () => A.biosEnCours ? `<p class="aide">${spin(" Virall.ai écrit tes présentations…")}</p>`
+        : `<div class="as-bios">${(A.bios || []).map((b, i) => `<button type="button" class="as-bio" data-bio-i="${i}" aria-pressed="${A.bio === b}">${esc(b).replace(/\n/g, "<br>")}</button>`).join("")}</div>
+          <button type="button" class="btn petit" id="as-bios-autres" style="margin:4px 0 12px">↻ Autres propositions</button>
+          <div class="champ"><label for="as-bio">Ta présentation (tu peux la retoucher)</label><textarea id="as-bio" data-a="bio" maxlength="280" style="min-height:90px">${esc(A.bio)}</textarea></div>`,
+      valide: () => (A.bio || "").trim() ? null : "Choisis une présentation ou écris la tienne"},
     {nom: "Tes réseaux", q: "Où peut-on te suivre ?",
       corps: () => `<div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
         <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>`},
@@ -4183,6 +4196,32 @@ function etapesBoutique(A) {
           ${A.relance ? '<p class="aide" style="margin-top:12px">Tes blocs et ton design actuels seront remplacés. Tes produits, tes inscrites et tes ventes ne bougent pas. Tu pourras annuler juste après.</p>' : ""}`; }},
   ];
   return E;
+}
+function biosModeles(A) {
+  const c = (A.cible || "mes clientes").trim(), a = (A.apport || "avancer").trim(), p = (BQ.page?.produits || [])[0]?.titre, maj = t => t[0].toUpperCase() + t.slice(1);
+  return [`J'aide ${c} à ${a}.${p ? " Tout est ici ⬇️" : ""}`,
+    `Pour ${c} qui veulent ${a}, sans se compliquer la vie 💛${p ? "\nMes ressources juste en dessous." : ""}`,
+    `${maj(a)} : c'est possible, et je te montre comment. ✨`,
+    `${maj(c)}, je t'aide à ${a}, à ton rythme.`,
+    `Ici, on apprend à ${a}. Simplement. 🌿`,
+    `${maj(a)} sans y passer tes soirées : je te montre tout.`];
+}
+async function proposeBios(A, autres) {
+  const cle = [A.cible, A.apport, (BQ.page?.produits || []).map(p => p.titre).join("|")].join("§");
+  if (A.bios?.length && A.biosCle === cle && !autres) return;
+  A.biosEnCours = true; A.biosCle = cle; renduBoutique();
+  let bios = null;
+  try {
+    // fetch direct : sans droit à l'IA (formule gratuite, adresse non confirmée), on passe aux phrases toutes faites sans fenêtre d'alerte
+    const rep = await fetch("/api/boutique/bio", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({nom: A.nom, cible: A.cible, apport: A.apport, produits: (BQ.page?.produits || []).map(p => p.titre)})});
+    if (rep.ok) { const jid = (await rep.json()).job;
+      bios = (await Promise.race([attendsTache(jid, () => {}), new Promise((_, ko) => setTimeout(() => ko(new Error("délai")), 25000))])).bios; }
+  } catch {}
+  if (!bios?.length) { const m = biosModeles(A), k = autres ? ((A.biosPage = (A.biosPage || 0) + 1) % 2) * 3 : 0; bios = m.slice(k, k + 3); }
+  A.bios = bios; A.biosEnCours = false;
+  if (!A.bio || !autres && !bios.includes(A.bio) && A.bioAuto) { A.bio = bios[0]; A.bioAuto = true; }
+  if (BQ.assist === A) { renduBoutique(); apercuAssistant(true); }
 }
 function produitsQuestion(A, prods) {
   const n = A.np;
@@ -4328,7 +4367,15 @@ function renduAssistantBoutique(el) {
   // Champs simples
   $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); gardeAssist(A); });
   $$("[data-res]").forEach(i => i.oninput = () => { A.reseaux[i.dataset.res] = i.value; apercuAssistant(); gardeAssist(A); });
-  $$("[data-bio]").forEach(b => b.onclick = () => { A.bio = b.dataset.bio; $("#as-bio").value = A.bio; apercuAssistant(); });
+  $$("[data-cible]").forEach(b => b.onclick = () => { A.cible = b.dataset.cible; $("#as-cible").value = A.cible; gardeAssist(A); });
+  $$("[data-apport]").forEach(b => b.onclick = () => { A.apport = b.dataset.apport; $("#as-apport").value = A.apport; gardeAssist(A); });
+  $$("[data-bio-i]").forEach(b => b.onclick = () => { A.bio = A.bios[+b.dataset.bioI]; A.bioAuto = true; $("#as-bio").value = A.bio;
+    $$("[data-bio-i]").forEach(x => x.setAttribute("aria-pressed", x === b)); apercuAssistant(); gardeAssist(A); });
+  $("#as-bio")?.addEventListener("input", () => { A.bioAuto = false; });
+  $("#as-bios-autres")?.addEventListener("click", () => proposeBios(A, true));
+  if (e.bio && !A.biosEnCours) proposeBios(A, false);
+  // Les anciens parcours gardaient « liens » : plus d'étape liens, donc plus de faux boutons dans l'aperçu
+  if (A.objectifs?.includes("liens") && !A.liens?.some(l => (l.url || "").trim())) A.objectifs = A.objectifs.filter(k => k !== "liens");
   $("#as-nom")?.focus();
   // Logo : ses couleurs nourrissent les propositions de design
   $("#as-photo input") && ($("#as-photo input").onchange = async ev => {

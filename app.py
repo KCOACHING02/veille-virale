@@ -2421,6 +2421,23 @@ def boutique_idees():
                                  apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
 
 
+@app.post("/api/boutique/bio")
+@connecte
+def boutique_bio():
+    """Trois propositions de présentation écrites par Virall.ai (modèle léger, file du studio, option ia).
+    Sans IA dans la formule : 402, le navigateur propose alors des phrases toutes faites."""
+    import boutique_ia
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    msg = reserve(g.u, "ia") or refus(g.u)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    c = request.get_json(force=True) or {}
+    infos = {"nom": str(c.get("nom") or "")[:80], "cible": str(c.get("cible") or "")[:200], "apport": str(c.get("apport") or "")[:200],
+             "produits": [str(x)[:120] for x in (c.get("produits") or [])[:8]]}
+    return jsonify({"job": lance(g.u["id"], "Présentation", boutique_ia.bios, g.esp, g.esp.lit_config(), infos, demo=en_demo(), file_=FILE_STUDIO)})
+
+
 @app.post("/api/boutique/page_vente")
 @connecte
 def boutique_page_vente():

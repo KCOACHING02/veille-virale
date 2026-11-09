@@ -879,6 +879,26 @@ def ecrit_sequence(cfg: dict, voix: str, produits: list[dict], boutique: str) ->
     return _ia_simple(cfg)._appel(OUTIL_SEQUENCE, texte, max_tokens=3500, systeme=_systeme_marque(cfg, voix, "Tu écris des e-mails pour une créatrice de contenu."))
 
 
+OUTIL_BIOS = {
+    "name": "proposer_bios",
+    "description": "Trois propositions de présentation pour la page « lien en bio » d'une créatrice.",
+    "input_schema": {"type": "object", "properties": {
+        "bios": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "string",
+                 "description": "Une présentation de 1 à 3 lignes courtes (180 caractères maximum en tout), à la première personne. "
+                                "Dit à qui elle s'adresse et ce qu'elle apporte ; peut finir par une invitation vers ses produits. "
+                                "Au plus 2 émojis. Les trois propositions ont des styles différents : simple et directe, chaleureuse, percutante."}}},
+        "required": ["bios"]},
+}
+
+
+def ecrit_bios(cfg: dict, voix: str, infos: str) -> dict:
+    texte = (f"{infos}\n\nPropose trois présentations pour le haut de sa page de vente en lien dans la bio Instagram. "
+             "Elles doivent sonner comme elle, pas comme une publicité : pas de superlatifs, pas de promesse chiffrée, pas de jargon marketing. "
+             "Pas de retour à la ligne superflu ; si tu fais plusieurs lignes, sépare-les par un saut de ligne.")
+    return _ia_simple(cfg)._appel(OUTIL_BIOS, texte, max_tokens=700, modele=MODELE_LEGER,
+                                  systeme=_systeme_marque(cfg, voix, "Tu écris des présentations courtes pour des créatrices de contenu."))
+
+
 OUTIL_PLAN30 = {
     "name": "enregistrer_plan",
     "description": "Sujets des 8 carrousels d'un plan de contenu de 30 jours qui mène à la vente.",
