@@ -4164,7 +4164,9 @@ function couleursProposees(A) {
   return C;
 }
 function propositionsDesign(A) {
-  return couleursProposees(A).map((c, k) => ({nom: `${MAQUETTES[k % MAQUETTES.length].nom} · ${c.nom}`, maq: k % MAQUETTES.length, c: c.c}));
+  const C = couleursProposees(A), M = MAQUETTES.length, L = [];
+  for (let tour = 0; tour < M; tour++) C.forEach((c, k) => { const m = (k + tour) % M; L.push({nom: `${MAQUETTES[m].nom} · ${c.nom}`, maq: m, c: c.c}); });
+  return L;
 }
 function designProposition(A, p) {
   const base = {...BQ.etat.options.defaut, ...COMMUN_MAQUETTE, ...MAQUETTES[p.maq].d, ...p.c, theme: "perso", apparition: false};
@@ -4211,8 +4213,10 @@ function etapesBoutique(A) {
       corps: () => `<div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
         <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>`},
     {nom: "Ton design", q: "Choisis le design de ta boutique", fin: true, propositions: true,
-      corps: () => { const L = propositionsDesign(A), n = Math.ceil(L.length / 3) || 1, page = Math.min(A.propPage || 0, n - 1); if (A.prop == null) A.prop = page * 3;
-        return `<p class="aide" style="margin-top:-6px">Virallink a préparé ta boutique avec ton logo et tes produits. Touche celle qui te plaît.</p>
+      corps: () => { const L = propositionsDesign(A), n = Math.ceil(L.length / 3) || 1, page = Math.min(A.propPage || 0, n - 1);
+        if (A.prop == null || !L[A.prop] || A.propVersion !== 2) { A.prop = page * 3; A.propVersion = 2; A.design = null; }
+        return `<p class="aide" style="margin-top:-6px">${A.photo ? "Virallink a préparé ta boutique avec ton logo et tes produits. Touche celle qui te plaît."
+            : `Ajoute ton logo pour qu'il apparaisse et que les couleurs s'accordent avec lui : <label class="lien" style="cursor:pointer">ajouter mon logo<input type="file" accept="image/*" id="as-logo-design" hidden></label>`}</p>
           <div class="as-props">${L.slice(page * 3, page * 3 + 3).map((p, i) => { const j = page * 3 + i, actif = A.prop === j;
             return `<button type="button" class="as-prop" data-prop="${j}" aria-pressed="${actif}"><div class="mini"><iframe tabindex="-1" title="${esc(p.nom)}"></iframe></div><span>${actif ? "✓ " : ""}${esc(p.nom)}</span></button>`; }).join("")}</div>
           <div class="as-nav-props"><button type="button" class="btn" id="as-precedentes" ${page ? "" : "disabled"}>← Précédentes</button>
@@ -4509,6 +4513,10 @@ function renduAssistantBoutique(el) {
     $("#as-autres").onclick = () => { A.propPage = Math.min((A.propPage || 0) + 1, n - 1); rendu(); };
     $("#as-precedentes").onclick = () => { A.propPage = Math.max((A.propPage || 0) - 1, 0); rendu(); };
     $("#as-revoir")?.addEventListener("click", () => { A.propPage = Math.floor(A.prop / 3); rendu(); });
+    $("#as-logo-design")?.addEventListener("change", async ev => { const f = ev.target.files[0]; if (!f) return;
+      try { const r = await envoieImageBoutique(f, "photo"); Object.assign(A, {photo: r.nom, palettes: r.palettes, prop: 0, propPage: 0, design: null});
+        if (BQ.etat.pseudo) { await api("/api/boutique", {method: "PUT", body: {photo: r.nom}}); if (BQ.page) BQ.page.photo = r.nom; }
+        toast("Logo ajouté ✓ Voici les propositions à ses couleurs"); rendu(); } catch (er) { toast(er.message); } });
     apercuAssistant(true);
   }
   // Adresse : proposée à partir du nom, vérifiée en direct, puis création de la boutique (brouillon)
