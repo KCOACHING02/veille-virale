@@ -2209,6 +2209,33 @@ def boutique_image_privee(nom):
     return send_from_directory(bq.dossier(bq_active()) / "images", nom, max_age=86400)
 
 
+@app.post("/api/boutique/importe_lien")
+@connecte
+def boutique_importe_lien():
+    """Lit la page d'un produit (affiliation, autre site) : nom, phrase, image et prix, pour pré-remplir la fiche."""
+    import import_lien as il
+    url = ((request.get_json(force=True) or {}).get("url") or "").strip()
+    if not url:
+        return jsonify({"erreur": "Colle le lien du produit."}), 400
+    if en_demo():
+        return jsonify({"titre": "Formation : lancer son activité en ligne", "sous_titre": "12 modules vidéo pour trouver tes premiers clients sans y passer tes soirées.",
+                        "prix": 297.0, "devise": "EUR", "site": "exemple.fr", "image": ""})
+    try:
+        d = il.lit_page(url)
+    except il.LienInvalide as e:
+        return jsonify({"erreur": str(e)}), 400
+    except Exception:  # noqa: BLE001
+        return jsonify({"erreur": "Impossible de lire cette page : remplis les informations à la main."}), 400
+    d["image"] = ""
+    url_img = d.pop("image_url", "")
+    if url_img and (flux := il.telecharge_image(url_img)):
+        try:
+            d["image"] = bq.enregistre_image(bq_active(), flux, 1600)
+        except Exception:  # noqa: BLE001  (image illisible : la cliente en mettra une)
+            pass
+    return jsonify(d)
+
+
 @app.post("/api/boutique/image")
 @connecte
 def boutique_image_envoi():
