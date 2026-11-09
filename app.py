@@ -2859,7 +2859,9 @@ def admin_services_verifie():
 @app.get("/api/admin/bibliotheque")
 @admin_requis
 def admin_bib():
-    return jsonify(bibliotheque.resume_admin())
+    taches = [{"titre": j["titre"], "statut": j["statut"], "debut": j["debut"], "dernier": (j["logs"][-1]["m"] if j["logs"] else ""), "erreur": j.get("erreur")}
+              for j in JOBS.values() if j["uid"] == 0]
+    return jsonify({**bibliotheque.resume_admin(), "taches": taches[-3:]})
 
 
 @app.put("/api/admin/bibliotheque")

@@ -155,6 +155,7 @@ async function chargeBib() {
   const r = await fetch("/api/admin/bibliotheque"); if (!r.ok) return;
   B = await r.json(); renduBib();
 }
+setInterval(() => { if ((B?.taches || []).some(t => ["en cours", "en attente"].includes(t.statut))) chargeBib(); }, 15000);
 function renduBib() {
   const e = B.etat || {}, j = e.journal || [], m = j.slice(0, 30).reduce((a, x) => a + (x.cout_usd || 0), 0);
   const pf = e.par_format || {};
@@ -165,6 +166,7 @@ function renduBib() {
       [e.jour ? new Date(e.fin || e.jour).toLocaleString("fr-FR", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) : "jamais", "dernière actualisation"],
       [usd(e.cout_usd), "coût de la dernière collecte"], [usd(m), `coût des ${Math.min(j.length, 30)} derniers jours`]]
       .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("")}</div>
+    ${(B.taches || []).map(t => `<p class="sous">${["en cours", "en attente"].includes(t.statut) ? "⏳" : t.statut === "erreur" ? "🔴" : "✓"} <b>${esc(t.titre)}</b> (lancée à ${esc((t.debut || "").slice(11, 16))}) : ${esc(t.statut)}${t.erreur ? " — " + esc(t.erreur) : t.dernier ? " — " + esc(t.dernier) : ""}</p>`).join("")}
     <div class="outils"><button class="btn" id="bib-maj">Actualiser maintenant</button><button class="btn" id="bib-verif">Vérifier les comptes</button><button class="btn" id="bib-sauve">Enregistrer les listes</button><span id="bib-job"></span></div>
     <div class="niches">${Object.entries(B.niches).map(([k, n]) => `<div class="niche" data-niche="${esc(k)}">
       <h3>${esc(n.nom)}</h3><div class="f">${n.par_format.Carrousel} carrousels · ${n.par_format.Reel} Reels · ${n.par_format.Photo} publications · ${n.comptes.length} comptes</div>
