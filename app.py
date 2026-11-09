@@ -1202,6 +1202,27 @@ def stories_retouche(sid):
     return jsonify({"job": jid})
 
 
+@app.post("/api/stories/<sid>/preuves/<int:i>")
+@connecte
+def stories_preuves(sid, i):
+    """Captures d'écran de la cliente (gains, ventes, messages) mises en forme dans la story i."""
+    _projet_stories(sid)
+    erreurs, p = [], None
+    for f in request.files.getlist("fichiers"):
+        try:
+            p = stories.ajoute_preuve(g.esp, sid, i, f)
+        except ValueError as e:
+            erreurs.append(str(e))
+    return jsonify({"projet": p or studio.charge(g.esp, sid), "erreurs": erreurs})
+
+
+@app.delete("/api/stories/<sid>/preuves/<int:i>/<nom>")
+@connecte
+def stories_preuve_retire(sid, i, nom):
+    _projet_stories(sid)
+    return jsonify(stories.retire_preuve(g.esp, sid, i, nom))
+
+
 @app.get("/api/stories/<sid>/apercu/<int:i>")
 @connecte
 def stories_apercu(sid, i):

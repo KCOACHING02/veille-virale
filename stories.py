@@ -400,7 +400,7 @@ def duree_story(s: dict, p: dict | None = None) -> float:
     if s.get("duree"):
         return round(max(3.0, min(15.0, float(s["duree"]))), 1)
     if p and effet_de(p, s) == "notifications":
-        base = max(base, 3.5 + 0.55 * len(_lignes_notif(s)))
+        base = max(base, 3.5 + 0.55 * max(len(_lignes_notif(s)), len(s.get("preuves") or [])))
     return round(max(3.0, min(15.0, base + bonus)), 1)
 
 
@@ -517,6 +517,77 @@ def _cartes_notif(lignes: list[str], pal: dict):
     return cartes
 
 
+MAX_PREUVES = 5
+
+
+def ajoute_preuve(esp: Espace, sid: str, i: int, flux) -> dict:
+    """Capture d'écran fournie par la cliente (gain, vente, message reçu) : mise en forme en carte dans la story i."""
+    from PIL import Image, ImageOps
+    p = studio.charge(esp, sid)
+    if not (0 <= i < len(p["slides"])):
+        raise ValueError("Story introuvable.")
+    s = p["slides"][i]
+    if len(s.get("preuves") or []) >= MAX_PREUVES:
+        raise ValueError(f"{MAX_PREUVES} captures au maximum par story.")
+    try:
+        im = ImageOps.exif_transpose(Image.open(flux)).convert("RGB")
+    except Exception:  # noqa: BLE001
+        raise ValueError("Image illisible : envoie une capture d'écran (JPG ou PNG).") from None
+    im.thumbnail((1400, 1400))
+    nom = f"preuve_{uuid.uuid4().hex[:10]}.jpg"
+    src = studio.dossier(esp, sid) / "sources"
+    src.mkdir(parents=True, exist_ok=True)
+    im.save(src / nom, "JPEG", quality=90)
+    s.setdefault("preuves", []).append(nom)
+    s["effet"] = "notifications"  # les captures s'affichent avec l'effet « Notifications »
+    if p.get("statut") == "pret":
+        p["statut"] = "brouillon"
+    studio.sauve(esp, p)
+    return p
+
+
+def retire_preuve(esp: Espace, sid: str, i: int, nom: str) -> dict:
+    p = studio.charge(esp, sid)
+    if 0 <= i < len(p["slides"]) and nom in (p["slides"][i].get("preuves") or []):
+        p["slides"][i]["preuves"].remove(nom)
+        (studio.dossier(esp, sid) / "sources" / nom).unlink(missing_ok=True)
+        if p.get("statut") == "pret":
+            p["statut"] = "brouillon"
+        studio.sauve(esp, p)
+    return p
+
+
+def _cartes_preuves(fichiers: list[Path]):
+    """Captures de la cliente mises en forme : coins arrondis, liseré blanc, ombre, légère inclinaison. Renvoie (cartes, hauteur où poser chacune)."""
+    from PIL import Image, ImageDraw, ImageFilter, ImageOps
+    w = TAILLE[0]
+    fichiers = [f for f in fichiers if Path(f).is_file()][:MAX_PREUVES]
+    if not fichiers:
+        return [], []
+    haut, ecart = 1090, 22                          # zone des captures : de y = 620 à 1710
+    brutes = [ImageOps.contain(Image.open(f).convert("RGB"), (w - 2 * 80, haut if len(fichiers) == 1 else 620)) for f in fichiers]
+    total = sum(b.size[1] + 12 for b in brutes) + ecart * (len(brutes) - 1)
+    k = min(1.0, haut / total)                      # trop hautes ensemble : toutes réduites d'autant
+    cartes, ys, y = [], [], 620 + max(0, (haut - total * k) / 2) * 0.35
+    for i, im in enumerate(brutes):
+        if k < 1:
+            im = im.resize((max(1, int(im.size[0] * k)), max(1, int(im.size[1] * k))), Image.LANCZOS)
+        L, H = im.size
+        rayon, bord, marge = 30, 6, 30
+        c = Image.new("RGBA", (L + 2 * (bord + marge), H + 2 * (bord + marge)), (0, 0, 0, 0))
+        ombre = Image.new("RGBA", c.size, (0, 0, 0, 0))
+        ImageDraw.Draw(ombre).rounded_rectangle((marge, marge + 10, marge + L + 2 * bord, marge + H + 2 * bord + 10), radius=rayon + bord, fill=(0, 0, 0, 110))
+        c.alpha_composite(ombre.filter(ImageFilter.GaussianBlur(14)))
+        ImageDraw.Draw(c).rounded_rectangle((marge, marge, marge + L + 2 * bord, marge + H + 2 * bord), radius=rayon + bord, fill=(255, 255, 255, 255))
+        m = Image.new("L", (L, H), 0)
+        ImageDraw.Draw(m).rounded_rectangle((0, 0, L - 1, H - 1), radius=rayon, fill=255)
+        c.paste(im, (marge + bord, marge + bord), m)
+        ys.append(int(y) - marge)
+        y += H + 2 * bord + ecart * k
+        cartes.append(c.rotate((-1.6, 1.3, -0.9, 1.7, -1.2)[i % 5], expand=True, resample=Image.BICUBIC))
+    return cartes, ys
+
+
 def _telephone(image: Path | None, pal: dict):
     """Téléphone incliné (photo à l'écran) et sa carte de couleur derrière, en calques RGBA."""
     from PIL import Image, ImageDraw
@@ -563,7 +634,7 @@ def effet_de(p: dict, s: dict) -> str:
     return s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") if p.get("effet") in EFFETS else "doux")
 
 
-def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulement: set | None = None):  # noqa: C901
+def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulement: set | None = None, sources: Path | None = None):  # noqa: C901
     """Générateur des images (PIL RGB) d'une story animée. seulement : numéros d'images à rendre (aperçu)."""
     from PIL import Image, ImageDraw, ImageFilter
     pal = palette_de(p)
@@ -582,10 +653,15 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulemen
     if eff == "manuscrit" and studio.STYLE_DE_TYPO.get(typo) != "manuscrit":
         typo = "signature"
     lignes_n = _lignes_notif(s) if eff == "notifications" else []
+    ys_preuves, preuves = [], []
+    if eff == "notifications" and s.get("preuves") and sources:
+        preuves, ys_preuves = _cartes_preuves([sources / x for x in s["preuves"]])
     if eff == "telephone":
         zone = (200, 690)
         tel, carte_tel = _telephone(image, pal)
-    if lignes_n:
+    if preuves:  # ses propres captures remplacent les cartes de texte ; le texte reste sous le titre
+        zone, cartes, lignes_n = (200, 620), preuves, preuves
+    elif lignes_n:
         zone = (230, 600)
         cartes = _cartes_notif(lignes_n, pal)
         s = {**s, "texte": ""}
@@ -713,7 +789,7 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulemen
                 cc = c if a >= 1 else c.copy()
                 if a < 1:
                     cc.putalpha(cc.split()[3].point(lambda v, a=a: int(v * a)))
-                im.alpha_composite(cc, (int((w - c.size[0]) // 2 + 260 * (1 - a)), 650 + i * 172))
+                im.alpha_composite(cc, (int((w - c.size[0]) // 2 + 260 * (1 - a)), ys_preuves[i] if preuves else 650 + i * 172))
         if eff == "dynamique" and t < 0.35:  # flash d'entrée
             im.alpha_composite(Image.new("RGBA", TAILLE, (255, 255, 255, int(min(255, 200 * inten) * (1 - t / 0.35)))))
         if etinc:
@@ -748,7 +824,7 @@ def apercu(esp: Espace, sid: str, i: int) -> bytes:
     s = p["slides"][i]
     w, h = TAILLE
     k = int(duree_story(s, p) * FPS) - 12  # juste avant le fondu de sortie : tout est en place
-    im = next(images_story(p, s, images[i], graine=i + 7, seulement={k})).convert("RGBA")
+    im = next(images_story(p, s, images[i], graine=i + 7, seulement={k}, sources=d / "sources")).convert("RGBA")
     if s.get("sticker"):  # place du sticker (aperçu seulement : il se pose dans Instagram)
         dd = ImageDraw.Draw(im)
         dd.rounded_rectangle((200, 1260, w - 200, 1520), radius=40, outline=(255, 255, 255, 200), width=5)
@@ -794,7 +870,7 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
         for i, s in enumerate(p["slides"]):
             log(f"Je fabrique la story {i + 1}/{len(p['slides'])}…")
             nom = f"story_{i + 1:02d}.mp4"
-            gen = images_story(p, s, images[i], graine=i + 7)
+            gen = images_story(p, s, images[i], graine=i + 7, sources=d / "sources")
             _encode(gen, sortie / nom, duree_story(s, p))
             fichiers.append(nom)
             if i == 0:  # vignette pour « Mes créations »

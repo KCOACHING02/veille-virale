@@ -640,6 +640,10 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .stp-role{font-size:12.5px;color:var(--ink-3)}
 .stp-champs textarea,.stp-champs input,.stp-champs select{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
 .stp-champs textarea[data-ch=titre]{font-weight:700}
+.stp-preuves{display:flex;gap:6px;flex-wrap:wrap}
+.stp-preuves span{position:relative;width:64px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.stp-preuves img{width:100%;height:100%;object-fit:cover}
+.stp-preuves button{position:absolute;top:0;right:0;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:11px;width:20px;height:20px;cursor:pointer}
 .stp-sticker{display:grid;gap:6px}.stp-img{display:flex;gap:6px;flex-wrap:wrap}
 .stp-pied{position:sticky;bottom:0;background:linear-gradient(transparent,var(--paper) 30%);padding:24px 0 10px;text-align:center;z-index:2}
 .stp-pied .btn{min-width:min(100%,360px)}
@@ -2931,7 +2935,9 @@ function renduStoriesProjet() {
         <textarea data-ch="texte" rows="2" maxlength="280" placeholder="Une précision (facultatif)" ${tache ? "disabled" : ""}>${esc(s.texte || "")}</textarea>
         <div class="stp-sticker"><select data-ch="sticker" aria-label="Sticker à poser dans Instagram">${Object.entries(stickers).map(([k, n]) => `<option value="${k}" ${s.sticker === k ? "selected" : ""}>${k ? "Sticker : " + esc(n) : "Pas de sticker"}</option>`).join("")}</select>
           ${s.sticker ? `<input data-ch="sticker_texte" maxlength="80" value="${esc(s.sticker_texte || "")}" placeholder="Texte du sticker">` : ""}</div>
-        <div class="stp-img">${o.banque ? `<button class="btn petit" data-bq="${i}">Changer l'image</button>` : ""}<label class="btn petit">Ma photo<input type="file" accept="image/*" data-up="${i}" hidden></label></div>
+        <div class="stp-img">${o.banque ? `<button class="btn petit" data-bq="${i}">Changer l'image</button>` : ""}<label class="btn petit">Ma photo<input type="file" accept="image/*" data-up="${i}" hidden></label>
+          <label class="btn petit" title="Tes captures d'écran de ventes, de gains ou de messages : Virallink les met en forme et les empile dans la story">Mes captures de résultats<input type="file" accept="image/*" multiple data-preuve="${i}" hidden></label></div>
+        ${(s.preuves || []).length ? `<div class="stp-preuves">${s.preuves.map(n => `<span><img src="/studio/${p.id}/sources/${esc(n)}" alt=""><button type="button" data-preuve-x="${i}" data-nom="${esc(n)}" aria-label="Retirer cette capture">✕</button></span>`).join("")}</div>` : ""}
       </div></article>`).join("")}</div>
     <div class="stp-pied"><button class="btn prim large" id="stp-fabrique" ${tache ? "disabled" : ""}>${p.genere_le ? "Refaire mes stories" : `Fabriquer mes ${p.slides.length > 1 ? p.slides.length + " stories" : "story"}`}</button>
       <p class="aide">${p.genere_le ? "Refaire après une retouche ne compte pas une nouvelle création." : "Compte pour 1 création du Studio."} Environ 15 s par story.</p></div>
@@ -2957,6 +2963,15 @@ function renduStoriesProjet() {
       if (!r.ok || x.erreurs?.length) throw new Error((x.erreurs || [])[0] || x.erreur || "Envoi impossible");
       S.projet = x.projet; renduStoriesProjet(); toast("Photo ajoutée"); } catch (e) { toast(e.message); }
   });
+  $$("[data-preuve]", el).forEach(inp => inp.onchange = async () => {
+    if (!inp.files.length) return;
+    const fd = new FormData(); [...inp.files].forEach(f => fd.append("fichiers", f));
+    try { await enregistre(false); const r = await fetch(`/api/stories/${p.id}/preuves/${inp.dataset.preuve}`, {method: "POST", body: fd}); const x = await r.json();
+      if (!r.ok) throw new Error(x.erreur || "Envoi impossible");
+      S.projet = x.projet; renduStoriesProjet(); toast(x.erreurs?.length ? x.erreurs[0] : "Captures ajoutées : elles s'empilent dans la story"); } catch (e) { toast(e.message); }
+  });
+  $$("[data-preuve-x]", el).forEach(b => b.onclick = async () => {
+    try { S.projet = await api(`/api/stories/${p.id}/preuves/${b.dataset.preuveX}/${encodeURIComponent(b.dataset.nom)}`, {method: "DELETE"}); renduStoriesProjet(); } catch (e) { toast(e.message); } });
   $$("[data-idee]", el).forEach(b => b.onclick = () => { const t = $("#stp-consigne"); t.value = (t.value.trim() ? t.value.trim() + ", " : "") + b.dataset.idee.toLowerCase(); t.focus(); });
   $("#stp-appliquer").onclick = async e => {
     const consigne = $("#stp-consigne").value.trim(); if (consigne.length < 3) return $("#stp-consigne").focus();
