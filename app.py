@@ -3288,11 +3288,14 @@ def _actualise_bibliotheque(now):
     """Bibliothèque virale : une collecte par jour pour toutes les clientes, à partir de 3 h (avant les veilles du lundi, 6 h).
     Deux tentatives par jour au plus : une erreur ne relance pas la collecte en boucle."""
     jour = now.strftime("%Y-%m-%d")
-    if now.hour < 3 or not bibliotheque.a_faire() or BIB_TENTATIVES.get(jour, 0) >= 2:
+    # Tentatives gardées sur le disque : si le serveur redémarre pendant l'actualisation (mémoire, mise en ligne),
+    # on ne la relance pas en boucle
+    tent = bibliotheque.tentatives(jour)
+    if now.hour < 3 or not bibliotheque.a_faire() or tent >= 2:
         return
     if not (os.getenv("APIFY_TOKEN") or en_demo()) or any(j["uid"] == 0 and j["statut"] in ("en attente", "en cours") for j in JOBS.values()):
         return
-    BIB_TENTATIVES[jour] = BIB_TENTATIVES.get(jour, 0) + 1
+    bibliotheque.note_tentative(jour)
     lance(0, "Bibliothèque virale du jour", bibliotheque.actualise, demo=en_demo())
 
 

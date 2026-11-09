@@ -108,6 +108,16 @@ def niches_du_compte(compte: str) -> list[str]:
     return [k for k, n in niches().items() if compte in n["comptes"]]
 
 
+def tentatives(jour: str) -> int:
+    return int((_lit("tentatives.json", {}) or {}).get(jour) or 0)
+
+
+def note_tentative(jour: str):
+    t = {k: v for k, v in (_lit("tentatives.json", {}) or {}).items() if k >= jour}
+    t[jour] = int(t.get(jour) or 0) + 1
+    _ecrit("tentatives.json", t)
+
+
 def etat() -> dict:
     return _lit("etat.json", {})
 
