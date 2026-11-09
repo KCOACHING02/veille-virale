@@ -1702,7 +1702,7 @@ async function renduAccueil() {
   const jobV = jobAnalyse(), nbC = (S.etat.comptes?.instagram || []).length + (S.etat.comptes?.tiktok || []).length;
   const be = S.etat.boutique_etat || {}, publies = (bi.publies || 0) + pubPlan;
   const sousB = [["Crée ta page", !!be.cree, "Créer ma boutique", "va('boutique')"],
-                 ["Ajoute ta première offre", be.cree && be.produits > 0 && (be.prets ?? be.produits) > 0 && be.paiements, be.produits > 0 ? "Terminer mon offre" : "Ajouter mon offre", be.produits > 0 ? "BQ.onglet='produits';va('boutique')" : "nouvelleOffre()"],
+                 ["Ajoute ta première offre", be.cree && be.produits > 0 && (be.prets ?? be.produits) > 0 && be.paiements, !be.publie ? "Continuer ma boutique" : be.produits > 0 ? "Terminer mon offre" : "Ajouter mon offre", !be.publie ? "continueBoutique()" : be.produits > 0 ? "BQ.onglet='produits';va('boutique')" : "nouvelleOffre()"],
                  ["Partage ton lien", be.cree && be.publie, "Mettre en ligne et partager", "va('boutique')"]];
   const sousB1 = sousB.find(x => !x[1]);
   const verrou = gratuitAcc && !S.etat.admin;
@@ -4491,6 +4491,15 @@ async function mesBoutiques() {
   });
 }
 // Relancer la création pas à pas sur une boutique existante (pré-remplie ; annulable après publication)
+// Boutique commencée mais pas encore en ligne : on reprend la création pas à pas à l'étape des produits
+async function continueBoutique() {
+  if (!BQ.etat) await chargeBoutique();
+  if (BQ.page && !BQ.page.publie) {
+    relanceAssistantBoutique(); BQ.assist.relance = false; BQ.avantAssist = null;
+    BQ.assist.etape = Math.max(0, etapesBoutique(BQ.assist).findIndex(e => e.produits));
+  }
+  va("boutique");
+}
 function relanceAssistantBoutique() {
   const p = BQ.page, d = p.design, types = new Set(p.blocs.map(b => b.type));
   const liens = p.blocs.filter(b => b.type === "lien" && !b.produit).slice(0, 6).map(b => ({titre: b.titre || "", url: b.url || ""}));
@@ -5435,9 +5444,43 @@ function editeTunnel(z, t) {
 // ---------------------------------------------------------------- Ajouter une offre (un seul parcours)
 // Une offre = le produit + sa présentation (page de vente, quiz ou fiche simple), mis en ligne d'un seul geste.
 // Écrans : 0 comment tu la vends → 1 ton offre → 2 la présentation → 3 vérifie et mets en vente → 4 c'est en vente.
+const offreExterne = O => O.mode === "affil" || O.mode === "lien";
+// Lecture d'un ou plusieurs liens de produits (une ligne par lien) : renvoie la liste des fiches lues
+async function lisLiens(texte, bt, zone) {
+  const liens = [...new Set((texte || "").split(/[\s,;]+/).map(x => x.trim()).filter(x => /^\S+\.\S+/.test(x)))].slice(0, 12);
+  if (!liens.length) { toast("Colle le lien complet du produit"); return null; }
+  const complet = u => /^https?:\/\//i.test(u) ? u : "https://" + u, L = [];
+  bt.disabled = true;
+  for (const [k, u] of liens.entries()) {
+    bt.innerHTML = spin(liens.length > 1 ? ` Lecture ${k + 1}/${liens.length}…` : " Lecture de la page…");
+    try { const r = await api("/api/boutique/importe_lien", {method: "POST", body: {url: u}});
+      L.push({lien: complet(u), titre: r.titre || "", desc: r.sous_titre || "", image: r.image || "", site: r.site || "", prix: r.prix ? String(Math.round(r.prix * 100) / 100) : ""}); }
+    catch (er) { L.push({lien: complet(u), titre: "", desc: "", image: "", site: "", prix: "", erreur: er.message}); }
+  }
+  bt.disabled = false; bt.textContent = "Récupérer les infos";
+  return L;
+}
+function lotsHTML(lots) {
+  const ok = lots.filter(x => !x.erreur).length;
+  return `<p class="aide">${ok} produit${ok > 1 ? "s" : ""} récupéré${ok > 1 ? "s" : ""} : vérifie le nom et le prix de chacun.</p>
+    <div class="as-lots">${lots.map((x, i) => `<div class="as-lot">
+      <label class="bt-depot of-img" style="${x.image ? `background-image:url('${vignetteImg(x.image)}')` : ""}">${x.image ? "" : "🖼️<span>Image</span>"}<input type="file" accept="image/*" data-lot-img="${i}" hidden></label>
+      <div style="flex:1;min-width:0">${x.erreur ? `<p class="aide" style="margin:0 0 6px">⚠️ ${esc(x.erreur)} <small>(${esc(x.lien.replace(/^https?:\/\//, "").slice(0, 40))})</small></p>` : x.site ? `<small class="aide">${esc(x.site)}</small>` : ""}
+        <div class="champ"><label>Nom</label><input data-lot="${i}" data-lk="titre" value="${esc(x.titre)}" maxlength="120"></div>
+        <div class="duo"><div class="champ"><label>Prix (€)</label><input data-lot="${i}" data-lk="prix" value="${esc(x.prix)}" type="number" min="0" step="1" inputmode="decimal"></div>
+          <button type="button" class="btn petit" data-lot-x="${i}" style="align-self:end;margin-bottom:12px">Retirer</button></div></div></div>`).join("")}</div>
+    <p class="aide">Le bouton de chaque produit mènera à son lien : le paiement se fait là-bas.</p>`;
+}
+function lieLots(z, lots, rendu, apresRetrait) {
+  z.querySelectorAll("[data-lot]").forEach(i => i.oninput = () => { lots[i.dataset.lot][i.dataset.lk] = i.value; });
+  z.querySelectorAll("[data-lot-x]").forEach(b => b.onclick = () => { lots.splice(+b.dataset.lotX, 1); apresRetrait(); rendu(); });
+  z.querySelectorAll("[data-lot-img]").forEach(i => i.onchange = async ev => { const f = ev.target.files[0]; if (!f) return;
+    try { lots[+i.dataset.lotImg].image = (await envoieImageBoutique(f, "produit")).nom; rendu(); } catch (er) { toast(er.message); } });
+}
 const MODES_OFFRE = {
   fichier: ["📄", "Un fichier ou une formation", "Elle paie, puis reçoit ton PDF, ta vidéo ou ton accès."],
   rdv: ["📅", "Une séance", "Elle choisit un créneau et paie en ligne."],
+  lien: ["🔗", "Un produit vendu sur un autre site", "Ta formation sur Systeme.io, Podia, Etsy… Le paiement se fait là-bas."],
   affil: ["🤝", "Un lien d'affiliation", "Le paiement se fait sur le site du vendeur."],
   cadeau: ["🎁", "Un cadeau gratuit", "Contre son e-mail : idéal pour commencer."],
 };
@@ -5459,8 +5502,8 @@ function centimesOffre(O) { return O.mode === "cadeau" ? 0 : Math.round((parseFl
 function produitOffre(O) {
   const x = O.x, prix = centimesOffre(O), ancien = O.existant ? BQ.page.produits.find(p => p.id === O.existant) : null;
   const p = {...(ancien || {}), id: O.existant || (O.id ||= idCourt()), titre: x.titre.trim(), sous_titre: x.sous_titre.trim(), prix, image: x.image || "", visible: true,
-    devise: "eur", type: O.mode === "rdv" ? "rdv" : "telechargement", externe: O.mode === "affil",
-    lien: O.mode === "affil" ? x.lien.trim() : (ancien?.lien || ""), bouton: ancien?.bouton || (O.mode === "rdv" ? "Je réserve" : prix ? "Je le veux" : "Je le reçois")};
+    devise: "eur", type: O.mode === "rdv" ? "rdv" : "telechargement", externe: offreExterne(O),
+    lien: offreExterne(O) ? x.lien.trim() : (ancien?.lien || ""), bouton: ancien?.bouton || (O.mode === "rdv" ? "Je réserve" : prix ? "Je le veux" : "Je le reçois")};
   if (O.mode === "rdv") p.rdv = {...(ancien?.rdv || {jours: [0, 1, 2, 3, 4], plages: "09:00-12:00, 14:00-18:00", delai_h: 12, horizon_j: 21}), duree: +x.duree || 30, lieu: x.lieu.trim() || "Lien de visio envoyé par e-mail"};
   return p;
 }
@@ -5471,7 +5514,7 @@ function tunnelOffre(O, modeleId) {
   t.titre = (m.type === "quiz" ? "Quiz : " : "Page de vente : ") + O.x.titre.trim();
   t.offre = {...t.offre, produit: produitOffre(O).id, titre: O.x.titre.trim()};
   if (m.type === "vente") { t.accroche = {...t.accroche, titre: O.x.titre.trim() + ",", ...(O.x.sous_titre ? {texte: O.x.sous_titre} : {})};
-    if (O.mode === "affil") t.offre.texte = "Tu seras redirigée vers la page de paiement officielle."; }
+    if (offreExterne(O)) t.offre.texte = "Tu seras redirigée vers la page de paiement officielle."; }
   return t;
 }
 async function ecritPageVente(O) {
@@ -5479,14 +5522,14 @@ async function ecritPageVente(O) {
   try {
     const p = produitOffre(O);
     const r = await api("/api/boutique/page_vente", {method: "POST", body: {titre: p.titre, sous_titre: p.sous_titre, prix: p.prix,
-      nature: O.mode === "rdv" ? "séance ou accompagnement" : O.mode === "affil" ? "formation vendue en affiliation" : O.mode === "cadeau" ? "cadeau gratuit contre un e-mail" : "produit numérique"}});
+      nature: O.mode === "rdv" ? "séance ou accompagnement" : offreExterne(O) ? "formation vendue en affiliation" : O.mode === "cadeau" ? "cadeau gratuit contre un e-mail" : "produit numérique"}});
     const c = await attendsTache(r.job, m => { const l = $("#of-ia-log"); if (l) l.innerHTML = spin(" " + esc(m)); });
     if (BQ.offre !== O || !O.tunnel) return;
     const t = O.tunnel;
     t.accroche = {...t.accroche, ...Object.fromEntries(Object.entries(c.accroche).filter(([, v]) => v))};
     for (const k of ["probleme", "benefices", "contenu", "faq"]) if (c[k].items.length) t[k] = {...t[k], items: c[k].items};
     t.offre = {...t.offre, ...Object.fromEntries(Object.entries(c.offre).filter(([, v]) => v))};
-    if (O.mode === "affil") t.offre.garantie = "";
+    if (offreExterne(O)) t.offre.garantie = "";
     O.ia = "ok";
   } catch (e) { O.ia = "modele"; if (!/quota|formule|abonn|essai/i.test(e.message)) toast(e.message); }
   if (BQ.offre === O) renduOnglet();
@@ -5523,14 +5566,23 @@ function assistantOffre(z) {
   if (O.etape === 0) {
     corps = `<h3 class="of-q">Comment tu la vends ?</h3><div class="of-tuiles">${Object.entries(MODES_OFFRE).map(([k, [e, t, d]]) =>
       `<button type="button" class="of-tuile" data-mode="${k}"><span class="e">${e}</span><b>${t}</b><small>${d}</small></button>`).join("")}</div>`;
+  } else if (O.etape === 1 && offreExterne(O) && O.lots?.length > 1) {
+    corps = `<p class="of-mode">${m[0]} ${m[1]}</p><h3 class="of-q">Vérifie tes ${O.lots.length} produits</h3>${lotsHTML(O.lots)}`;
+    pied = `<button class="btn prim large" id="of-lots">Ajouter ces ${O.lots.length} produits</button>`;
+  } else if (O.etape === 1 && offreExterne(O) && !O.lu && !O.existant) {
+    corps = `<p class="of-mode">${m[0]} ${m[1]} · <button type="button" class="lien" id="of-mode-x">changer</button></p><h3 class="of-q">Colle le lien du produit</h3>
+      <div class="champ"><label for="of-liens">${O.mode === "affil" ? "Tes liens d'affiliation" : "Les liens de tes produits"}</label><textarea id="of-liens" rows="3" class="as-gros as-liens" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://…">${esc(O.liens || "")}</textarea></div>
+      <p class="aide">Plusieurs produits ? Colle un lien par ligne. Virallink lit chaque page et récupère tout seul le nom, l'image, la description et le prix.</p><div id="of-lu" class="aide"></div>
+      <p class="aide" style="text-align:center"><button type="button" class="lien" id="of-main">Remplir à la main</button></p>`;
+    pied = `<button class="btn prim large" id="of-lire">Récupérer les infos</button>`;
   } else if (O.etape === 1) {
-    const ph = {fichier: ["Mon guide anti-fatigue", "27"], rdv: ["Séance découverte", "60"], affil: ["L'indépendance digitale", "497"], cadeau: ["Ma checklist offerte", ""]}[O.mode];
+    const ph = {fichier: ["Mon guide anti-fatigue", "27"], rdv: ["Séance découverte", "60"], affil: ["L'indépendance digitale", "497"], lien: ["Ma formation complète", "297"], cadeau: ["Ma checklist offerte", ""]}[O.mode];
     corps = `<p class="of-mode">${m[0]} ${m[1]} · <button type="button" class="lien" id="of-mode-x">changer</button></p><h3 class="of-q">Ton offre</h3>
       <div class="of-ligne"><label class="bt-depot of-img" style="${x.image ? `background-image:url('${urlImg(x.image)}')` : ""}">${x.image ? "" : "🖼️<span>Image</span>"}<input type="file" accept="image/*" id="of-img" hidden></label>
         <div style="flex:1;min-width:0"><div class="champ"><label for="of-t">Son nom</label><input id="of-t" data-ox="titre" value="${esc(x.titre)}" maxlength="120" placeholder="${esc(ph[0])}"></div>
         ${O.mode === "cadeau" ? "" : `<div class="champ"><label for="of-p">Son prix (€)</label><input id="of-p" data-ox="prix" value="${esc(x.prix)}" type="number" min="0" step="1" inputmode="decimal" placeholder="${ph[1]}"></div>`}</div></div>
       <div class="champ"><label for="of-st">En une phrase, ce qu'elle obtient</label><input id="of-st" data-ox="sous_titre" value="${esc(x.sous_titre)}" maxlength="160" placeholder="Ex. 7 jours pour retrouver de l'énergie le matin"></div>
-      ${O.mode === "affil" ? `<div class="champ"><label for="of-l">Ton lien d'affiliation</label><input id="of-l" data-ox="lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="https://…"><small class="aide">Le bouton « acheter » y mènera : le paiement se fait là-bas.</small></div>`
+      ${offreExterne(O) ? `<div class="champ"><label for="of-l">Ton lien d'affiliation</label><input id="of-l" data-ox="lien" value="${esc(x.lien)}" inputmode="url" autocapitalize="off" placeholder="https://…"><small class="aide">Le bouton « acheter » y mènera : le paiement se fait là-bas.</small></div>`
       : O.mode === "rdv" ? `<div class="duo"><div class="champ"><label for="of-d">Durée</label><select id="of-d" data-ox="duree">${[30, 45, 60, 90].map(d => `<option value="${d}" ${+x.duree === d ? "selected" : ""}>${d} min</option>`).join("")}</select></div>
           <div class="champ"><label for="of-li">Lien de visio (facultatif)</label><input id="of-li" data-ox="lieu" value="${esc(x.lieu)}" placeholder="Zoom, Google Meet…" autocapitalize="off"></div></div><small class="aide">Tes horaires se règlent ensuite dans la fiche du produit.</small>`
       : `<div class="champ"><label>Le fichier qu'elle reçoit</label><label class="np-fichier"><input type="file" id="of-f" hidden><span>${O.fichier ? "📎 " + esc(O.fichier.name) : "📎 Choisir le fichier (PDF, vidéo, ZIP…)"}</span></label>
@@ -5572,8 +5624,29 @@ function assistantOffre(z) {
     if (O.etape === 3 && O.choixQuiz) { O.choixQuiz = false; return aller(2); }
     aller(O.etape === 3 ? 2 : O.etape - 1);
   });
-  z.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { O.mode = b.dataset.mode; aller(1); });
-  $("#of-mode-x")?.addEventListener("click", () => aller(0));
+  z.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { O.mode = b.dataset.mode; O.lu = false; O.lots = null; aller(1); });
+  $("#of-mode-x")?.addEventListener("click", () => { O.lu = false; O.lots = null; aller(0); });
+  $("#of-liens")?.addEventListener("input", e => { O.liens = e.target.value; });
+  $("#of-main")?.addEventListener("click", () => { O.lu = true; const l = (O.liens || "").trim().split(/\s+/)[0]; if (l) x.lien = /^https?:\/\//i.test(l) ? l : "https://" + l; rendu(); });
+  $("#of-lire")?.addEventListener("click", async e => {
+    const bt = e.currentTarget, r = await lisLiens(O.liens, bt, $("#of-lu"));
+    if (!r) return;
+    if (r.length > 1) { O.lots = r; return rendu(); }
+    const p = r[0]; if (p.erreur) { $("#of-lu").innerHTML = "⚠️ " + esc(p.erreur); bt.disabled = false; bt.textContent = "Réessayer"; return; }
+    Object.assign(x, {lien: p.lien, titre: p.titre || x.titre, sous_titre: p.desc || x.sous_titre, image: p.image || x.image, prix: p.prix || x.prix}); O.lu = true; rendu();
+  });
+  lieLots(z, O.lots || [], rendu, () => { if (O.lots.length === 1) { const p = O.lots[0]; Object.assign(x, {lien: p.lien, titre: p.titre, sous_titre: p.desc, image: p.image, prix: p.prix}); O.lots = null; O.lu = true; } else if (!O.lots.length) O.lots = null; });
+  $("#of-lots")?.addEventListener("click", async e => {
+    const k = O.lots.findIndex(p => !p.titre.trim()); if (k >= 0) return toast(`Donne un nom au produit n°${k + 1}`);
+    const j = O.lots.findIndex(p => prixCentimes(p.prix) < 50); if (j >= 0) return toast(`Indique le prix du produit n°${j + 1} (minimum 0,50 €)`);
+    const bt = e.currentTarget; bt.disabled = true; bt.innerHTML = spin(" Ajout…");
+    try { const P = BQ.page;
+      P.produits.push(...O.lots.map(p => ({id: idCourt(), titre: p.titre.trim(), sous_titre: (p.desc || "").trim(), prix: prixCentimes(p.prix), image: p.image || "", visible: true,
+        devise: "eur", type: "telechargement", externe: true, lien: p.lien, bouton: "Je découvre"})));
+      if (!P.blocs.some(b => b.type === "produits")) P.blocs.push({id: idCourt(), type: "produits", titre: "Ma boutique", visible: true});
+      P.publie = true; await sauveBoutique(true); toast(`${O.lots.length} produits ajoutés ✓`); quitter();
+    } catch (er) { toast(er.message); bt.disabled = false; bt.textContent = `Ajouter ces ${O.lots.length} produits`; }
+  });
   z.querySelectorAll("[data-ox]").forEach(i => i.oninput = i.onchange = () => { x[i.dataset.ox] = i.value; });
   $("#of-f")?.addEventListener("change", e => { O.fichier = e.target.files[0] || null; rendu(); });
   $("#of-img")?.addEventListener("change", async e => { const f = e.target.files[0]; if (!f) return;
@@ -5582,8 +5655,8 @@ function assistantOffre(z) {
     if (!x.titre.trim()) return toast("Donne un nom à ton offre");
     const pr = centimesOffre(O);
     if (O.mode !== "cadeau" && pr && pr < 50) return toast("Prix minimum : 0,50 €");
-    if (O.mode === "affil" && !/^https?:\/\/\S+\.\S+/.test(x.lien.trim())) return toast("Colle ton lien d'affiliation complet (il commence par https://)");
-    if (O.mode === "affil" && !pr) return toast("Indique le prix affiché sur la page du vendeur");
+    if (offreExterne(O) && !/^https?:\/\/\S+\.\S+/.test(x.lien.trim())) return toast("Colle ton lien d'affiliation complet (il commence par https://)");
+    if (offreExterne(O) && !pr) return toast("Indique le prix affiché sur la page du vendeur");
     aller(2);
   });
   z.querySelectorAll("[data-pres]").forEach(b => b.onclick = () => {
