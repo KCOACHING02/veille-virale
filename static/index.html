@@ -4567,6 +4567,15 @@ function renduAssistantBoutique(el) {
   };
 }
 // ---- Plusieurs boutiques : liste, changement, création, suppression
+async function nouvelleBoutique() {
+  try { await api("/api/boutiques/nouvelle", {method: "POST"}); BQ.etat = null; BQ.page = null; BQ.assist = null; BQ.htmlAssist = null; BQ.assistFerme = false; BQ.onglet = "contenu";
+    await renduBoutique(); scrollTo({top: 0}); toast("Nouvelle boutique : on la crée ensemble, étape par étape"); }
+  catch (er) {
+    // Limite de la formule atteinte : on propose la formule supérieure (ou l'essai)
+    if (/formule|boutiques/i.test(er.message)) { toast(er.message, {duree: 6000}); return mesBoutiques(); }
+    toast(er.message);
+  }
+}
 async function mesBoutiques() {
   const r = await api("/api/boutiques"), L = r.boutiques, faites = L.filter(b => b.nom !== "Boutique en création" || b.pseudo);
   const reste = r.max - faites.length;
@@ -4586,10 +4595,7 @@ async function mesBoutiques() {
   const ouvre = async id => { await api("/api/boutiques/ouvrir", {method: "POST", body: {id}}); fermeModale(); BQ.etat = null; BQ.assist = null; BQ.htmlAssist = null; BQ.tunnelId = null; BQ.tnAssist = null; BQ.onglet = "contenu"; await renduBoutique(); scrollTo({top: 0}); };
   $$("[data-mb-ouvre]").forEach(b => b.onclick = () => ouvre(b.dataset.mbOuvre));
   $("#mb-formules") && ($("#mb-formules").onclick = e => { e.preventDefault(); fermeModale(); essaiDispo() ? proposeEssai() : va("abonnement"); });
-  $("#mb-nouvelle") && ($("#mb-nouvelle").onclick = async () => {
-    try { await api("/api/boutiques/nouvelle", {method: "POST"}); fermeModale(); BQ.etat = null; BQ.assist = null; BQ.htmlAssist = null; BQ.onglet = "contenu"; await renduBoutique(); scrollTo({top: 0}); toast("Nouvelle boutique : on la crée ensemble, étape par étape"); }
-    catch (er) { toast(er.message); }
-  });
+  $("#mb-nouvelle") && ($("#mb-nouvelle").onclick = () => { fermeModale(); nouvelleBoutique(); });
   $$("[data-mb-suppr]").forEach(b => b.onclick = async () => {
     const carte = b.closest(".mb-carte"), nom = carte.querySelector("b").textContent;
     if (b.dataset.confirme !== "1") { b.dataset.confirme = "1"; b.textContent = "Tout effacer ? Toucher pour confirmer"; b.style.color = "var(--warn)"; b.style.borderColor = "var(--warn)";
@@ -4698,6 +4704,7 @@ function renduEditeur(el) {
       <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button><button class="btn petit" id="bt-qr" title="QR code">QR</button></div>
       <label class="bt-publie"><input type="checkbox" id="bt-publie" ${p.publie ? "checked" : ""}><span>${p.publie ? "En ligne" : "Brouillon"}</span></label>
       <button class="btn petit" id="bt-mes" type="button">🏪 Mes boutiques</button>
+      <button class="btn petit" id="bt-nouvelle" type="button">+ Nouvelle boutique</button>
       <button class="btn petit prim" id="bt-guide" type="button">✨ Création pas à pas</button>
       <label class="bt-mode" title="Afficher toutes les options"><input type="checkbox" id="bt-avance" ${BQ.avance ? "checked" : ""}><span>Mode avancé</span></label>
       <span class="bt-statut" id="bt-statut"></span>
@@ -4717,6 +4724,7 @@ function renduEditeur(el) {
   $("#bt-avance").onchange = e => basculeAvance(e.target.checked);
   $("#bt-guide").onclick = () => relanceAssistantBoutique();
   $("#bt-mes").onclick = () => mesBoutiques();
+  $("#bt-nouvelle").onclick = () => nouvelleBoutique();
   $("#bt-voir").onclick = () => {
     $("#bt-ap2").srcdoc = BQ.html; $("#bt-plein").classList.add("ouvert"); document.documentElement.classList.add("sans-defilement");
     pousseHistorique({apercuBoutique: 1});  // le geste « retour » de l'iPhone ferme l'aperçu au lieu de quitter la page
