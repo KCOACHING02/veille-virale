@@ -107,6 +107,40 @@ NOMS_PALETTES = {"nuit": "Nuit", "rose": "Rose", "creme": "Crème", "ocean": "Oc
                  "noir": "Noir", "marque": "Ma marque"}
 
 
+# Réglages du rendu, modifiables par les consignes données à Virall.ai (retouche) : valeurs permises et valeurs par défaut
+REGLAGES = {
+    "taille_titre": (1.0, 0.6, 1.5),      # facteur sur la taille du titre
+    "taille_texte": (1.0, 0.7, 1.5),
+    "position": ("centre", ("haut", "centre", "bas")),
+    "alignement": ("centre", ("centre", "gauche")),
+    "majuscules": (None, (None, True, False)),   # None = selon la typo
+    "duree": (0.0, -3.0, 6.0),             # secondes ajoutées à la durée calculée
+    "vitesse": ("normale", ("lente", "normale", "rapide")),
+    "intensite": ("normale", ("douce", "normale", "forte")),
+    "voile": (92, 0, 200),                 # assombrissement des photos (lisibilité du texte)
+    "signature": (False, (False, True)),   # @pseudo discret en bas
+    "ombre": (True, (True, False)),
+}
+VITESSES = {"lente": 1.6, "normale": 1.0, "rapide": 0.6}
+INTENSITES = {"douce": 0.6, "normale": 1.0, "forte": 1.7}
+
+
+def reglages(p: dict) -> dict:
+    """Réglages du projet, nettoyés (valeurs inconnues ou hors bornes ramenées aux valeurs permises)."""
+    brut, res = p.get("reglages") or {}, {}
+    for k, regle in REGLAGES.items():
+        v = brut.get(k, regle[0])
+        if len(regle) == 3:
+            try:
+                v = max(regle[1], min(regle[2], float(v)))
+            except (TypeError, ValueError):
+                v = regle[0]
+        elif v not in regle[1]:
+            v = regle[0]
+        res[k] = v
+    return res
+
+
 def _rgb(h: str) -> tuple:
     return studio._rgb(h)
 
@@ -120,8 +154,10 @@ def couleurs_story(pal: dict, photo: bool, effet: str) -> dict:
     pal = dict(pal)
     if photo:
         pal["titre"], pal["texte"] = (255, 255, 255), (238, 234, 242)
+    pal["mot"] = pal["accent"]
     if effet == "surligneur":
         pal["titre"] = (24, 18, 28) if _clair(pal["accent"]) else (255, 255, 255)
+        pal["mot"] = pal["haut"] if _clair(pal["haut"]) != _clair(pal["accent"]) else ((255, 255, 255) if pal["titre"] != (255, 255, 255) else (24, 18, 28))
     return pal
 
 
@@ -233,6 +269,109 @@ def ecrit(esp: Espace, cfg: dict, sid: str, contexte: str = "", demo: bool = Fal
     return {"id": sid}
 
 
+def _etat_texte(p: dict) -> str:
+    """Résumé lisible de l'état des stories, donné à Virall.ai pour la retouche."""
+    reg = reglages(p)
+    lignes = [f"Effet : {p.get('effet')} (possibles : {', '.join(EFFETS)}) · couleurs : {p.get('palette')} (possibles : {', '.join([*PALETTES, 'marque'])})",
+              f"Police : {p.get('typo')} (possibles : {', '.join(studio.TYPOS)})",
+              "Réglages : " + ", ".join(f"{k} = {v}" for k, v in reg.items()), ""]
+    for i, s in enumerate(p["slides"]):
+        lignes.append(f"Story {i + 1} ({s.get('role', '')}) : titre « {s.get('titre', '')} » · texte « {s.get('texte', '')} »"
+                      + (f" · mot en couleur « {s['mot']} »" if s.get("mot") else "")
+                      + (f" · effet propre {s['effet']}" if s.get("effet") else "")
+                      + (f" · sticker {s['sticker']} « {s.get('sticker_texte', '')} »" if s.get("sticker") else "")
+                      + f" · durée {duree_story(s, p)} s")
+    return "\n".join(lignes)
+
+
+def applique_retouche(p: dict, r: dict) -> dict:
+    """Applique les changements renvoyés par Virall.ai (valeurs vérifiées une à une)."""
+    if r.get("effet") in EFFETS:
+        p["effet"] = r["effet"]
+    if r.get("palette") in (*PALETTES, "marque") and (r["palette"] != "marque" or p.get("couleurs_marque")):
+        p["palette"] = r["palette"]
+    if r.get("typo") in studio.TYPOS:
+        p["typo"] = r["typo"]
+    if isinstance(r.get("reglages"), dict):
+        p["reglages"] = reglages({"reglages": {**(p.get("reglages") or {}), **r["reglages"]}})
+    retirer = set()
+    for c in r.get("stories") or []:
+        try:
+            i = int(c.get("numero")) - 1
+        except (TypeError, ValueError):
+            continue
+        if not (0 <= i < len(p["slides"])):
+            continue
+        s = p["slides"][i]
+        if c.get("supprimer"):
+            retirer.add(i)
+            continue
+        for k, n in (("titre", 140), ("texte", 280), ("mot", 60), ("sticker_texte", 80)):
+            if isinstance(c.get(k), str):
+                s[k] = studio.propre(c[k])[:n] if k in ("titre", "texte") else c[k].strip()[:n]
+        if "effet" in c and (c["effet"] in EFFETS or c["effet"] == ""):
+            s["effet"] = c["effet"]
+        if "sticker" in c and c["sticker"] in STICKERS:
+            s["sticker"] = c["sticker"]
+        if "duree" in c:
+            try:
+                s["duree"] = max(3.0, min(15.0, float(c["duree"]))) if float(c["duree"]) else None
+            except (TypeError, ValueError):
+                pass
+    if retirer and len(retirer) < len(p["slides"]):
+        garde = [i for i in range(len(p["slides"])) if i not in retirer]
+        p["slides"] = [p["slides"][i] for i in garde]  # chaque story garde son image (champ « image »)
+    for a in (r.get("ajouter") or [])[: max(0, 8 - len(p["slides"]))]:
+        if isinstance(a, dict) and a.get("titre"):
+            p["slides"].append({"role": "Story ajoutée", "titre": studio.propre(a["titre"])[:140], "texte": studio.propre(a.get("texte") or "")[:280],
+                                "photo": "", "recherche": (a.get("recherche") or "")[:120],
+                                "sticker": a.get("sticker") if a.get("sticker") in STICKERS else "", "sticker_texte": ""})
+    return p
+
+
+def retouche(esp: Espace, cfg: dict, sid: str, consigne: str, demo: bool = False) -> dict:
+    """Consigne libre de la cliente (« titre plus gros », « plus de paillettes », « réécris la story 3 »…) appliquée par Virall.ai."""
+    p = studio.charge(esp, sid)
+    log("Virall.ai applique ta consigne…")
+    if demo:
+        c = consigne.lower()
+        r = {"reponse": "[démo] C'est fait.", "reglages": {}}
+        if "gros" in c or "grand" in c:
+            r["reglages"]["taille_titre"] = 1.3
+        if "petit" in c:
+            r["reglages"]["taille_titre"] = 0.8
+        if "haut" in c:
+            r["reglages"]["position"] = "haut"
+        if "bas" in c:
+            r["reglages"]["position"] = "bas"
+        if "lent" in c:
+            r["reglages"]["vitesse"] = "lente"
+        if "@" in c or "signature" in c:
+            r["reglages"]["signature"] = True
+        for e in EFFETS:
+            if e in c:
+                r["effet"] = e
+        for pal in PALETTES:
+            if pal in c:
+                r["palette"] = pal
+    else:
+        from ia import retouche_stories
+        r = retouche_stories(cfg, _etat_texte(p), consigne)
+    p = applique_retouche(studio.charge(esp, sid), r)
+    if not p.get("pseudo"):
+        p["pseudo"] = (cfg.get("mon_compte") or {}).get("instagram") or ""
+    if reglages(p)["signature"] and not p.get("pseudo"):
+        r["reponse"] = ((r.get("reponse") or "") + " Pour afficher ton @, ajoute ton compte Instagram dans Réglages → Mon profil.").strip()
+    p.setdefault("retouches", []).append({"consigne": consigne[:500], "reponse": (r.get("reponse") or "")[:400],
+                                          "le": datetime.now().isoformat(timespec="minutes")})
+    p["retouches"] = p["retouches"][-20:]
+    if p.get("statut") == "pret":
+        p["statut"] = "brouillon"
+    studio.sauve(esp, p)
+    log("✅ " + ((r.get("reponse") or "Retouche appliquée")[:200]))
+    return {"id": sid, "reponse": r.get("reponse") or ""}
+
+
 # ------------------------------------------------------------
 #  Rendu
 # ------------------------------------------------------------
@@ -247,13 +386,17 @@ def _ease_rebond(t: float) -> float:
     return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
 
 
-def duree_story(s: dict) -> float:
-    """5 à 9 s : le temps de lire."""
+def duree_story(s: dict, p: dict | None = None) -> float:
+    """5 à 9 s : le temps de lire (plus ou moins selon les réglages et la story)."""
     mots = len(((s.get("titre") or "") + " " + (s.get("texte") or "")).split())
-    return round(min(9.0, max(5.0, 2.5 + mots * 0.32)), 1)
+    base = min(9.0, max(5.0, 2.5 + mots * 0.32))
+    bonus = reglages(p)["duree"] if p else 0.0
+    if s.get("duree"):
+        return round(max(3.0, min(15.0, float(s["duree"]))), 1)
+    return round(max(3.0, min(15.0, base + bonus)), 1)
 
 
-def _fond(p: dict, pal: dict, image: Path | None):
+def _fond(p: dict, pal: dict, image: Path | None):  # noqa: C901
     """Fond agrandi de 12 % (pour le zoom lent) : la photo, ou un dégradé des couleurs choisies."""
     from PIL import Image
     w, h = TAILLE
@@ -261,7 +404,7 @@ def _fond(p: dict, pal: dict, image: Path | None):
     if image and Path(image).is_file():
         im = studio._couvre(Image.open(image).convert("RGB"), (W, H)).convert("RGBA")
         # voile sombre + dégradé : le texte reste lisible sur n'importe quelle photo
-        im.alpha_composite(Image.new("RGBA", (W, H), (10, 6, 14, 92)))
+        im.alpha_composite(Image.new("RGBA", (W, H), (10, 6, 14, int(reglages(p)["voile"]))))
         im.alpha_composite(studio._degrade((W, H), 0.45, 170))
         return im.convert("RGB"), True
     bande = Image.new("RGB", (1, 256))
@@ -271,24 +414,33 @@ def _fond(p: dict, pal: dict, image: Path | None):
     return bande.resize((W, H), Image.BILINEAR), False
 
 
-def _calque_texte(s: dict, pal: dict, typo: str, avec_sticker: bool, n_lettres: int | None = None):
+def _calque_texte(s: dict, pal: dict, typo: str, avec_sticker: bool, n_lettres: int | None = None, reg: dict | None = None,
+                  pseudo: str = ""):
     """Calque RGBA du titre + texte. n_lettres : titre tronqué (effet machine à écrire)."""
     from PIL import Image, ImageDraw
+    reg = reg or reglages({})
     w, h = TAILLE
     t = studio._typo(typo)
     calque = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(calque)
     largeur = w - 2 * MARGE
     titre = studio.insecables(studio.propre(s.get("titre") or ""))
-    if t["maj"]:
+    maj = t["maj"] if reg["majuscules"] is None else reg["majuscules"]
+    if maj:
         titre = titre.upper()
     texte = studio.propre(s.get("texte") or "")
-    zone_haut, zone_bas = 300, (1180 if avec_sticker else 1560)  # au-dessus de la place laissée au sticker
+    mot = studio.propre(s.get("mot") or "").strip()
+    zone_haut, zone_bas = 260, (1180 if avec_sticker else 1600)  # au-dessus de la place laissée au sticker
     pol_t, lignes_t, h_t, taille = studio._ajuste(d, titre, t["police"], largeur, int((zone_bas - zone_haut) * 0.62),
-                                                  int(118 * t["facteur"]), 54, t.get("interligne", 1.12))
-    pol_x, lignes_x, h_x, _ = studio._ajuste(d, texte, t["texte"], largeur, int((zone_bas - zone_haut) * 0.3), 50, 34, 1.3) if texte else (None, [], 0, 0)
+                                                  int(118 * t["facteur"] * reg["taille_titre"]), int(54 * min(1.0, reg["taille_titre"])),
+                                                  t.get("interligne", 1.12))
+    pol_x, lignes_x, h_x, _ = (studio._ajuste(d, texte, t["texte"], largeur, int((zone_bas - zone_haut) * 0.3), int(50 * reg["taille_texte"]),
+                                              int(34 * min(1.0, reg["taille_texte"])), 1.3) if texte else (None, [], 0, 0))
     total = h_t + (40 + h_x if texte else 0)
-    y = zone_haut + max(0, ((zone_bas - zone_haut) - total) // 2)
+    libre = max(0, (zone_bas - zone_haut) - total)
+    y = zone_haut + {"haut": 0, "centre": libre // 2, "bas": libre}[reg["position"]]
+    gauche = reg["alignement"] == "gauche"
+    ombre = reg["ombre"]
     boites = []
     restant = n_lettres
     for ligne in lignes_t:
@@ -300,17 +452,27 @@ def _calque_texte(s: dict, pal: dict, typo: str, avec_sticker: bool, n_lettres: 
         else:
             ligne_visible = ligne
         lw = d.textlength(ligne, font=pol_t)
-        x = (w - lw) / 2
+        x = MARGE if gauche else (w - lw) / 2
         boites.append((x, y, x + lw, y + taille))
-        d.text((x + 3, y + 4), ligne_visible, font=pol_t, fill=(0, 0, 0, 90))  # ombre douce
+        if ombre:
+            d.text((x + 3, y + 4), ligne_visible, font=pol_t, fill=(0, 0, 0, 90))  # ombre douce
         d.text((x, y), ligne_visible, font=pol_t, fill=pal["titre"] + (255,))
+        # Mot mis en valeur : redessiné dans la couleur d'accent
+        if mot and mot.lower() in ligne_visible.lower():
+            i0 = ligne_visible.lower().index(mot.lower())
+            x0 = x + d.textlength(ligne_visible[:i0], font=pol_t)
+            d.text((x0, y), ligne_visible[i0:i0 + len(mot)], font=pol_t, fill=pal.get("mot", pal["accent"]) + (255,))
         y += int(taille * t.get("interligne", 1.12))
     if texte and (n_lettres is None or restant is None or restant > 0):
         y += 40
         for ligne in lignes_x:
             lw = d.textlength(ligne, font=pol_x)
-            d.text(((w - lw) / 2, y), ligne, font=pol_x, fill=pal["texte"] + (255,))
+            d.text((MARGE if gauche else (w - lw) / 2, y), ligne, font=pol_x, fill=pal["texte"] + (255,))
             y += int(pol_x.size * 1.3)
+    if reg["signature"] and pseudo:
+        f = studio._police("Medium", 38)
+        sig = "@" + pseudo.lstrip("@")
+        d.text(((w - d.textlength(sig, font=f)) / 2, h - 150), sig, font=f, fill=pal["texte"] + (200,))
     return calque, boites
 
 
@@ -339,21 +501,24 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
     """Générateur des images (PIL RGB) d'une story animée, et sa durée."""
     from PIL import Image, ImageDraw, ImageFilter
     pal = palette_de(p)
-    eff = p.get("effet") or "doux"
-    duree = duree_story(s)
+    reg = reglages(p)
+    eff = s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") or "doux")  # effet propre à la story, sinon celui du projet
+    vit, inten = VITESSES[reg["vitesse"]], INTENSITES[reg["intensite"]]
+    duree = duree_story(s, p)
     n = int(duree * FPS)
     w, h = TAILLE
     fond, photo = _fond(p, pal, image)
     pal = couleurs_story(pal, photo, eff)
     avec_sticker = bool(s.get("sticker"))
-    calque, boites = _calque_texte(s, pal, p.get("typo") or "moderne", avec_sticker)
+    pseudo = p.get("pseudo") or ""
+    calque, boites = _calque_texte(s, pal, p.get("typo") or "moderne", avec_sticker, reg=reg, pseudo=pseudo)
     lettres = len(studio.propre(s.get("titre") or ""))
     lueur = None
     if eff == "neon":
         masque = calque.split()[3].filter(ImageFilter.GaussianBlur(18))
         lueur = Image.new("RGBA", (w, h), pal["accent"] + (0,))
         lueur.putalpha(masque)
-    etinc = _etincelles(70, graine) if eff == "paillettes" else []
+    etinc = _etincelles(int(70 * inten), graine) if eff == "paillettes" else []
     grains = _grain(graine) if eff == "grain" else []
     if grains:  # lumière chaude floutée une seule fois, déplacée ensuite
         fuite = Image.new("RGBA", (1100, 1300), (0, 0, 0, 0))
@@ -363,37 +528,38 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
     for k in range(n):
         t = k / FPS
         # Fond : zoom lent (Ken Burns), légèrement décentré pour donner du mouvement
-        z = 1.0 + 0.10 * (t / duree) if photo else 1.0 + 0.04 * (t / duree)
+        z = 1.0 + min(0.12, 0.10 * inten) * (t / duree) if photo else 1.0 + 0.04 * inten * (t / duree)
         W, H = fond.size
         cw, ch = int(W / 1.12 / z * 1.0), int(H / 1.12 / z * 1.0)
         cx = (W - cw) / 2 + (W - cw) * 0.15 * math.sin(t / duree * math.pi / 2)
         cy = (H - ch) / 2
         im = fond.crop((int(cx), int(cy), int(cx) + cw, int(cy) + ch)).resize(TAILLE, Image.BILINEAR).convert("RGBA")
         # Texte selon l'effet
-        apparition = _ease((t - 0.25) / 0.8)
+        ta = t / vit  # temps « ralenti » ou « accéléré » des animations d'entrée
+        apparition = _ease((ta - 0.25) / 0.8)
         dx = dy = 0
         alpha = apparition
         couche = calque
         if eff == "doux":
             dy = int(40 * (1 - apparition))
         elif eff == "dynamique":
-            alpha = 1.0 if t > 0.2 else 0.0
-            dx = int(-w * (1 - _ease_rebond((t - 0.2) / 0.6))) if t < 0.8 else 0
+            alpha = 1.0 if ta > 0.2 else 0.0
+            dx = int(-w * (1 - _ease_rebond((ta - 0.2) / 0.6))) if ta < 0.8 else 0
         elif eff == "machine":
-            nl = min(lettres, int(max(0.0, t - 0.3) * 22))
+            nl = min(lettres, int(max(0.0, ta - 0.3) * 22))
             if nl < lettres:
                 if nl not in cache_machine:
-                    cache_machine = {nl: _calque_texte(s, pal, p.get("typo") or "moderne", avec_sticker, n_lettres=nl)[0]}
+                    cache_machine = {nl: _calque_texte(s, pal, p.get("typo") or "moderne", avec_sticker, n_lettres=nl, reg=reg, pseudo=pseudo)[0]}
                 couche = cache_machine[nl]
             alpha = 1.0
         elif eff == "neon":
-            alpha = 0.0 if t < 0.3 else (0.25 if 0.45 < t < 0.55 or 0.7 < t < 0.75 else 1.0)
+            alpha = 0.0 if ta < 0.3 else (0.25 if 0.45 < ta < 0.55 or 0.7 < ta < 0.75 else 1.0)
         elif eff == "surligneur":
-            prog = _ease((t - 0.2) / 0.9)
+            prog = _ease((ta - 0.2) / 0.9)
             d = ImageDraw.Draw(im)
             for (x0, y0, x1, y1) in boites:
                 d.rectangle((x0 - 18, y0 + (y1 - y0) * 0.18, x0 - 18 + (x1 - x0 + 36) * prog, y1 + 10), fill=pal["accent"] + (235,))
-            alpha = _ease((t - 0.5) / 0.5)
+            alpha = _ease((ta - 0.5) / 0.5)
         # Lueur néon (pulsation)
         if lueur is not None and alpha > 0:
             l = lueur.copy()
@@ -407,7 +573,7 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
                 c = couche
             im.alpha_composite(c, (dx, dy)) if (dx or dy) else im.alpha_composite(c)
         if eff == "dynamique" and t < 0.35:  # flash d'entrée
-            im.alpha_composite(Image.new("RGBA", TAILLE, (255, 255, 255, int(200 * (1 - t / 0.35)))))
+            im.alpha_composite(Image.new("RGBA", TAILLE, (255, 255, 255, int(min(255, 200 * inten) * (1 - t / 0.35)))))
         if etinc:
             d = ImageDraw.Draw(im)
             for (x, y, r, ph, v) in etinc:
@@ -441,12 +607,13 @@ def apercu(esp: Espace, sid: str, i: int) -> bytes:
     s = p["slides"][i]
     pal = palette_de(p)
     fond, photo = _fond(p, pal, images[i])
-    pal = couleurs_story(pal, photo, p.get("effet") or "doux")
+    eff = s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") or "doux")
+    pal = couleurs_story(pal, photo, eff)
     w, h = TAILLE
     W, H = fond.size
     im = fond.crop(((W - w) // 2, (H - h) // 2, (W - w) // 2 + w, (H - h) // 2 + h)).convert("RGBA")
-    calque, boites = _calque_texte(s, pal, p.get("typo") or "moderne", bool(s.get("sticker")))
-    if p.get("effet") == "surligneur":
+    calque, boites = _calque_texte(s, pal, p.get("typo") or "moderne", bool(s.get("sticker")), reg=reglages(p), pseudo=p.get("pseudo") or "")
+    if eff == "surligneur":
         dd = ImageDraw.Draw(im)
         for (x0, y0, x1, y1) in boites:
             dd.rectangle((x0 - 18, y0 + (y1 - y0) * 0.18, x1 + 18, y1 + 10), fill=pal["accent"] + (235,))
@@ -497,7 +664,7 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
             log(f"Je fabrique la story {i + 1}/{len(p['slides'])}…")
             nom = f"story_{i + 1:02d}.mp4"
             gen = images_story(p, s, images[i], graine=i + 7)
-            _encode(gen, sortie / nom, duree_story(s))
+            _encode(gen, sortie / nom, duree_story(s, p))
             fichiers.append(nom)
             if i == 0:  # vignette pour « Mes créations »
                 (sortie / "vignette.jpg").write_bytes(apercu(esp, sid, 0))

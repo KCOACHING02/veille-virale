@@ -1184,6 +1184,24 @@ def stories_modifie(sid):
     return jsonify(stories.modifie(g.esp, sid, request.get_json(force=True) or {}))
 
 
+@app.post("/api/stories/<sid>/retouche")
+@connecte
+def stories_retouche(sid):
+    """Consigne libre de la cliente appliquée par Virall.ai (un appel IA : quotas et file du Studio)."""
+    _projet_stories(sid)
+    consigne = str((request.get_json(force=True) or {}).get("consigne") or "").strip()[:500]
+    if len(consigne) < 3:
+        return jsonify({"erreur": "Écris ce que tu veux changer."}), 400
+    msg = reserve(g.u, "ia")
+    if msg:
+        return bloque(msg)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    jid = lance(g.u["id"], "Retouche des stories", stories.retouche, g.esp, g.esp.lit_config(), sid, consigne,
+                demo=en_demo(), file_=FILE_STUDIO)
+    return jsonify({"job": jid})
+
+
 @app.get("/api/stories/<sid>/apercu/<int:i>")
 @connecte
 def stories_apercu(sid, i):

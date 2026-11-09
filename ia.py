@@ -919,6 +919,52 @@ OUTIL_STORIES = {
 }
 
 
+OUTIL_RETOUCHE_STORIES = {
+    "name": "appliquer_retouche",
+    "description": "Changements à appliquer aux stories pour suivre la consigne de la cliente. Ne renseigne QUE ce qui doit changer.",
+    "input_schema": {"type": "object", "properties": {
+        "reponse": {"type": "string", "description": "Une ou deux phrases à la cliente (tutoiement) : ce que tu as changé, ou ce qui n'est pas possible et ce que tu proposes à la place."},
+        "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain"], "description": "Nouvel effet pour toutes les stories, ou vide."},
+        "palette": {"type": "string", "enum": ["", "nuit", "rose", "creme", "ocean", "foret", "soleil", "noir", "marque"], "description": "Nouvelles couleurs, ou vide."},
+        "typo": {"type": "string", "description": "Nouveau style de police parmi ceux listés, ou vide."},
+        "reglages": {"type": "object", "description": "Seulement les réglages à changer.", "properties": {
+            "taille_titre": {"type": "number", "description": "Facteur de taille du titre, 0.6 à 1.5 (1 = normal)."},
+            "taille_texte": {"type": "number", "description": "Facteur de taille du texte, 0.7 à 1.5."},
+            "position": {"type": "string", "enum": ["haut", "centre", "bas"]},
+            "alignement": {"type": "string", "enum": ["centre", "gauche"]},
+            "majuscules": {"type": "boolean"},
+            "duree": {"type": "number", "description": "Secondes ajoutées à chaque story, -3 à 6."},
+            "vitesse": {"type": "string", "enum": ["lente", "normale", "rapide"], "description": "Vitesse des animations d'entrée."},
+            "intensite": {"type": "string", "enum": ["douce", "normale", "forte"], "description": "Force de l'effet (zoom, nombre d'étincelles, flash)."},
+            "voile": {"type": "number", "description": "Assombrissement des photos, 0 (aucun) à 200 (très sombre) ; 92 par défaut."},
+            "signature": {"type": "boolean", "description": "Afficher son @ en bas de chaque story."},
+            "ombre": {"type": "boolean", "description": "Ombre sous le titre."}}},
+        "stories": {"type": "array", "description": "Changements story par story (numéro à partir de 1). Seulement les stories concernées.", "items": {"type": "object", "properties": {
+            "numero": {"type": "integer"},
+            "titre": {"type": "string"}, "texte": {"type": "string"},
+            "mot": {"type": "string", "description": "Mot (ou groupe de mots) du titre à mettre en couleur ; vide pour aucun."},
+            "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain"], "description": "Effet propre à cette story (vide = celui de toutes)."},
+            "duree": {"type": "number", "description": "Durée de cette story en secondes (3 à 15), 0 = automatique."},
+            "sticker": {"type": "string", "enum": ["", "sondage", "question", "quiz", "curseur", "lien", "compte_a_rebours"]},
+            "sticker_texte": {"type": "string"},
+            "supprimer": {"type": "boolean", "description": "Retirer cette story."}},
+            "required": ["numero"]}},
+        "ajouter": {"type": "array", "description": "Nouvelles stories à ajouter à la fin.", "items": {"type": "object", "properties": {
+            "titre": {"type": "string"}, "texte": {"type": "string"}, "recherche": {"type": "string"}, "sticker": {"type": "string"}}, "required": ["titre"]}}},
+        "required": ["reponse"]},
+}
+
+
+def retouche_stories(cfg: dict, etat: str, consigne: str) -> dict:
+    texte = (f"ÉTAT ACTUEL DES STORIES :\n{etat}\n\nCONSIGNE DE LA CLIENTE :\n« {consigne} »\n\n"
+             "Traduis la consigne en changements précis. Ne change rien d'autre que ce qui est demandé. "
+             "Si tu réécris un texte, garde sa voix, sans ton publicitaire ni tournure qui sonne IA, et n'invente ni chiffre ni avis. "
+             "Si une demande est impossible (musique, sticker incrusté dans la vidéo, animation qui n'existe pas), dis-le dans « reponse » "
+             "et propose ce qui s'en approche le plus.")
+    return _ia_simple(cfg)._appel(OUTIL_RETOUCHE_STORIES, texte, max_tokens=1500,
+                                  systeme=_systeme_marque(cfg, "", "Tu es la directrice artistique qui retouche des stories Instagram selon les consignes de sa cliente."))
+
+
 def ecrit_stories(cfg: dict, voix: str, roles: str, sujet: str, contexte: str = "") -> dict:
     texte = (f"SUJET : {sujet or 'au choix, dans sa niche'}\n{contexte}\n\nÉcris les stories suivantes, dans cet ordre :\n{roles}\n\n"
              "Les stories s'enchaînent : chacune donne envie de voir la suivante. Phrases courtes, parlées, à la première personne, "

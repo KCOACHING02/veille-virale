@@ -604,6 +604,15 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 @keyframes fxFuite{from{transform:translateX(-60%)}to{transform:translateX(60%)}}
 @media (prefers-reduced-motion:reduce){.fx-mini i,.fx-mini::before,.fx-mini::after{animation:none!important}}
 .stp-haut{display:flex;gap:12px;align-items:center;margin:0 0 10px}
+.stp-retouche{background:var(--surface);border-radius:16px;padding:14px 16px;margin:0 0 16px;box-shadow:var(--shadow);display:grid;gap:10px}
+.stp-consigne{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.stp-consigne textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+@media (max-width:600px){.stp-consigne{grid-template-columns:1fr}}
+.stp-idees{display:flex;gap:6px;flex-wrap:wrap}
+.stp-idees button{border:1px dashed var(--line);background:none;color:var(--ink-2);border-radius:99px;padding:5px 11px;cursor:pointer;font-size:13.5px}
+.stp-echange{display:grid;gap:4px}
+.stp-moi{justify-self:end;background:var(--glow-soft);border-radius:14px 14px 4px 14px;padding:7px 12px;margin:0;max-width:85%}
+.stp-ia{justify-self:start;background:var(--sunk);border-radius:14px 14px 14px 4px;padding:7px 12px;margin:0;max-width:85%}
 .stp-tache{display:flex;gap:10px;align-items:center;background:var(--glow-soft);border-radius:12px;padding:12px 16px;margin:0 0 16px;font-weight:600}
 .stp-style{display:grid;gap:12px;background:var(--surface);border-radius:16px;padding:14px 16px;margin:0 0 16px;box-shadow:var(--shadow)}
 .stp-lib{display:block;font-size:12.5px;color:var(--ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
@@ -2891,6 +2900,14 @@ function renduStoriesProjet() {
       <div class="actions"><a class="btn prim" href="/studio/${p.id}/sortie/${encodeURIComponent(p.zip)}?telecharger=1">Tout télécharger</a></div>
       ${p.slides.some(s => s.sticker) ? `<div class="stp-guide"><b>Au moment de publier, ajoute dans Instagram :</b><ol>${p.slides.map((s, i) => s.sticker ? `<li>Story ${i + 1} : sticker <b>${esc(stickers[s.sticker])}</b>${s.sticker_texte ? ` — « ${esc(s.sticker_texte)} »` : ""}, dans la zone libre en bas.</li>` : "").join("")}</ol></div>` : ""}
       <p class="aide">Pour la musique, ajoute-la dans Instagram (sticker Musique) : elle reste autorisée et à jour.</p></section>` : ""}
+    <section class="stp-retouche">
+      <label for="stp-consigne"><b>Dis à Virall.ai ce que tu veux changer</b></label>
+      ${(p.retouches || []).slice(-3).map(x => `<div class="stp-echange"><p class="stp-moi">${esc(x.consigne)}</p>${x.reponse ? `<p class="stp-ia">${esc(x.reponse)}</p>` : ""}</div>`).join("")}
+      <div class="stp-consigne"><textarea id="stp-consigne" rows="2" maxlength="500" placeholder="Ex. titre plus gros et en haut, story 3 plus percutante, animations plus lentes…" ${tache ? "disabled" : ""}></textarea>
+        <button class="btn prim" id="stp-appliquer" ${tache ? "disabled" : ""}>Appliquer</button></div>
+      <div class="stp-idees">${["Titre plus gros", "Texte en haut", "Animations plus lentes", "Ajoute mon @ en bas", "Plus de paillettes", "Story 1 plus percutante", "Mets un mot clé en couleur"]
+        .map(x => `<button type="button" data-idee="${esc(x)}">${esc(x)}</button>`).join("")}</div>
+    </section>
     <section class="stp-style">
       <div><span class="stp-lib">Effet</span><div class="stp-chips">${o.effets.map(x => `<button data-effet="${x.id}" aria-pressed="${p.effet === x.id}">${esc(x.nom)}</button>`).join("")}</div></div>
       <div><span class="stp-lib">Couleurs</span><div class="stp-chips">${o.palettes.map(x => `<button data-palette="${x.id}" aria-pressed="${p.palette === x.id}" title="${esc(x.nom)}"><i style="background:linear-gradient(${x.couleurs[0]},${x.couleurs[1]})"></i>${esc(x.nom)}</button>`).join("")}</div></div>
@@ -2929,6 +2946,15 @@ function renduStoriesProjet() {
       if (!r.ok || x.erreurs?.length) throw new Error((x.erreurs || [])[0] || x.erreur || "Envoi impossible");
       S.projet = x.projet; renduStoriesProjet(); toast("Photo ajoutée"); } catch (e) { toast(e.message); }
   });
+  $$("[data-idee]", el).forEach(b => b.onclick = () => { const t = $("#stp-consigne"); t.value = (t.value.trim() ? t.value.trim() + ", " : "") + b.dataset.idee.toLowerCase(); t.focus(); });
+  $("#stp-appliquer").onclick = async e => {
+    const consigne = $("#stp-consigne").value.trim(); if (consigne.length < 3) return $("#stp-consigne").focus();
+    e.target.disabled = true;
+    try { await enregistre(false); const r = await api(`/api/stories/${p.id}/retouche`, {method: "POST", body: {consigne}});
+      S.tacheStudio = {id: r.job, sid: p.id, titre: "Retouche des stories", phrase: "Virall.ai applique ta consigne…"}; renduStoriesProjet(); suisTacheStudio(r.job); }
+    catch (err) { e.target.disabled = false; if (!err.data?.quota) toast(err.message); }
+  };
+  $("#stp-consigne").onkeydown = e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("#stp-appliquer").click(); };
   $("#stp-fabrique").onclick = async e => {
     e.target.disabled = true;
     try { await enregistre(false); const r = await api(`/api/stories/${p.id}/generer`, {method: "POST"});
@@ -3702,7 +3728,7 @@ function suisTacheStudio(jid) {
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.pollStudio); S.tacheStudio = null;
       if (j.statut === "erreur") toast("Studio : " + j.erreur);
-      else toast(/écriture des stories/i.test(j.titre) ? "Tes stories sont écrites : retouche-les puis fabrique-les" : /fabrication des stories/i.test(j.titre) ? "Tes stories sont prêtes" : /slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : /préparation/i.test(j.titre) ? "Ta vidéo est prête : tu peux monter ton Reel" : "Ton contenu est prêt à publier");
+      else toast(/retouche des stories/i.test(j.titre) ? "Retouche appliquée : regarde l'aperçu" : /écriture des stories/i.test(j.titre) ? "Tes stories sont écrites : retouche-les puis fabrique-les" : /fabrication des stories/i.test(j.titre) ? "Tes stories sont prêtes" : /slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : /préparation/i.test(j.titre) ? "Ta vidéo est prête : tu peux monter ton Reel" : "Ton contenu est prêt à publier");
       if (S.vue === "studio" && S.projetId === sid) { S.projet = await api("/api/studio/" + sid); renduProjet(); }
     }
   }, 1500);
