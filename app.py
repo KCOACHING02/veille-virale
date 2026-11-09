@@ -2840,6 +2840,12 @@ def _liens_messages(uid: int) -> list[dict]:
     return res
 
 
+def _ig_ouvert(u) -> bool:
+    """Connexion Instagram réelle : réservée aux admins (testeurs de l'app Meta) tant que Meta n'a pas validé
+    l'app (App Review) ; INSTAGRAM_OUVERT=1 dans Railway l'ouvre à toutes les abonnées."""
+    return ma.configure() and (est_admin(u) or os.getenv("INSTAGRAM_OUVERT") == "1")
+
+
 def _peut_messages(uid: int) -> bool:
     u = ab.get(uid)
     return bool(u and droits(u)["actif"] and not reserve(u, "messages_auto"))
@@ -2854,7 +2860,7 @@ def messages_etat():
     demo = en_demo()
     if demo and not c:
         c = {"pseudo": "ton_compte", "photo": "", "relie": "", "demo": True} if session.get("ig_demo") else None
-    return jsonify({"configure": ma.configure(), "demo": demo, "verrou": reserve(g.u, "messages_auto"),
+    return jsonify({"configure": _ig_ouvert(g.u), "demo": demo, "verrou": reserve(g.u, "messages_auto"),
                     "compte": {k: c.get(k) for k in ("pseudo", "photo", "relie", "expire", "demo")} if c else None,
                     "regles": d.get("regles", []), "stats": ma.stats(uid), "journal": d.get("journal", [])[:30],
                     "liens": _liens_messages(uid), "admin": est_admin(g.u),
@@ -2900,7 +2906,7 @@ def instagram_connexion():
     if en_demo():
         session["ig_demo"] = True
         return redirect("/app#messages")
-    if not ma.configure():
+    if not _ig_ouvert(g.u):
         return redirect("/app?ig_erreur=" + "La connexion Instagram n'est pas encore ouverte." + "#messages")
     session["ig_etat"] = etat = secrets.token_urlsafe(16)
     return redirect(ma.url_connexion(f"{url_site()}/instagram/retour", etat))
