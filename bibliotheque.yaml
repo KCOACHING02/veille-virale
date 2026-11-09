@@ -1,0 +1,93 @@
+# Bibliothèque virale : comptes Instagram surveillés chaque jour par Virallink, par niche.
+# Première liste à relire : chaque compte est vérifié par une vraie collecte depuis l'admin
+# (« Vérifier les comptes ») et peut être retiré ou complété là-bas (les modifications sont gardées
+# dans data/bibliotheque/niches.json, ce fichier ne sert que de point de départ).
+# Les seuils viraux (5 000 j'aime pour un carrousel, 10 000 pour une photo) demandent de gros comptes.
+
+business:
+  nom: Business et entrepreneuriat féminin
+  mots: [business, entrepreneur, entreprise, freelance, indépendante, vendre, clientes, offre, salariat, reconversion, activité, chiffre d'affaires, infopreneur, coach business]
+  comptes: [garyvee, hormozi, leilahormozi, jennakutcher, amyporterfield, marieforleo, codiesanchez, sahilbloom, chalenejohnson,
+            jamiekernlima, girlboss, foundr, entrepreneur, thefutur, emmagrede, stevenbartlett, yomidenzel, oussama_ammar,
+            thewomensbusinessschool, ladyboss, hustle, businessinsider, forbes, inc, theleapcollective]
+
+coaching:
+  nom: Coaching et développement personnel
+  mots: [confiance, mindset, développement personnel, estime, motivation, habitudes, coaching de vie, épanouissement, changer de vie, burn-out, épuisement]
+  comptes: [melrobbins, jayshetty, tonyrobbins, brenebrown, gabbybernstein, lewishowes, simonsinek, robinsharma, edmylett,
+            jimkwik, nedratawwab, theholisticpsychologist, drjuliesmith, thegoodquote, mattdavella, mindvalley, thedailystoic,
+            briannawiest, yung_pueblo, lalahdelia, thepresentpsychologist, therapyforblackgirls, tinybuddha, drnicolelepera, impactthecoach]
+
+beaute:
+  nom: Beauté et glow-up
+  mots: [beauté, glow, glow-up, maquillage, skincare, peau, cheveux, soin, cosmétique, confiance en soi, féminité, transformation]
+  comptes: [hudabeauty, nikkietutorials, patrickta, glowrecipe, makeupbymario, jackieaina, fentybeauty, charlottetilbury, glossier,
+            rhode, haileybieber, drdrayzday, dermdoctor, skincarebyhyram, theordinary, sephora, sephorafrance, noholita, enjoyphoenix,
+            lenamahfouf, mademoiselle_rose, rarebeauty, kyliecosmetics, wishtrend, cerave]
+
+bien_etre:
+  nom: Bien-être et santé naturelle
+  mots: [bien-être, santé, naturel, naturopathie, hormones, sommeil, stress, énergie, ménopause, ayurveda, méditation, holistique]
+  comptes: [drmarkhyman, drjoshaxe, mindbodygreen, goop, headspace, calm, deepakchopra, drchatterjee, sadhguru, hubermanlab,
+            drericberg, yogajournal, yogawithadriene, glucosegoddess, drwillcole, drtaraswart, thewellnessway, hormonesbalance,
+            drmindypelz, kellyleveque, drsarahballantyne, wellandgood, womenshealthmag, selfmagazine, healthline]
+
+sport:
+  nom: Sport et fitness
+  mots: [sport, fitness, musculation, perte de poids, minceur, silhouette, entraînement, pilates, yoga, running, abdos, fessiers]
+  comptes: [kayla_itsines, blogilates, chloe_t, sweat, pamela_rf, alexia_clark, whitneyysimmons, krissycela, gymshark, nikewomen,
+            sydneycummingshoudyshell, heidisomers, natacha.oceane, sissymua, tiboinshape, lucilewoodward, juliettegfitness,
+            emkfit, madfit.ig, growwithjo, stephaniebuttermore, massy.arias, jeanettejenkins, joewicks, womensbestwear]
+
+nutrition:
+  nom: Nutrition et cuisine saine
+  mots: [nutrition, alimentation, cuisine, recette, manger sain, healthy, diététique, rééquilibrage, ventre plat, gourmand, repas, batch cooking]
+  comptes: [tasty, deliciouslyella, minimalistbaker, pinchofyum, halfbakedharvest, feelgoodfoodie, nutritionbykylie, thefoodmedic,
+            rachaelsgoodeats, jamieoliver, gordongramsay, cuisineaz, 750g, marmitonorg, chefclub_france, healthyfoodfr, glucosegoddess,
+            lowcarbrecipeideas, thehealthyhunter, hungryhappens, fitfoodieselma, maxiskitchen, eatingwell, bbcgoodfood, cookinglight]
+
+maternite:
+  nom: Maternité et parentalité
+  mots: [maman, mère, maternité, bébé, enfants, parentalité, grossesse, post-partum, famille, éducation, allaitement]
+  comptes: [takingcarababies, biglittlefeelings, drbeckyatgoodinside, motherly, scarymommy, thebump, babycenter, parents,
+            busytoddler, mombrain, momlife, raisingchildrennetwork, theparentingjunkie, mamapacho, cleverlittleones, drlauramarkham,
+            mommyshorts, wellnessmama, themomedit, mamanpoule_fr, lesmamansdecouvertes, magicmaman, parentsfr, doctissimo, wonderbabies]
+
+argent:
+  nom: Argent et finances personnelles
+  mots: [argent, finances, budget, épargne, investir, investissement, bourse, immobilier, liberté financière, dettes, revenus passifs]
+  comptes: [daveramsey, ramitsethi, herfirst100k, humphreytalks, grahamstephan, vivianntu, thebudgetmom, thefinancialdiet, nischa,
+            personalfinanceclub, investopedia, morningbrew, fortune, thebudgetnista, tiffanythebudgetnista, financialfeminist,
+            moneywithkatie, delyanne.the.money.coach, clevergirlfinance, thefinancebar, millennialmoney, andreiinvest, bourseetfinance,
+            investirsimplement, financesperso]
+
+marketing:
+  nom: Marketing et réseaux sociaux
+  mots: [marketing, instagram, réseaux sociaux, contenu, community manager, visibilité, abonnés, personal branding, social media, tiktok, reels]
+  comptes: [vanessalau, jasminestar, latermedia, hootsuite, buffer, sproutsocial, socialmediaexaminer, neilpatel, hubspot, canva,
+            digitalmarketer, creators, instagramforbusiness, metaforbusiness, tiktokforbusiness, marketingharry, adamerhart,
+            thesocialmediasociety, thesocialmediamanager, sarahsaysocial, contentcreatorcommunity, thesavvysocialmediamarketer,
+            socialmediadailyfr, blogdumoderateur, maddyonline]
+
+mode:
+  nom: Mode et style
+  mots: [mode, style, tenue, look, garde-robe, dressing, vêtements, fashion, élégance, silhouette, personal shopper]
+  comptes: [voguemagazine, whowhatwear, chiaraferragni, leoniehanne, aimeesong, camilacoelho, jeannedamas, carolinedaur, sezane,
+            zara, hm, refinery29, ellefrance, vogueparis, marieclairefr, glamourfr, theoutnet, revolve, net_a_porter, songofstyle,
+            weworewhat, julie_sarinana, paulinemarie, adenorah, polinehaddad]
+
+spiritualite:
+  nom: Spiritualité et astrologie
+  mots: [spiritualité, astrologie, énergie, lune, chakras, manifestation, loi de l'attraction, tarot, intuition, âme, vibration]
+  comptes: [costarastrology, chaninicholas, sanctuaryworld, susanmillerastrologyzone, spiritdaughter, notallgeminis, astrologyanswers,
+            moon_omens, gabbybernstein, deepakchopra, mindvalley, sadhguru, thelawofattraction, manifestationbabe, thespiritualistbabe,
+            theastrotwins, astrologyking, ritualcravt, thesecret, lightworkersunited, highvibesonlyy, spiritualgangster, lovelanguages,
+            the.daily.manifestation, energyofhealing]
+
+couple:
+  nom: Couple et relations
+  mots: [couple, amour, relation, célibataire, séduction, rupture, mariage, confiance en soi amoureuse, homme toxique, attachement]
+  comptes: [thegottmaninstitute, estherperel, matthewhussey, jayshetty, lewishowes, mattandsarah, thelovecoachuk, datingadvice,
+            relationshipgoals, couplegoals, drjuliesmith, nedratawwab, theholisticpsychologist, drnicolelepera, lovebombingawareness,
+            thesecurerelationship, attachmentnerd, therelationshipschool, loveisrespect, lovelanguages, stephanspeaks, thedatingcoach,
+            briannawiest, yung_pueblo, tinybuddha]

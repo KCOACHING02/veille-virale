@@ -52,6 +52,16 @@ select{border:1px solid var(--line);background:var(--surface);border-radius:8px;
   input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea{font-size:16px !important}
 }
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+h2{font:800 22px/1.2 var(--display);font-stretch:85%;margin:32px 0 6px}
+.sous{color:var(--ink-2);margin:0 0 12px}
+.niches{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.niche{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px}
+.niche h3{margin:0 0 2px;font-size:16px} .niche .f{color:var(--ink-3);font-size:12.5px;margin-bottom:8px}
+.niche textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface);font:13px/1.4 ui-monospace,monospace;resize:vertical}
+.cpt{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 8px}
+.cpt span{font-size:12px;border-radius:99px;padding:2px 8px;background:var(--sunk)}
+.cpt span.ok{background:var(--ok-soft);color:var(--ok)} .cpt span.ko{background:var(--warn-soft);color:var(--warn);text-decoration:line-through}
+#bib-job{font-size:13px;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -61,6 +71,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="kpis" id="croissance"></div>
   <div class="config" id="config"></div>
   <div id="lien"></div>
+  <section id="bib"></section>
+  <h2>Clientes</h2>
   <div class="outils"><input id="q" type="search" placeholder="Rechercher un client (e-mail, prénom)…" aria-label="Rechercher un client"></div>
   <div class="tableau"><table><thead><tr><th>Client</th><th>Formule</th><th>Statut</th><th>Inscrit</th><th>Dernière connexion</th><th class="num">Analyses (mois)</th><th class="num">Adaptations (mois)</th><th class="num">Coût mois</th><th class="num">Coût total</th><th class="num">Payé/mois</th><th>Actions</th></tr></thead><tbody id="lignes"></tbody></table></div>
 </div>
@@ -129,6 +141,50 @@ $("#lignes").addEventListener("click", e => {
 });
 $("#q").addEventListener("input", rendu);
 charge();
+
+// ---- Bibliothèque virale par niche
+let B = null;
+const nb = x => x == null ? "—" : x >= 1e6 ? (x / 1e6).toLocaleString("fr-FR", {maximumFractionDigits: 1}) + " M" : x >= 1e3 ? Math.round(x / 1e3) + " k" : x;
+async function chargeBib() {
+  const r = await fetch("/api/admin/bibliotheque"); if (!r.ok) return;
+  B = await r.json(); renduBib();
+}
+function renduBib() {
+  const e = B.etat || {}, j = e.journal || [], m = j.slice(0, 30).reduce((a, x) => a + (x.cout_usd || 0), 0);
+  const pf = e.par_format || {};
+  $("#bib").innerHTML = `<h2>Bibliothèque virale</h2>
+    <p class="sous">Une collecte Instagram par jour pour toutes les clientes. Viral = publiée depuis 48 h à 3 mois, au moins ${B.multiple}× l'habitude de son compte, et
+      Reel ≥ ${nb(B.regles.Reel.vues_min)} vues et ${Math.round(B.regles.Reel.engagement_min * 100)} % d'engagement · Carrousel ≥ ${nb(B.regles.Carrousel.jaime_min)} j'aime · Publication ≥ ${nb(B.regles.Photo.jaime_min)} j'aime.</p>
+    <div class="kpis">${[[e.total || 0, `publications virales (${pf.Carrousel || 0} carrousels, ${pf.Reel || 0} Reels, ${pf.Photo || 0} publications)`],
+      [e.jour ? new Date(e.fin || e.jour).toLocaleString("fr-FR", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) : "jamais", "dernière actualisation"],
+      [usd(e.cout_usd), "coût de la dernière collecte"], [usd(m), `coût des ${Math.min(j.length, 30)} derniers jours`]]
+      .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("")}</div>
+    <div class="outils"><button class="btn" id="bib-maj">Actualiser maintenant</button><button class="btn" id="bib-verif">Vérifier les comptes</button><button class="btn" id="bib-sauve">Enregistrer les listes</button><span id="bib-job"></span></div>
+    <div class="niches">${Object.entries(B.niches).map(([k, n]) => `<div class="niche" data-niche="${esc(k)}">
+      <h3>${esc(n.nom)}</h3><div class="f">${n.par_format.Carrousel} carrousels · ${n.par_format.Reel} Reels · ${n.par_format.Photo} publications · ${n.comptes.length} comptes</div>
+      <div class="cpt">${n.comptes.map(c => `<span class="${c.ok === true ? "ok" : c.ok === false ? "ko" : ""}" title="${c.introuvable ? "introuvable" : c.prive ? "privé" : c.abonnes ? nb(c.abonnes) + " abonnés" : "non vérifié"}${c.lus != null ? " · " + c.lus + " publications lues" : ""}${c.viraux ? " · " + c.viraux + " virales" : ""}">@${esc(c.compte)}${c.abonnes ? " · " + nb(c.abonnes) : ""}${c.viraux ? " · 🔥" + c.viraux : ""}</span>`).join("")}</div>
+      <textarea aria-label="Comptes de la niche ${esc(n.nom)}, un par ligne">${n.comptes.map(c => c.compte).join("\n")}</textarea></div>`).join("")}</div>`;
+  $("#bib-sauve").onclick = async () => {
+    const niches = {};
+    document.querySelectorAll("[data-niche]").forEach(el => { const k = el.dataset.niche, n = B.niches[k];
+      niches[k] = {nom: n.nom, mots: n.mots, comptes: el.querySelector("textarea").value.split(/[\s,]+/).filter(Boolean)}; });
+    const r = await fetch("/api/admin/bibliotheque", {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({niches})});
+    toast(r.ok ? "Listes enregistrées" : "Erreur"); chargeBib();
+  };
+  const tache = async (url, quoi) => {
+    const r = await fetch(url, {method: "POST"}); const x = await r.json().catch(() => ({}));
+    if (!r.ok) return toast(x.erreur || "Erreur");
+    const suit = async () => {
+      const t = await (await fetch("/api/jobs/" + x.job)).json().catch(() => null); if (!t) return;
+      $("#bib-job").textContent = `${quoi} : ${t.statut}${t.logs?.length ? " — " + t.logs[t.logs.length - 1].m : ""}`;
+      if (["en cours", "en attente"].includes(t.statut)) setTimeout(suit, 3000); else { if (t.erreur) toast(t.erreur); chargeBib(); }
+    };
+    suit();
+  };
+  $("#bib-maj").onclick = () => tache("/api/admin/bibliotheque/actualise", "Actualisation");
+  $("#bib-verif").onclick = () => tache("/api/admin/bibliotheque/verifie", "Vérification");
+}
+chargeBib();
 </script>
 </body>
 </html>

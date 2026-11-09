@@ -9,6 +9,7 @@ essai:
   analyses_par_mois: 3          # veilles + analyses de comptes
   adaptations_par_mois: 35      # publications adaptées (une veille en consomme 7)
   comptes_surveilles: 5
+  comptes_perso: false          # veille = bibliothèque virale de sa niche (comptes perso : Pro et Agence)
   studio_par_mois: 3           # carrousels et Reels montés
   plans_30j_par_mois: 1          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: false
@@ -48,6 +49,7 @@ createur:
   analyses_par_mois: 12
   adaptations_par_mois: 80      # 4 veilles × 7 + ~52 à la demande
   comptes_surveilles: 10
+  comptes_perso: false          # veille = bibliothèque virale de sa niche (comptes perso : Pro et Agence)
   studio_par_mois: 20          # carrousels et Reels montés
   plans_30j_par_mois: 1          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: true

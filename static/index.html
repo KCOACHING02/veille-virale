@@ -117,6 +117,15 @@ main{min-width:0;padding:20px 28px 80px}
 .seg button{border:0;background:none;padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--ink-2);font-weight:500;font-size:14px}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
 .seg button .c{color:var(--ink-3);font-weight:400;margin-left:4px}
+.src-gal{margin:0 0 12px}
+.src-gal .seg button{font-size:15px;padding:8px 14px}
+.f-cat{display:flex;width:max-content;max-width:100%;overflow-x:auto;margin:0 0 12px;scrollbar-width:none}
+.f-cat button{white-space:nowrap}
+#f-cat.seg{flex-wrap:nowrap}#f-cat.seg button{flex:none}
+.f-cat button:disabled{opacity:.4;cursor:default}
+.niches-choix{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:14px 0}
+.niches-choix button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;text-align:left;font-weight:600;cursor:pointer}
+.niches-choix button[aria-pressed="true"]{border-color:var(--glow);background:var(--glow-soft)}
 .recherche{flex:1;min-width:160px;max-width:260px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px}
 
 /* ---------- Galerie ---------- */
@@ -1402,8 +1411,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <section data-section="reels" hidden>
       <div class="sous-nav" data-groupe="reels"></div>
       <div id="guide-reels"></div>
+      <div class="src-gal" id="src-gal" hidden></div>
       <div class="resume" id="resume"></div>
       <div class="sons-tendance" id="sons-tendance" hidden></div>
+      <div class="seg f-cat" id="f-cat" role="group" aria-label="Catégorie"></div>
       <div class="filtres">
         <div class="seg" id="f-statut" role="group" aria-label="Statut">
           <button data-v="adaptes" aria-pressed="true">Prêts pour toi<span class="c"></span></button>
@@ -1554,6 +1565,7 @@ async function chargeListe(selection) {
 }
 async function chargeAnalyse(id) {
   S.analyse = await api("/api/analyses/" + id);
+  if (id === "tendances") S.tendances = S.analyse; else { S.analyseVeille = S.analyse; if (S.source === "tendances" && S.vue === "reels") S.source = "veille"; }
   remplitComptes();
   rendu();
 }
@@ -1563,7 +1575,7 @@ const TITRES = {boutique: "Ma boutique", messages: "Messages automatiques", accu
 const titreDe = vue => MOBILE.matches && groupeDe(vue) === "parametres" ? "Moi" : TITRES[vue];
 // Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
 const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]], boutique: [["boutique", "Ma boutique"], ["messages", "Messages auto"]],
-                 parametres: [["parametres", "Mon profil"], ["comptes", "Comptes surveillés"], ["abonnement", "Abonnement"]]};
+                 parametres: [["parametres", "Mon profil"], ["comptes", "Ma niche"], ["abonnement", "Abonnement"]]};
 // Sur téléphone, la barre du bas n'a que 5 entrées : « Moi » regroupe résultats, profil, comptes et abonnement
 const MOBILE = matchMedia("(max-width:860px)");
 const groupes = () => MOBILE.matches ? {...GROUPES, parametres: [["resultats", "Résultats"], ["parametres", "Profil"], ["comptes", "Comptes"], ["abonnement", "Abonnement"]]} : GROUPES;
@@ -1582,6 +1594,7 @@ const VUES_PAYANTES = ["reels", "planning", "studio"];
 const verrouille = () => !!S.etat?.abonnement?.gratuit && !S.etat?.admin;
 function va(vue, depuisHistorique) {
   if (VUES_PAYANTES.includes(vue) && verrouille()) vue = "abonnement";
+  if (vue !== "reels" && S.analyse?.id === "tendances") { S.tendances = S.analyse; S.analyse = S.analyseVeille || null; }  // les autres écrans parlent de la veille
   S.vue = vue;
   if (!depuisHistorique) setTimeout(() => pousseHistorique(), 0);
   const g = groupeDe(vue);
@@ -1615,7 +1628,7 @@ async function lanceVeilleDirecte() {
 }
 function heroAccueil() {
   const e = S.etat, a = S.analyse, ab = e.abonnement, j = jobAnalyse();
-  const nbComptes = (e.comptes.instagram || []).length + (e.comptes.tiktok || []).length;
+  const bib = e.bibliotheque?.active, nbComptes = (e.comptes.instagram || []).length + (e.comptes.tiktok || []).length;
   if (j) { const et = etatAnalyse(j);
     return `<div class="hero" id="hero-job"><div class="anneau" style="--p:${et.pct}"><b>${et.pct}<small>%</small></b></div>
       <div><span class="sur">Ta veille tourne · 10 à 20 min</span><h2 id="hero-phrase">${esc(et.phrase)}</h2><p>Pendant ce temps, passe à l'étape suivante ci-dessous.</p></div></div>`; }
@@ -1627,8 +1640,8 @@ function heroAccueil() {
       <p>${e.boutique ? "Complète-la, suis tes visites et tes ventes. Pense à mettre ton lien dans ta bio et à le partager en story." : "Ton nom, un style, tes liens : trois étapes et elle est en ligne."}</p>
       <div class="actions"><button class="btn prim" onclick="va('boutique')">${e.boutique ? "Ouvrir ma boutique" : "Créer ma boutique"}</button>${url ? `<button class="btn clair" data-copier="${esc(url)}">Copier mon lien</button>` : ""}</div></div></div>`;
   }
-  if (!nbComptes) return `<div class="hero"><div class="ic-hero">1</div><div><span class="sur">Première étape</span><h2>Choisis les comptes à copier</h2><p>Ceux qui cartonnent dans ta niche, ou dans une niche voisine. L'outil y repérera chaque semaine les Reels qui ont explosé.</p><div class="actions"><button class="btn prim" onclick="va('comptes')">Ajouter des comptes</button></div></div></div>`;
-  if (!a) return `<div class="hero"><div class="ic-hero">2</div><div><span class="sur">Tout est prêt</span><h2>Lance ta première veille</h2><p>${nbComptes} compte${nbComptes > 1 ? "s" : ""} à passer au crible. Compte 10 à 20 minutes : tu peux fermer la page en attendant.</p><div class="actions"><button class="btn prim" onclick="lanceVeilleDirecte()">Lancer ma veille</button></div></div></div>`;
+  if (!nbComptes && !bib) return `<div class="hero"><div class="ic-hero">1</div><div><span class="sur">Première étape</span><h2>Choisis les comptes à copier</h2><p>Ceux qui cartonnent dans ta niche, ou dans une niche voisine. L'outil y repérera chaque semaine les Reels qui ont explosé.</p><div class="actions"><button class="btn prim" onclick="va('comptes')">Ajouter des comptes</button></div></div></div>`;
+  if (!a) return `<div class="hero"><div class="ic-hero">2</div><div><span class="sur">Tout est prêt</span><h2>Lance ta première veille</h2><p>${bib ? `Les publications qui cartonnent dans ta niche (${esc((e.bibliotheque.niches || []).join(" + "))}), réécrites pour toi.` : `${nbComptes} compte${nbComptes > 1 ? "s" : ""} à passer au crible.`} Compte 10 à 20 minutes : tu peux fermer la page en attendant.</p><div class="actions"><button class="btn prim" onclick="lanceVeilleDirecte()">Lancer ma veille</button></div></div></div>`;
   const ad = a.posts.filter(adapte).length, ret = a.posts.filter(p => p.criteres_ok || p.demande).length;
   const age = (Date.now() - new Date(a.date)) / 864e5, date = new Date(a.date).toLocaleDateString("fr-FR", {weekday: "long", day: "numeric", month: "long"});
   const vieille = age > 6 && a.mode === "veille";
@@ -1708,7 +1721,7 @@ async function renduAccueil() {
   const pubPlan = plan ? plan.cases.filter(c => c.publie).length : 0, pretsPlan = plan ? plan.cases.filter(c => c.projet).length : 0;
   // Les 5 étapes, dans l'ordre : l'étape en cours est grande, avec ce qu'elle apporte et un seul bouton.
   // 1. La boutique (gratuite, sans limite de durée : l'aimant à abonnées) ; 2 à 5 : fonctions payantes (grisées hors essai/abonnement).
-  const jobV = jobAnalyse(), nbC = (S.etat.comptes?.instagram || []).length + (S.etat.comptes?.tiktok || []).length;
+  const jobV = jobAnalyse(), nbC = S.etat.bibliotheque?.active ? 1 : (S.etat.comptes?.instagram || []).length + (S.etat.comptes?.tiktok || []).length;
   const be = S.etat.boutique_etat || {}, publies = (bi.publies || 0) + pubPlan;
   const sousB = [["Crée ta page", !!be.cree, "Créer ma boutique", "va('boutique')"],
                  ["Ajoute ta première offre", be.cree && be.produits > 0 && (be.prets ?? be.produits) > 0 && be.paiements, !be.publie ? "Continuer ma boutique" : be.produits > 0 ? "Terminer mon offre" : "Ajouter mon offre", !be.publie ? "continueBoutique()" : be.produits > 0 ? "BQ.onglet='produits';va('boutique')" : "nouvelleOffre()"],
@@ -1815,9 +1828,12 @@ function remplitComptes() {
   $("#f-compte").innerHTML = '<option value="">Tous les comptes</option>' + c.map(x => `<option value="${esc(x)}">@${esc(x.split(":")[1])} (${x.startsWith("TikTok") ? "TikTok" : "Insta"})</option>`).join("");
 }
 const adapte = p => p.adaptation && (p.adaptation.hooks_adaptes || p.adaptation.hook_viral);
-const estCarrousel = p => p.format === "Carrousel";
+const estCarrousel = p => p.format === "Carrousel" || p.format === "Photo";  // jugés sur les j'aime, sans vues publiques
+// Les 3 catégories de la galerie
+const categorie = p => p.format === "Carrousel" ? "Carrousel" : p.format === "Photo" ? "Photo" : "Reel";
+const CATS = [["", "Tout"], ["Carrousel", "Carrousels"], ["Reel", "Reels"], ["Photo", "Publications"]];
 const nbSlides = p => (p.medias || []).length || (p.adaptation?.slides_modele || []).length;
-const libFormat = p => estCarrousel(p) ? `Carrousel${nbSlides(p) ? " · " + nbSlides(p) + " slides" : ""}` : p.plateforme === "TikTok" ? "Vidéo" : "Reel";
+const libFormat = p => p.format === "Photo" ? "Publication" : estCarrousel(p) ? `Carrousel${nbSlides(p) ? " · " + nbSlides(p) + " slides" : ""}` : p.plateforme === "TikTok" ? "Vidéo" : "Reel";
 const texteSeuil = a => a.seuil_mode === "auto" ? `≥ ${String(a.seuil_multiple || 3).replace(".", ",")}× les vues habituelles du compte (min. ${nb(a.seuil_plancher || 30000)})` : `≥ ${nbLong(a.vues_min)} vues`;
 const ICO_IG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>';
 const ICO_TT = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 5.8A4.3 4.3 0 0115.5 3h-3.1v12.4a2.6 2.6 0 11-2.6-2.6c.3 0 .5 0 .8.1V9.7a5.8 5.8 0 00-.8-.1 5.7 5.7 0 105.7 5.7V9a7.3 7.3 0 004.3 1.4V7.3a4.3 4.3 0 01-3.2-1.5z"/></svg>';
@@ -1840,8 +1856,8 @@ function postsFiltres() {
   const a = S.analyse; if (!a) return [];
   const pl = $("#f-plateforme").value, cpt = $("#f-compte").value, q = $("#f-texte").value.trim().toLowerCase(), tri = $("#f-tri").value;
   let ps = a.posts.filter(p => S.filtre === "tous" || (S.filtre === "cdc" ? (p.criteres_ok || p.demande) : adapte(p)));
-  const fmt = $("#f-format").value;
-  if (fmt) ps = ps.filter(p => fmt === "Carrousel" ? estCarrousel(p) : !estCarrousel(p));
+  const fmt = S.cat || $("#f-format").value;
+  if (fmt) ps = ps.filter(p => categorie(p) === fmt);
   if (pl) ps = ps.filter(p => p.plateforme === pl);
   if (cpt) ps = ps.filter(p => p.plateforme + ":" + p.compte === cpt);
   const typ = $("#f-type").value;
@@ -1878,15 +1894,67 @@ function carte(p) {
     </div>
   </button>`;
 }
+// ---- Deux sources dans la galerie : « Tendances de ma niche » (bibliothèque, mise à jour chaque jour, gratuite) et « Ma veille »
+async function chargeTendances(force) {
+  try { S.tendances = await api("/api/tendances" + (force ? "?force=1" : "")); }
+  catch (e) { S.tendances = null; S.source = "veille"; toast(e.message); }
+  if (S.vue === "reels") renduReels();
+}
+function sourceGalerie() {
+  const bib = S.etat?.bibliotheque?.active;
+  if (!bib) S.source = "veille";
+  else if (!S.source) S.source = S.analyse && S.analyse.id !== "tendances" && S.analyse.posts?.some(adapte) ? "veille" : "tendances";
+  if (S.source === "tendances") {
+    if (S.analyse?.id !== "tendances") S.analyseVeille = S.analyse;
+    if (!S.tendances) return false;
+    S.analyse = S.tendances;
+  } else if (S.analyse?.id === "tendances") { S.tendances = S.analyse; S.analyse = S.analyseVeille || null; }
+  const el = $("#src-gal");
+  el.hidden = !bib;
+  if (bib) {
+    el.innerHTML = `<div class="seg" role="tablist">${[["tendances", "Tendances de ma niche"], ["veille", "Ma veille"]].map(([v, t]) =>
+      `<button role="tab" aria-pressed="${S.source === v}" data-src="${v}">${t}</button>`).join("")}</div>`;
+    $$("[data-src]", el).forEach(b => b.onclick = () => { S.source = b.dataset.src; S.filtreChoisi = false; S.cat = ""; renduReels(); });
+  }
+  return true;
+}
+function choixNiche() {
+  api("/api/bibliotheque/niches").then(r => {
+    const sel = new Set(r.miennes);
+    const dessine = () => {
+      $("#feuille").innerHTML = `<h2 id="m-titre">Ta niche</h2><p class="sous">Tes tendances viennent des comptes qui cartonnent dans cette niche. Deux au maximum.</p>
+        <div class="niches-choix">${r.niches.map(n => `<button type="button" data-niche="${esc(n.id)}" aria-pressed="${sel.has(n.id)}">${esc(n.nom)}</button>`).join("")}</div>
+        <div class="pied-modale"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="m-niche" ${sel.size ? "" : "disabled"}>Valider</button></div>`;
+      $$("[data-niche]").forEach(b => b.onclick = () => { const k = b.dataset.niche;
+        if (sel.has(k)) sel.delete(k); else { if (sel.size >= 2) sel.delete([...sel][0]); sel.add(k); } dessine(); });
+      $("#m-niche").onclick = async () => {
+        try { await api("/api/bibliotheque/niches", {method: "PUT", body: {niches: [...sel]}});
+          fermeModale(); S.etat.bibliotheque.niches = r.niches.filter(n => sel.has(n.id)).map(n => n.nom);
+          S.tendances = null; S.analyse = S.analyseVeille || null; S.source = "tendances"; await chargeTendances(true); if (S.vue === "comptes") renduComptes(); toast("Ta niche est enregistrée");
+        } catch (e) { toast(e.message); } };
+    };
+    dessine(); $("#modale").classList.add("ouvert");
+  }).catch(e => toast(e.message));
+}
+function majCategories(base) {
+  const n = {"": base.length}; base.forEach(p => n[categorie(p)] = (n[categorie(p)] || 0) + 1);
+  if (S.cat && !n[S.cat]) S.cat = "";
+  $("#f-cat").innerHTML = CATS.map(([v, t]) => `<button data-cat="${v}" aria-pressed="${(S.cat || "") === v}" ${v && !n[v] ? "disabled" : ""}>${t}<span class="c">${n[v] || 0}</span></button>`).join("");
+  $$("[data-cat]").forEach(b => b.onclick = () => { S.cat = b.dataset.cat; renduReels(); });
+}
 function renduReels() {
+  if (!sourceGalerie()) { $("#grille").innerHTML = squelette("cartes", 6); $("#resume").innerHTML = ""; $("#f-cat").innerHTML = ""; chargeTendances(); return; }
   const a = S.analyse, g = $("#grille");
+  $("#f-cat").hidden = !a;
+  $("#f-statut").hidden = a?.id === "tendances";  // tout y est viral : pas besoin du tri « Prêts / Les plus viraux »
+  if (a?.id === "tendances" && !S.filtreChoisi) S.filtre = "tous";
   if (!a) {
     $("#resume").innerHTML = "";
     g.innerHTML = `<div class="vide"><h2>Lance ta première analyse</h2><p>Colle des comptes Instagram ou TikTok à décortiquer, ou lance ta veille de la semaine.</p><button class="btn prim" onclick="ouvreNouvelle()">Nouvelle analyse</button></div>`;
     $("#n-reels").textContent = ""; renduSonsTendance(null); return;
   }
   const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
-  if (!S.filtreChoisi) S.filtre = ad ? "adaptes" : "cdc";  // par défaut : ce que l'utilisatrice peut utiliser tout de suite
+  if (!S.filtreChoisi) S.filtre = a.id === "tendances" ? "tous" : ad ? "adaptes" : "cdc";  // par défaut : ce que l'utilisatrice peut utiliser tout de suite
   const gratuit = !!S.etat?.abonnement?.gratuit;
   $("#guide-reels").innerHTML = gratuit || a.classement_seul
     ? guide("reels-gratuit", "Ici : les Reels qui ont cartonné chez les comptes que tu as analysés", [
@@ -1900,7 +1968,8 @@ function renduReels() {
         "Après l'avoir publié, clique <b>J'ai publié</b> pour suivre ses résultats."]);
   renduSonsTendance(a);
   // Une seule phrase en haut ; les détails (critères, coût, notes) sont rangés dans le panneau « Filtres »
-  $("#resume").innerHTML = a.en_cours ? `<p class="encours" style="width:100%;margin:0"><span class="spin"></span>Ta veille tourne : les Reels arrivent au fur et à mesure.</p>`
+  $("#resume").innerHTML = a.id === "tendances" ? `<p class="resume-ligne">Ce qui cartonne en ce moment dans ta niche (<b>${esc((a.noms_niches || []).join(" + "))}</b>), mis à jour chaque jour. <button class="lien" onclick="choixNiche()">Changer</button></p>`
+    : a.en_cours ? `<p class="encours" style="width:100%;margin:0"><span class="spin"></span>Ta veille tourne : les Reels arrivent au fur et à mesure.</p>`
     : `<p class="resume-ligne">${a.classement_seul ? `<b>${cdc}</b> publication${cdc > 1 ? "s" : ""} virale${cdc > 1 ? "s" : ""} trouvée${cdc > 1 ? "s" : ""}. Ouvre-en une pour voir pourquoi elle a marché.`
         : ad ? `<b>${ad}</b> contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi. Touche <b>Créer</b> sur celui qui te plaît.` : `Ouvre une publication et touche <b>Adapter</b> : Virall.ai l'écrit pour ta niche.`}</p>`;
   const completes = a.posts.filter(p => adapte(p) && !p.criteres_ok && !p.demande).length;
@@ -1913,6 +1982,8 @@ function renduReels() {
   const counts = {cdc, adaptes: ad, tous: a.posts.length};
   $$("#f-statut button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === S.filtre); $(".c", b).textContent = counts[b.dataset.v]; });
   $("#n-reels").textContent = cdc;
+  const cat = S.cat; S.cat = ""; majCategories(postsFiltres()); S.cat = cat && $(`[data-cat="${cat}"]:not([disabled])`) ? cat : "";
+  $$("[data-cat]").forEach(b => b.setAttribute("aria-pressed", (S.cat || "") === b.dataset.cat));
   const ps = postsFiltres();
   g.innerHTML = ps.length ? ps.map(carte).join("") : `<div class="vide"><h2>Aucun Reel ici</h2><p>${S.filtre === "cdc" ? "Aucun Reel de cette analyse n'atteint tes critères de viralité. Regarde l'onglet « Tout », assouplis tes critères (bouton Modifier ci-dessus) ou ajoute des comptes plus gros." : S.filtre === "adaptes" ? "Aucun Reel n'a encore été réécrit pour toi dans cette analyse. Ouvre un Reel viral et clique « Adapter ce Reel »." : "Change les filtres pour en voir davantage."}</p></div>`;
 }
@@ -2356,8 +2427,13 @@ async function renduComptes() {
   const c = await api("/api/comptes");
   const dec = S.analyse?.decouvertes || [];
   const ligne = (pl, n) => `<div class="compte-l"><span class="plat">${ICONES[pl]}</span><b>@${esc(n)}</b><button class="btn petit" data-retire="${pl}|${esc(n)}">Retirer</button></div>`;
-  el.innerHTML = `
-    <div class="panneau"><h2>Ta veille de la semaine surveille ces comptes</h2>
+  const bib = S.etat?.bibliotheque?.active, perso = !bib || S.etat?.abonnement?.options?.comptes_perso;
+  const carteNiche = bib ? `<div class="panneau"><h2>Ta niche : ${esc((S.etat.bibliotheque.niches || []).join(" + "))}</h2>
+      <p style="color:var(--ink-2);margin:4px 0 12px">Virallink surveille chaque jour les comptes qui cartonnent dans ta niche. Tu n'as rien à renseigner : ta veille y puise les publications virales des 3 derniers mois.</p>
+      <div class="actions"><button class="btn" onclick="choixNiche()">Changer de niche</button><button class="btn prim" onclick="S.source='tendances';va('reels')">Voir les tendances</button></div></div>` : "";
+  if (!perso) { el.innerHTML = carteNiche + `<p class="aide" style="margin-top:12px">Ajouter tes propres comptes à surveiller : inclus dans les formules Pro et Agence.</p>`; return; }
+  el.innerHTML = carteNiche + `
+    <div class="panneau"><h2>${bib ? "Tes comptes en plus" : "Ta veille de la semaine surveille ces comptes"}</h2>
       <div class="colonnes">
         <div><h3>Instagram</h3><div class="comptes-l">${(c.instagram || []).map(n => ligne("Instagram", n)).join("") || "<p>Aucun compte.</p>"}</div></div>
         <div><h3>TikTok</h3><div class="comptes-l">${(c.tiktok || []).map(n => ligne("TikTok", n)).join("") || "<p>Aucun compte.</p>"}</div></div>

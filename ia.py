@@ -352,7 +352,7 @@ Règles :
     # --------------------------------------------------------
     def adapte(self, p: Post) -> dict:
         nb = self.cfg["claude"]["hooks_par_post"]
-        if p.format == "Carrousel":
+        if p.format in ("Carrousel", "Photo"):  # une photo seule : un carrousel d'une slide
             return self._adapte_carrousel(p, nb)
         texte = f"""Reel viral à analyser puis adapter.
 

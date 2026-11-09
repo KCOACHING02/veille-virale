@@ -129,6 +129,8 @@ def charge(esp: Espace, analyse_id: str) -> dict:
 def liste_analyses(esp: Espace) -> list[dict]:
     res = []
     for f in sorted(esp.analyses.glob("*.json"), reverse=True):
+        if f.stem == TENDANCES:  # vue « Tendances de ma niche » : à part, pas dans l'historique des veilles
+            continue
         try:
             a = json.loads(f.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -286,7 +288,20 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         pass
     try:
         # ---------------- 1. Collecte ----------------
-        if demo:
+        # Veille : publications virales de la bibliothèque de sa niche (collectées une fois pour toutes les clientes),
+        # plus ses propres comptes si sa formule le permet
+        import bibliotheque
+        posts_bib = []
+        bib = mode == "veille" and not depuis and bibliotheque.active()
+        perso = not bib or ((cfg.get("bibliotheque") or {}).get("comptes_perso") and bool(cfg["comptes"].get("instagram") or cfg["comptes"].get("tiktok")))
+        if bib:
+            posts_bib = bibliotheque.posts_pour(cfg, esp.media)
+            noms = [bibliotheque.niches()[k]["nom"] for k in bibliotheque.niches_de(cfg)]
+            log(f"{len(posts_bib)} publications virales de ta niche ({', '.join(noms)})")
+        if demo and bib and not perso:
+            import demo as d
+            posts = []
+        elif demo:
             import demo as d
             log("MODE DÉMO : données fictives")
             posts = d.posts_concurrents(saisie["comptes"] or [(pl, "reel_demande_demo") for pl, _ in saisie["posts"]] or None)
@@ -299,7 +314,7 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
         else:
             from collecte import collecte_comptes, collecte_concurrents, collecte_posts
             if mode == "veille":
-                posts = collecte_concurrents(cfg, token)
+                posts = collecte_concurrents(cfg, token) if perso else []
             else:
                 a = cfg["analyse"]
                 posts = (collecte_comptes([tuple(x) for x in saisie["comptes"]], a["mois"] * 30, a["posts_max_par_compte"], cfg, token)
@@ -307,13 +322,16 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
             (esp.rapports / f"brut_{datetime.now():%Y-%m-%d_%H%M}.json").write_text(
                 json.dumps([_post_vers_dict(p) for p in posts], ensure_ascii=False), encoding="utf-8")
             log(f"{len(posts)} publications collectées")
-        if not posts:
+        if not posts and not posts_bib:
             raise RuntimeError("Aucune publication récupérée. Vérifie les noms de comptes et qu'ils sont publics.")
 
         # ---------------- 2. Scores et candidats ----------------
         histo = selection.Historique(esp.historique)
         demandes = [p for p in posts if p.demande]
         classes = selection.calcule_scores([p for p in posts if not p.demande], cfg)
+        if posts_bib:  # déjà jugées virales par la bibliothèque : classées avec les autres, les plus fortes d'abord
+            vus = {cle(p) for p in classes}
+            classes = sorted(classes + [p for p in posts_bib if cle(p) not in vus], key=lambda p: (not p.criteres_ok, -(p.score_viral or 0)))
         # Les Reels donnés explicitement passent toujours, même s'ils ne remplissent pas les critères
         selection.calcule_scores_individuels(demandes, cfg)
         if mode == "veille":
@@ -391,12 +409,13 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
 
         # ---------------- 3. Vidéos ----------------
         if demo:
-            d.lit_videos(a_adapter, travail / "media", esp.media)
+            d.lit_videos([p for p in a_adapter if not p.images], travail / "media", esp.media)
         elif a_faire:
             from video import slides_carrousels, traite_videos
+            a_lire = [p for p in a_faire if not p.images]  # bibliothèque : slides et vidéo déjà lues une fois pour toutes
             if cfg["video"].get("actif", True):
-                traite_videos([p for p in a_faire if not p.medias and p.format != "Carrousel"], cfg, token, travail / "media", esp.media)
-            slides_carrousels(a_faire, travail / "media", esp.media)
+                traite_videos([p for p in a_lire if not p.medias and p.format not in ("Carrousel", "Photo")], cfg, token, travail / "media", esp.media)
+            slides_carrousels(a_lire, travail / "media", esp.media)
 
         # ---------------- 4. Apprentissage + voix ----------------
         from apprentissage import mon_compte, suivi_excel, synthese, voix
@@ -497,6 +516,43 @@ def executer(esp: Espace, cfg: dict, mode: str = "veille", saisie: dict | None =
 # ------------------------------------------------------------
 #  Adapter un Reel à la demande (depuis la galerie)
 # ------------------------------------------------------------
+TENDANCES = "tendances"
+
+
+def tendances(esp: Espace, cfg: dict, force: bool = False) -> dict:
+    """« Tendances de ma niche » : les publications virales de la bibliothèque, sans aucun coût (ni collecte ni IA).
+    Rafraîchie quand la bibliothèque a changé ; les contenus déjà adaptés pour la cliente sont gardés."""
+    import bibliotheque
+    f = esp.analyses / f"{TENDANCES}.json"
+    try:
+        ancienne = json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        ancienne = None
+    maj_biblio = bibliotheque.etat().get("fin") or ""
+    niches = bibliotheque.niches_de(cfg)
+    if ancienne and not force and ancienne.get("maj_biblio") == maj_biblio and ancienne.get("niches") == niches:
+        return ancienne
+    adaptes = {x["cle"]: x for x in (ancienne or {}).get("posts", []) if x.get("adaptation")}
+    posts = [_post_vers_dict(p) for p in bibliotheque.posts_pour(cfg, esp.media, limite=150)]
+    for x in posts:
+        if x["cle"] in adaptes:
+            x["adaptation"] = adaptes[x["cle"]]["adaptation"]
+    vus = {x["cle"] for x in posts}
+    posts += [x for k, x in adaptes.items() if k not in vus]  # adaptés puis sortis de la bibliothèque : gardés pour elle
+    noms = [bibliotheque.niches()[k]["nom"] for k in niches]
+    a = {"id": TENDANCES, "date": datetime.now().isoformat(timespec="minutes"), "mode": TENDANCES,
+         "titre": "Tendances de ma niche", "demo": False, "en_cours": False, "saisie": {"comptes": [], "posts": []},
+         "criteres": {"mois": 3, "vues_min": bibliotheque.REGLES["Reel"]["vues_min"],
+                      "taux_engagement_min": bibliotheque.REGLES["Reel"]["engagement_min"], "seuil_mode": "auto",
+                      "seuil_multiple": bibliotheque.MULTIPLE, "seuil_plancher": bibliotheque.REGLES["Reel"]["vues_min"]},
+         "objectifs": cfg.get("objectifs") or {}, "planning": [], "posts": posts, "niches": niches, "noms_niches": noms,
+         "maj_biblio": maj_biblio,
+         "stats": {"videos": len(posts), "comptes": len({x["compte"] for x in posts}), "criteres_ok": len(posts),
+                   "adaptes": len(adaptes), "exclus": 0, "videos_lues": 0, "cout_apify_usd": 0, "cout_claude_usd": 0}}
+    sauve(esp, a)
+    return a
+
+
 def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: bool = False) -> dict:
     cfg = applique_plafonds(cfg)
     analyse = charge(esp, analyse_id)
@@ -504,9 +560,17 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
     if idx is None:
         raise RuntimeError("Ce Reel est introuvable dans cette analyse : recharge la page.")
     p = _dict_vers_post(analyse["posts"][idx])
+    import bibliotheque  # publication de la bibliothèque : slides et vidéo déjà lues une fois pour toutes
+    e = bibliotheque.publications().get(p.id) if p.plateforme == "Instagram" else None
+    if e and e.get("prepare"):
+        q = bibliotheque.en_post(e)
+        p.images, p.transcription = q.images, p.transcription or q.transcription
     travail = Path(tempfile.mkdtemp(prefix="veille1_"))
     try:
-        if demo or analyse.get("demo"):
+        if p.images and (demo or analyse.get("demo")):
+            import demo as d
+            p.adaptation = d.adaptation(p, idx)
+        elif demo or analyse.get("demo"):
             import demo as d
             d.lit_videos([p], travail, esp.media)
             p.adaptation = d.adaptation(p, idx)
@@ -515,7 +579,9 @@ def adapter_un(esp: Espace, cfg: dict, analyse_id: str, cle_post: str, demo: boo
             if not os.getenv("ANTHROPIC_API_KEY"):
                 raise RuntimeError("Clé ANTHROPIC_API_KEY manquante.")
             from video import slides_carrousels, traite_videos
-            if p.medias or p.format == "Carrousel":
+            if p.images:
+                pass
+            elif p.medias or p.format in ("Carrousel", "Photo"):
                 slides_carrousels([p], travail, esp.media)
             elif cfg["video"].get("actif", True):
                 traite_videos([p], cfg, token, travail, esp.media)

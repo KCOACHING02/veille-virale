@@ -198,3 +198,55 @@ def bio(compte: str) -> dict:
     return {"instagram": {"nom": "[démo] Karine | Business digital faceless", "abonnes": 12400, "publications": 186, "categorie": "Créateur de contenu",
                           "bio": "[démo] J'aide les débutantes à lancer leur business en ligne depuis leur téléphone 📱\nSans se montrer, sans prise de tête\n⬇️ Ton ebook gratuit pour démarrer",
                           "lien": "https://stan.store/demo"}}
+
+
+# ------------------------------------------------------------
+#  Bibliothèque virale (démo)
+# ------------------------------------------------------------
+HOOKS_BIBLIO = ["3 erreurs qui t'empêchent de trouver des clientes", "Ce que personne ne te dit sur la confiance en soi",
+                "Comment j'ai doublé mes ventes en 30 jours", "Le rituel du matin qui a tout changé",
+                "Arrête de faire ça si tu veux être prise au sérieux", "5 phrases à ne plus jamais dire en rendez-vous",
+                "Pourquoi tu te sens épuisée (et ce n'est pas le travail)", "Ma routine glow-up en 10 minutes"]
+
+
+def posts_bibliotheque(comptes: list[str]) -> list[Post]:
+    """Démo : quelques publications par compte, dont certaines virales, sur les 3 formats."""
+    random.seed(11)
+    now, posts = datetime.now(timezone.utc), []
+    for compte in comptes[:120]:
+        base = random.choice([2_000, 4_000, 8_000])
+        for i in range(10):
+            fmt = random.choice(["Reel", "Carrousel", "Photo"])
+            viral = random.random() < 0.12
+            m = random.uniform(4, 14) if viral else random.uniform(0.5, 1.5)
+            p = Post(plateforme="Instagram", compte=compte, id=f"bib_{compte}_{i}", url=f"https://www.instagram.com/p/demo{compte}{i}/",
+                     date=(now - timedelta(days=random.randint(3, 85))).isoformat(), format=fmt,
+                     legende=f"[démo] {random.choice(HOOKS_BIBLIO)}")
+            if fmt == "Reel":
+                p.vues = int(base * 25 * m)
+                p.likes, p.commentaires, p.duree_s = int(p.vues * 0.05), int(p.vues * 0.004), random.randint(12, 40)
+            else:
+                p.likes = int(base * (1.6 if fmt == "Carrousel" else 3) * m)
+                p.commentaires = int(p.likes * 0.03)
+            posts.append(p)
+    return posts
+
+
+def prepare_bibliotheque(p: Post, dossier: Path):
+    """Démo : fabrique des slides ou des images clés avec Pillow (sans téléchargement)."""
+    from PIL import Image, ImageDraw
+    d = dossier / p.id
+    d.mkdir(parents=True, exist_ok=True)
+    n = 4 if p.format == "Reel" else (6 if p.format == "Carrousel" else 1)
+    teinte = sum(map(ord, p.id)) % 360
+    p.images = []
+    for i in range(n):
+        im = Image.new("RGB", (720, 900), tuple(int(x) for x in __import__("colorsys").hsv_to_rgb(((teinte + i * 18) % 360) / 360, 0.35, 0.85 * 255)))
+        dr = ImageDraw.Draw(im)
+        dr.rectangle((40, 360, 680, 540), fill=(255, 255, 255))
+        dr.text((60, 420), (p.legende or "")[7:60] if i == 0 else f"Slide {i + 1}", fill=(30, 30, 30))
+        f = d / f"{i + 1:02d}.jpg"
+        im.save(f, "JPEG", quality=80)
+        p.images.append(str(f))
+    if p.format == "Reel":
+        p.transcription = "[démo] " + (p.legende or "")[7:] + ". Voici ce que j'ai compris après trois ans…"

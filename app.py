@@ -44,6 +44,7 @@ from flask import Flask, Response, abort, g, has_request_context, jsonify, redir
 import abonnements as ab
 import emails
 import notifications as nt
+import bibliotheque
 import moteur
 import publications as pubs
 from espace import CODE, DATA, espace_client
@@ -246,6 +247,9 @@ def lance(uid: int, titre: str, fonction, *args, apres=None, persiste: dict | No
 
 def lance_analyse(uid: int, titre: str, params: dict) -> str:
     """Analyse complète, persistée : relancée automatiquement après un redémarrage du serveur."""
+    if params.get("mode") == "veille" and params.get("cfg"):  # comptes perso en plus de la bibliothèque : selon la formule
+        u = ab.get(uid)
+        params["cfg"].setdefault("bibliotheque", {})["comptes_perso"] = bool(u and droits(u)["options"].get("comptes_perso"))
     params = {**params, "aid": params.get("aid") or f"{datetime.now():%Y%m%d-%H%M%S}-{params.get('mode', 'veille')}"}
     return lance(uid, titre, moteur.executer, espace_client(uid), apres=_apres_analyse(uid), persiste=params, **params)
 
@@ -517,6 +521,7 @@ def etat():
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
         "boutique": bq.pseudo_de(g.u["id"]), "boutique_etat": _avancement_boutique(g.u["id"]),
+        "bibliotheque": {"active": bibliotheque.active(), "niches": [bibliotheque.niches()[k]["nom"] for k in bibliotheque.niches_de(cfg)]},
     })
 
 
@@ -600,7 +605,7 @@ def nouvelle():
         if c.get("ajouter_a_veille") and saisie["comptes"] and not classement:
             moteur.ajoute_a_la_veille(esp, saisie["comptes"][: max(0, d["quotas"]["comptes_surveilles"] - _nb_comptes(cfg))])
     else:
-        if not _nb_comptes(cfg):
+        if not _nb_comptes(cfg) and not bibliotheque.active():
             return jsonify({"erreur": "Ajoute d'abord des comptes à surveiller (menu Comptes)."}), 400
     for k_in, k_cfg, conv in (("vues_min", "vues_min", int), ("taux_engagement_min", "taux_engagement_min", lambda x: float(x) / 100), ("mois", "mois", int),
                              ("seuil_mode", "seuil_mode", str), ("seuil_multiple", "seuil_multiple", float)):
@@ -644,7 +649,7 @@ def adapter(aid):
 @connecte
 def job(jid):
     j = JOBS.get(jid)
-    if not j or j["uid"] != g.u["id"]:
+    if not j or (j["uid"] != g.u["id"] and not (j["uid"] == 0 and est_admin(g.u))):  # uid 0 : tâches de Virallink (bibliothèque)
         abort(404)
     res = {k: v for k, v in j.items() if k != "resultat"}
     if len(res["logs"]) > 160:  # le début (phases) et la fin suffisent au suivi
@@ -2797,6 +2802,74 @@ def admin_requis(f):
     return w
 
 
+# ------------------------------------------------------------
+#  Bibliothèque virale par niche (bibliotheque.py)
+# ------------------------------------------------------------
+@app.get("/api/tendances")
+@connecte
+def tendances():
+    """Tendances de ma niche : publications virales de la bibliothèque, sans coût. Rafraîchies quand elle change."""
+    a = moteur.tendances(g.esp, g.esp.lit_config(), force=bool(request.args.get("force")))
+    return jsonify(a)
+
+
+@app.get("/api/bibliotheque/niches")
+@connecte
+def bib_niches():
+    cfg = g.esp.lit_config()
+    return jsonify({"niches": [{"id": k, "nom": v["nom"]} for k, v in bibliotheque.niches().items()],
+                    "miennes": bibliotheque.niches_de(cfg), "choisies": bool((cfg.get("bibliotheque") or {}).get("niches"))})
+
+
+@app.put("/api/bibliotheque/niches")
+@connecte
+def bib_niches_maj():
+    ids = [k for k in (request.get_json(force=True) or {}).get("niches") or [] if k in bibliotheque.niches()][:2]
+    if not ids:
+        return jsonify({"erreur": "Choisis au moins une niche."}), 400
+    cfg = g.esp.lit_config()
+    cfg.setdefault("bibliotheque", {})["niches"] = ids
+    g.esp.ecrit_config(cfg)
+    return jsonify({"miennes": ids})
+
+
+@app.get("/api/bibliotheque/m/<path:rel>")
+@connecte
+def bib_media(rel):
+    f = bibliotheque.chemin_media(rel)
+    if not f:
+        abort(404)
+    return send_from_directory(f.parent, f.name, max_age=7 * 86400)
+
+
+@app.get("/api/admin/bibliotheque")
+@admin_requis
+def admin_bib():
+    return jsonify(bibliotheque.resume_admin())
+
+
+@app.put("/api/admin/bibliotheque")
+@admin_requis
+def admin_bib_maj():
+    n = bibliotheque.sauve_niches((request.get_json(force=True) or {}).get("niches") or {})
+    return jsonify({"niches": len(n)})
+
+
+@app.post("/api/admin/bibliotheque/actualise")
+@admin_requis
+def admin_bib_actualise():
+    if any(j["uid"] == 0 and j["statut"] in ("en attente", "en cours") for j in JOBS.values()):
+        return jsonify({"erreur": "La bibliothèque est déjà en cours d'actualisation."}), 409
+    return jsonify({"job": lance(0, "Bibliothèque virale (admin)", bibliotheque.actualise, demo=en_demo())})
+
+
+@app.post("/api/admin/bibliotheque/verifie")
+@admin_requis
+def admin_bib_verifie():
+    comptes = (request.get_json(silent=True) or {}).get("comptes")
+    return jsonify({"job": lance(0, "Vérification des comptes", bibliotheque.verifie_comptes, comptes, demo=en_demo())})
+
+
 @app.get("/admin")
 @admin_requis
 def page_admin():
@@ -3101,6 +3174,21 @@ def planificateur_emails():
             traceback.print_exc()
 
 
+BIB_TENTATIVES: dict = {}
+
+
+def _actualise_bibliotheque(now):
+    """Bibliothèque virale : une collecte par jour pour toutes les clientes, à partir de 3 h (avant les veilles du lundi, 6 h).
+    Deux tentatives par jour au plus : une erreur ne relance pas la collecte en boucle."""
+    jour = now.strftime("%Y-%m-%d")
+    if now.hour < 3 or not bibliotheque.a_faire() or BIB_TENTATIVES.get(jour, 0) >= 2:
+        return
+    if not (os.getenv("APIFY_TOKEN") or en_demo()) or any(j["uid"] == 0 and j["statut"] in ("en attente", "en cours") for j in JOBS.values()):
+        return
+    BIB_TENTATIVES[jour] = BIB_TENTATIVES.get(jour, 0) + 1
+    lance(0, "Bibliothèque virale du jour", bibliotheque.actualise, demo=en_demo())
+
+
 def planificateur():
     while True:
         try:
@@ -3120,11 +3208,12 @@ def planificateur():
                         continue
                     esp = espace_client(u["id"])
                     cfg = esp.lit_config()
-                    if not _nb_comptes(cfg) or refus(u, analyses=1, adaptations=min(cfg["objectifs"]["reels_par_jour"] * cfg["objectifs"]["jours_planifies"], moteur.adaptations_auto(cfg))):
+                    if (not _nb_comptes(cfg) and not bibliotheque.active()) or refus(u, analyses=1, adaptations=min(cfg["objectifs"]["reels_par_jour"] * cfg["objectifs"]["jours_planifies"], moteur.adaptations_auto(cfg))):
                         continue
                     ab.maj(u["id"], derniere_veille_auto=lundi)
                     lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(), "differe": True,
                                                                            "max_adaptations": d["reste"]["adaptations"]})
+            _actualise_bibliotheque(now)
             envoie_syntheses()
             envoie_relances_boutique()
             envoie_relances_essai()
