@@ -84,7 +84,7 @@ def cle_secrete() -> str:
 
 # Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
 for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY", "PIXABAY_API_KEY",
-           "INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET", "INSTAGRAM_WEBHOOK_TOKEN"):
+           "INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET", "INSTAGRAM_CONFIG_ID", "INSTAGRAM_WEBHOOK_TOKEN"):
     if os.getenv(_v):
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
 

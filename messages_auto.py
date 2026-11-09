@@ -1,14 +1,19 @@
 """
 Messages privés automatiques sur Instagram (type « commente GUIDE et je t'envoie le lien »).
 
-Fonctionnement (API Instagram avec connexion Instagram, sans page Facebook) :
-  - la cliente relie son compte Instagram professionnel (OAuth) ;
+Fonctionnement (API Instagram avec connexion unifiée, « Unified Login », imposée par Meta aux nouvelles
+applications depuis octobre 2026 ; pas besoin de page Facebook) :
+  - la cliente relie son compte Instagram professionnel : elle se connecte avec Instagram ou Facebook,
+    choisit son portefeuille business et le compte à partager (Facebook Login for Business + config_id) ;
+  - Virallink reçoit un jeton d'« utilisateur système d'intégration » qui appartient à son portefeuille
+    (durée choisie dans la configuration Meta : « jamais » conseillé) ; tous les appels passent par graph.facebook.com ;
   - Meta nous prévient à chaque commentaire (webhook « comments ») ;
   - si le commentaire contient un mot-clé d'une de ses règles, on envoie UNE réponse privée à la personne
     (POST /<ig_id>/messages avec recipient.comment_id, dans les 7 jours) et, si elle le veut,
     une réponse publique sous le commentaire (« Je t'ai envoyé le lien en privé 💌 »).
 
-Variables d'environnement : INSTAGRAM_APP_ID, INSTAGRAM_APP_SECRET (application Meta),
+Variables d'environnement : INSTAGRAM_APP_ID et INSTAGRAM_APP_SECRET (identifiant et clé secrète de l'application
+Meta, Paramètres de l'app → Général), INSTAGRAM_CONFIG_ID (identifiant de la configuration de connexion),
 INSTAGRAM_WEBHOOK_TOKEN (facultatif : jeton de vérification du webhook, dérivé de SECRET_KEY sinon).
 
 Données : table `instagram` (compte relié par cliente) dans data/app.db ;
@@ -36,16 +41,16 @@ import requests
 import abonnements as ab
 from espace import DATA
 
-VERSION = "v23.0"
-GRAPH = "https://graph.instagram.com"
-PORTEES = "instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages"
+VERSION = "v27.0"
+GRAPH = "https://graph.facebook.com"
+CHAMPS_WEBHOOK = "comments,messages"
 MAX_PAR_HEURE = 150          # en dessous de la limite de Meta, pour ne jamais faire bloquer un compte
 JOURS_JOURNAL = 60
 _verrou = threading.Lock()
 
 
 def configure() -> bool:
-    return bool(os.getenv("INSTAGRAM_APP_ID") and os.getenv("INSTAGRAM_APP_SECRET"))
+    return bool(os.getenv("INSTAGRAM_APP_ID") and os.getenv("INSTAGRAM_APP_SECRET") and os.getenv("INSTAGRAM_CONFIG_ID"))
 
 
 def jeton_webhook(secret: str) -> str:
@@ -59,6 +64,8 @@ def _table():
     with ab._db() as c:
         c.execute("""CREATE TABLE IF NOT EXISTS instagram(uid INTEGER PRIMARY KEY, ig_id TEXT UNIQUE, pseudo TEXT,
                      jeton TEXT, expire TEXT, relie TEXT, photo TEXT)""")
+        if "entreprise" not in {r[1] for r in c.execute("PRAGMA table_info(instagram)")}:
+            c.execute("ALTER TABLE instagram ADD COLUMN entreprise TEXT")
 
 
 def compte(uid: int) -> dict | None:
@@ -75,13 +82,14 @@ def compte_par_ig(ig_id: str) -> dict | None:
     return dict(r) if r else None
 
 
-def _enregistre(uid: int, ig_id: str, pseudo: str, jeton: str, duree_s: int, photo: str = ""):
+def _enregistre(uid: int, ig_id: str, pseudo: str, jeton: str, duree_s: int, photo: str = "", entreprise: str = ""):
+    """duree_s = 0 : jeton sans date d'expiration (réglage « jamais » de la configuration Meta)."""
     _table()
-    expire = (datetime.now() + timedelta(seconds=duree_s or 5_184_000)).isoformat(timespec="seconds")
+    expire = (datetime.now() + timedelta(seconds=duree_s)).isoformat(timespec="seconds") if duree_s else ""
     with ab._verrou, ab._db() as c:
         c.execute("DELETE FROM instagram WHERE uid=? OR ig_id=?", (uid, str(ig_id)))
-        c.execute("INSERT INTO instagram(uid, ig_id, pseudo, jeton, expire, relie, photo) VALUES(?,?,?,?,?,?,?)",
-                  (uid, str(ig_id), pseudo, jeton, expire, datetime.now().isoformat(timespec="seconds"), photo))
+        c.execute("INSERT INTO instagram(uid, ig_id, pseudo, jeton, expire, relie, photo, entreprise) VALUES(?,?,?,?,?,?,?,?)",
+                  (uid, str(ig_id), pseudo, jeton, expire, datetime.now().isoformat(timespec="seconds"), photo, entreprise))
 
 
 def delie(uid: int):
@@ -97,61 +105,64 @@ def delie_par_ig(ig_id: str):
 
 
 # ------------------------------------------------------------
-#  Connexion (OAuth Instagram)
+#  Connexion (connexion unifiée : Facebook Login for Business + config_id)
 # ------------------------------------------------------------
 def url_connexion(redirection: str, etat: str) -> str:
     from urllib.parse import urlencode
-    return "https://www.instagram.com/oauth/authorize?" + urlencode({
-        "client_id": os.environ["INSTAGRAM_APP_ID"], "redirect_uri": redirection, "response_type": "code",
-        "scope": PORTEES, "state": etat, "enable_fb_login": "0", "force_authentication": "1"})
+    return "https://www.facebook.com/dialog/oauth?" + urlencode({
+        "client_id": os.environ["INSTAGRAM_APP_ID"], "config_id": os.environ["INSTAGRAM_CONFIG_ID"],
+        "override_default_response_type": "true", "redirect_uri": redirection, "response_type": "code",
+        "state": etat, "prompt": "login"})
+
+
+def _get(chemin: str, jeton: str, **params) -> dict:
+    r = requests.get(f"{GRAPH}/{VERSION}/{chemin}", params=params, headers={"Authorization": f"Bearer {jeton}"}, timeout=30)
+    try:
+        return r.json()
+    except ValueError:
+        return {"error": {"message": f"réponse illisible ({r.status_code})"}}
 
 
 def termine_connexion(uid: int, code: str, redirection: str) -> dict:
-    """Code → jeton court → jeton long (60 jours) → compte, puis abonnement aux commentaires."""
-    r = requests.post("https://api.instagram.com/oauth/access_token", data={
+    """Code → jeton du portefeuille de la cliente → compte Instagram partagé, puis abonnement aux commentaires."""
+    r = requests.get(f"{GRAPH}/{VERSION}/oauth/access_token", params={
         "client_id": os.environ["INSTAGRAM_APP_ID"], "client_secret": os.environ["INSTAGRAM_APP_SECRET"],
-        "grant_type": "authorization_code", "redirect_uri": redirection, "code": code.removesuffix("#_")}, timeout=30)
+        "redirect_uri": redirection, "code": code.removesuffix("#_")}, timeout=30)
     d = r.json()
     if r.status_code != 200 or "access_token" not in d:
         raise RuntimeError(_erreur(d, "Instagram a refusé la connexion."))
-    r = requests.get(f"{GRAPH}/access_token", params={"grant_type": "ig_exchange_token", "client_secret": os.environ["INSTAGRAM_APP_SECRET"],
-                                                     "access_token": d["access_token"]}, timeout=30)
-    longue = r.json()
-    jeton = longue.get("access_token") or d["access_token"]
-    moi = requests.get(f"{GRAPH}/{VERSION}/me", params={"fields": "user_id,username,account_type,profile_picture_url", "access_token": jeton}, timeout=30).json()
-    if "user_id" not in moi:
-        raise RuntimeError(_erreur(moi, "Impossible de lire ton compte Instagram."))
-    if moi.get("account_type") not in (None, "BUSINESS", "MEDIA_CREATOR", "CREATOR"):
-        raise RuntimeError("Ton compte Instagram doit être un compte professionnel (créateur ou entreprise). Change-le dans Instagram : Paramètres → Type de compte.")
-    _enregistre(uid, moi["user_id"], moi.get("username", ""), jeton, int(longue.get("expires_in") or 0), moi.get("profile_picture_url", ""))
-    abonne_webhook(jeton)
+    jeton = d["access_token"]
+    entreprise = _get("me", jeton, fields="client_business_id").get("client_business_id", "")
+    comptes = _get("me/assigned_instagram_accounts", jeton, fields="id,username,profile_picture_url")
+    if not comptes.get("data"):
+        raise RuntimeError(_erreur(comptes, "Aucun compte Instagram partagé. Recommence et coche ton compte Instagram professionnel."))
+    moi = comptes["data"][0]
+    _enregistre(uid, moi["id"], moi.get("username", ""), jeton, int(d.get("expires_in") or 0), moi.get("profile_picture_url", ""), entreprise)
+    abonne_webhook(moi["id"], jeton)
     return compte(uid)
 
 
-def abonne_webhook(jeton: str):
-    r = requests.post(f"{GRAPH}/{VERSION}/me/subscribed_apps", params={"subscribed_fields": "comments,messages", "access_token": jeton}, timeout=30)
+def abonne_webhook(ig_id: str, jeton: str):
+    r = requests.post(f"{GRAPH}/{VERSION}/{ig_id}/subscribed_apps", data={"subscribed_fields": CHAMPS_WEBHOOK},
+                      headers={"Authorization": f"Bearer {jeton}"}, timeout=30)
     if r.status_code != 200:
         raise RuntimeError(_erreur(r.json(), "Instagram n'a pas activé les notifications de commentaires."))
 
 
 def renouvelle_jetons():
-    """Une fois par jour : prolonge les jetons qui expirent dans moins de 15 jours (ils durent 60 jours)."""
+    """Une fois par jour : signale les jetons qui expirent bientôt (configuration Meta avec une durée).
+    Avec le réglage conseillé « jamais », il n'y a rien à faire. Un jeton expiré oblige la cliente à se reconnecter."""
     if not configure():
         return
     _table()
     with ab._db() as c:
-        lignes = [dict(r) for r in c.execute("SELECT * FROM instagram").fetchall()]
+        lignes = [dict(r) for r in c.execute("SELECT * FROM instagram WHERE expire != ''").fetchall()]
     for x in lignes:
         try:
-            if datetime.fromisoformat(x["expire"]) - datetime.now() > timedelta(days=15):
-                continue
-            d = requests.get(f"{GRAPH}/refresh_access_token", params={"grant_type": "ig_refresh_token", "access_token": x["jeton"]}, timeout=30).json()
-            if d.get("access_token"):
-                expire = (datetime.now() + timedelta(seconds=int(d.get("expires_in") or 5_184_000))).isoformat(timespec="seconds")
-                with ab._verrou, ab._db() as c:
-                    c.execute("UPDATE instagram SET jeton=?, expire=? WHERE uid=?", (d["access_token"], expire, x["uid"]))
-        except Exception as e:  # noqa: BLE001
-            print(f"[messages auto] jeton de {x.get('pseudo')} non renouvelé : {e}")
+            if datetime.fromisoformat(x["expire"]) - datetime.now() < timedelta(days=7):
+                print(f"[messages auto] le jeton de {x.get('pseudo')} expire le {x['expire'][:10]} : reconnexion nécessaire")
+        except ValueError:
+            pass
 
 
 def publications(uid: int, demo: bool = False) -> list[dict]:
@@ -162,8 +173,7 @@ def publications(uid: int, demo: bool = False) -> list[dict]:
     c = compte(uid)
     if not c:
         return []
-    d = requests.get(f"{GRAPH}/{VERSION}/me/media", params={"fields": "id,caption,media_type,thumbnail_url,media_url,permalink,timestamp",
-                                                           "limit": 24, "access_token": c["jeton"]}, timeout=30).json()
+    d = _get(f"{c['ig_id']}/media", c["jeton"], fields="id,caption,media_type,thumbnail_url,media_url,permalink,timestamp", limit=24)
     return [{"id": m["id"], "legende": (m.get("caption") or "")[:120], "image": m.get("thumbnail_url") or m.get("media_url") or "",
              "lien": m.get("permalink", ""), "date": (m.get("timestamp") or "")[:10]} for m in d.get("data", [])]
 
@@ -343,7 +353,8 @@ def envoie_reponse_privee(c: dict, comment_id: str, texte: str, lien: str = "", 
 
 
 def repond_publiquement(c: dict, comment_id: str, texte: str):
-    r = requests.post(f"{GRAPH}/{VERSION}/{comment_id}/replies", params={"message": texte[:300], "access_token": c["jeton"]}, timeout=30)
+    r = requests.post(f"{GRAPH}/{VERSION}/{comment_id}/replies", data={"message": texte[:300]},
+                      headers={"Authorization": f"Bearer {c['jeton']}"}, timeout=30)
     if r.status_code != 200:
         raise RuntimeError(_erreur(r.json(), "Réponse publique refusée."))
 
