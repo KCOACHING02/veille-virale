@@ -51,9 +51,9 @@ OUTIL_ADAPTATION = {
                 "items": {"type": "object", "properties": {
                     "original": {"type": "string", "description": "Le texte lu sur la slide, recopié tel quel (traduit fidèlement s'il n'est pas dans la langue de la marque). Vide s'il n'y a pas de texte."},
                     "visuel": {"type": "string", "description": "Ce qu'on voit : photo de quoi, fond, mise en page, place du texte."},
-                    "adapte": {"type": "string", "description": "Le texte de cette slide pour la marque : même rôle et même longueur que l'original. Slide 1 : le hook viral repris tel quel."},
+                    "adapte": {"type": "string", "description": "Le texte de cette slide pour la marque : la traduction FIDÈLE de l'original, avec les mêmes chiffres, les mêmes délais, les mêmes mots forts, la même construction et la même longueur. Ne remplace que les mots propres à un autre métier ou à une autre cible par leur équivalent dans la niche (ex. « leads » → « clientes »). Slide 1 : le hook viral repris tel quel."},
                     "photo": {"type": "string", "description": "La photo que la marque doit prendre elle-même pour reproduire cette slide, décrite concrètement. Vide si la slide est un fond uni avec du texte."},
-                    "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver une photo libre de droits équivalente dans une banque d'images (ex. « woman holding belly morning light »). Vide si pas de photo."},
+                    "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver dans une banque d'images une photo qui illustre ce que DIT le texte adapté de cette slide : personnes et objets concrets, le plus important en premier (ex. « tired woman office desk coffee »). Toujours rempli, même pour une slide sur fond uni."},
                     "sous_titre": {"type": "string", "description": "Si la slide a une petite ligne secondaire (ex. « Here's exactly what I'd do »), sa version adaptée/traduite. Sinon vide. Le texte « adapte » ne contient alors que le titre."},
                     "mise_en_page": {"type": "object", "description": "Où et comment le texte est posé sur la slide du modèle.", "properties": {
                         "position": {"type": "string", "enum": ["haut", "centre", "bas"]},
@@ -177,7 +177,7 @@ OUTIL_CARROUSEL = {
                     "titre": {"type": "string", "description": "Texte principal de la slide, très lisible : 3 à 10 mots."},
                     "texte": {"type": "string", "description": "Précision optionnelle sous le titre : 0 à 25 mots. Vide sur la 1re slide."},
                     "photo": {"type": "string", "description": "La photo à mettre en fond de cette slide, décrite concrètement pour que la personne la prenne elle-même (ex. « toi de profil devant ton miroir, lumière du matin »). Vide si la slide est sur fond uni."},
-                    "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver une photo libre de droits équivalente (ex. « woman mirror morning light »). Vide si pas de photo."}},
+                    "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver dans une banque d'images une photo qui illustre ce que DIT le titre de cette slide : personnes et objets concrets, le plus important en premier (ex. « tired woman office desk coffee »). Toujours rempli, même pour une slide sur fond uni."}},
                     "required": ["titre", "texte", "photo"]},
             },
             "legende": {"type": "string", "description": "Légende prête à publier, avec le CTA et 3 à 6 hashtags à la fin."},
@@ -398,7 +398,8 @@ LÉGENDE :
 Lis chaque slide (texte ET visuel).
 LE HOOK EST LE TEXTE ÉCRIT SUR LA SLIDE 1 (la couverture), en entier : titre ET sous-titre éventuel. Recopie-le mot pour mot dans hook_original. Dans hook_viral, mets sa traduction fidèle et complète en {self.cfg['niche'].get('langue', 'français')} (même sens, même longueur, mêmes mots forts, aucune reformulation, rien d'ajouté ni de retiré). Ne prends JAMAIS la légende comme hook.
 Pour chaque slide, relève aussi sa mise en page (champ mise_en_page) pour que la version adaptée soit posée exactement au même endroit et de la même façon.
-{"Seule la COUVERTURE (slide 1) est jointe : la suite n'a pas pu être récupérée. Remplis slides_modele avec la couverture puis 5 à 7 slides que tu déduis de la légende et de la promesse de la couverture, dans le même esprit." if seule_couverture else f"Remplis slides_modele avec exactement {n} entrée(s), une par slide, dans l'ordre :"} le texte original, ce qu'on voit, le texte adapté à la marque (même rôle, même longueur) et la photo que la marque doit prendre elle-même pour reproduire la slide.
+{"Seule la COUVERTURE (slide 1) est jointe : la suite n'a pas pu être récupérée. Remplis slides_modele avec la couverture puis 5 à 7 slides que tu déduis de la légende et de la promesse de la couverture, dans le même esprit." if seule_couverture else f"Remplis slides_modele avec exactement {n} entrée(s), une par slide, dans l'ordre :"} le texte original, ce qu'on voit, le texte adapté à la marque et la photo que la marque doit prendre elle-même pour reproduire la slide.
+LE TEXTE ADAPTÉ RESTE COLLÉ AU MODÈLE : c'est sa traduction fidèle, slide par slide. Garde les chiffres, les délais, les promesses, les mots forts et la construction des phrases ; ne change que le vocabulaire d'un autre métier ou d'une autre cible (ex. « leads » → « clientes »). Ne transforme jamais « 100 leads en 30 jours » en « tes premières clientes ».
 Décris le style du modèle (style_visuel) et choisis la police et le fond du studio les plus proches (typo_conseillee, theme_conseille).
 Les champs script_reel, texte_ecran et texte_ecran_adapte concernent une version Reel du même contenu : remplis-les quand même, brièvement.
 Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
@@ -432,7 +433,8 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
         combien = f"{nb} " if nb else "5 à 9 "
         quoi = (f"Reel : {combien}plans texte (diaporama, une phrase forte par plan) ET le script à dire (champ script)" if reel
                 else f"carrousel Instagram de {combien}slides")
-        slides_src = "".join(f"\n  Slide {i + 1} : « {x.get('original', '')} » — {x.get('visuel', '')}" for i, x in enumerate(src.get("slides_modele") or []))
+        slides_src = "".join(f"\n  Slide {i + 1} : « {x.get('original', '')} »" + (f" → version adaptée : « {x['adapte']} »" if x.get("adapte") else "")
+                             + f" — {x.get('visuel', '')}" for i, x in enumerate(src.get("slides_modele") or []))
         modele = f"""LE MODÈLE À REPRODUIRE (@{src.get('compte') or '?'}, {src.get('format') or 'Reel'}, {round(src['duree_s']) if src.get('duree_s') else '?'} s) :
 {("Slides du carrousel modèle :" + slides_src + chr(10) + "Style : " + (src.get('style_visuel') or '') + chr(10) + "Garde exactement le même nombre de slides et le même rôle pour chacune." + chr(10)) if slides_src else ""}
 Hook original : {src.get('hook_original') or ''}
@@ -457,7 +459,8 @@ CTA : {ad.get('cta_conversation') or ''}
 {("CE CARROUSEL FAIT PARTIE D'UN PLAN DE 30 JOURS QUI MÈNE À LA VENTE :" + chr(10) + tunnel + chr(10)) if tunnel else ""}
 Règles :
 - Slide 1 : {"une accroche construite exactement comme le hook viral (même mécanique, même longueur, même force) mais sur le SUJET DE CE CARROUSEL, rien d'autre." if tunnel else "le hook viral repris tel quel (ou traduit fidèlement), rien d'autre."} Elle doit donner envie de faire glisser.
-- Slides suivantes : une seule idée par slide, phrases courtes, concrètes, dans le ton de la marque. Chaque slide donne envie de passer à la suivante.
+- Slides suivantes : {"une seule idée par slide, phrases courtes, concrètes, dans le ton de la marque. Chaque slide donne envie de passer à la suivante." if tunnel or not slides_src else "pour chaque slide, la version adaptée de la même slide du modèle, reprise fidèlement (mêmes chiffres, mêmes mots forts, même construction) : le titre porte la phrase principale (10 mots max), la suite va dans texte. Ne réécris pas, ne résume pas."}
+- Champ recherche : des mots-clés qui décrivent une image illustrant le texte de CETTE slide (pas une ambiance générale).
 - Dernière slide : {"l'appel à l'action indiqué dans le plan." if tunnel else f"le CTA qui fait commenter le mot-clé « {self.cfg['objectifs']['mot_cle_cta']} »."}
 - Rien qui sonne publicité ou texte d'IA, pas de liste de bénéfices creux, pas d'emoji dans les titres.
 

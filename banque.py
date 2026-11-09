@@ -97,14 +97,24 @@ def _variantes(requete: str) -> list[str]:
     return res
 
 
+def _pertinence(r: dict, mots: list[str]) -> float:
+    """Nombre de mots-clés retrouvés dans la description de l'image (les premiers, plus importants, comptent plus)."""
+    alt = " " + re.sub(r"[^a-zà-ÿ0-9]+", " ", (r.get("alt") or "").lower()) + " "
+    return sum((len(mots) - k) * (2 if f" {m} " in alt else 1 if m[:5] in alt else 0) for k, m in enumerate(mots))
+
+
 def photos(requete: str, n: int = 15, orientation: str = "portrait") -> list[dict]:
+    """Images de la banque, les plus fidèles aux mots-clés en premier (la banque trie par popularité, pas par sens)."""
     if not active():
         return demo_photos(requete, n)
+    mots = [m.lower() for m in re.split(r"[\s,;:.«»\"'’!?()]+", requete) if m and m.lower() not in MOTS_VIDES and len(m) > 2][:6]
     for v in _variantes(requete):
-        res = _photos(v, n, orientation)
+        res = _photos(v, max(n, 24), orientation)
         if len(res) >= 3:
-            return res
-    return res
+            break
+    rang = {id(r): k for k, r in enumerate(res)}
+    res.sort(key=lambda r: (-_pertinence(r, mots), rang[id(r)]))
+    return res[:n]
 
 
 def _photos(requete: str, n: int, orientation: str) -> list[dict]:

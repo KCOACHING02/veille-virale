@@ -426,7 +426,8 @@ def ecrit_textes(esp: Espace, cfg: dict, sid: str, demo: bool = False) -> dict:
         p["script"] = res["script"]
     sauve(esp, p)
     log(f"✅ {len(p['slides'])} slides écrites")
-    remplit_banque(esp, sid, demo=demo)
+    # Carrousel du plan du mois : une image sur chaque slide ; reproduction d'un modèle : là où le modèle en a une
+    remplit_banque(esp, sid, demo=demo, toutes=bool(tunnel))
     return {"id": sid}
 
 
