@@ -118,7 +118,18 @@ def _stripe():
             manque = [x for x, ok in (("encaissements", a.get("charges_enabled")), ("virements", a.get("payouts_enabled"))) if not ok]
             return _r("stripe", nom, role, "alerte", f"Compte en mode {mode} : {' et '.join(manque)} bloqués.",
                       "Complète les informations demandées par Stripe (identité, IBAN).", lien)
-        return _r("stripe", nom, role, "ok", f"Compte en mode {mode}, encaissements et virements actifs.", "", lien)
+        # Webhook : sans lui, un abonnement payé, résilié ou impayé n'est pas répercuté dans Virallink
+        w = requests.get("https://api.stripe.com/v1/webhook_endpoints", params={"limit": 20}, auth=(k, ""), timeout=20)
+        hooks = [h for h in (w.json().get("data") or []) if "/api/stripe/webhook" in (h.get("url") or "")] if w.ok else []
+        actifs = [h for h in hooks if h.get("status") == "enabled"]
+        if w.ok and not actifs:
+            return _r("stripe", nom, role, "ko" if hooks else "alerte",
+                      f"Compte en mode {mode}, mais le webhook vers Virallink est {'désactivé' if hooks else 'introuvable'} : les abonnements payés ne sont plus répercutés.",
+                      "Stripe → Développeurs → Webhooks : réactive le point de terminaison /api/stripe/webhook.", "https://dashboard.stripe.com/webhooks")
+        if not os.getenv("STRIPE_WEBHOOK_SECRET"):
+            return _r("stripe", nom, role, "alerte", f"Compte en mode {mode}, mais STRIPE_WEBHOOK_SECRET est absente de Railway.",
+                      "Copie le secret de signature du webhook (Stripe → Webhooks) dans Railway.", "https://dashboard.stripe.com/webhooks")
+        return _r("stripe", nom, role, "ok", f"Compte en mode {mode}, encaissements, virements et webhook actifs.", "", lien)
     except Exception as e:  # noqa: BLE001
         return _r("stripe", nom, role, "alerte", f"Vérification impossible : {str(e)[:120]}", "", lien)
 
