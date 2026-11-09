@@ -640,6 +640,17 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .stp-role{font-size:12.5px;color:var(--ink-3)}
 .stp-champs textarea,.stp-champs input,.stp-champs select{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
 .stp-champs textarea[data-ch=titre]{font-weight:700}
+.stp-formats{display:grid;gap:8px;border-top:1px solid var(--line);padding:12px 12px 14px;min-width:0;justify-items:start}
+.stp-ftitre{font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.stp-fliste{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+.stp-f{border:0;padding:0;background:none;cursor:pointer;display:grid;gap:4px;color:var(--ink);font:inherit;min-width:0;text-align:center}
+.stp-f img,.stp-fautres span{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:10px;display:block;background:var(--sunk);outline:2.5px solid transparent;outline-offset:2px;transition:outline-color .15s}
+.stp-f b{font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stp-f.choisi img{outline-color:var(--glow)}.stp-f.choisi b{color:var(--glow)}
+.stp-f:hover img,.stp-f:focus-visible img,.stp-fautres:hover span{outline-color:var(--ink-3)}.stp-f.choisi:hover img{outline-color:var(--glow)}
+.stp-fautres span{display:grid;place-items:center;font-size:26px;color:var(--ink-3);border:1.5px dashed var(--line);background:none}
+.stp-f:disabled{opacity:.5;cursor:default}
+@media(max-width:640px){.stp-fliste{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 6px;scrollbar-width:none}.stp-fliste::-webkit-scrollbar{display:none}.stp-f{flex:0 0 28%;scroll-snap-align:start}}
 .stp-preuves{display:flex;gap:6px;flex-wrap:wrap}
 .stp-preuves span{position:relative;width:64px;height:48px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
 .stp-preuves img{width:100%;height:100%;object-fit:cover}
@@ -2849,13 +2860,16 @@ async function renduStoriesAssistant() {
         `<button type="button" data-prod="${esc(pr.id)}" aria-pressed="${w.produit === pr.id}" class="${w.produit === pr.id ? "choisi" : ""}"><i class="p30-coche" aria-hidden="true"></i><b>${esc(pr.titre)}</b><span>${esc(pr.prix_txt)}</span></button>`).join("")}</div>` : ""}`;
     pied = `<button class="btn prim large" id="stw-suiv" ${(w.sujet || "").trim() || w.produit ? "" : "disabled"}>Continuer</button>`;
   } else if (cle === "effet") {
-    q = "Choisis ton effet"; aide = "Il s'applique à toutes tes stories. Tu pourras en changer avant de fabriquer.";
-    corps = `<div class="stw-effets">${o.effets.map(x => `<button type="button" data-stw="effet" data-v="${x.id}" class="${w.effet === x.id ? "choisi" : ""}">
+    q = "Choisis ton style"; aide = "Tu pourras en changer avant de fabriquer, story par story.";
+    corps = `<div class="p30-choix" style="margin-bottom:14px"><button type="button" data-stw="effet" data-v="auto" class="${w.effet === "auto" ? "choisi" : ""}"><b>✦ Virall.ai choisit pour moi</b>
+      <span class="p30-sous">Une mise en page différente pour chaque story (note, magazine, messages, karaoké…), la mieux adaptée à ton texte et à ta photo.</span></button></div>
+      <p class="p30-aide" style="margin:0 0 8px">Ou un seul effet pour toutes tes stories :</p>
+      <div class="stw-effets">${o.effets.map(x => `<button type="button" data-stw="effet" data-v="${x.id}" class="${w.effet === x.id ? "choisi" : ""}">
       ${apercuFx(x.id, pal)}<b>${esc(x.nom)}</b><span class="p30-sous">${esc(x.aide)}</span></button>`).join("")}</div>`;
   } else if (cle === "couleurs") {
     q = "Tes couleurs";
     corps = `<div class="stw-effets">${o.palettes.map(x => `<button type="button" data-stw="palette" data-v="${x.id}" class="${w.palette === x.id ? "choisi" : ""}">
-      ${apercuFx(w.effet || "doux", x.couleurs)}<b>${esc(x.nom)}</b></button>`).join("")}</div>`;
+      ${apercuFx(w.effet && w.effet !== "auto" ? w.effet : "doux", x.couleurs)}<b>${esc(x.nom)}</b></button>`).join("")}</div>`;
   } else {
     q = "Et les images ?"; aide = "En fond de chaque story. Tu pourras les changer une par une.";
     corps = `<div class="p30-choix">
@@ -2896,13 +2910,34 @@ async function creeStories(b) {
 }
 function renduStoriesProjet() {
   const p = S.projet, el = $("#studio"), o = S.stOpt;
+  if (S.stFormats?.id !== p.id) S.stFormats = {id: p.id, liste: null, tour: {}, sig: null, demande: null};
+  const fmts = S.stFormats.liste, nomsF = Object.fromEntries((o?.formats || []).map(f => [f.id, f]));
+  const cinq = i => { const l = fmts[i] || [], t = S.stFormats.tour[i] || 0, d = (t * 5) % (l.length || 1), f = p.slides[i].format;
+    const vus = [...l.slice(d), ...l.slice(0, d)].slice(0, 5);
+    return !t && f && l.includes(f) && !vus.includes(f) ? [f, ...vus.slice(0, 4)] : vus; };  // la mise en page choisie reste toujours visible
+  // Empreinte du contenu : l'adresse d'un aperçu ne change que si la story change (le navigateur garde les autres)
+  const hache = t => { let h = 0; for (let k = 0; k < t.length; k++) h = (h * 31 + t.charCodeAt(k)) | 0; return (h >>> 0).toString(36); };
+  const commun = q => [q.images, q.palette, q.typo, q.pseudo, q.reglages, q.couleurs_marque];
+  const cleApercu = i => { const q = S.projet; return hache(JSON.stringify([q.slides[i], q.effet, i, commun(q)])); };
+  const cleFormat = i => { const q = S.projet, {format, effet, duree, preuves, ...reste} = q.slides[i] || {}; return hache(JSON.stringify([reste, i, commun(q)])); };
+  const tousFormates = p.slides.length > 0 && p.slides.every(x => x.format);
   if (!o) { el.innerHTML = squelette("cartes", 4); api("/api/stories/options").then(x => { S.stOpt = x; if (S.projet?.id === p.id) renduStoriesProjet(); }).catch(e => toast(e.message)); return; }
   const tache = S.tacheStudio && S.tacheStudio.sid === p.id ? S.tacheStudio : null;
   if (p.statut === "en_cours" && !tache) {
     clearTimeout(S.rechargeProjet);
     S.rechargeProjet = setTimeout(async () => { if (S.projetId === p.id && S.vue === "studio") { S.projet = await api("/api/studio/" + p.id); renduProjet(); } }, 3000);
   }
-  const v = Date.now();
+  // Classement des mises en page de chaque story : redemandé quand les textes ou les images ont changé (jamais pendant une saisie)
+  const sigF = hache(JSON.stringify([p.slides.map(x => [x.titre, x.texte, x.sticker, x.image, x.photo]), p.images]));
+  if (!tache && S.stFormats.sig !== sigF && S.stFormats.demande !== sigF) {
+    const F = S.stFormats; F.demande = sigF;
+    api(`/api/stories/${p.id}/formats`).then(x => {
+      if (S.stFormats !== F || S.projet?.id !== p.id) return;
+      const change = JSON.stringify(x) !== JSON.stringify(F.liste);
+      F.liste = x; F.sig = sigF;
+      if (change && S.vue === "studio" && !S.stw && !document.activeElement?.matches?.("#studio textarea, #studio input")) renduStoriesProjet();
+    }).catch(() => { F.demande = null; });
+  }
   const pret = p.statut === "pret" && !tache;
   const stickers = o.stickers;
   el.innerHTML = `<div class="stp">
@@ -2924,11 +2959,11 @@ function renduStoriesProjet() {
         .map(x => `<button type="button" data-idee="${esc(x)}">${esc(x)}</button>`).join("")}</div>
     </section>
     <section class="stp-style">
-      <div><span class="stp-lib">Effet</span><div class="stp-chips">${o.effets.map(x => `<button data-effet="${x.id}" aria-pressed="${p.effet === x.id}">${esc(x.nom)}</button>`).join("")}</div></div>
+      <div><span class="stp-lib">Style</span><div class="stp-chips"><button data-effet="auto" aria-pressed="${tousFormates}" title="Une mise en page différente pour chaque story, choisie d'après son texte et sa photo">✦ Virall.ai choisit</button>${o.effets.map(x => `<button data-effet="${x.id}" aria-pressed="${!tousFormates && p.effet === x.id}">${esc(x.nom)}</button>`).join("")}</div></div>
       <div><span class="stp-lib">Couleurs</span><div class="stp-chips">${o.palettes.map(x => `<button data-palette="${x.id}" aria-pressed="${p.palette === x.id}" title="${esc(x.nom)}"><i style="background:linear-gradient(${x.couleurs[0]},${x.couleurs[1]})"></i>${esc(x.nom)}</button>`).join("")}</div></div>
     </section>
     <div class="stp-liste">${p.slides.map((s, i) => `<article class="stp-carte" data-i="${i}">
-      <div class="stp-vis"><img src="/api/stories/${p.id}/apercu/${i}?v=${v}" alt="Aperçu de la story ${i + 1}" loading="lazy"><span class="stp-num">${i + 1}</span></div>
+      <div class="stp-vis"><img src="/api/stories/${p.id}/apercu/${i}?v=${cleApercu(i)}" alt="Aperçu de la story ${i + 1}" loading="lazy"><span class="stp-num">${i + 1}</span></div>
       <div class="stp-champs">
         <span class="stp-role">${esc((s.role || "").split(" (")[0])}</span>
         <textarea data-ch="titre" rows="2" maxlength="140" placeholder="La phrase principale" ${tache ? "disabled" : ""}>${esc(s.titre || "")}</textarea>
@@ -2938,22 +2973,35 @@ function renduStoriesProjet() {
         <div class="stp-img">${o.banque ? `<button class="btn petit" data-bq="${i}">Changer l'image</button>` : ""}<label class="btn petit">Ma photo<input type="file" accept="image/*" data-up="${i}" hidden></label>
           <label class="btn petit" title="Tes captures d'écran de ventes, de gains ou de messages : Virallink les met en forme et les empile dans la story">Mes captures de résultats<input type="file" accept="image/*" multiple data-preuve="${i}" hidden></label></div>
         ${(s.preuves || []).length ? `<div class="stp-preuves">${s.preuves.map(n => `<span><img src="/studio/${p.id}/sources/${esc(n)}" alt=""><button type="button" data-preuve-x="${i}" data-nom="${esc(n)}" aria-label="Retirer cette capture">✕</button></span>`).join("")}</div>` : ""}
-      </div></article>`).join("")}</div>
+      </div>
+      ${fmts && !(s.preuves || []).length ? `<div class="stp-formats"><span class="stp-ftitre">5 mises en page pour cette story</span>
+        <div class="stp-fliste">${cinq(i).map(f => `<button type="button" class="stp-f ${s.format === f ? "choisi" : ""}" data-format="${f}" data-story="${i}" aria-pressed="${s.format === f}" title="${esc(nomsF[f]?.aide || "")}" ${tache ? "disabled" : ""}>
+          <img src="/api/stories/${p.id}/apercu/${i}?format=${f}&v=${cleFormat(i)}" alt="" loading="lazy"><b>${esc(nomsF[f]?.nom || f)}</b></button>`).join("")}
+          <button type="button" class="stp-f stp-fautres" data-autres="${i}" ${tache ? "disabled" : ""}><span aria-hidden="true">↻</span><b>5 autres</b></button></div>
+        ${s.format ? `<button type="button" class="btn petit" data-format="" data-story="${i}" ${tache ? "disabled" : ""}>Sans mise en page</button>` : ""}</div>` : ""}
+      </article>`).join("")}</div>
     <div class="stp-pied"><button class="btn prim large" id="stp-fabrique" ${tache ? "disabled" : ""}>${p.genere_le ? "Refaire mes stories" : `Fabriquer mes ${p.slides.length > 1 ? p.slides.length + " stories" : "story"}`}</button>
       <p class="aide">${p.genere_le ? "Refaire après une retouche ne compte pas une nouvelle création." : "Compte pour 1 création du Studio."} Environ 15 s par story.</p></div>
   </div>`;
   $("#stp-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); };
   const enregistre = async (rafraichir) => {
     const slides = $$(".stp-carte", el).map(c => ({titre: $("[data-ch=titre]", c).value, texte: $("[data-ch=texte]", c).value,
-      sticker: $("[data-ch=sticker]", c).value, sticker_texte: $("[data-ch=sticker_texte]", c)?.value || ""}));
+      sticker: $("[data-ch=sticker]", c).value, sticker_texte: $("[data-ch=sticker_texte]", c)?.value || "", format: S.projet.slides[+c.dataset.i]?.format || ""}));
     try { S.projet = await api(`/api/stories/${p.id}`, {method: "PUT", body: {slides}}); $("#st-enregistre").textContent = "Enregistré";
-      if (rafraichir) $$(".stp-carte", el).forEach((c, i) => { $("img", c).src = `/api/stories/${p.id}/apercu/${i}?v=${Date.now()}`; }); }
+      if (rafraichir) { const actif = document.activeElement?.closest?.(".stp-carte");
+        $$(".stp-carte", el).forEach((c, i) => { if (actif && c !== actif) return; $("img", c).src = `/api/stories/${p.id}/apercu/${i}?v=${cleApercu(i)}`;
+          $$(".stp-f img", c).forEach(im => { im.src = im.src.replace(/v=[^&]*/, "v=" + cleFormat(i)); }); }); } }
     catch (e) { toast(e.message); }
   };
   $$("textarea, input[data-ch]", el).forEach(t => t.oninput = () => { $("#st-enregistre").textContent = "…"; clearTimeout(S.stSauve); S.stSauve = setTimeout(() => enregistre(true), 900); });
   $$("select[data-ch]", el).forEach(x => x.onchange = async () => { await enregistre(false); renduStoriesProjet(); });
   const style = async corps => { try { S.projet = await api(`/api/stories/${p.id}`, {method: "PUT", body: corps}); renduStoriesProjet(); } catch (e) { toast(e.message); } };
-  $$("[data-effet]", el).forEach(b => b.onclick = () => style({effet: b.dataset.effet}));
+  $$("[data-effet]", el).forEach(b => b.onclick = async () => {
+    await enregistre(false);
+    const avant = {effet: S.projet.effet, slides: S.projet.slides.map(x => ({...x}))}, avait = avant.slides.some(x => x.format);
+    await style({effet: b.dataset.effet});
+    if (avait) toastAnnuler(b.dataset.effet === "auto" ? "Nouvelles mises en page choisies" : "Effet appliqué à toutes tes stories", () => style(avant), () => {});
+  });
   $$("[data-palette]", el).forEach(b => b.onclick = () => style({palette: b.dataset.palette}));
   $$("[data-bq]", el).forEach(b => b.onclick = () => ouvreBanque(+b.dataset.bq));
   $$("[data-up]", el).forEach(inp => inp.onchange = async () => {
@@ -2963,6 +3011,9 @@ function renduStoriesProjet() {
       if (!r.ok || x.erreurs?.length) throw new Error((x.erreurs || [])[0] || x.erreur || "Envoi impossible");
       S.projet = x.projet; renduStoriesProjet(); toast("Photo ajoutée"); } catch (e) { toast(e.message); }
   });
+  $$("[data-format]", el).forEach(b => b.onclick = async () => { const s = S.projet.slides[+b.dataset.story]; s.format = s.format === b.dataset.format ? "" : b.dataset.format;
+    await enregistre(false); renduStoriesProjet(); });
+  $$("[data-autres]", el).forEach(b => b.onclick = async () => { await enregistre(false); const i = +b.dataset.autres; S.stFormats.tour[i] = (S.stFormats.tour[i] || 0) + 1; renduStoriesProjet(); });
   $$("[data-preuve]", el).forEach(inp => inp.onchange = async () => {
     if (!inp.files.length) return;
     const fd = new FormData(); [...inp.files].forEach(f => fd.append("fichiers", f));

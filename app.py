@@ -1223,12 +1223,26 @@ def stories_preuve_retire(sid, i, nom):
     return jsonify(stories.retire_preuve(g.esp, sid, i, nom))
 
 
+_APERCUS = threading.BoundedSemaphore(2)
+
+
+@app.get("/api/stories/<sid>/formats")
+@connecte
+def stories_formats_proposes(sid):
+    _projet_stories(sid)
+    return jsonify(stories.propositions(g.esp, sid))
+
+
 @app.get("/api/stories/<sid>/apercu/<int:i>")
 @connecte
 def stories_apercu(sid, i):
     _projet_stories(sid)
     try:
-        return Response(stories.apercu(g.esp, sid, i), mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+        fmt = request.args.get("format")
+        with _APERCUS:  # 2 aperçus calculés à la fois : l'écran en demande jusqu'à 6 par story (mémoire du serveur)
+            data = stories.apercu(g.esp, sid, i, fmt, petit=fmt is not None)
+        # Avec « v » (empreinte du contenu, calculée par l'écran), l'adresse change dès que la story change : le navigateur peut la garder
+        return Response(data, mimetype="image/jpeg", headers={"Cache-Control": "private, max-age=600" if request.args.get("v") else "no-store"})
     except IndexError:
         abort(404)
 

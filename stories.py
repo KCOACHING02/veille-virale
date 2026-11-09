@@ -23,6 +23,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
+import stories_formats as formats
 import studio
 from espace import Espace
 from modele import log
@@ -188,6 +189,7 @@ def options(cfg: dict) -> dict:
             "palettes": [{"id": k, "nom": NOMS_PALETTES[k], "couleurs": list(v)} for k, v in PALETTES.items()]
                         + ([{"id": "marque", "nom": "Ma marque", "couleurs": [m["fond"], m["fond"], m["texte"], m["texte"], m["accent"]]}]
                            if (m := studio.couleurs_marque(cfg)) else []),
+            "formats": [{"id": k, **v} for k, v in formats.FORMATS.items()],
             "stickers": STICKERS}
 
 
@@ -216,6 +218,7 @@ def cree(esp: Espace, cfg: dict, c: dict) -> dict:
          "objectif": c.get("objectif") if mode == "sequence" else None, "modele": c.get("modele") if mode == "unique" else None,
          "titre": f"Stories · {titre}" + (f" · {_court(sujet, 42)}" if sujet else ""), "sujet": sujet,
          "produit": c.get("produit") or None, "effet": c.get("effet") if c.get("effet") in EFFETS else "doux",
+         "formats_auto": c.get("effet") == "auto",
          "palette": c.get("palette") if c.get("palette") in (*PALETTES, "marque") else "nuit",
          "couleurs_marque": studio.couleurs_marque(cfg), "typo": c.get("typo") if c.get("typo") in studio.TYPOS else "moderne",
          "photos": "miennes" if c.get("photos") == "miennes" else "banque",
@@ -232,15 +235,22 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
     for k in ("effet", "palette", "typo"):
         if k in champs and (champs[k] in EFFETS if k == "effet" else champs[k] in (*PALETTES, "marque") if k == "palette" else champs[k] in studio.TYPOS):
             p[k] = champs[k]
+            if k == "effet":  # un effet choisi pour toutes les stories remplace leurs mises en page (rendues par « slides » pour annuler)
+                for s in p["slides"]:
+                    s["format"] = ""
     if isinstance(champs.get("slides"), list):
         anciennes = p["slides"]
         p["slides"] = [{**(anciennes[i] if i < len(anciennes) else {}),
                         "titre": str(s.get("titre") or "")[:140], "texte": str(s.get("texte") or "")[:280],
                         "sticker": s.get("sticker") if s.get("sticker") in STICKERS else "",
-                        "sticker_texte": str(s.get("sticker_texte") or "")[:80]}
+                        "sticker_texte": str(s.get("sticker_texte") or "")[:80],
+                        **({"format": s["format"] if s["format"] in formats.FORMATS else ""} if "format" in s else {})}
                        for i, s in enumerate(champs["slides"][:8]) if isinstance(s, dict)]
     p["statut"] = "brouillon" if p.get("statut") == "pret" else p.get("statut")
     studio.sauve(esp, p)
+    if champs.get("effet") == "auto":  # « Virall.ai choisit » : une mise en page par story
+        formats_auto(esp, sid)
+        p = studio.charge(esp, sid)
     return p
 
 
@@ -272,6 +282,8 @@ def ecrit(esp: Espace, cfg: dict, sid: str, contexte: str = "", demo: bool = Fal
     log(f"✅ {len(p['slides'])} stories écrites")
     if p.get("photos") == "banque":
         studio.remplit_banque(esp, sid, demo=demo, toutes=True)
+    if p.get("formats_auto"):
+        formats_auto(esp, sid)
     return {"id": sid}
 
 
@@ -280,11 +292,13 @@ def _etat_texte(p: dict) -> str:
     reg = reglages(p)
     lignes = [f"Effet : {p.get('effet')} (possibles : {', '.join(EFFETS)}) · couleurs : {p.get('palette')} (possibles : {', '.join([*PALETTES, 'marque'])})",
               f"Police : {p.get('typo')} (possibles : {', '.join(studio.TYPOS)})",
+              "Mises en page possibles par story (remplacent l'effet) : " + ", ".join(f"{k} ({v['aide']})" for k, v in formats.FORMATS.items()),
               "Réglages : " + ", ".join(f"{k} = {v}" for k, v in reg.items()), ""]
     for i, s in enumerate(p["slides"]):
         lignes.append(f"Story {i + 1} ({s.get('role', '')}) : titre « {s.get('titre', '')} » · texte « {s.get('texte', '')} »"
                       + (f" · mot en couleur « {s['mot']} »" if s.get("mot") else "")
                       + (f" · effet propre {s['effet']}" if s.get("effet") else "")
+                      + (f" · mise en page {s['format']}" if s.get("format") else "")
                       + (f" · sticker {s['sticker']} « {s.get('sticker_texte', '')} »" if s.get("sticker") else "")
                       + f" · durée {duree_story(s, p)} s")
     return "\n".join(lignes)
@@ -292,8 +306,10 @@ def _etat_texte(p: dict) -> str:
 
 def applique_retouche(p: dict, r: dict) -> dict:
     """Applique les changements renvoyés par Virall.ai (valeurs vérifiées une à une)."""
-    if r.get("effet") in EFFETS:
+    if r.get("effet") in EFFETS and r["effet"] != p.get("effet"):
         p["effet"] = r["effet"]
+        for s in p["slides"]:  # un effet demandé pour toutes les stories remplace leurs mises en page
+            s["format"] = ""
     if r.get("palette") in (*PALETTES, "marque") and (r["palette"] != "marque" or p.get("couleurs_marque")):
         p["palette"] = r["palette"]
     if r.get("typo") in studio.TYPOS:
@@ -317,6 +333,10 @@ def applique_retouche(p: dict, r: dict) -> dict:
                 s[k] = studio.propre(c[k])[:n] if k in ("titre", "texte") else c[k].strip()[:n]
         if "effet" in c and (c["effet"] in EFFETS or c["effet"] == ""):
             s["effet"] = c["effet"]
+            if c["effet"]:
+                s["format"] = ""  # un effet demandé remplace la mise en page choisie
+        if "format" in c and (c["format"] in formats.FORMATS or c["format"] == ""):
+            s["format"] = c["format"]
         if "sticker" in c and c["sticker"] in STICKERS:
             s["sticker"] = c["sticker"]
         if "duree" in c:
@@ -399,6 +419,8 @@ def duree_story(s: dict, p: dict | None = None) -> float:
     bonus = reglages(p)["duree"] if p else 0.0
     if s.get("duree"):
         return round(max(3.0, min(15.0, float(s["duree"]))), 1)
+    if format_de(s):
+        return round(max(3.0, min(15.0, formats.duree(s, format_de(s)) + bonus)), 1)
     if p and effet_de(p, s) == "notifications":
         base = max(base, 3.5 + 0.55 * max(len(_lignes_notif(s)), len(s.get("preuves") or [])))
     return round(max(3.0, min(15.0, base + bonus)), 1)
@@ -630,15 +652,24 @@ def _grain(graine: int):
     return res
 
 
+def format_de(s: dict) -> str:
+    """Mise en page propre à la story (note, magazine, scrapbook…), sinon vide : titre + texte animés par l'effet."""
+    return s.get("format") if s.get("format") in formats.FORMATS and not s.get("preuves") else ""
+
+
 def effet_de(p: dict, s: dict) -> str:
     return s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") if p.get("effet") in EFFETS else "doux")
 
 
-def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulement: set | None = None, sources: Path | None = None):  # noqa: C901
+def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulement: set | None = None, sources: Path | None = None,
+                 numero: int = 1):  # noqa: C901
     """Générateur des images (PIL RGB) d'une story animée. seulement : numéros d'images à rendre (aperçu)."""
     from PIL import Image, ImageDraw, ImageFilter
     pal = palette_de(p)
     reg = reglages(p)
+    if format_de(s):
+        yield from formats.images(format_de(s), p, s, image, pal, duree_story(s, p), reg, numero, seulement)
+        return
     eff = effet_de(p, s)  # effet propre à la story, sinon celui du projet
     vit, inten = VITESSES[reg["vitesse"]], INTENSITES[reg["intensite"]]
     duree = duree_story(s, p)
@@ -811,7 +842,25 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulemen
         yield im.convert("RGB")
 
 
-def apercu(esp: Espace, sid: str, i: int) -> bytes:
+def propositions(esp: Espace, sid: str) -> list[list[str]]:
+    """Pour chaque story, tous les formats du plus adapté au moins adapté (l'écran en montre 5 à la fois)."""
+    p = studio.charge(esp, sid)
+    d = studio.dossier(esp, sid)
+    images = studio.attribue(p["slides"], [d / "sources" / x for x in p["images"]])
+    return [formats.classe(s, bool(images[i] and Path(images[i]).is_file()), i, len(p["slides"])) for i, s in enumerate(p["slides"])]
+
+
+def formats_auto(esp: Espace, sid: str) -> None:
+    """« Virall.ai choisit » : une mise en page par story, la mieux adaptée à son texte et à sa photo, sans répétition."""
+    p = studio.charge(esp, sid)
+    d = studio.dossier(esp, sid)
+    images = studio.attribue(p["slides"], [d / "sources" / x for x in p["images"]])
+    for s, f in zip(p["slides"], formats.choisis(p["slides"], [bool(im and Path(im).is_file()) for im in images])):
+        s["format"] = f
+    studio.sauve(esp, p)
+
+
+def apercu(esp: Espace, sid: str, i: int, fmt: str | None = None, petit: bool = False) -> bytes:
     """Image fixe de la story i telle qu'elle apparaît une fois l'animation terminée (avec la place du sticker)."""
     import io
 
@@ -822,9 +871,11 @@ def apercu(esp: Espace, sid: str, i: int) -> bytes:
     d = studio.dossier(esp, sid)
     images = studio.attribue(p["slides"], [d / "sources" / x for x in p["images"]])
     s = p["slides"][i]
+    if fmt is not None:  # proposition : la même story dans un autre format ("" = sans mise en page)
+        s = {**s, "format": fmt if fmt in formats.FORMATS else "", "preuves": [] if fmt else s.get("preuves")}
     w, h = TAILLE
     k = int(duree_story(s, p) * FPS) - 12  # juste avant le fondu de sortie : tout est en place
-    im = next(images_story(p, s, images[i], graine=i + 7, seulement={k}, sources=d / "sources")).convert("RGBA")
+    im = next(images_story(p, s, images[i], graine=i + 7, seulement={k}, sources=d / "sources", numero=i + 1)).convert("RGBA")
     if s.get("sticker"):  # place du sticker (aperçu seulement : il se pose dans Instagram)
         dd = ImageDraw.Draw(im)
         dd.rounded_rectangle((200, 1260, w - 200, 1520), radius=40, outline=(255, 255, 255, 200), width=5)
@@ -832,7 +883,7 @@ def apercu(esp: Espace, sid: str, i: int) -> bytes:
         lib = f"Sticker « {STICKERS[s['sticker']]} »"
         dd.text(((w - dd.textlength(lib, font=f)) / 2, 1360), lib, font=f, fill=(255, 255, 255, 230))
     buf = io.BytesIO()
-    im.convert("RGB").resize((w // 2, h // 2)).save(buf, "JPEG", quality=82)
+    im.convert("RGB").resize((w // 4, h // 4) if petit else (w // 2, h // 2)).save(buf, "JPEG", quality=82)
     return buf.getvalue()
 
 
@@ -870,7 +921,7 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
         for i, s in enumerate(p["slides"]):
             log(f"Je fabrique la story {i + 1}/{len(p['slides'])}…")
             nom = f"story_{i + 1:02d}.mp4"
-            gen = images_story(p, s, images[i], graine=i + 7, sources=d / "sources")
+            gen = images_story(p, s, images[i], graine=i + 7, sources=d / "sources", numero=i + 1)
             _encode(gen, sortie / nom, duree_story(s, p))
             fichiers.append(nom)
             if i == 0:  # vignette pour « Mes créations »

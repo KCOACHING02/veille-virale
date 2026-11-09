@@ -944,6 +944,7 @@ OUTIL_RETOUCHE_STORIES = {
             "titre": {"type": "string"}, "texte": {"type": "string"},
             "mot": {"type": "string", "description": "Mot (ou groupe de mots) du titre à mettre en couleur ; vide pour aucun."},
             "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain", "mots", "manuscrit", "compteur", "balayage", "telephone", "notifications"], "description": "Effet propre à cette story (vide = celui de toutes)."},
+            "format": {"type": "string", "enum": ["", "note", "magazine", "scrapbook", "conversation", "verre", "affiche", "publication", "bento", "soustitres", "autocollants"], "description": "Mise en page propre à cette story, qui remplace l'effet (vide = titre et texte animés par l'effet)."},
             "duree": {"type": "number", "description": "Durée de cette story en secondes (3 à 15), 0 = automatique."},
             "sticker": {"type": "string", "enum": ["", "sondage", "question", "quiz", "curseur", "lien", "compte_a_rebours"]},
             "sticker_texte": {"type": "string"},
@@ -961,6 +962,9 @@ def retouche_stories(cfg: dict, etat: str, consigne: str) -> dict:
              "Si tu réécris un texte, garde sa voix, sans ton publicitaire ni tournure qui sonne IA, et n'invente ni chiffre ni avis. "
              "Effets : mots = titre mot par mot ; manuscrit = titre tracé à la main ; compteur = le chiffre du titre grimpe ; balayage = arrivée en flou de mouvement ; "
              "telephone = la photo dans un téléphone incliné ; notifications = chaque ligne du texte devient une notification qui s'empile (une ligne par notification, séparées par un retour à la ligne). "
+             "Mises en page (champ « format » d'une story, à la place de l'effet) : à utiliser quand elle demande une story façon note, magazine, "
+             "scrapbook, messages, verre dépoli, affiche, publication, bento, karaoké (mots surlignés un par un) ou étiquettes, ou quelque chose de plus original "
+             "pour une story précise ; une mise en page différente par story quand elle veut de la variété. "
              "Si une demande est impossible (musique, sticker incrusté dans la vidéo, animation qui n'existe pas), dis-le dans « reponse » "
              "et propose ce qui s'en approche le plus.")
     return _ia_simple(cfg)._appel(OUTIL_RETOUCHE_STORIES, texte, max_tokens=1500,
