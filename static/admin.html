@@ -162,7 +162,7 @@ function renduBib() {
   $("#bib").innerHTML = `<h2>Bibliothèque virale</h2>
     <p class="sous">Une collecte Instagram par jour pour toutes les clientes. Viral = publiée depuis 48 h à 3 mois, au moins ${B.multiple}× l'habitude de son compte, et
       Reel ≥ ${nb(B.regles.Reel.vues_min)} vues et ${Math.round(B.regles.Reel.engagement_min * 100)} % d'engagement · Carrousel ≥ ${nb(B.regles.Carrousel.jaime_min)} j'aime · Publication ≥ ${nb(B.regles.Photo.jaime_min)} j'aime.</p>
-    <div class="kpis">${[[e.total || 0, `publications virales (${pf.Carrousel || 0} carrousels, ${pf.Reel || 0} Reels, ${pf.Photo || 0} publications)`],
+    <div class="kpis">${[[e.total || 0, `publications virales (${pf.Carrousel || 0} carrousels, ${pf.Reel || 0} Reels, ${pf.Photo || 0} publications), dont ${e.prets || 0} prêtes pour les clientes`],
       [e.jour ? new Date(e.fin || e.jour).toLocaleString("fr-FR", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) : "jamais", "dernière actualisation"],
       [usd(e.cout_usd), "coût de la dernière collecte"], [usd(m), `coût des ${Math.min(j.length, 30)} derniers jours`]]
       .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("")}</div>

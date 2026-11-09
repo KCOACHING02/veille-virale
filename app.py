@@ -3291,6 +3291,11 @@ def _actualise_bibliotheque(now):
     # Tentatives gardées sur le disque : si le serveur redémarre pendant l'actualisation (mémoire, mise en ligne),
     # on ne la relance pas en boucle
     tent = bibliotheque.tentatives(jour)
+    occupe = any(j["uid"] == 0 and j["statut"] in ("en attente", "en cours") for j in JOBS.values())
+    if not bibliotheque.a_faire() and not occupe and bibliotheque.restants():
+        # collecte du jour faite mais préparation interrompue (redémarrage) : on la reprend, sans nouvelle collecte
+        lance(0, "Bibliothèque : préparation", bibliotheque.prepare_restants, demo=en_demo())
+        return
     if now.hour < 3 or not bibliotheque.a_faire() or tent >= 2:
         return
     if not (os.getenv("APIFY_TOKEN") or en_demo()) or any(j["uid"] == 0 and j["statut"] in ("en attente", "en cours") for j in JOBS.values()):

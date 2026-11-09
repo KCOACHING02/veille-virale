@@ -275,24 +275,45 @@ def actualise(demo: bool = False, profond: bool | None = None) -> dict:
             pubs.pop(k)
         _ecrit("publications.json", pubs)
 
-        # Préparation (une seule fois par publication, partagée par toutes les clientes)
-        a_preparer = sorted([e for e in pubs.values() if not e.get("prepare") and (e.get("essais") or 0) < 3],
-                            key=rang, reverse=True)[:MAX_PREPARATIONS]
-        if a_preparer:
-            prepare(a_preparer, demo=demo)
-            for e in a_preparer:
-                pubs[e["id"]] = e
-            _ecrit("publications.json", pubs)
-
+        # La collecte est faite : on l'enregistre tout de suite, pour qu'un redémarrage du serveur ne la refasse pas
         cout = round(collecte.cout_apify_total() - cout_avant, 3)
-        par_format = {f: sum(1 for e in pubs.values() if e["format"] == f) for f in FORMATS}
         et = etat()
         journal = ([{"jour": debut.strftime("%Y-%m-%d"), "cout_usd": cout, "comptes": len(comptes), "lus": len(posts),
                      "nouvelles": len(nouvelles), "total": len(pubs)}] + (et.get("journal") or []))[:60]
         _ecrit("etat.json", {**et, "jour": debut.strftime("%Y-%m-%d"), "fin": datetime.now().isoformat(timespec="minutes"),
-                             "cout_usd": cout, "total": len(pubs), "par_format": par_format, "journal": journal})
-        log(f"✅ Bibliothèque à jour : {len(pubs)} publications virales ({cout:.2f} $ de collecte)")
-        return {"total": len(pubs), "nouvelles": len(nouvelles), "cout_usd": cout}
+                             "cout_usd": cout, "total": len(pubs), "par_format": _par_format(pubs), "journal": journal})
+        log(f"✅ Collecte terminée : {len(pubs)} publications virales ({cout:.2f} $). Préparation…")
+    prepare_restants(demo=demo)
+    return {"total": len(pubs), "nouvelles": len(nouvelles), "cout_usd": cout}
+
+
+def _par_format(pubs: dict) -> dict:
+    return {f: sum(1 for e in pubs.values() if e["format"] == f) for f in FORMATS}
+
+
+def restants() -> list[dict]:
+    """Publications virales pas encore préparées (3 essais au plus), les plus fortes d'abord."""
+    return sorted([e for e in publications().values() if not e.get("prepare") and (e.get("essais") or 0) < 3], key=rang, reverse=True)
+
+
+def prepare_restants(demo: bool = False, maxi: int = MAX_PREPARATIONS, lot: int = 4) -> int:
+    """Prépare les publications en attente par petits lots, enregistrés au fur et à mesure (rien n'est perdu si le serveur redémarre)."""
+    a_faire = restants()[:maxi]
+    faites = 0
+    for i in range(0, len(a_faire), lot):
+        paquet = a_faire[i:i + lot]
+        prepare(paquet, demo=demo)
+        with _VERROU:
+            pubs = publications()
+            for e in paquet:
+                if e["id"] in pubs:
+                    pubs[e["id"]] = e
+            _ecrit("publications.json", pubs)
+        faites += len(paquet)
+        log(f"  {faites}/{len(a_faire)} publications préparées")
+    if a_faire:
+        log(f"✅ Bibliothèque : {sum(1 for e in publications().values() if e.get('prepare'))} publications prêtes pour les clientes")
+    return faites
 
 
 def prepare(entrees: list[dict], demo: bool = False):
@@ -405,7 +426,8 @@ def resume_admin() -> dict:
                   "comptes": [{"compte": c, **verif.get(c, {}), "lus": hist.get(c, {}).get("derniere_lecture"),
                                "viraux": sum(1 for e in mes if e["compte"] == c)} for c in v["comptes"]],
                   "par_format": {f: sum(1 for e in mes if e["format"] == f) for f in FORMATS}}
-    return {"niches": out, "etat": etat(), "regles": REGLES, "multiple": MULTIPLE}
+    return {"niches": out, "etat": {**etat(), "total": len(pubs), "prets": sum(1 for e in pubs.values() if e.get("prepare")),
+                                    "par_format": _par_format(pubs)}, "regles": REGLES, "multiple": MULTIPLE}
 
 
 # ------------------------------------------------------------
