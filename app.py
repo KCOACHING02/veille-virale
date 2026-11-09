@@ -1937,7 +1937,16 @@ def boutique_etat():
 @connecte
 def boutique_pseudo_libre():
     p = bq.nettoie_pseudo(request.args.get("p", ""))
-    return jsonify({"pseudo": p, "erreur": bq.pseudo_libre(p, bq_active())})
+    err = bq.pseudo_libre(p, bq_active())
+    r = {"pseudo": p, "erreur": err}
+    if err and p and request.args.get("variante"):
+        # Adresse prise : on propose la première variante libre (glowup-by-k → glowup-by-k-shop, -boutique, -2…)
+        for suffixe in ("shop", "boutique", "officiel", *map(str, range(2, 30))):
+            v = bq.nettoie_pseudo(f"{p[:30 - len(suffixe) - 1]}-{suffixe}")
+            if v and not bq.pseudo_libre(v, bq_active()):
+                r = {"pseudo": v, "erreur": None, "variante": True}
+                break
+    return jsonify(r)
 
 
 @app.post("/api/boutique")

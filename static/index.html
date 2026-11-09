@@ -1248,6 +1248,10 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .as-logo.plein-f{border-style:solid}
 .as-logo input[type=file]{display:none}
 .as-gros{font-size:18px!important;padding:14px!important}
+.as-liens{min-height:110px;font-size:15px!important;line-height:1.5;resize:vertical}
+.as-lots{display:flex;flex-direction:column;gap:10px}
+.as-lot{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.as-lot .champ{margin-bottom:8px}
 .as-prods{display:flex;flex-direction:column;gap:8px}
 .as-prod{display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
 .as-prod .vig{width:48px;height:48px;border-radius:10px;background:var(--sunk) center/cover;display:grid;place-items:center;flex:none;font-size:22px}
@@ -4215,9 +4219,17 @@ function corpsProduits(A, prods) {
         <div class="champ"><label for="np-d">En une phrase, ce qu'elle apporte</label><input id="np-d" data-np="desc" value="${esc(n.desc)}" maxlength="160" placeholder="On fait le point sur ta situation et on fixe ton plan d'action"></div>`;
     else c = prixChamp("60") + '<p class="aide">Tes horaires se règlent ensuite dans la fiche du produit.</p>';
   } else {
-    if (ex === 0) c = `<div class="champ"><label for="np-l">${n.type === "affil" ? "Ton lien d'affiliation" : "Le lien de la page du produit"}</label><input id="np-l" data-np="lien" value="${esc(n.lien)}" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://…" class="as-gros"></div>
-        <p class="aide">Virallink va lire la page et récupérer tout seul le nom, l'image, la description et le prix.</p>
+    if (ex === 0) c = `<div class="champ"><label for="np-l">${n.type === "affil" ? "Tes liens d'affiliation" : "Les liens de tes produits"}</label><textarea id="np-l" data-np="lien" rows="3" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://…" class="as-gros as-liens">${esc(n.lien)}</textarea></div>
+        <p class="aide">Plusieurs produits ? Colle un lien par ligne. Virallink lit chaque page et récupère tout seul le nom, l'image, la description et le prix.</p>
         <div id="np-lu" class="aide"></div>`;
+    else if (n.lots?.length > 1) c = `<p class="aide">${n.lots.filter(x => !x.erreur).length} produit${n.lots.filter(x => !x.erreur).length > 1 ? "s" : ""} récupéré${n.lots.filter(x => !x.erreur).length > 1 ? "s" : ""} : vérifie le nom et le prix de chacun.</p>
+        <div class="as-lots">${n.lots.map((x, i) => `<div class="as-lot">
+          <label class="bt-depot of-img" style="${x.image ? `background-image:url('${vignetteImg(x.image)}')` : ""}">${x.image ? "" : "🖼️<span>Image</span>"}<input type="file" accept="image/*" data-lot-img="${i}" hidden></label>
+          <div style="flex:1;min-width:0">${x.erreur ? `<p class="aide" style="margin:0 0 6px">⚠️ ${esc(x.erreur)} <small>(${esc(x.lien.replace(/^https?:\/\//, "").slice(0, 40))})</small></p>` : x.site ? `<small class="aide">${esc(x.site)}</small>` : ""}
+            <div class="champ"><label>Nom</label><input data-lot="${i}" data-lk="titre" value="${esc(x.titre)}" maxlength="120"></div>
+            <div class="duo"><div class="champ"><label>Prix (€)</label><input data-lot="${i}" data-lk="prix" value="${esc(x.prix)}" type="number" min="0" step="1" inputmode="decimal"></div>
+              <button type="button" class="btn petit" data-lot-x="${i}" style="align-self:end;margin-bottom:12px">Retirer</button></div></div></div>`).join("")}</div>
+        <p class="aide">Le bouton de chaque produit mènera à son lien : le paiement se fait là-bas.</p>`;
     else c = `${n.site ? `<p class="aide">✓ Infos récupérées sur <b>${esc(n.site)}</b> : vérifie-les.</p>` : ""}
         <div class="of-ligne">${image()}<div style="flex:1;min-width:0">
           <div class="champ"><label for="np-t">Son nom</label><input id="np-t" data-np="titre" value="${esc(n.titre)}" maxlength="120"></div>
@@ -4227,7 +4239,7 @@ function corpsProduits(A, prods) {
   }
   const lienBouton = (n.type === "lien" || n.type === "affil") && ex === 0;
   return tete + c + `<div class="bt-pied" style="margin-top:14px"><button class="btn" id="np-retour">← Retour</button>
-    <button class="btn prim" id="${lienBouton ? "np-lire" : "np-suite"}">${lienBouton ? "Récupérer les infos" : dernier ? "Ajouter à ma boutique" : "Continuer"}</button></div>
+    <button class="btn prim" id="${lienBouton ? "np-lire" : "np-suite"}">${lienBouton ? "Récupérer les infos" : dernier ? (n.lots?.length > 1 ? `Ajouter ces ${n.lots.length} produits` : "Ajouter à ma boutique") : "Continuer"}</button></div>
     ${lienBouton ? '<p class="aide" style="text-align:center"><button type="button" class="lien" id="np-main">Remplir à la main</button></p>' : ""}`;
 }
 const tuilesTypes = () => `<div class="of-tuiles">${Object.entries(TYPES_NP).map(([k, [e, t, d]]) =>
@@ -4241,7 +4253,14 @@ function corpsStripe(A, pay) {
       <button type="button" class="of-tuile" data-stripe="non"><span class="e">➕</span><b>Non, je le crée</b><small>5 minutes : ton identité et ton IBAN. Stripe te ramène ici.</small></button></div>`;
 }
 async function ajouteProduitAssist(A) {
-  const n = A.np, externe = n.type === "lien" || n.type === "affil", prix = n.type === "cadeau" ? 0 : prixCentimes(n.prix);
+  const n = A.np;
+  if (n.lots?.length > 1) {
+    const nouveaux = n.lots.map(x => ({id: idCourt(), titre: x.titre.trim(), sous_titre: (x.desc || "").trim(), prix: prixCentimes(x.prix), image: x.image || "", visible: true,
+      devise: "eur", type: "telechargement", externe: true, lien: x.lien, bouton: "Je découvre"}));
+    await api("/api/boutique", {method: "PUT", body: {produits: [...(BQ.page?.produits || []), ...nouveaux]}});
+    return chargeBoutique();
+  }
+  const externe = n.type === "lien" || n.type === "affil", prix = n.type === "cadeau" ? 0 : prixCentimes(n.prix);
   const p = {id: idCourt(), titre: n.titre.trim(), sous_titre: (n.desc || "").trim(), prix, image: n.image || "", visible: true, devise: "eur",
     type: n.type === "seance" ? "rdv" : "telechargement", externe, lien: externe ? n.lien.trim() : "",
     bouton: n.type === "seance" ? "Je réserve" : externe ? "Je découvre" : prix ? "Je le veux" : "Je le reçois"};
@@ -4323,8 +4342,22 @@ function renduAssistantBoutique(el) {
       $("#np-plus-tard")?.addEventListener("click", () => { N.e = 1; rendu(); });
       $("#np-img")?.addEventListener("change", async ev => { const f = ev.target.files[0]; if (!f) return;
         try { N.image = (await envoieImageBoutique(f, "produit")).nom; rendu(); } catch (er) { toast(er.message); } });
+      const complet = u => /^https?:\/\//i.test(u) ? u : "https://" + u;
       const lire = async bt => {
-        const url = (N.lien || "").trim(); if (!/^\S+\.\S+/.test(url)) return toast("Colle le lien complet du produit");
+        const liens = [...new Set((N.lien || "").split(/[\s,;]+/).map(x => x.trim()).filter(x => /^\S+\.\S+/.test(x)))].slice(0, 12);
+        if (!liens.length) return toast("Colle le lien complet du produit");
+        if (liens.length > 1) {
+          bt.disabled = true; N.lots = [];
+          for (const [k, u] of liens.entries()) {
+            bt.innerHTML = spin(` Lecture ${k + 1}/${liens.length}…`);
+            try { const r = await api("/api/boutique/importe_lien", {method: "POST", body: {url: u}});
+              N.lots.push({lien: complet(u), titre: r.titre || "", desc: r.sous_titre || "", image: r.image || "", site: r.site || "", prix: r.prix ? String(Math.round(r.prix * 100) / 100) : ""}); }
+            catch (er) { N.lots.push({lien: complet(u), titre: "", desc: "", image: "", site: "", prix: "", erreur: er.message}); }
+          }
+          N.e = 1; return rendu();
+        }
+        N.lots = null; N.lien = liens[0];
+        const url = N.lien;
         bt.disabled = true; bt.innerHTML = spin(" Lecture de la page…");
         try { const r = await api("/api/boutique/importe_lien", {method: "POST", body: {url}});
           Object.assign(N, {titre: r.titre || N.titre, desc: r.sous_titre || N.desc, image: r.image || N.image, site: r.site || "",
@@ -4332,19 +4365,26 @@ function renduAssistantBoutique(el) {
         } catch (er) { $("#np-lu").innerHTML = `⚠️ ${esc(er.message)}`; bt.disabled = false; bt.textContent = "Réessayer"; }
       };
       $("#np-lire")?.addEventListener("click", ev => lire(ev.currentTarget));
-      $("#np-l")?.addEventListener("keydown", ev => { if (ev.key === "Enter") lire($("#np-lire")); });
-      $("#np-main")?.addEventListener("click", () => { if (N.lien && !/^https?:\/\//i.test(N.lien)) N.lien = "https://" + N.lien.trim(); N.e = 1; rendu(); });
+      $$("[data-lot]").forEach(i => i.oninput = () => { N.lots[i.dataset.lot][i.dataset.lk] = i.value; });
+      $$("[data-lot-x]").forEach(b => b.onclick = () => { N.lots.splice(+b.dataset.lotX, 1); if (!N.lots.length) { N.lots = null; N.e = 0; }
+        else if (N.lots.length === 1) { const x = N.lots[0]; Object.assign(N, {lien: x.lien, titre: x.titre, desc: x.desc, image: x.image, prix: x.prix, site: x.site}); N.lots = null; } rendu(); });
+      $$("[data-lot-img]").forEach(i => i.onchange = async ev => { const f = ev.target.files[0]; if (!f) return;
+        try { N.lots[+i.dataset.lotImg].image = (await envoieImageBoutique(f, "produit")).nom; rendu(); } catch (er) { toast(er.message); } });
+      $("#np-main")?.addEventListener("click", () => { N.lots = null; N.lien = (N.lien || "").trim().split(/\s+/)[0] || ""; if (N.lien) N.lien = complet(N.lien); N.e = 1; rendu(); });
       $("#np-suite")?.addEventListener("click", async ev => {
         const dernier = N.e === NB_ECRANS_NP[N.type] - 1;
-        if (N.e >= 1 && ["fichier", "cadeau", "lien", "affil"].includes(N.type) && !N.titre.trim()) return toast("Donne un nom à ton produit");
+        if (N.e >= 1 && ["fichier", "cadeau", "lien", "affil"].includes(N.type) && !(N.lots?.length > 1) && !N.titre.trim()) return toast("Donne un nom à ton produit");
         if (N.type === "seance" && N.e === 0 && !N.titre.trim()) return toast("Donne un nom à ta séance");
-        if ((N.type === "lien" || N.type === "affil") && !/^https?:\/\/\S+\.\S+/.test((N.lien || "").trim())) { N.e = 0; rendu(); return toast("Colle le lien complet du produit (il commence par https://)"); }
-        if (dernier && N.type !== "cadeau") { const c = prixCentimes(N.prix);
+        if (N.lots?.length > 1) {
+          const k = N.lots.findIndex(x => !x.titre.trim()); if (k >= 0) return toast(`Donne un nom au produit n°${k + 1}`);
+          const j = N.lots.findIndex(x => prixCentimes(x.prix) < 50); if (j >= 0) return toast(`Indique le prix du produit n°${j + 1} (minimum 0,50 €)`);
+        } else if ((N.type === "lien" || N.type === "affil") && !/^https?:\/\/\S+\.\S+/.test((N.lien || "").trim())) { N.e = 0; rendu(); return toast("Colle le lien complet du produit (il commence par https://)"); }
+        if (dernier && N.type !== "cadeau" && !(N.lots?.length > 1)) { const c = prixCentimes(N.prix);
           if (c && c < 50) return toast("Prix minimum : 0,50 €");
           if ((N.type === "lien" || N.type === "affil") && !c) return toast("Indique le prix affiché sur la page du produit"); }
         if (!dernier) { N.e++; return rendu(); }
         const bt = ev.currentTarget; bt.disabled = true; bt.innerHTML = spin(" Enregistrement…");
-        try { await ajouteProduitAssist(A); A.np = null; toast("Produit ajouté ✓"); apercuAssistant(true); rendu(); }
+        try { const nb = N.lots?.length > 1 ? N.lots.length : 1; await ajouteProduitAssist(A); A.np = null; toast(nb > 1 ? `${nb} produits ajoutés ✓` : "Produit ajouté ✓"); apercuAssistant(true); rendu(); }
         catch (er) { toast(er.message); bt.disabled = false; bt.textContent = "Ajouter à ma boutique"; }
       });
     }
@@ -4377,8 +4417,9 @@ function renduAssistantBoutique(el) {
     if (!BQ.etat.pseudo && !A.pseudoTouche && A.nom && slugBoutique(A.nom)) { A.pseudo = slugBoutique(A.nom); $("#as-pseudo").value = A.pseudo; }
     verifie = async () => {
       const v = $("#as-pseudo").value; if (!v) { $("#as-dispo").textContent = ""; return A.pseudoOk = false; }
-      const r = await api("/api/boutique/pseudo?p=" + encodeURIComponent(v));
+      const r = await api("/api/boutique/pseudo?p=" + encodeURIComponent(v) + (A.pseudoTouche ? "" : "&variante=1"));
       A.pseudo = r.pseudo; A.pseudoOk = !r.erreur || (BQ.etat.pseudo && r.pseudo === BQ.etat.pseudo);
+      if (r.variante) $("#as-pseudo").value = r.pseudo;
       $("#as-dispo").className = "bt-dispo " + (A.pseudoOk ? "ok" : "ko");
       $("#as-dispo").textContent = A.pseudoOk ? `✓ ${location.host}/@${r.pseudo} est disponible` : r.erreur;
       return A.pseudoOk;
