@@ -67,7 +67,7 @@ def _claude():
         modele = (yaml.safe_load((CODE / "config.exemple.yaml").read_text(encoding="utf-8")).get("claude") or {}).get("modele") or "claude-sonnet-5-5"
         anthropic.Anthropic().messages.create(model=modele, max_tokens=1, messages=[{"role": "user", "content": "ok"}])
         return _r("claude", nom, role, "ok", f"Clé valide, crédit disponible (modèle {modele}). Anthropic n'indique pas le solde restant.",
-                  "Active la recharge automatique (Billing → Auto-reload) pour ne jamais tomber à zéro.", lien)
+                  "Garde la recharge automatique activée (Billing → Auto-reload) pour ne jamais tomber à zéro.", lien)
     except Exception as e:  # noqa: BLE001
         t = str(e).lower()
         if "credit balance" in t or "billing" in t or "insufficient" in t:
@@ -86,12 +86,18 @@ def _resend():
         return _r("resend", nom, role, "absent", "Clé RESEND_API_KEY absente : aucun e-mail n'est envoyé.", "Ajoute-la dans Railway.", lien)
     try:
         r = requests.get("https://api.resend.com/domains", headers={"Authorization": f"Bearer {k.strip()}"}, timeout=20)
-        if r.status_code in (401, 403) and "restricted" in r.text.lower():
+        if r.status_code in (400, 401, 403) and "restricted" in r.text.lower():
             return _r("resend", nom, role, "ok", "Clé valide (limitée à l'envoi). Le quota d'envoi n'est pas lisible par l'API.",
                       "Vérifie de temps en temps le volume envoyé dans Resend (offre gratuite : 3 000 e-mails par mois).", "https://resend.com/overview")
         if r.status_code in (401, 403):
             return _r("resend", nom, role, "ko", "Clé refusée par Resend.", "Recrée une clé et remplace-la dans Railway.", lien)
-        r.raise_for_status()
+        if r.status_code >= 400:  # message de Resend tel quel (ex. clé limitée à l'envoi : lecture des domaines interdite)
+            try:
+                msg = r.json().get("message") or r.text
+            except ValueError:
+                msg = r.text
+            return _r("resend", nom, role, "ok", f"Clé présente ; Resend ne permet pas de lire l'état du domaine avec cette clé ({str(msg)[:120]}).",
+                      "Vérifie dans Resend que virallink.fr est « Verified » et le volume d'e-mails envoyés ce mois-ci.", lien)
         doms = r.json().get("data") or []
         ko = [d["name"] for d in doms if d.get("status") != "verified"]
         if not doms or ko:
