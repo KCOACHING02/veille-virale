@@ -2842,6 +2842,20 @@ def bib_media(rel):
     return send_from_directory(f.parent, f.name, max_age=7 * 86400)
 
 
+@app.get("/api/admin/services")
+@admin_requis
+def admin_services():
+    import services
+    return jsonify(services.dernier() or services.verifie_tout())
+
+
+@app.post("/api/admin/services")
+@admin_requis
+def admin_services_verifie():
+    import services
+    return jsonify(services.verifie_tout())
+
+
 @app.get("/api/admin/bibliotheque")
 @admin_requis
 def admin_bib():
@@ -3175,6 +3189,25 @@ def planificateur_emails():
 
 
 BIB_TENTATIVES: dict = {}
+SERVICES_JOUR: dict = {}
+
+
+def _verifie_services(now):
+    """Chaque matin (8 h) : crédit et clés des services payants ; e-mail aux admins s'il y a un risque d'interruption."""
+    jour = now.strftime("%Y-%m-%d")
+    if now.hour < 8 or SERVICES_JOUR.get("jour") == jour or en_demo():
+        return
+    SERVICES_JOUR["jour"] = jour
+    import services
+    pb = services.problemes(services.verifie_tout())
+    if not pb:
+        return
+    def ligne(x):
+        lien = f' <a href="{x["lien"]}">Ouvrir</a>' if x["lien"] else ""
+        return f"<p><b>{'🔴' if x['etat'] == 'ko' else '🟠'} {x['nom']}</b> — {x['detail']}<br>{x['conseil']}{lien}</p>"
+    lignes = "".join(ligne(x) for x in pb)
+    for a in [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]:
+        emails.envoie(a, f"Virallink : {len(pb)} service(s) à recharger ou vérifier", emails._gabarit("Services à vérifier", lignes, ("Voir l'admin", url_site() + "/admin")))
 
 
 def _actualise_bibliotheque(now):
@@ -3214,6 +3247,7 @@ def planificateur():
                     lance_analyse(u["id"], "Veille automatique du lundi", {"cfg": cfg, "mode": "veille", "demo": en_demo(), "differe": True,
                                                                            "max_adaptations": d["reste"]["adaptations"]})
             _actualise_bibliotheque(now)
+            _verifie_services(now)
             envoie_syntheses()
             envoie_relances_boutique()
             envoie_relances_essai()

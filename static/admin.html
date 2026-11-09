@@ -62,6 +62,11 @@ h2{font:800 22px/1.2 var(--display);font-stretch:85%;margin:32px 0 6px}
 .cpt span{font-size:12px;border-radius:99px;padding:2px 8px;background:var(--sunk)}
 .cpt span.ok{background:var(--ok-soft);color:var(--ok)} .cpt span.ko{background:var(--warn-soft);color:var(--warn);text-decoration:line-through}
 #bib-job{font-size:13px;color:var(--ink-2)}
+.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.serv{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;border-left:5px solid var(--line)}
+.serv.ok{border-left-color:var(--ok)} .serv.alerte{border-left-color:var(--warn)} .serv.ko{border-left-color:#D93A3A} .serv.absent{border-left-color:var(--ink-3)}
+.serv h3{margin:0;font-size:15.5px;display:flex;justify-content:space-between;gap:8px} .serv .role{color:var(--ink-3);font-size:12.5px;margin-bottom:6px}
+.serv p{margin:4px 0;font-size:13.5px} .serv .conseil{color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -71,6 +76,7 @@ h2{font:800 22px/1.2 var(--display);font-stretch:85%;margin:32px 0 6px}
   <div class="kpis" id="croissance"></div>
   <div class="config" id="config"></div>
   <div id="lien"></div>
+  <section id="services"></section>
   <section id="bib"></section>
   <h2>Clientes</h2>
   <div class="outils"><input id="q" type="search" placeholder="Rechercher un client (e-mail, prénom)…" aria-label="Rechercher un client"></div>
@@ -185,6 +191,23 @@ function renduBib() {
   $("#bib-verif").onclick = () => tache("/api/admin/bibliotheque/verifie", "Vérification");
 }
 chargeBib();
+
+// ---- Services payants : crédit et clés
+const ETATS = {ok: "✓ OK", alerte: "⚠️ À surveiller", ko: "🔴 Bloqué", absent: "— Non configuré", info: "ℹ️ À vérifier soi-même"};
+async function chargeServices(force) {
+  $("#services").innerHTML = `<h2>Services</h2><p class="sous">${force ? "Vérification en cours…" : "Chargement…"}</p>`;
+  const r = await fetch("/api/admin/services", {method: force ? "POST" : "GET"}); if (!r.ok) return;
+  const x = await r.json();
+  $("#services").innerHTML = `<h2>Services</h2>
+    <p class="sous">Crédit et clés des services dont Virallink dépend. Vérifié chaque matin à 8 h : un e-mail t'est envoyé s'il y a un risque d'interruption.
+      Dernière vérification : ${x.le ? new Date(x.le).toLocaleString("fr-FR", {day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"}) : "—"}.
+      <button class="btn petit" id="serv-maj">Vérifier maintenant</button></p>
+    <div class="services">${(x.services || []).map(v => `<div class="serv ${v.etat}"><h3><span>${esc(v.nom)}</span><span>${ETATS[v.etat] || v.etat}</span></h3>
+      <div class="role">${esc(v.role)}</div><p>${esc(v.detail)}</p>${v.conseil ? `<p class="conseil">${esc(v.conseil)}</p>` : ""}
+      ${v.lien ? `<p><a href="${esc(v.lien)}" target="_blank" rel="noopener">Ouvrir ${esc(v.nom.split(" (")[0])} ↗</a></p>` : ""}</div>`).join("")}</div>`;
+  $("#serv-maj").onclick = () => chargeServices(true);
+}
+chargeServices();
 </script>
 </body>
 </html>
