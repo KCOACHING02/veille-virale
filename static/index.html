@@ -602,6 +602,17 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 @keyframes fxMach{0%{max-width:0}60%,100%{max-width:2ch}}
 .fx-grain{filter:sepia(.35) contrast(1.05)}.fx-grain::after{content:"";position:absolute;inset:-50%;background:radial-gradient(circle,rgba(255,150,60,.45),transparent 60%);animation:fxFuite 3s linear infinite}
 @keyframes fxFuite{from{transform:translateX(-60%)}to{transform:translateX(60%)}}
+.fx-mots i{animation:fxMach 2s steps(2) infinite;overflow:hidden;white-space:nowrap;max-width:2ch}
+.fx-manuscrit i{font-family:"Pacifico",cursive;font-weight:400;-webkit-mask:linear-gradient(90deg,#000 50%,transparent 50%) 100% 0/200% 100%;mask:linear-gradient(90deg,#000 50%,transparent 50%) 100% 0/200% 100%;animation:fxTrace 2.6s ease-out infinite}
+@keyframes fxTrace{0%{-webkit-mask-position:100% 0;mask-position:100% 0}50%,100%{-webkit-mask-position:0 0;mask-position:0 0}}
+.fx-compteur i{color:var(--a);animation:fxCompte 2.4s steps(1) infinite}
+@keyframes fxCompte{0%{opacity:.35}30%{opacity:.6}60%,100%{opacity:1}}
+.fx-balayage i{animation:fxBalai 2.4s ease-out infinite}
+@keyframes fxBalai{0%{transform:translateX(120%);filter:blur(6px)}30%,100%{transform:none;filter:none}}
+.fx-telephone i{font-size:0;width:44%;aspect-ratio:9/17;border-radius:8px;background:#17141c;border:2px solid #17141c;box-shadow:6px 4px 0 var(--a);transform:rotate(-5deg);animation:fxTel 2.8s cubic-bezier(.3,1.5,.5,1) infinite}
+@keyframes fxTel{0%{transform:translateY(160%) rotate(-5deg)}35%,100%{transform:rotate(-5deg)}}
+.fx-notifications i{font-size:0;width:74%;height:14px;border-radius:7px;background:#fff;box-shadow:0 20px 0 #fff,0 40px 0 #fff;margin-top:-34px;animation:fxNotif 2.6s ease-out infinite}
+@keyframes fxNotif{0%{clip-path:inset(0 0 -4px 0)}35%{clip-path:inset(0 0 -24px 0)}70%,100%{clip-path:inset(0 0 -44px 0)}}
 @media (prefers-reduced-motion:reduce){.fx-mini i,.fx-mini::before,.fx-mini::after{animation:none!important}}
 .stp-haut{display:flex;gap:12px;align-items:center;margin:0 0 10px}
 .stp-retouche{background:var(--surface);border-radius:16px;padding:14px 16px;margin:0 0 16px;box-shadow:var(--shadow);display:grid;gap:10px}

@@ -924,7 +924,7 @@ OUTIL_RETOUCHE_STORIES = {
     "description": "Changements à appliquer aux stories pour suivre la consigne de la cliente. Ne renseigne QUE ce qui doit changer.",
     "input_schema": {"type": "object", "properties": {
         "reponse": {"type": "string", "description": "Une ou deux phrases à la cliente (tutoiement) : ce que tu as changé, ou ce qui n'est pas possible et ce que tu proposes à la place."},
-        "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain"], "description": "Nouvel effet pour toutes les stories, ou vide."},
+        "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain", "mots", "manuscrit", "compteur", "balayage", "telephone", "notifications"], "description": "Nouvel effet pour toutes les stories, ou vide."},
         "palette": {"type": "string", "enum": ["", "nuit", "rose", "creme", "ocean", "foret", "soleil", "noir", "marque"], "description": "Nouvelles couleurs, ou vide."},
         "typo": {"type": "string", "description": "Nouveau style de police parmi ceux listés, ou vide."},
         "reglages": {"type": "object", "description": "Seulement les réglages à changer.", "properties": {
@@ -943,7 +943,7 @@ OUTIL_RETOUCHE_STORIES = {
             "numero": {"type": "integer"},
             "titre": {"type": "string"}, "texte": {"type": "string"},
             "mot": {"type": "string", "description": "Mot (ou groupe de mots) du titre à mettre en couleur ; vide pour aucun."},
-            "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain"], "description": "Effet propre à cette story (vide = celui de toutes)."},
+            "effet": {"type": "string", "enum": ["", "doux", "dynamique", "paillettes", "neon", "surligneur", "machine", "grain", "mots", "manuscrit", "compteur", "balayage", "telephone", "notifications"], "description": "Effet propre à cette story (vide = celui de toutes)."},
             "duree": {"type": "number", "description": "Durée de cette story en secondes (3 à 15), 0 = automatique."},
             "sticker": {"type": "string", "enum": ["", "sondage", "question", "quiz", "curseur", "lien", "compte_a_rebours"]},
             "sticker_texte": {"type": "string"},
@@ -959,6 +959,8 @@ def retouche_stories(cfg: dict, etat: str, consigne: str) -> dict:
     texte = (f"ÉTAT ACTUEL DES STORIES :\n{etat}\n\nCONSIGNE DE LA CLIENTE :\n« {consigne} »\n\n"
              "Traduis la consigne en changements précis. Ne change rien d'autre que ce qui est demandé. "
              "Si tu réécris un texte, garde sa voix, sans ton publicitaire ni tournure qui sonne IA, et n'invente ni chiffre ni avis. "
+             "Effets : mots = titre mot par mot ; manuscrit = titre tracé à la main ; compteur = le chiffre du titre grimpe ; balayage = arrivée en flou de mouvement ; "
+             "telephone = la photo dans un téléphone incliné ; notifications = chaque ligne du texte devient une notification qui s'empile (une ligne par notification, séparées par un retour à la ligne). "
              "Si une demande est impossible (musique, sticker incrusté dans la vidéo, animation qui n'existe pas), dis-le dans « reponse » "
              "et propose ce qui s'en approche le plus.")
     return _ia_simple(cfg)._appel(OUTIL_RETOUCHE_STORIES, texte, max_tokens=1500,

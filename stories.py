@@ -91,6 +91,12 @@ EFFETS = {
     "surligneur": {"nom": "Surligneur", "aide": "Le titre se surligne"},
     "machine": {"nom": "Machine à écrire", "aide": "Le titre s'écrit lettre par lettre"},
     "grain": {"nom": "Film", "aide": "Grain de pellicule et lumière chaude"},
+    "mots": {"nom": "Mot par mot", "aide": "Le titre apparaît mot après mot, au rythme de la voix"},
+    "manuscrit": {"nom": "Écrit à la main", "aide": "Le titre se trace comme au feutre"},
+    "compteur": {"nom": "Compteur", "aide": "Le chiffre du titre grimpe (1, 2, 3…)"},
+    "balayage": {"nom": "Balayage", "aide": "L'image arrive dans un flou de mouvement"},
+    "telephone": {"nom": "Téléphone", "aide": "Ta photo arrive dans un téléphone incliné"},
+    "notifications": {"nom": "Notifications", "aide": "Chaque ligne du texte s'empile comme une notification"},
 }
 
 # Couleurs : (fond haut, fond bas, titre, texte, accent)
@@ -393,6 +399,8 @@ def duree_story(s: dict, p: dict | None = None) -> float:
     bonus = reglages(p)["duree"] if p else 0.0
     if s.get("duree"):
         return round(max(3.0, min(15.0, float(s["duree"]))), 1)
+    if p and effet_de(p, s) == "notifications":
+        base = max(base, 3.5 + 0.55 * len(_lignes_notif(s)))
     return round(max(3.0, min(15.0, base + bonus)), 1)
 
 
@@ -415,7 +423,7 @@ def _fond(p: dict, pal: dict, image: Path | None):  # noqa: C901
 
 
 def _calque_texte(s: dict, pal: dict, typo: str, avec_sticker: bool, n_lettres: int | None = None, reg: dict | None = None,
-                  pseudo: str = ""):
+                  pseudo: str = "", zone: tuple | None = None):
     """Calque RGBA du titre + texte. n_lettres : titre tronqué (effet machine à écrire)."""
     from PIL import Image, ImageDraw
     reg = reg or reglages({})
@@ -430,7 +438,9 @@ def _calque_texte(s: dict, pal: dict, typo: str, avec_sticker: bool, n_lettres: 
         titre = titre.upper()
     texte = studio.propre(s.get("texte") or "")
     mot = studio.propre(s.get("mot") or "").strip()
-    zone_haut, zone_bas = 260, (1180 if avec_sticker else 1600)  # au-dessus de la place laissée au sticker
+    zone_haut, zone_bas = zone or (260, (1180 if avec_sticker else 1600))  # au-dessus de la place laissée au sticker
+    if zone:
+        reg = {**reg, "position": "centre"}
     pol_t, lignes_t, h_t, taille = studio._ajuste(d, titre, t["police"], largeur, int((zone_bas - zone_haut) * 0.62),
                                                   int(118 * t["facteur"] * reg["taille_titre"]), int(54 * min(1.0, reg["taille_titre"])),
                                                   t.get("interligne", 1.12))
@@ -476,6 +486,58 @@ def _calque_texte(s: dict, pal: dict, typo: str, avec_sticker: bool, n_lettres: 
     return calque, boites
 
 
+def _lignes_notif(s: dict) -> list[str]:
+    """Les lignes du texte, une par notification (retours à la ligne, « · », « ; » ou phrases)."""
+    t = (s.get("texte") or "").strip()
+    morceaux = [x.strip(" -•·") for x in re.split(r"\n|·|;|(?<=[.!?])\s+", t) if x.strip(" -•·")]
+    return morceaux[:5]
+
+
+def _cartes_notif(lignes: list[str], pal: dict):
+    """Cartes de notification pré-dessinées (légèrement inclinées, comme empilées à la main)."""
+    from PIL import Image, ImageDraw
+    w = TAILLE[0]
+    f = studio._police("Medium", 44)
+    pastille = pal["accent"] if not _clair(pal["accent"]) else (pal["bas"] if not _clair(pal["bas"]) else (28, 22, 34))
+    cartes = []
+    for i, ligne in enumerate(lignes):
+        L, H = w - 2 * 70, 150
+        c = Image.new("RGBA", (L, H), (0, 0, 0, 0))
+        d = ImageDraw.Draw(c)
+        d.rounded_rectangle((0, 0, L - 1, H - 1), radius=36, fill=(255, 255, 255, 240))
+        d.ellipse((26, 37, 102, 113), fill=pastille + (255,))
+        d.line((48, 76, 60, 90, 82, 62), fill=(255, 255, 255, 255), width=7, joint="curve")
+        txt = ligne
+        while d.textlength(txt, font=f) > L - 160 and len(txt) > 4:
+            txt = txt[:-2]
+        if txt != ligne:
+            txt = txt.rstrip() + "…"
+        d.text((128, (H - 60) // 2), txt, font=f, fill=(28, 22, 34, 255))
+        cartes.append(c.rotate((-1.6, 1.4, -0.8, 1.8, -1.2)[i % 5], expand=True, resample=Image.BICUBIC))
+    return cartes
+
+
+def _telephone(image: Path | None, pal: dict):
+    """Téléphone incliné (photo à l'écran) et sa carte de couleur derrière, en calques RGBA."""
+    from PIL import Image, ImageDraw
+    L, H, bord, rayon = 520, 1010, 14, 76
+    tel = Image.new("RGBA", (L, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(tel)
+    d.rounded_rectangle((0, 0, L - 1, H - 1), radius=rayon, fill=(18, 16, 22, 255))
+    ecran = (L - 2 * bord, H - 2 * bord)
+    if image and Path(image).is_file():
+        vue = studio._couvre(Image.open(image).convert("RGB"), ecran).convert("RGBA")
+    else:
+        vue = Image.new("RGBA", ecran, pal["accent"] + (255,))
+    masque = Image.new("L", ecran, 0)
+    ImageDraw.Draw(masque).rounded_rectangle((0, 0, ecran[0] - 1, ecran[1] - 1), radius=rayon - bord, fill=255)
+    tel.paste(vue, (bord, bord), masque)
+    d.rounded_rectangle((L // 2 - 80, bord + 22, L // 2 + 80, bord + 62), radius=20, fill=(18, 16, 22, 255))  # encoche
+    carte = Image.new("RGBA", (L, H), (0, 0, 0, 0))
+    ImageDraw.Draw(carte).rounded_rectangle((0, 0, L - 1, H - 1), radius=rayon, fill=pal["accent"] + (255,))
+    return tel.rotate(5, expand=True, resample=Image.BICUBIC), carte.rotate(-7, expand=True, resample=Image.BICUBIC)
+
+
 def _etincelles(n: int, graine: int):
     r = random.Random(graine)
     w, h = TAILLE
@@ -497,22 +559,45 @@ def _grain(graine: int):
     return res
 
 
-def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
-    """Générateur des images (PIL RGB) d'une story animée, et sa durée."""
+def effet_de(p: dict, s: dict) -> str:
+    return s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") if p.get("effet") in EFFETS else "doux")
+
+
+def images_story(p: dict, s: dict, image: Path | None, graine: int = 0, seulement: set | None = None):  # noqa: C901
+    """Générateur des images (PIL RGB) d'une story animée. seulement : numéros d'images à rendre (aperçu)."""
     from PIL import Image, ImageDraw, ImageFilter
     pal = palette_de(p)
     reg = reglages(p)
-    eff = s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") or "doux")  # effet propre à la story, sinon celui du projet
+    eff = effet_de(p, s)  # effet propre à la story, sinon celui du projet
     vit, inten = VITESSES[reg["vitesse"]], INTENSITES[reg["intensite"]]
     duree = duree_story(s, p)
     n = int(duree * FPS)
     w, h = TAILLE
-    fond, photo = _fond(p, pal, image)
+    fond, photo = _fond(p, pal, None if eff == "telephone" else image)  # téléphone : la photo est dans l'écran, pas en fond
     pal = couleurs_story(pal, photo, eff)
     avec_sticker = bool(s.get("sticker"))
     pseudo = p.get("pseudo") or ""
-    calque, boites = _calque_texte(s, pal, p.get("typo") or "moderne", avec_sticker, reg=reg, pseudo=pseudo)
-    lettres = len(studio.propre(s.get("titre") or ""))
+    typo = p.get("typo") or "moderne"
+    zone = None
+    if eff == "manuscrit" and studio.STYLE_DE_TYPO.get(typo) != "manuscrit":
+        typo = "signature"
+    lignes_n = _lignes_notif(s) if eff == "notifications" else []
+    if eff == "telephone":
+        zone = (200, 690)
+        tel, carte_tel = _telephone(image, pal)
+    if lignes_n:
+        zone = (230, 600)
+        cartes = _cartes_notif(lignes_n, pal)
+        s = {**s, "texte": ""}
+    titre_propre = studio.propre(s.get("titre") or "")
+    nombre = re.search(r"\d+", titre_propre) if eff == "compteur" else None
+    if nombre and not s.get("mot"):
+        s = {**s, "mot": nombre.group(0)}
+    kw = dict(reg=reg, pseudo=pseudo, zone=zone)
+    calque, boites = _calque_texte(s, pal, typo, avec_sticker, **kw)
+    lettres = len(titre_propre)
+    fins_mots = [m.end() for m in re.finditer(r"\S+", titre_propre)]
+    cache_compteur = {}
     lueur = None
     if eff == "neon":
         masque = calque.split()[3].filter(ImageFilter.GaussianBlur(18))
@@ -526,6 +611,8 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
         fuite = fuite.filter(ImageFilter.GaussianBlur(110))
     cache_machine = {}
     for k in range(n):
+        if seulement is not None and k not in seulement:
+            continue
         t = k / FPS
         # Fond : zoom lent (Ken Burns), légèrement décentré pour donner du mouvement
         z = 1.0 + min(0.12, 0.10 * inten) * (t / duree) if photo else 1.0 + 0.04 * inten * (t / duree)
@@ -533,7 +620,20 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
         cw, ch = int(W / 1.12 / z * 1.0), int(H / 1.12 / z * 1.0)
         cx = (W - cw) / 2 + (W - cw) * 0.15 * math.sin(t / duree * math.pi / 2)
         cy = (H - ch) / 2
-        im = fond.crop((int(cx), int(cy), int(cx) + cw, int(cy) + ch)).resize(TAILLE, Image.BILINEAR).convert("RGBA")
+        im = fond.crop((int(cx), int(cy), int(cx) + cw, int(cy) + ch)).resize(TAILLE, Image.BILINEAR)
+        if eff == "balayage" and t < 0.45 * vit:  # flou de mouvement horizontal qui se dissipe
+            force = 1 - _ease(t / (0.45 * vit))
+            dec = int(w * 0.5 * force)
+            im = im.resize((max(8, int(w / (1 + 40 * force))), h), Image.BILINEAR).resize(TAILLE, Image.BILINEAR)
+            im = Image.merge("RGB", [c.transform(TAILLE, Image.AFFINE, (1, 0, dec, 0, 1, 0)) for c in im.split()]) if dec else im
+        im = im.convert("RGBA")
+        if eff == "telephone":  # la carte puis le téléphone montent du bas, avec un léger rebond
+            a1, a2 = _ease_rebond((t / vit - 0.15) / 0.7), _ease_rebond((t / vit - 0.35) / 0.7)
+            x0 = (w - tel.size[0]) // 2
+            if t / vit > 0.15:
+                im.alpha_composite(carte_tel, (x0 + 60, int(730 + (h - 600) * (1 - a1))))
+            if t / vit > 0.35:
+                im.alpha_composite(tel, (x0 - 20, int(710 + (h - 600) * (1 - a2))))
         # Texte selon l'effet
         ta = t / vit  # temps « ralenti » ou « accéléré » des animations d'entrée
         apparition = _ease((ta - 0.25) / 0.8)
@@ -549,9 +649,44 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
             nl = min(lettres, int(max(0.0, ta - 0.3) * 22))
             if nl < lettres:
                 if nl not in cache_machine:
-                    cache_machine = {nl: _calque_texte(s, pal, p.get("typo") or "moderne", avec_sticker, n_lettres=nl, reg=reg, pseudo=pseudo)[0]}
+                    cache_machine = {nl: _calque_texte(s, pal, typo, avec_sticker, n_lettres=nl, **kw)[0]}
                 couche = cache_machine[nl]
             alpha = 1.0
+        elif eff == "mots":
+            idx = int(max(0.0, ta - 0.25) / 0.26)
+            if idx < len(fins_mots):
+                nl = fins_mots[idx - 1] if idx else 0
+                if nl not in cache_machine:
+                    cache_machine = {nl: _calque_texte(s, pal, typo, avec_sticker, n_lettres=nl, **kw)[0] if nl else Image.new("RGBA", TAILLE, (0, 0, 0, 0))}
+                couche = cache_machine[nl]
+            alpha = 1.0
+        elif eff == "compteur" and nombre:
+            cible = int(nombre.group(0))
+            pas = min(cible, 24)
+            val = cible if ta > 1.9 else max(0 if cible > 9 else 1, int(round(cible * min(pas, int(max(0.0, ta - 0.3) / 1.6 * pas) + 1) / pas)))
+            if val != cible:
+                if val not in cache_compteur:
+                    cache_compteur[val] = _calque_texte({**s, "titre": titre_propre.replace(nombre.group(0), str(val), 1), "mot": str(val)},
+                                                        pal, typo, avec_sticker, **kw)[0]
+                couche = cache_compteur[val]
+            alpha = _ease(ta / 0.3)
+        elif eff == "manuscrit":  # chaque ligne du titre se dévoile de gauche à droite, puis le texte apparaît
+            par_ligne = 0.55
+            m = Image.new("L", TAILLE, 0)
+            dm = ImageDraw.Draw(m)
+            for i, (x0, y0, x1, y1) in enumerate(boites):
+                f = _ease((ta - 0.3 - i * par_ligne) / par_ligne)
+                if f > 0:
+                    dm.rectangle((0, y0 - 30, x0 + (x1 - x0 + 60) * f, y1 + 50), fill=255)
+            fin = 0.3 + len(boites) * par_ligne
+            if ta > fin and boites:
+                dm.rectangle((0, boites[-1][3] + 50, w, h), fill=int(255 * _ease((ta - fin) / 0.5)))
+            couche = calque.copy()
+            couche.putalpha(Image.composite(calque.split()[3], Image.new("L", TAILLE, 0), m))
+            alpha = 1.0
+        elif eff == "balayage":
+            alpha = 1.0 if ta > 0.3 else 0.0
+            dx = int(w * 0.6 * (1 - _ease((ta - 0.3) / 0.45))) if ta < 0.75 else 0
         elif eff == "neon":
             alpha = 0.0 if ta < 0.3 else (0.25 if 0.45 < ta < 0.55 or 0.7 < ta < 0.75 else 1.0)
         elif eff == "surligneur":
@@ -572,6 +707,13 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
             else:
                 c = couche
             im.alpha_composite(c, (dx, dy)) if (dx or dy) else im.alpha_composite(c)
+        for i, c in enumerate(cartes if lignes_n else []):  # notifications : une carte toutes les 0,55 s, glissée depuis la droite
+            a = _ease((ta - 0.9 - i * 0.55) / 0.45)
+            if a > 0:
+                cc = c if a >= 1 else c.copy()
+                if a < 1:
+                    cc.putalpha(cc.split()[3].point(lambda v, a=a: int(v * a)))
+                im.alpha_composite(cc, (int((w - c.size[0]) // 2 + 260 * (1 - a)), 650 + i * 172))
         if eff == "dynamique" and t < 0.35:  # flash d'entrée
             im.alpha_composite(Image.new("RGBA", TAILLE, (255, 255, 255, int(min(255, 200 * inten) * (1 - t / 0.35)))))
         if etinc:
@@ -591,7 +733,6 @@ def images_story(p: dict, s: dict, image: Path | None, graine: int = 0):
         if t > duree - 0.25:  # fondu de sortie
             im.alpha_composite(Image.new("RGBA", TAILLE, (0, 0, 0, int(255 * (t - (duree - 0.25)) / 0.25 * 0.6))))
         yield im.convert("RGB")
-    return duree
 
 
 def apercu(esp: Espace, sid: str, i: int) -> bytes:
@@ -605,19 +746,9 @@ def apercu(esp: Espace, sid: str, i: int) -> bytes:
     d = studio.dossier(esp, sid)
     images = studio.attribue(p["slides"], [d / "sources" / x for x in p["images"]])
     s = p["slides"][i]
-    pal = palette_de(p)
-    fond, photo = _fond(p, pal, images[i])
-    eff = s.get("effet") if s.get("effet") in EFFETS else (p.get("effet") or "doux")
-    pal = couleurs_story(pal, photo, eff)
     w, h = TAILLE
-    W, H = fond.size
-    im = fond.crop(((W - w) // 2, (H - h) // 2, (W - w) // 2 + w, (H - h) // 2 + h)).convert("RGBA")
-    calque, boites = _calque_texte(s, pal, p.get("typo") or "moderne", bool(s.get("sticker")), reg=reglages(p), pseudo=p.get("pseudo") or "")
-    if eff == "surligneur":
-        dd = ImageDraw.Draw(im)
-        for (x0, y0, x1, y1) in boites:
-            dd.rectangle((x0 - 18, y0 + (y1 - y0) * 0.18, x1 + 18, y1 + 10), fill=pal["accent"] + (235,))
-    im.alpha_composite(calque)
+    k = int(duree_story(s, p) * FPS) - 12  # juste avant le fondu de sortie : tout est en place
+    im = next(images_story(p, s, images[i], graine=i + 7, seulement={k})).convert("RGBA")
     if s.get("sticker"):  # place du sticker (aperçu seulement : il se pose dans Instagram)
         dd = ImageDraw.Draw(im)
         dd.rounded_rectangle((200, 1260, w - 200, 1520), radius=40, outline=(255, 255, 255, 200), width=5)
