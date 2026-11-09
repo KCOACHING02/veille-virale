@@ -1160,6 +1160,19 @@ def _produits_plan30(bid) -> list[dict]:
     return sorted(res, key=lambda p: -p["prix"])[:12]
 
 
+def _brief30(bid, cfg=None):
+    """Brief du plan complété (et enregistré) avec les réponses déjà données à la création de la boutique ou du profil."""
+    b = plan30.brief(g.esp, None, bid)
+    try:
+        page = bq.lit_page(bid) or {}
+    except Exception:  # noqa: BLE001
+        page = {}
+    k = plan30.connu(cfg if cfg is not None else g.esp.lit_config(), page)
+    if plan30.complete(b, k):
+        b = plan30.sauve_brief(g.esp, b, bid)
+    return b, k
+
+
 def _plan(pid):
     try:
         return plan30.charge(g.esp, pid)
@@ -1176,8 +1189,8 @@ def plan30_etat():
     classees = plan30.publications_classees(g.esp)
     courant = request.args.get("plan") or (plans[0]["id"] if plans else None)
     bid = bq_active()
-    b = plan30.brief(g.esp, cfg, bid)
-    return jsonify({"brief": b, "produits": _produits_plan30(bid), "brief_manque": plan30.brief_complet(b), "plans": plans, "reste": reste, "quota": quota,
+    b, k = _brief30(bid, cfg)
+    return jsonify({"brief": b, "connu": sorted(k), "produits": _produits_plan30(bid), "brief_manque": plan30.brief_complet(b), "plans": plans, "reste": reste, "quota": quota,
                     "veille": plan30.resume_veille(classees), "tons": plan30.TONS,
                     "categories": {k: v["nom"] for k, v in plan30.CATEGORIES.items()},
                     "debut_conseille": plan30.debut_par_defaut(b).isoformat(), "reste_studio": droits(g.u)["reste"]["studio"],
@@ -1202,7 +1215,7 @@ def plan30_cree():
         return bloque(f"Tu as utilisé {'ton plan' if quota == 1 else f'tes {quota} plans'} de 30 jours de la période. "
                       f"{ab._suite(g.u, droits(g.u))}")
     bid = bq_active()
-    b = plan30.brief(g.esp, None, bid)
+    b, _ = _brief30(bid)
     manque = plan30.brief_complet(b)
     if manque:
         return jsonify({"erreur": manque}), 400
@@ -2097,6 +2110,8 @@ def boutique_maj():
         for k in ("photo", "couverture"):
             if k in c and (c[k] == "" or (isinstance(c[k], str) and NOM_IMAGE.match(c[k]))):
                 page[k] = c[k]
+        if isinstance(c.get("activite"), dict):  # réponses de la création pas à pas, reprises par le plan du mois
+            page["activite"] = {k: str(c["activite"].get(k) or "").strip()[:200] for k in ("cible", "apport")}
         if isinstance(c.get("reseaux"), dict):
             page["reseaux"] = {k: str(v).strip()[:200] for k, v in c["reseaux"].items() if k in bq.RESEAUX and str(v or "").strip()}
         if isinstance(c.get("blocs"), list):

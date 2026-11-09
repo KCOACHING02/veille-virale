@@ -2687,13 +2687,15 @@ async function renduPlan30() {
 
 // ---- Le brief : une question par écran, enregistrée au fil de la saisie
 // t : texte court · long : texte long · liste : plusieurs lignes · choix : boutons (touchés = étape suivante) · fin : création du plan
+// Déjà répondu à la création de la boutique ou du profil : pas reposé (sauf en modifiant ses infos de vente)
+const deja30 = cle => b => !S.p30Modif && (S.p30?.connu || []).includes(cle) && remplie30(Q30.find(q => q.cle === cle), b);
 const Q30 = [
   {cle: "produit", type: "produit", q: "Qu'est-ce que tu vends ?", aide: "Une seule fois : on s'en souviendra pour tes prochains plans.", ex: "Coaching glow-up 6 semaines", max: 100},
   {cle: "prix", type: "t", q: "Combien ça coûte ?", ex: "297 €", max: 120, saute: b => !!b.produit_id},
   {cle: "lien", type: "t", q: "Comment on l'achète ?", aide: "Le lien de ta boutique, ou le mot à t'envoyer en message privé.", ex: "GLOW", max: 300, saute: b => !!b.produit_id},
-  {cle: "transformation", type: "long", q: "Qu'est-ce qui change pour ta cliente ?", aide: "Avant, après. En une phrase.", ex: "Elle passe de fatiguée et débordée à rayonnante, sans y passer des heures", max: 300},
-  {cle: "cible", type: "t", q: "À qui tu parles ?", ex: "Mamans actives de 30 à 45 ans", max: 200},
-  {cle: "problemes", type: "liste", n: 3, min: 2, q: "Ses plus gros problèmes ?", aide: "Au moins 2.", ex: ["Elle n'a jamais de temps pour elle", "Elle se trouve fatiguée", "Elle a tout essayé"]},
+  {cle: "transformation", type: "long", q: "Qu'est-ce qui change pour ta cliente ?", aide: "Avant, après. En une phrase.", ex: "Elle passe de fatiguée et débordée à rayonnante, sans y passer des heures", max: 300, saute: deja30("transformation")},
+  {cle: "cible", type: "t", q: "À qui tu parles ?", ex: "Mamans actives de 30 à 45 ans", max: 200, saute: deja30("cible")},
+  {cle: "problemes", type: "liste", n: 3, min: 2, q: "Ses plus gros problèmes ?", aide: "Au moins 2.", ex: ["Elle n'a jamais de temps pour elle", "Elle se trouve fatiguée", "Elle a tout essayé"], saute: deja30("problemes")},
   {cle: "objections", type: "liste", n: 3, min: 1, q: "Qu'est-ce qui la freine pour acheter ?", ex: ["C'est trop cher", "Je n'aurai pas le temps", "Ça ne marchera pas pour moi"]},
   {cle: "temoignages", type: "liste", long: true, n: 3, q: "Tu as des avis de clientes ?", aide: "Colle-les tels quels. Sans avis, on montrera les coulisses de ta méthode.", ex: ["« Sarah : en 3 semaines j'ai retrouvé confiance en moi »", "Un deuxième avis", "Un troisième avis"], facultatif: true, accord: true},
   {cle: "histoire", type: "long", q: "Raconte ton histoire", aide: "Ton déclic, pourquoi tu fais ce métier.", ex: "En 2021, j'ai fait un burn-out. Je ne me reconnaissais plus…", max: 800},
@@ -2775,8 +2777,8 @@ function renduBrief30() {
   $("#p30-autre")?.addEventListener("click", () => { S.p30Autre = true; choisis30(b, []); renduBrief30(); });
   $("#p30-creeprod")?.addEventListener("click", () => { sauveBrief30(true); S.plan30Vue = false; S.p30Brief = false; S.p30 = null; BQ.onglet = "produits"; va("boutique");
     toast("Crée ton produit, puis reviens dans Studio : ton plan t'attend", {duree: 6000}); });
-  $("#p30-infos")?.addEventListener("click", () => vers(0));
-  const quitte = () => { sauveBrief30(true); S.p30Etape = 0; if (r.plan) { S.p30Brief = false; renduPlan30(); } else { S.plan30Vue = false; renduStudio(); } };
+  $("#p30-infos")?.addEventListener("click", () => { S.p30Modif = true; vers(0); });
+  const quitte = () => { sauveBrief30(true); S.p30Etape = 0; S.p30Modif = false; if (r.plan) { S.p30Brief = false; renduPlan30(); } else { S.plan30Vue = false; renduStudio(); } };
   $("#p30-retour").onclick = () => k ? vers(k - 1) : quitte();
   $("#p30-fermer").onclick = quitte;
   const maj = () => { const s = $("#p30-suiv"); if (s) s.disabled = !remplie30(q, b); sauveBrief30(); };
@@ -2796,7 +2798,7 @@ function renduBrief30() {
       const x = await api("/api/plan30", {method: "POST", body: {debut: S.p30Debut || r.debut_conseille}});
       S.p30Attente = {titre: "Je construis ton plan des 30 jours", log: "Je classe les publications virales de ta veille…"}; renduPlan30();
       await attendsTache(x.job, m => { if (S.p30Attente) { S.p30Attente.log = m; const l = $("#p30-log"); if (l) l.textContent = m; } });
-      S.p30Attente = null; S.p30Brief = false; S.p30Etape = 0; await chargePlan30(); renduPlan30(); toast("Ton plan est prêt");
+      S.p30Attente = null; S.p30Brief = false; S.p30Etape = 0; S.p30Modif = false; await chargePlan30(); renduPlan30(); toast("Ton plan est prêt");
     } catch (err) { S.p30Attente = null; toast(err.message, {duree: 6000}); if (S.plan30Vue) renduPlan30(); }
   });
 }
@@ -4572,7 +4574,7 @@ function renduAssistantBoutique(el) {
       if (e.fin) {
         const prods = BQ.page?.produits || [];
         A.objectifs = prods.length ? ["vendre"] : ["liens"];
-        const corps = {nom: A.nom, bio: A.bio, photo: A.photo, reseaux: reseauxAssistant(A), design: {...designAssistant(A), apparition: true},
+        const corps = {nom: A.nom, bio: A.bio, photo: A.photo, activite: {cible: A.cible || "", apport: A.apport || ""}, reseaux: reseauxAssistant(A), design: {...designAssistant(A), apparition: true},
           blocs: prods.length ? [{id: idCourt(), type: "produits", titre: "Ma boutique"}] : blocsAssistant(A, false), publie: true};
         await api("/api/boutique", {method: "PUT", body: corps});
         await chargeBoutique();

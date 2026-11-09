@@ -91,9 +91,9 @@ def brief(esp: Espace, cfg: dict | None = None, bid=None) -> dict:
             return json.loads(f.read_text(encoding="utf-8"))
         except ValueError:
             pass
-    n = (cfg or {}).get("niche") or {}
-    return {"produit": n.get("offre") or "", "prix": "", "lien": "", "date_cle": "", "transformation": "",
-            "cible": n.get("cible") or "", "problemes": (n.get("douleurs") or [])[:3], "objections": [],
+    # Rien de pré-rempli : ce qui est déjà connu (boutique, profil) est repris par `connu`/`complete`
+    return {"produit": "", "prix": "", "lien": "", "date_cle": "", "transformation": "",
+            "cible": "", "problemes": [], "objections": [],
             "temoignages": [], "accord_temoignages": False, "resultats": [], "histoire": "",
             "ton": "Complice", "tutoiement": "tu", "emojis": "quelques", "neuf": True}
 
@@ -118,6 +118,31 @@ def sauve_brief(esp: Espace, champs: dict, bid=None) -> dict:
     b["modifie"] = datetime.now().isoformat(timespec="minutes")
     _ecrit(_f_brief(esp, bid), b)
     return b
+
+
+def connu(cfg: dict | None, page: dict | None) -> dict:
+    """Réponses déjà données ailleurs (création de la boutique, profil de la marque) : pas reposées dans le brief."""
+    n = (cfg or {}).get("niche") or {}
+    act = (page or {}).get("activite") or {}
+    k = {}
+    if (act.get("cible") or n.get("cible") or "").strip():
+        k["cible"] = (act.get("cible") or n.get("cible")).strip()[:200]
+    if (act.get("apport") or "").strip():
+        k["transformation"] = act["apport"].strip()[:300]
+    douleurs = [str(x).strip()[:200] for x in n.get("douleurs") or [] if str(x or "").strip()]
+    if len(douleurs) >= 2:
+        k["problemes"] = douleurs[:3]
+    return k
+
+
+def complete(b: dict, k: dict) -> bool:
+    """Remplit les champs vides du brief avec ce qui est déjà connu. Vrai si quelque chose a changé."""
+    change = False
+    for cle, v in k.items():
+        if not b.get(cle):
+            b[cle] = v
+            change = True
+    return change
 
 
 def brief_complet(b: dict) -> str | None:
