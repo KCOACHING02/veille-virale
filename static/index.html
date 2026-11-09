@@ -1249,6 +1249,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .as-logo input[type=file]{display:none}
 .as-gros{font-size:18px!important;padding:14px!important}
 .as-bios{display:flex;flex-direction:column;gap:8px}
+.as-nav-props{display:flex;align-items:center;justify-content:space-between;gap:10px}.as-nav-props .btn:disabled{opacity:.4;cursor:default}
 .as-bio{text-align:left;font:inherit;font-size:15px;line-height:1.45;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);cursor:pointer}
 .as-bio[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 .as-liens{min-height:110px;font-size:15px!important;line-height:1.5;resize:vertical}
@@ -4086,6 +4087,7 @@ function blocsAssistant(A, apercu) {
   return B;
 }
 function designAssistant(A, extra = {}) {
+  if (A.design && !Object.keys(extra).length) return {...A.design};
   const B = {...A, ...extra};
   let d = themeApplique(BQ.page?.design || BQ.etat.options.defaut, B.theme);
   if (B.palette != null && A.palettes) d = {...d, ...paletteDesign(A.palettes[B.palette]), theme: "perso"};
@@ -4137,17 +4139,38 @@ const slugBoutique = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 const prixCentimes = v => Math.round((parseFloat(String(v || "0").replace(",", ".")) || 0) * 100);
 const vignetteImg = nom => nom ? (BQ.etat.pseudo ? urlImg(nom) : "/api/boutique/i/" + nom) : "";
 
-// Propositions de design : d'abord les couleurs du logo, puis des thèmes variés ; chaque page en montre 3
-function propositionsDesign(A) {
-  const meps = ["colonne", "bento", "magazine"], L = [];
-  (A.palettes || []).forEach((p, i) => L.push({nom: "Tes couleurs · " + p.nom, palette: i, theme: A.theme || "sable", mep: meps[i % 3]}));
-  const th = BQ.etat.options.themes || [], parAmb = {};
-  th.forEach(t => (parAmb[t.ambiance] ||= []).push(t));
-  const ambs = Object.keys(parAmb); let k = 0;
-  for (let tour = 0; tour < 6; tour++) for (const a of ambs) { const t = parAmb[a][tour]; if (t) L.push({nom: t.nom, palette: null, theme: t.id, mep: meps[k++ % 3]}); }
-  return L;
+// Propositions de design : des maquettes soignées et vérifiées (structure fixe : logo à sa taille, cartes produits propres,
+// pas de bannière géante ni de décor gadget), habillées avec les couleurs du logo, puis avec des palettes choisies.
+const MAQUETTES = [
+  {nom: "Essentiel", d: {entete: "minimal", photo_forme: "rond", photo_taille: 104, photo_contour: false, police_titre: "Fraunces", police_texte: "DM Sans", taille_titre: "m",
+    bouton_style: "plein", bouton_forme: "pilule", rayon: 16, produits_vue: "grille", image_forme: "carre", prix_style: "texte", carte_cadre: "ombre"}},
+  {nom: "Boutique", d: {entete: "minimal", photo_forme: "arrondi", photo_taille: 96, photo_contour: false, police_titre: "Playfair Display", police_texte: "Inter", taille_titre: "m",
+    bouton_style: "doux", bouton_forme: "arrondi", rayon: 12, produits_vue: "liste", image_forme: "carre", prix_style: "texte", carte_cadre: "contour"}},
+  {nom: "Moderne", d: {entete: "minimal", photo_forme: "rond", photo_taille: 92, photo_contour: true, police_titre: "Sora", police_texte: "Manrope", taille_titre: "s",
+    bouton_style: "plein", bouton_forme: "arrondi", rayon: 14, produits_vue: "vitrine", image_forme: "carre", prix_style: "texte", carte_cadre: "flottant"}},
+  {nom: "Élégant", d: {entete: "minimal", photo_forme: "rond", photo_taille: 100, photo_contour: false, police_titre: "Cormorant Garamond", police_texte: "Manrope", taille_titre: "l",
+    bouton_style: "contour", bouton_forme: "pilule", rayon: 999, produits_vue: "grille", image_forme: "carre", prix_style: "texte", carte_cadre: "contour"}},
+];
+const COMMUN_MAQUETTE = {alignement: "centre", decor: "aucun", survol: "soulever", animation: "aucune", bouton_taille: "normal", mise_en_page: "colonne",
+  espacement: "normal", largeur_page: "normale", taille_texte: "m", fond_image: "", motif: "points"};
+const PALETTES_CHOISIES = ["sable", "terracotta", "olive", "minuit", "bordeaux", "encre", "peche", "marine", "lin", "ardoise", "ivoire", "cacao"];
+const CLES_COULEURS = ["fond1", "fond2", "texte", "bouton_fond", "bouton_texte", "bouton_ombre", "bloc_fond", "bloc_texte", "accent"];
+function couleursProposees(A) {
+  const C = (A.palettes || []).map(p => ({nom: "tes couleurs " + p.nom.toLowerCase(), c: paletteDesign(p)}));
+  for (const id of PALETTES_CHOISIES) { const t = (BQ.etat.options.themes || []).find(x => x.id === id); if (!t) continue;
+    const c = Object.fromEntries(CLES_COULEURS.filter(k => t.design[k]).map(k => [k, t.design[k]]));
+    c.fond_type = t.design.fond_type === "degrade" ? "degrade" : "uni"; if (!c.fond2) c.fond2 = c.fond1;
+    C.push({nom: t.nom.toLowerCase(), c}); }
+  return C;
 }
-const designProposition = (A, p) => designAssistant(A, {theme: p.theme, palette: p.palette, mep: p.mep});
+function propositionsDesign(A) {
+  return couleursProposees(A).map((c, k) => ({nom: `${MAQUETTES[k % MAQUETTES.length].nom} · ${c.nom}`, maq: k % MAQUETTES.length, c: c.c}));
+}
+function designProposition(A, p) {
+  const base = {...BQ.etat.options.defaut, ...COMMUN_MAQUETTE, ...MAQUETTES[p.maq].d, ...p.c, theme: "perso", apparition: false};
+  if (base.fond_type === "degrade" && !p.c.fond2) base.fond2 = base.fond1;
+  return base;
+}
 
 function etapesBoutique(A) {
   const hote = location.host, prods = BQ.page?.produits || [], pay = BQ.etat.paiement || {};
@@ -4188,11 +4211,14 @@ function etapesBoutique(A) {
       corps: () => `<div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
         <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>`},
     {nom: "Ton design", q: "Choisis le design de ta boutique", fin: true, propositions: true,
-      corps: () => { const L = propositionsDesign(A), n = Math.ceil(L.length / 3) || 1, page = (A.propPage || 0) % n; if (A.prop == null) A.prop = page * 3;
+      corps: () => { const L = propositionsDesign(A), n = Math.ceil(L.length / 3) || 1, page = Math.min(A.propPage || 0, n - 1); if (A.prop == null) A.prop = page * 3;
         return `<p class="aide" style="margin-top:-6px">Virallink a préparé ta boutique avec ton logo et tes produits. Touche celle qui te plaît.</p>
           <div class="as-props">${L.slice(page * 3, page * 3 + 3).map((p, i) => { const j = page * 3 + i, actif = A.prop === j;
             return `<button type="button" class="as-prop" data-prop="${j}" aria-pressed="${actif}"><div class="mini"><iframe tabindex="-1" title="${esc(p.nom)}"></iframe></div><span>${actif ? "✓ " : ""}${esc(p.nom)}</span></button>`; }).join("")}</div>
-          <button type="button" class="btn" id="as-autres" style="width:100%;justify-content:center">↻ Voir 3 autres propositions</button>
+          <div class="as-nav-props"><button type="button" class="btn" id="as-precedentes" ${page ? "" : "disabled"}>← Précédentes</button>
+            <span class="aide">${page + 1} / ${n}</span>
+            <button type="button" class="btn" id="as-autres" ${page < n - 1 ? "" : "disabled"}>Autres →</button></div>
+          ${A.prop != null && Math.floor(A.prop / 3) !== page ? `<p class="aide" style="text-align:center;margin-top:8px">Ta boutique choisie : <b>${esc(L[A.prop]?.nom || "")}</b> · <button type="button" class="lien" id="as-revoir">la revoir</button></p>` : ""}
           ${A.relance ? '<p class="aide" style="margin-top:12px">Tes blocs et ton design actuels seront remplacés. Tes produits, tes inscrites et tes ventes ne bougent pas. Tu pourras annuler juste après.</p>' : ""}`; }},
   ];
   return E;
@@ -4381,7 +4407,8 @@ function renduAssistantBoutique(el) {
   $("#as-photo input") && ($("#as-photo input").onchange = async ev => {
     const f = ev.target.files[0]; if (!f) return;
     $("#as-photo").innerHTML = '<span class="spin"></span>';
-    try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); A.prop = null; A.propPage = 0; }
+    try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); A.prop = null; A.propPage = 0; A.design = null;
+      if (BQ.etat.pseudo) { await api("/api/boutique", {method: "PUT", body: {photo: r.nom}}); if (BQ.page) BQ.page.photo = r.nom; } }
     catch (er) { toast(er.message); }
     rendu();
   });
@@ -4470,12 +4497,18 @@ function renduAssistantBoutique(el) {
   if (e.propositions) {
     const L = propositionsDesign(A);
     if (A.prop == null) A.prop = (A.propPage || 0) * 3;
+    // Logo repris d'une boutique existante : on retrouve ses couleurs pour les premières propositions
+    if (A.photo && !A.palettes && !A.palettesDemandees) { A.palettesDemandees = true;
+      api("/api/boutique/palettes").then(r => { if (r.palettes?.length) { A.palettes = r.palettes; A.prop = 0; A.propPage = 0; A.design = null; rendu(); } }).catch(() => {}); }
     $$("[data-prop]").forEach(async b => { const p = L[+b.dataset.prop]; if (!p) return;
       const mini = b.querySelector(".mini"), fr = b.querySelector("iframe"); fr.style.transform = `scale(${mini.clientWidth / 390})`;
       const h = await htmlApercu({...contenuAssistant(A), design: designProposition(A, p)}); const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
-      b.onclick = () => { A.prop = +b.dataset.prop; Object.assign(A, {theme: p.theme, palette: p.palette, mep: p.mep}); rendu(); }; });
-    const p = L[A.prop]; if (p) Object.assign(A, {theme: p.theme, palette: p.palette, mep: p.mep});
-    $("#as-autres").onclick = () => { A.propPage = ((A.propPage || 0) + 1) % (Math.ceil(L.length / 3) || 1); A.prop = A.propPage * 3; rendu(); };
+      b.onclick = () => { A.prop = +b.dataset.prop; A.design = designProposition(A, p); gardeAssist(A); rendu(); }; });
+    if (L[A.prop]) A.design = designProposition(A, L[A.prop]);
+    const n = Math.ceil(L.length / 3) || 1;
+    $("#as-autres").onclick = () => { A.propPage = Math.min((A.propPage || 0) + 1, n - 1); rendu(); };
+    $("#as-precedentes").onclick = () => { A.propPage = Math.max((A.propPage || 0) - 1, 0); rendu(); };
+    $("#as-revoir")?.addEventListener("click", () => { A.propPage = Math.floor(A.prop / 3); rendu(); });
     apercuAssistant(true);
   }
   // Adresse : proposée à partir du nom, vérifiée en direct, puis création de la boutique (brouillon)

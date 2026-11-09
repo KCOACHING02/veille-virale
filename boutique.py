@@ -877,7 +877,7 @@ a{{color:inherit}}
 .photo{{width:var(--ph);height:var(--ph);object-fit:cover;display:block;margin:0 auto 14px;{FORMES_CSS[d['photo_forme']]};
   {'outline:3px solid var(--a);outline-offset:4px;' if d['photo_contour'] and d['photo_forme'] in ('rond', 'arrondi', 'goutte', 'arche') else ''}{'filter:drop-shadow(0 0 0 var(--a)) drop-shadow(3px 3px 0 var(--a));' if d['photo_contour'] and d['photo_forme'] in ('fleur', 'etoile') else ''}}}
 .photo.vide{{background:var(--a);display:grid;place-items:center;color:var(--f1);font:700 calc(var(--ph)*.38)/1 var(--tf)}}
-h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'text-transform:uppercase;letter-spacing:.02em;' if capitales else ''}{'font-weight:700;' if POLICES[d['police_titre']][2] in ('moderne', 'futuriste') else ''}overflow-wrap:anywhere}}
+h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'text-transform:uppercase;letter-spacing:.02em;' if capitales else ''}{'font-weight:700;' if POLICES[d['police_titre']][2] in ('moderne', 'futuriste') else ''}overflow-wrap:break-word;text-wrap:balance}}
 .bio{{margin:0 auto 14px;max-width:42ch;opacity:.85;white-space:pre-line;font-size:15px}}
 .reseaux{{display:flex;justify-content:center;flex-wrap:wrap;gap:6px}}
 .reseaux a{{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--t);transition:transform .15s}}
@@ -932,10 +932,10 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 .pp-etiquette{{background:var(--a);color:var(--ac);padding:3px 12px 3px 18px;clip-path:polygon(11px 0,100% 0,100% 100%,11px 100%,0 50%);font-size:13.5px}}
 .pp-bouton{{background:var(--b);color:var(--bt);padding:4px 12px;border-radius:999px;font-size:13.5px}}
 .pp-surligne{{color:inherit;background:linear-gradient(transparent 55%,color-mix(in srgb,var(--a) 55%,transparent) 55% 92%,transparent 92%);padding:0 2px}}
-.pp-pastille{{position:absolute;top:-9px;right:-9px;margin:0;width:62px;height:62px;border-radius:50%;background:var(--a);color:var(--ac);display:grid;place-content:center;text-align:center;
-  font-size:13px;line-height:1.05;transform:rotate(12deg);box-shadow:0 5px 12px -5px rgba(0,0,0,.45);z-index:2;padding:4px}}
+.pp-pastille{{position:absolute;top:-9px;right:-9px;margin:0;min-width:58px;min-height:58px;border-radius:999px;background:var(--a);color:var(--ac);display:grid;place-content:center;text-align:center;
+  font-size:13px;line-height:1.05;white-space:nowrap;transform:rotate(10deg);box-shadow:0 5px 12px -5px rgba(0,0,0,.45);z-index:2;padding:6px 10px}}
 .pp-pastille s{{display:block;font-size:10.5px;margin:0}}
-.v-liste .pp-pastille{{width:44px;height:44px;font-size:10.5px;top:-7px;right:-7px}}.v-liste .pp-pastille s{{display:none}}
+.v-liste .pp-pastille{{min-width:44px;min-height:44px;font-size:10.5px;top:-7px;right:-7px;padding:4px 8px}}.v-liste .pp-pastille s{{display:none}}
 .v-grille,.v-bento,.v-polaroid{{grid-template-columns:1fr 1fr}}
 .v-grille .prod,.v-vitrine .prod,.v-carrousel .prod,.v-bento .prod,.v-polaroid .prod{{flex-direction:column;align-items:stretch;padding:8px 8px 12px}}
 .v-grille .ptxt,.v-vitrine .ptxt,.v-carrousel .ptxt,.v-bento .ptxt,.v-polaroid .ptxt{{padding:0 4px}}
