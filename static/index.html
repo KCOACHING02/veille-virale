@@ -4016,6 +4016,8 @@ async function renduBoutique() {
     try { await chargeBoutique(); } catch (e) { el.innerHTML = `<p class="vide">${esc(e.message)}</p>`; return; }
   }
   chargePolicesEditeur();
+  // Boutique pas encore en ligne avec un parcours en cours : on le reprend là où il en était
+  if (BQ.page && !BQ.page.publie && !BQ.assist && !BQ.assistFerme) { const g = reprendAssist(); if (g) { BQ.assist = g; BQ.htmlAssist = null; } }
   if (!BQ.page || BQ.assist) return renduAssistantBoutique(el);
   renduEditeur(el);
 }
@@ -4058,6 +4060,7 @@ const nettoieRes = v => (v || "").trim().replace(/^@/, "").replace(/^https?:\/\/
 
 function etatAssistant() {
   const sug = BQ.etat.suggestion || {}, res = sug.reseaux || BQ.page?.reseaux || {};
+  if (!BQ.assist && !BQ.page) BQ.assist = reprendAssist();
   return BQ.assist ||= {etape: 0, pseudo: sug.pseudo || BQ.etat.pseudo || "", nom: sug.nom || BQ.page?.nom || "", bio: sug.bio || BQ.page?.bio || "", photo: BQ.page?.photo || "",
     reseaux: {instagram: res.instagram || "", tiktok: res.tiktok || ""}, objectifs: ["vendre"],
     palettes: null, theme: "sable", palette: null, mep: "colonne",
@@ -4274,9 +4277,19 @@ async function ajouteProduitAssist(A) {
   await chargeBoutique();
 }
 
+const cleAssist = () => "vv_assist_" + (BQ.etat?.pseudo || "neuf");
+function gardeAssist(A) {
+  try { localStorage.setItem(cleAssist(), JSON.stringify({...A, np: A.np ? {...A.np, fichier: null} : null, photoUrl: "", quand: Date.now()})); } catch {}
+}
+function reprendAssist() {
+  try { const a = JSON.parse(localStorage.getItem(cleAssist()) || "null");
+    return a && Date.now() - (a.quand || 0) < 14 * 864e5 && !a.fini ? a : null; } catch { return null; }
+}
+function oublieAssist() { try { localStorage.removeItem(cleAssist()); localStorage.removeItem("vv_assist_neuf"); } catch {} }
 function renduAssistantBoutique(el) {
   const A = etatAssistant();
   if (A.fini) return bravoBoutique(el);
+  gardeAssist(A);
   const E = etapesBoutique(A); A.etape = Math.min(A.etape, E.length - 1);
   const e = E[A.etape], n = E.length, st = BQ.page?.stripe || {};
   const texteSuite = e.fin ? "Mettre ma boutique en ligne 🚀" : e.stripe && !st.pret && !A.stripeDemo && ((BQ.etat.paiement || {}).plateforme || (BQ.etat.paiement || {}).demo) ? "Je le ferai plus tard"
@@ -4302,7 +4315,7 @@ function renduAssistantBoutique(el) {
   $("#bt-plein").addEventListener("pointerup", ev => { if (ev.target.id === "bt-plein") fermeAp(); });
   $("#as-retour") && ($("#as-retour").onclick = () => aller(A.etape - 1));
   $("#as-mes") && ($("#as-mes").onclick = () => mesBoutiques());
-  $("#as-quitter") && ($("#as-quitter").onclick = () => { BQ.assist = null; BQ.htmlAssist = null; renduBoutique(); });
+  $("#as-quitter") && ($("#as-quitter").onclick = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.assistFerme = true; oublieAssist(); renduBoutique(); });
 
   // Champs simples
   $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); });
@@ -4332,7 +4345,7 @@ function renduAssistantBoutique(el) {
       toastAnnuler("Produit retiré", async () => { await api("/api/boutique", {method: "PUT", body: {produits: avant}}); await chargeBoutique(); rendu(); }, () => {});
     });
     if (N && N.type) {
-      $$("[data-np]").forEach(i => i.oninput = i.onchange = () => { N[i.dataset.np] = i.value; });
+      $$("[data-np]").forEach(i => i.oninput = i.onchange = () => { N[i.dataset.np] = i.value; gardeAssist(A); });
       $$("[data-np-prix]").forEach(b => b.onclick = () => { N.prix = b.dataset.npPrix; $("#np-p").value = N.prix; });
       $("#np-type-x")?.addEventListener("click", () => { A.np = {type: ""}; rendu(); });
       $("#np-retour").onclick = () => { if (N.e) { N.e--; } else { A.np = (BQ.page?.produits || []).length ? null : {type: ""}; } rendu(); };
@@ -4447,7 +4460,7 @@ function renduAssistantBoutique(el) {
           blocs: prods.length ? [{id: idCourt(), type: "produits", titre: "Ma boutique"}] : blocsAssistant(A, false), publie: true};
         await api("/api/boutique", {method: "PUT", body: corps});
         await chargeBoutique();
-        try { sessionStorage.removeItem("vv_assist"); } catch {}
+        try { sessionStorage.removeItem("vv_assist"); } catch {} oublieAssist();
         A.fini = true; BQ.htmlAssist = null; rendu();
         if (A.relance && BQ.avantAssist) { const av = BQ.avantAssist; BQ.avantAssist = null;
           toastAnnuler("Ta boutique a été refaite", async () => { await api("/api/boutique", {method: "PUT", body: av}); await chargeBoutique(); BQ.assist = null; renduBoutique(); }, () => {}, 15000); }
@@ -4495,8 +4508,10 @@ async function mesBoutiques() {
 async function continueBoutique() {
   if (!BQ.etat) await chargeBoutique();
   if (BQ.page && !BQ.page.publie) {
-    relanceAssistantBoutique(); BQ.assist.relance = false; BQ.avantAssist = null;
-    BQ.assist.etape = Math.max(0, etapesBoutique(BQ.assist).findIndex(e => e.produits));
+    const garde = reprendAssist();
+    if (garde) { BQ.assist = garde; BQ.htmlAssist = null; }
+    else { relanceAssistantBoutique(); BQ.assist.relance = false; BQ.avantAssist = null; BQ.assist.objectifs = ["vendre"];
+      BQ.assist.etape = Math.max(0, etapesBoutique(BQ.assist).findIndex(e => e.produits)); }
   }
   va("boutique");
 }
@@ -4509,7 +4524,7 @@ function relanceAssistantBoutique() {
     objectifs: [types.has("produits") || types.has("produit") ? "vendre" : null, types.has("capture") ? "emails" : null, types.has("kit") ? "marques" : null, liens.length ? "liens" : null].filter(Boolean),
     palettes: null, theme: BQ.etat.options.themes.some(t => t.id === d.theme) ? d.theme : "sable", palette: null, mep: d.mise_en_page || "colonne",
     rdv: {titre: "Réserve ton appel découverte", url: ""}, liens: liens.length ? liens : [{titre: "", url: ""}, {titre: "", url: ""}], produit: {titre: "", prix: ""}};
-  if (!BQ.assist.objectifs.length) BQ.assist.objectifs = ["liens"];
+  if (!BQ.assist.objectifs.length) BQ.assist.objectifs = ["vendre"];
   BQ.htmlAssist = null; renduBoutique(); scrollTo({top: 0});
 }
 function bravoBoutique(el) {
