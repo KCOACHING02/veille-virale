@@ -1139,6 +1139,78 @@ def studio_generer(sid):
 
 
 # ------------------------------------------------------------
+#  Stories animées (stories.py) : séquences guidées par objectif ou story seule, rendues en vidéos 9:16
+# ------------------------------------------------------------
+import stories  # noqa: E402
+
+
+def _projet_stories(sid):
+    p = _projet(sid)
+    if p.get("type") != "stories":
+        abort(404)
+    return p
+
+
+@app.get("/api/stories/options")
+@connecte
+def stories_options():
+    return jsonify({**stories.options(g.esp.lit_config()), "produits": _produits_plan30(bq_active()), "banque": _banque_dispo()})
+
+
+@app.post("/api/stories")
+@connecte
+def stories_cree():
+    c = request.get_json(force=True) or {}
+    msg = reserve(g.u, "ia") or refus(g.u)
+    if msg:
+        return bloque(msg)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    cfg = g.esp.lit_config()
+    contexte = ""
+    if c.get("produit"):
+        pr = next((x for x in _produits_plan30(bq_active()) if x["id"] == c["produit"]), None)
+        if pr:
+            contexte = f"PRODUIT À METTRE EN AVANT : {pr['titre']} — {pr['prix_txt']}" + (f" — lien : {pr['lien']}" if pr.get("lien") else "")
+    p = stories.cree(g.esp, cfg, c)
+    jid = lance(g.u["id"], "Écriture des stories", stories.ecrit, g.esp, cfg, p["id"], contexte, demo=en_demo(), file_=FILE_STUDIO)
+    return jsonify({"projet": p, "job": jid})
+
+
+@app.put("/api/stories/<sid>")
+@connecte
+def stories_modifie(sid):
+    _projet_stories(sid)
+    return jsonify(stories.modifie(g.esp, sid, request.get_json(force=True) or {}))
+
+
+@app.get("/api/stories/<sid>/apercu/<int:i>")
+@connecte
+def stories_apercu(sid, i):
+    _projet_stories(sid)
+    try:
+        return Response(stories.apercu(g.esp, sid, i), mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+    except IndexError:
+        abort(404)
+
+
+@app.post("/api/stories/<sid>/generer")
+@connecte
+def stories_generer(sid):
+    p = _projet_stories(sid)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    deja = bool(p.get("genere_le"))  # refaire après une retouche ne compte pas une nouvelle création
+    msg = None if deja else refus(g.u, studio=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    uid = g.u["id"]
+    jid = lance(uid, "Fabrication des stories", stories.genere, g.esp, sid, demo=en_demo(), file_=FILE_STUDIO,
+                apres=None if deja else _apres_studio(uid, sid))
+    return jsonify({"job": jid})
+
+
+# ------------------------------------------------------------
 #  Plan 30 jours : 8 carrousels en tunnel de vente, construits à partir de la veille classée (plan30.py)
 # ------------------------------------------------------------
 import plan30  # noqa: E402

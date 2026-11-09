@@ -902,6 +902,32 @@ def ecrit_bios(cfg: dict, voix: str, infos: str) -> dict:
                                   systeme=_systeme_marque(cfg, voix, "Tu écris des présentations courtes pour des créatrices de contenu."))
 
 
+OUTIL_STORIES = {
+    "name": "enregistrer_stories",
+    "description": "Textes d'une suite de stories Instagram (ou d'une seule), dans l'ordre donné.",
+    "input_schema": {"type": "object", "properties": {
+        "stories": {"type": "array", "description": "Une entrée par story demandée, dans l'ordre.", "items": {"type": "object", "properties": {
+            "titre": {"type": "string", "description": "La phrase principale, très lisible sur téléphone : 3 à 12 mots. Pas d'emoji."},
+            "texte": {"type": "string", "description": "Une précision facultative sous le titre : 0 à 20 mots. Vide si le titre suffit."},
+            "photo": {"type": "string", "description": "L'image de fond conseillée, décrite concrètement (ce que la personne peut photographier)."},
+            "recherche": {"type": "string", "description": "3 à 5 mots-clés EN ANGLAIS pour trouver dans une banque d'images une photo qui illustre ce que dit cette story, le plus important d'abord."},
+            "sticker": {"type": "string", "enum": ["", "sondage", "question", "quiz", "curseur", "lien", "compte_a_rebours"],
+                        "description": "Sticker Instagram à ajouter sur cette story (celui conseillé, ou vide)."},
+            "sticker_texte": {"type": "string", "description": "Le texte du sticker : la question du sondage avec ses 2 réponses (« Oui / Pas du tout »), la question de la boîte, le texte du lien… Vide sans sticker."}},
+            "required": ["titre", "texte", "recherche", "sticker", "sticker_texte"]}}},
+        "required": ["stories"]},
+}
+
+
+def ecrit_stories(cfg: dict, voix: str, roles: str, sujet: str, contexte: str = "") -> dict:
+    texte = (f"SUJET : {sujet or 'au choix, dans sa niche'}\n{contexte}\n\nÉcris les stories suivantes, dans cet ordre :\n{roles}\n\n"
+             "Les stories s'enchaînent : chacune donne envie de voir la suivante. Phrases courtes, parlées, à la première personne, "
+             "dans sa voix. Pas de ton publicitaire ni de phrases qui sonnent IA. N'invente aucun chiffre, avis ni prénom de cliente. "
+             "Le titre doit se lire en 2 secondes.")
+    return _ia_simple(cfg)._appel(OUTIL_STORIES, texte, max_tokens=1800,
+                                  systeme=_systeme_marque(cfg, voix, "Tu écris des stories Instagram qui créent du lien et font vendre."))
+
+
 OUTIL_PLAN30 = {
     "name": "enregistrer_plan",
     "description": "Sujets des 8 carrousels d'un plan de contenu de 30 jours qui mène à la vente.",

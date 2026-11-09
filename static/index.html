@@ -573,6 +573,63 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .p30-produits .choisi .p30-coche{background:var(--glow);border-color:var(--glow)}
 .p30-produits .choisi .p30-coche::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
 .p30-plusieurs{margin:-6px 0 10px}
+/* Stories animées */
+.stc-carte{display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;background:var(--surface);border-radius:20px;padding:20px 24px;box-shadow:var(--shadow);margin:0 0 18px}
+.stc-carte h2{margin:2px 0 4px;font:800 22px/1.2 var(--display)} .stc-carte p{margin:0;color:var(--ink-2)}
+.stc-anim{display:flex;gap:6px}.stc-anim .fx-mini{width:46px}
+@media (max-width:860px){.stc-carte{grid-template-columns:1fr;text-align:left}.stc-anim{display:none}}
+.stw-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.stw-grille button,.stw-effets button{border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:4px}
+.stw-grille button:hover,.stw-effets button:hover{border-color:var(--ink-3)}
+.stw-grille .choisi,.stw-effets .choisi{border-color:var(--glow);background:var(--glow-soft)}
+.stw-emoji{font-size:26px}
+.stw-effets{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.stw-effets button{align-items:center;text-align:center}
+.fx-mini{position:relative;display:grid;place-items:center;width:100%;max-width:110px;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:linear-gradient(var(--f1),var(--f2));margin-bottom:6px}
+.fx-mini i{font:800 26px/1 var(--display);font-style:normal;color:var(--t);position:relative}
+.fx-doux i{animation:fxDoux 3s ease-out infinite}
+@keyframes fxDoux{0%{opacity:0;transform:translateY(10px)}30%,85%{opacity:1;transform:none}100%{opacity:0}}
+.fx-dynamique i{animation:fxDyn 2.6s cubic-bezier(.3,1.6,.5,1) infinite}
+@keyframes fxDyn{0%{transform:translateX(-140%)}25%,90%{transform:none}100%{transform:translateX(140%)}}
+.fx-paillettes::before,.fx-paillettes::after{content:"✦";position:absolute;color:#fff;font-size:11px;animation:fxBrille 1.6s ease-in-out infinite}
+.fx-paillettes::before{top:18%;left:20%}.fx-paillettes::after{bottom:24%;right:18%;animation-delay:.8s}
+@keyframes fxBrille{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1.2)}}
+.fx-neon i{color:#fff;text-shadow:0 0 6px var(--a),0 0 14px var(--a);animation:fxNeon 2.4s infinite}
+@keyframes fxNeon{0%,8%,12%,40%,44%,100%{opacity:1}10%,42%{opacity:.25}}
+.fx-surligneur i{background:linear-gradient(var(--a),var(--a)) no-repeat 0 60%/0 70%;animation:fxSurl 2.8s ease-out infinite;padding:0 4px}
+@keyframes fxSurl{0%{background-size:0 70%}40%,100%{background-size:100% 70%}}
+.fx-machine i{overflow:hidden;white-space:nowrap;border-right:2px solid var(--t);animation:fxMach 2.4s steps(2) infinite;max-width:2ch}
+@keyframes fxMach{0%{max-width:0}60%,100%{max-width:2ch}}
+.fx-grain{filter:sepia(.35) contrast(1.05)}.fx-grain::after{content:"";position:absolute;inset:-50%;background:radial-gradient(circle,rgba(255,150,60,.45),transparent 60%);animation:fxFuite 3s linear infinite}
+@keyframes fxFuite{from{transform:translateX(-60%)}to{transform:translateX(60%)}}
+@media (prefers-reduced-motion:reduce){.fx-mini i,.fx-mini::before,.fx-mini::after{animation:none!important}}
+.stp-haut{display:flex;gap:12px;align-items:center;margin:0 0 10px}
+.stp-tache{display:flex;gap:10px;align-items:center;background:var(--glow-soft);border-radius:12px;padding:12px 16px;margin:0 0 16px;font-weight:600}
+.stp-style{display:grid;gap:12px;background:var(--surface);border-radius:16px;padding:14px 16px;margin:0 0 16px;box-shadow:var(--shadow)}
+.stp-lib{display:block;font-size:12.5px;color:var(--ink-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.stp-chips{display:flex;gap:6px;flex-wrap:wrap}
+.stp-chips button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 12px;cursor:pointer;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.stp-chips button[aria-pressed="true"]{border-color:var(--glow);background:var(--glow-soft)}
+.stp-chips i{width:14px;height:14px;border-radius:50%;display:inline-block;border:1px solid var(--line)}
+.stp-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.stp-carte{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.stp-vis{position:relative;aspect-ratio:9/16;background:var(--sunk)}
+.stp-vis img{width:100%;height:100%;object-fit:cover;display:block}
+.stp-num{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:99px;min-width:26px;height:26px;display:grid;place-items:center;font-weight:700;font-size:13px}
+.stp-champs{display:grid;gap:8px;padding:12px}
+.stp-role{font-size:12.5px;color:var(--ink-3)}
+.stp-champs textarea,.stp-champs input,.stp-champs select{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--ink);font:inherit;resize:vertical}
+.stp-champs textarea[data-ch=titre]{font-weight:700}
+.stp-sticker{display:grid;gap:6px}.stp-img{display:flex;gap:6px;flex-wrap:wrap}
+.stp-pied{position:sticky;bottom:0;background:linear-gradient(transparent,var(--paper) 30%);padding:24px 0 10px;text-align:center;z-index:2}
+.stp-pied .btn{min-width:min(100%,360px)}
+.stp-resultat{background:var(--surface);border-radius:18px;padding:18px;margin:0 0 18px;box-shadow:var(--shadow)}
+.stp-resultat h3{margin:0 0 12px}
+.stp-videos{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+.stp-videos figure{margin:0;flex:none;width:200px;display:grid;gap:8px}
+.stp-videos video{width:100%;aspect-ratio:9/16;border-radius:14px;background:#000}
+.stp-guide{background:var(--sunk);border-radius:12px;padding:12px 16px;margin:12px 0}
+.stp-guide ol{margin:6px 0 0;padding-left:20px}
 .p30-choix .p30-sous{display:block;font-weight:400;font-size:14px;color:var(--ink-2);margin-top:3px}
 .p30-autre{border:1.5px dashed var(--line)!important;background:none!important;color:var(--ink-2)!important;font-weight:500!important}
 .p30-offre{margin-top:14px}.p30-offre .lien{font-size:inherit}
@@ -2674,6 +2731,7 @@ async function choisirFormat(cle) {
 async function renduStudio() {
   const el = $("#studio");
   if (S.projetId) return renduProjet();
+  if (S.stw) return renduStoriesAssistant();
   if (S.plan30Vue) return renduPlan30();
   if (!S.optionsStudio?.projets) el.innerHTML = squelette("cartes", 4);
   const gratuitP30 = !!S.etat?.abonnement?.gratuit;
@@ -2681,7 +2739,7 @@ async function renduStudio() {
   S.optionsStudio = r;
   if (p30) S.p30 = p30;
   if (S.vue !== "studio" || S.projetId || S.plan30Vue) return;
-  const plan30 = cartePlan30(p30, gratuitP30);
+  const plan30 = cartePlan30(p30, gratuitP30) + (gratuitP30 ? "" : carteStories());
   const branchePlan30 = () => $("#p30-ouvre")?.addEventListener("click", () => ouvrePlan30(!p30?.plan));
   const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} sur ${r.quota}${S.etat?.abonnement?.renouvellement_fr ? ` jusqu'au ${esc(S.etat.abonnement.renouvellement_fr)}` : ""}`} · retoucher et refaire une création ne compte pas.</p>`;
   const gratuit = !!S.etat?.abonnement?.gratuit;
@@ -2694,10 +2752,11 @@ async function renduStudio() {
       : `<div class="vide"><h2>Ton studio est vide</h2><p>Ouvre un Reel <b>Prêt pour toi</b> dans la galerie et clique sur <b>Créer le contenu</b> :<br>tu choisis carrousel ou Reel, tu ajoutes tes photos ou ta vidéo, et tu récupères tout prêt à publier.</p>
       <button class="btn prim" onclick="S.filtre='adaptes';va('reels')">Voir mes Reels prêts pour toi</button> ${nouveau}</div>${quota}`;
     el.insertAdjacentHTML("afterbegin", plan30);
-    brancheVierge(); branchePlan30();
+    brancheVierge(); branchePlan30(); $("#st-stories")?.addEventListener("click", () => ouvreStories());
     return;
   }
   const vignette = p => {
+    if (p.type === "stories") return p.statut === "pret" ? `/studio/${p.id}/sortie/vignette.jpg` : `/api/stories/${p.id}/apercu/0`;
     const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
     return img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
   };
@@ -2710,14 +2769,14 @@ async function renduStudio() {
     <article class="st-carte">
       <button class="st-ouvre" data-projet="${p.id}" aria-label="Ouvrir ${esc(p.titre)}">
         ${vignette(p) ? `<img src="${vignette(p)}" alt="" loading="lazy">` : '<div class="ph"></div>'}
-        <span class="st-type">${p.type === "reel" ? "Reel" : "Carrousel"}${p.plan30 ? " · Plan 30 j" : ""}</span>
+        <span class="st-type">${p.type === "reel" ? "Reel" : p.type === "stories" ? "Stories" : "Carrousel"}${p.plan30 ? " · Plan 30 j" : ""}</span>
         <span class="st-statut ${p.statut}">${STATUTS[p.statut] || p.statut}</span>
       </button>
       <div class="st-pied"><b>${esc(p.titre)}</b><span>${new Date(p.cree).toLocaleDateString("fr-FR", {day: "numeric", month: "short"})}${p.compte ? " · d'après @" + esc(p.compte) : ""}</span>
         <div class="st-actions">${p.zip ? `<a class="btn petit prim" href="/studio/${p.id}/sortie/${encodeURIComponent(p.zip)}?telecharger=1">Télécharger</a>` : ""}<button class="btn petit" data-projet="${p.id}">Ouvrir</button><button class="btn petit" data-suppr="${p.id}" aria-label="Supprimer">Supprimer</button></div>
       </div>
     </article>`).join("")}</div>`;
-  brancheVierge(); branchePlan30();
+  brancheVierge(); branchePlan30(); $("#st-stories")?.addEventListener("click", () => ouvreStories());
   $$("[data-projet]", el).forEach(b => b.onclick = () => ouvreProjet(b.dataset.projet));
   $$("[data-suppr]", el).forEach(b => b.onclick = () => {
     const sid = b.dataset.suppr, carte = b.closest("article"); if (carte) carte.hidden = true;
@@ -2725,6 +2784,159 @@ async function renduStudio() {
       () => fetch("/api/studio/" + sid, {method: "DELETE", keepalive: true}).then(() => { if (S.optionsStudio) S.optionsStudio.projets = (S.optionsStudio.projets || []).filter(x => x.id !== sid); }));
   });
 }
+// ---------------------------------------------------------------- Stories animées (stories.py)
+// Assistant guidé (une question par écran) puis projet : textes retouchables, image de chaque story, effet et couleurs,
+// fabrication des vidéos 9:16, téléchargement et guide des stickers à poser dans Instagram.
+function carteStories() {
+  return `<section class="stc-carte"><div class="stc-anim" aria-hidden="true"><span class="fx-paillettes"><i>Aa</i></span><span class="fx-surligneur"><i>Aa</i></span><span class="fx-neon"><i>Aa</i></span></div>
+    <div class="stc-txt"><span class="p30-sur">Nouveau</span><h2>Stories animées</h2>
+    <p>Une suite de stories qui fait vendre, ou une story seule : Virall.ai écrit, tu choisis l'effet, Virallink fabrique les vidéos.</p></div>
+    <button class="btn prim" id="st-stories">Créer des stories</button></section>`;
+}
+async function ouvreStories() {
+  S.stw = {etape: 0, photos: "banque"}; S.projetId = null; S.projet = null; S.plan30Vue = false;
+  if (S.vue !== "studio") va("studio"); else renduStoriesAssistant();
+  window.scrollTo(0, 0);
+}
+const ETAPES_STW = ["mode", "quoi", "sujet", "effet", "couleurs", "images"];
+const apercuFx = (fx, pal, txt = "Aa") => `<span class="fx-mini fx-${fx}" style="--f1:${pal[0]};--f2:${pal[1]};--t:${pal[2]};--a:${pal[4]}"><i>${esc(txt)}</i></span>`;
+async function renduStoriesAssistant() {
+  const el = $("#studio"), w = S.stw;
+  if (!S.stOpt) { el.innerHTML = squelette("lignes", 5); try { S.stOpt = await api("/api/stories/options"); } catch (e) { el.innerHTML = `<p class="aide">${esc(e.message)}</p>`; return; } }
+  if (!S.stw) return;
+  const o = S.stOpt, k = w.etape, cle = ETAPES_STW[k];
+  const pal = (o.palettes.find(x => x.id === w.palette) || o.palettes[0]).couleurs;
+  let q = "", aide = "", corps = "", pied = "";
+  if (cle === "mode") {
+    q = "Tu veux créer quoi ?";
+    corps = `<div class="p30-choix">
+      <button type="button" data-stw="mode" data-v="sequence"><b>Une suite de stories</b><span class="p30-sous">Tu choisis un objectif, Virall.ai écrit 4 à 6 stories qui s'enchaînent.</span></button>
+      <button type="button" data-stw="mode" data-v="unique"><b>Une story</b><span class="p30-sous">Un modèle, une story prête en quelques secondes.</span></button></div>`;
+  } else if (cle === "quoi") {
+    const seq = w.mode === "sequence", liste = seq ? o.objectifs : o.modeles;
+    q = seq ? "Quel est ton objectif ?" : "Quel modèle ?";
+    corps = `<div class="stw-grille">${liste.map(x => `<button type="button" data-stw="${seq ? "objectif" : "modele"}" data-v="${esc(x.id)}" class="${(seq ? w.objectif : w.modele) === x.id ? "choisi" : ""}">
+      <span class="stw-emoji" aria-hidden="true">${x.emoji}</span><b>${esc(x.nom)}</b><span class="p30-sous">${esc(x.aide)}${seq ? ` · ${x.n} stories` : ""}</span></button>`).join("")}</div>`;
+  } else if (cle === "sujet") {
+    q = "De quoi tu veux parler ?"; aide = "Une phrase suffit. Virall.ai s'appuie aussi sur ton profil et ta voix.";
+    const avecProduit = ["vendre", "lancement"].includes(w.objectif) || w.modele === "produit";
+    corps = `<input class="p30-grand" id="stw-sujet" maxlength="300" value="${esc(w.sujet || "")}" placeholder="Ex. ma méthode pour quitter le salariat sans risque" autocomplete="off">
+      ${avecProduit && o.produits.length ? `<p class="p30-aide" style="margin:18px 0 8px">Le produit à mettre en avant :</p><div class="p30-choix p30-produits">${o.produits.map(pr =>
+        `<button type="button" data-prod="${esc(pr.id)}" aria-pressed="${w.produit === pr.id}" class="${w.produit === pr.id ? "choisi" : ""}"><i class="p30-coche" aria-hidden="true"></i><b>${esc(pr.titre)}</b><span>${esc(pr.prix_txt)}</span></button>`).join("")}</div>` : ""}`;
+    pied = `<button class="btn prim large" id="stw-suiv" ${(w.sujet || "").trim() || w.produit ? "" : "disabled"}>Continuer</button>`;
+  } else if (cle === "effet") {
+    q = "Choisis ton effet"; aide = "Il s'applique à toutes tes stories. Tu pourras en changer avant de fabriquer.";
+    corps = `<div class="stw-effets">${o.effets.map(x => `<button type="button" data-stw="effet" data-v="${x.id}" class="${w.effet === x.id ? "choisi" : ""}">
+      ${apercuFx(x.id, pal)}<b>${esc(x.nom)}</b><span class="p30-sous">${esc(x.aide)}</span></button>`).join("")}</div>`;
+  } else if (cle === "couleurs") {
+    q = "Tes couleurs";
+    corps = `<div class="stw-effets">${o.palettes.map(x => `<button type="button" data-stw="palette" data-v="${x.id}" class="${w.palette === x.id ? "choisi" : ""}">
+      ${apercuFx(w.effet || "doux", x.couleurs)}<b>${esc(x.nom)}</b></button>`).join("")}</div>`;
+  } else {
+    q = "Et les images ?"; aide = "En fond de chaque story. Tu pourras les changer une par une.";
+    corps = `<div class="p30-choix">
+      ${o.banque ? `<button type="button" data-stw="photos" data-v="banque"><b>Virallink les choisit pour moi</b><span class="p30-sous">Des photos libres de droits qui collent au texte de chaque story.</span></button>` : ""}
+      <button type="button" data-stw="photos" data-v="miennes"><b>J'ajouterai mes photos</b><span class="p30-sous">Tes stories commencent sur un fond de couleur.</span></button></div>`;
+  }
+  el.innerHTML = `<div class="p30 p30-q">
+    <div class="p30-q-haut"><button class="p30-q-retour" id="stw-retour" aria-label="Retour">←</button>
+      <div class="p30-q-barre" aria-label="Étape ${k + 1} sur ${ETAPES_STW.length}"><i style="width:${(k + 1) / ETAPES_STW.length * 100}%"></i></div>
+      <button class="p30-q-fermer" id="stw-fermer" aria-label="Fermer">✕</button></div>
+    <h2>${esc(q)}</h2>${aide ? `<p class="p30-aide">${esc(aide)}</p>` : ""}
+    <div class="p30-q-corps">${corps}</div><div class="p30-q-pied">${pied}</div></div>`;
+  const vers = i => { w.etape = i; renduStoriesAssistant(); window.scrollTo(0, 0); };
+  $("#stw-retour").onclick = () => k ? vers(k - 1) : fermeStories();
+  $("#stw-fermer").onclick = fermeStories;
+  $$("[data-stw]", el).forEach(b => b.onclick = async () => {
+    w[b.dataset.stw] = b.dataset.v; b.classList.add("choisi");
+    if (b.dataset.stw === "photos") return creeStories(b);
+    setTimeout(() => vers(k + 1), 160);
+  });
+  const sujet = $("#stw-sujet");
+  if (sujet) { sujet.oninput = () => { w.sujet = sujet.value; $("#stw-suiv").disabled = !(sujet.value.trim() || w.produit); };
+    sujet.onkeydown = e => { if (e.key === "Enter" && !$("#stw-suiv").disabled) vers(k + 1); };
+    if (!MOBILE.matches) sujet.focus(); }
+  $$("[data-prod]", el).forEach(b => b.onclick = () => { w.produit = w.produit === b.dataset.prod ? null : b.dataset.prod; renduStoriesAssistant(); });
+  $("#stw-suiv")?.addEventListener("click", () => vers(k + 1));
+}
+function fermeStories() { S.stw = null; renduStudio(); }
+async function creeStories(b) {
+  const w = S.stw; b.disabled = true;
+  try {
+    const r = await api("/api/stories", {method: "POST", body: {mode: w.mode, objectif: w.objectif, modele: w.modele, sujet: w.sujet || "", produit: w.produit || null,
+      effet: w.effet, palette: w.palette, photos: w.photos}});
+    S.stw = null; S.projetId = r.projet.id; S.projet = r.projet;
+    S.tacheStudio = {id: r.job, sid: r.projet.id, titre: "Écriture des stories", phrase: "Virall.ai écrit tes stories…"};
+    renduStoriesProjet(); suisTacheStudio(r.job); pousseHistorique();
+  } catch (e) { b.disabled = false; if (!e.data?.quota) toast(e.message); }
+}
+function renduStoriesProjet() {
+  const p = S.projet, el = $("#studio"), o = S.stOpt;
+  if (!o) { el.innerHTML = squelette("cartes", 4); api("/api/stories/options").then(x => { S.stOpt = x; if (S.projet?.id === p.id) renduStoriesProjet(); }).catch(e => toast(e.message)); return; }
+  const tache = S.tacheStudio && S.tacheStudio.sid === p.id ? S.tacheStudio : null;
+  if (p.statut === "en_cours" && !tache) {
+    clearTimeout(S.rechargeProjet);
+    S.rechargeProjet = setTimeout(async () => { if (S.projetId === p.id && S.vue === "studio") { S.projet = await api("/api/studio/" + p.id); renduProjet(); } }, 3000);
+  }
+  const v = Date.now();
+  const pret = p.statut === "pret" && !tache;
+  const stickers = o.stickers;
+  el.innerHTML = `<div class="stp">
+    <div class="stp-haut"><button class="btn petit" id="stp-retour">← Mes créations</button><span class="aide" id="st-enregistre" aria-live="polite"></span></div>
+    <h2 class="st-titre">${esc(p.titre)}</h2>
+    ${tache || p.statut === "en_cours" ? `<div class="stp-tache"><span class="spin"></span><span id="st-phrase">${esc(tache?.phrase || "Fabrication de tes stories…")}</span></div>` : ""}
+    ${pret ? `<section class="stp-resultat"><h3>Tes stories sont prêtes</h3>
+      <div class="stp-videos">${p.fichiers.filter(f => f.endsWith(".mp4")).map((f, i) => `<figure><video src="/studio/${p.id}/sortie/${f}?v=${esc(p.genere_le || "")}" poster="/api/stories/${p.id}/apercu/${i}" muted loop autoplay playsinline preload="metadata"></video>
+        <figcaption><a class="btn petit" href="/studio/${p.id}/sortie/${f}?telecharger=1">Télécharger la story ${i + 1}</a></figcaption></figure>`).join("")}</div>
+      <div class="actions"><a class="btn prim" href="/studio/${p.id}/sortie/${encodeURIComponent(p.zip)}?telecharger=1">Tout télécharger</a></div>
+      ${p.slides.some(s => s.sticker) ? `<div class="stp-guide"><b>Au moment de publier, ajoute dans Instagram :</b><ol>${p.slides.map((s, i) => s.sticker ? `<li>Story ${i + 1} : sticker <b>${esc(stickers[s.sticker])}</b>${s.sticker_texte ? ` — « ${esc(s.sticker_texte)} »` : ""}, dans la zone libre en bas.</li>` : "").join("")}</ol></div>` : ""}
+      <p class="aide">Pour la musique, ajoute-la dans Instagram (sticker Musique) : elle reste autorisée et à jour.</p></section>` : ""}
+    <section class="stp-style">
+      <div><span class="stp-lib">Effet</span><div class="stp-chips">${o.effets.map(x => `<button data-effet="${x.id}" aria-pressed="${p.effet === x.id}">${esc(x.nom)}</button>`).join("")}</div></div>
+      <div><span class="stp-lib">Couleurs</span><div class="stp-chips">${o.palettes.map(x => `<button data-palette="${x.id}" aria-pressed="${p.palette === x.id}" title="${esc(x.nom)}"><i style="background:linear-gradient(${x.couleurs[0]},${x.couleurs[1]})"></i>${esc(x.nom)}</button>`).join("")}</div></div>
+    </section>
+    <div class="stp-liste">${p.slides.map((s, i) => `<article class="stp-carte" data-i="${i}">
+      <div class="stp-vis"><img src="/api/stories/${p.id}/apercu/${i}?v=${v}" alt="Aperçu de la story ${i + 1}" loading="lazy"><span class="stp-num">${i + 1}</span></div>
+      <div class="stp-champs">
+        <span class="stp-role">${esc((s.role || "").split(" (")[0])}</span>
+        <textarea data-ch="titre" rows="2" maxlength="140" placeholder="La phrase principale" ${tache ? "disabled" : ""}>${esc(s.titre || "")}</textarea>
+        <textarea data-ch="texte" rows="2" maxlength="280" placeholder="Une précision (facultatif)" ${tache ? "disabled" : ""}>${esc(s.texte || "")}</textarea>
+        <div class="stp-sticker"><select data-ch="sticker" aria-label="Sticker à poser dans Instagram">${Object.entries(stickers).map(([k, n]) => `<option value="${k}" ${s.sticker === k ? "selected" : ""}>${k ? "Sticker : " + esc(n) : "Pas de sticker"}</option>`).join("")}</select>
+          ${s.sticker ? `<input data-ch="sticker_texte" maxlength="80" value="${esc(s.sticker_texte || "")}" placeholder="Texte du sticker">` : ""}</div>
+        <div class="stp-img">${o.banque ? `<button class="btn petit" data-bq="${i}">Changer l'image</button>` : ""}<label class="btn petit">Ma photo<input type="file" accept="image/*" data-up="${i}" hidden></label></div>
+      </div></article>`).join("")}</div>
+    <div class="stp-pied"><button class="btn prim large" id="stp-fabrique" ${tache ? "disabled" : ""}>${p.genere_le ? "Refaire mes stories" : `Fabriquer mes ${p.slides.length > 1 ? p.slides.length + " stories" : "story"}`}</button>
+      <p class="aide">${p.genere_le ? "Refaire après une retouche ne compte pas une nouvelle création." : "Compte pour 1 création du Studio."} Environ 15 s par story.</p></div>
+  </div>`;
+  $("#stp-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); };
+  const enregistre = async (rafraichir) => {
+    const slides = $$(".stp-carte", el).map(c => ({titre: $("[data-ch=titre]", c).value, texte: $("[data-ch=texte]", c).value,
+      sticker: $("[data-ch=sticker]", c).value, sticker_texte: $("[data-ch=sticker_texte]", c)?.value || ""}));
+    try { S.projet = await api(`/api/stories/${p.id}`, {method: "PUT", body: {slides}}); $("#st-enregistre").textContent = "Enregistré";
+      if (rafraichir) $$(".stp-carte", el).forEach((c, i) => { $("img", c).src = `/api/stories/${p.id}/apercu/${i}?v=${Date.now()}`; }); }
+    catch (e) { toast(e.message); }
+  };
+  $$("textarea, input[data-ch]", el).forEach(t => t.oninput = () => { $("#st-enregistre").textContent = "…"; clearTimeout(S.stSauve); S.stSauve = setTimeout(() => enregistre(true), 900); });
+  $$("select[data-ch]", el).forEach(x => x.onchange = async () => { await enregistre(false); renduStoriesProjet(); });
+  const style = async corps => { try { S.projet = await api(`/api/stories/${p.id}`, {method: "PUT", body: corps}); renduStoriesProjet(); } catch (e) { toast(e.message); } };
+  $$("[data-effet]", el).forEach(b => b.onclick = () => style({effet: b.dataset.effet}));
+  $$("[data-palette]", el).forEach(b => b.onclick = () => style({palette: b.dataset.palette}));
+  $$("[data-bq]", el).forEach(b => b.onclick = () => ouvreBanque(+b.dataset.bq));
+  $$("[data-up]", el).forEach(inp => inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    const fd = new FormData(); fd.append("fichiers", f);
+    try { const r = await fetch(`/api/studio/${p.id}/fichiers?slide=${inp.dataset.up}`, {method: "POST", body: fd}); const x = await r.json();
+      if (!r.ok || x.erreurs?.length) throw new Error((x.erreurs || [])[0] || x.erreur || "Envoi impossible");
+      S.projet = x.projet; renduStoriesProjet(); toast("Photo ajoutée"); } catch (e) { toast(e.message); }
+  });
+  $("#stp-fabrique").onclick = async e => {
+    e.target.disabled = true;
+    try { await enregistre(false); const r = await api(`/api/stories/${p.id}/generer`, {method: "POST"});
+      S.tacheStudio = {id: r.job, sid: p.id, titre: "Fabrication des stories", phrase: "Je fabrique tes stories…"}; renduStoriesProjet(); suisTacheStudio(r.job); }
+    catch (err) { e.target.disabled = false; if (!err.data?.quota) toast(err.message); }
+  };
+}
+
 // ---------------------------------------------------------------- Plan 30 jours
 // Un mois de carrousels qui forme un tunnel de vente (storytelling → éducatif → preuve sociale → vente), construit à partir
 // des publications virales de la veille classées par type. Côté serveur : plan30.py et /api/plan30.
@@ -3191,6 +3403,7 @@ function brancheTypo(p, el) {
 function renduProjet() {
   const p = S.projet, el = $("#studio");
   if (!p) return;
+  if (p.type === "stories") return renduStoriesProjet();
   const tache = S.tacheStudio && S.tacheStudio.sid === p.id ? S.tacheStudio : null;
   const ecrit = !!tache && /slides/i.test(tache.titre || "");
   const enCours = !!tache || p.statut === "en_cours";
@@ -3489,7 +3702,7 @@ function suisTacheStudio(jid) {
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.pollStudio); S.tacheStudio = null;
       if (j.statut === "erreur") toast("Studio : " + j.erreur);
-      else toast(/slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : /préparation/i.test(j.titre) ? "Ta vidéo est prête : tu peux monter ton Reel" : "Ton contenu est prêt à publier");
+      else toast(/écriture des stories/i.test(j.titre) ? "Tes stories sont écrites : retouche-les puis fabrique-les" : /fabrication des stories/i.test(j.titre) ? "Tes stories sont prêtes" : /slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : /préparation/i.test(j.titre) ? "Ta vidéo est prête : tu peux monter ton Reel" : "Ton contenu est prêt à publier");
       if (S.vue === "studio" && S.projetId === sid) { S.projet = await api("/api/studio/" + sid); renduProjet(); }
     }
   }, 1500);
