@@ -4005,8 +4005,9 @@ const idCourt = () => Math.random().toString(16).slice(2, 10);
 const svgRes = k => `<svg viewBox="0 0 24 24">${ICONES_RES[k] || ""}</svg>`;
 
 async function chargeBoutique(stripe) {
-  const [etat, liste] = await Promise.all([api("/api/boutique" + (stripe ? "?stripe=1" : "")), api("/api/boutiques").catch(() => ({boutiques: []}))]);
-  BQ.etat = etat; BQ.plusieurs = liste.boutiques.length > 1;
+  const [etat, liste, parcours] = await Promise.all([api("/api/boutique" + (stripe ? "?stripe=1" : "")), api("/api/boutiques").catch(() => ({boutiques: []})),
+    api("/api/boutique/parcours").catch(() => ({}))]);
+  BQ.etat = etat; BQ.plusieurs = liste.boutiques.length > 1; BQ.parcours = parcours.parcours || null;
   BQ.page = BQ.etat.page ? structuredClone(BQ.etat.page) : null;
 }
 async function renduBoutique() {
@@ -4277,15 +4278,22 @@ async function ajouteProduitAssist(A) {
   await chargeBoutique();
 }
 
+// Création pas à pas en cours : gardée sur le serveur (reprise sur un autre appareil) et dans le navigateur (secours)
 const cleAssist = () => "vv_assist_" + (BQ.etat?.pseudo || "neuf");
 function gardeAssist(A) {
-  try { localStorage.setItem(cleAssist(), JSON.stringify({...A, np: A.np ? {...A.np, fichier: null} : null, photoUrl: "", quand: Date.now()})); } catch {}
+  const d = {...A, np: A.np ? {...A.np, fichier: null} : null, photoUrl: "", quand: Date.now()};
+  BQ.parcours = d;
+  try { localStorage.setItem(cleAssist(), JSON.stringify(d)); } catch {}
+  clearTimeout(BQ.tParcours);
+  BQ.tParcours = setTimeout(() => fetch("/api/boutique/parcours", {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify(d)}).catch(() => {}), 600);
 }
 function reprendAssist() {
-  try { const a = JSON.parse(localStorage.getItem(cleAssist()) || "null");
-    return a && Date.now() - (a.quand || 0) < 14 * 864e5 && !a.fini ? a : null; } catch { return null; }
+  let a = BQ.parcours || null;
+  try { const l = JSON.parse(localStorage.getItem(cleAssist()) || "null"); if (l && (!a || (l.quand || 0) > (a.quand || 0))) a = l; } catch {}
+  return a && Date.now() - (a.quand || 0) < 30 * 864e5 && !a.fini ? a : null;
 }
-function oublieAssist() { try { localStorage.removeItem(cleAssist()); localStorage.removeItem("vv_assist_neuf"); } catch {} }
+function oublieAssist() { BQ.parcours = null; clearTimeout(BQ.tParcours); fetch("/api/boutique/parcours", {method: "DELETE"}).catch(() => {});
+  try { localStorage.removeItem(cleAssist()); localStorage.removeItem("vv_assist_neuf"); } catch {} }
 function renduAssistantBoutique(el) {
   const A = etatAssistant();
   if (A.fini) return bravoBoutique(el);
@@ -4318,8 +4326,8 @@ function renduAssistantBoutique(el) {
   $("#as-quitter") && ($("#as-quitter").onclick = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.assistFerme = true; oublieAssist(); renduBoutique(); });
 
   // Champs simples
-  $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); });
-  $$("[data-res]").forEach(i => i.oninput = () => { A.reseaux[i.dataset.res] = i.value; apercuAssistant(); });
+  $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); gardeAssist(A); });
+  $$("[data-res]").forEach(i => i.oninput = () => { A.reseaux[i.dataset.res] = i.value; apercuAssistant(); gardeAssist(A); });
   $$("[data-bio]").forEach(b => b.onclick = () => { A.bio = b.dataset.bio; $("#as-bio").value = A.bio; apercuAssistant(); });
   $("#as-nom")?.focus();
   // Logo : ses couleurs nourrissent les propositions de design
@@ -4378,7 +4386,7 @@ function renduAssistantBoutique(el) {
         } catch (er) { $("#np-lu").innerHTML = `⚠️ ${esc(er.message)}`; bt.disabled = false; bt.textContent = "Réessayer"; }
       };
       $("#np-lire")?.addEventListener("click", ev => lire(ev.currentTarget));
-      $$("[data-lot]").forEach(i => i.oninput = () => { N.lots[i.dataset.lot][i.dataset.lk] = i.value; });
+      $$("[data-lot]").forEach(i => i.oninput = () => { N.lots[i.dataset.lot][i.dataset.lk] = i.value; gardeAssist(A); });
       $$("[data-lot-x]").forEach(b => b.onclick = () => { N.lots.splice(+b.dataset.lotX, 1); if (!N.lots.length) { N.lots = null; N.e = 0; }
         else if (N.lots.length === 1) { const x = N.lots[0]; Object.assign(N, {lien: x.lien, titre: x.titre, desc: x.desc, image: x.image, prix: x.prix, site: x.site}); N.lots = null; } rendu(); });
       $$("[data-lot-img]").forEach(i => i.onchange = async ev => { const f = ev.target.files[0]; if (!f) return;

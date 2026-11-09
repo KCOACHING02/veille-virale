@@ -2218,6 +2218,32 @@ def boutique_image_privee(nom):
     return send_from_directory(bq.dossier(bq_active()) / "images", nom, max_age=86400)
 
 
+@app.route("/api/boutique/parcours", methods=["GET", "PUT", "DELETE"])
+@connecte
+def boutique_parcours():
+    """Création pas à pas en cours, gardée sur le serveur : on la reprend sur un autre appareil."""
+    f = bq.dossier(bq_active()) / "parcours.json"
+    if request.method == "GET":
+        try:
+            return jsonify({"parcours": json.loads(f.read_text(encoding="utf-8"))})
+        except (OSError, ValueError):
+            return jsonify({"parcours": None})
+    if request.method == "DELETE":
+        f.unlink(missing_ok=True)
+        return jsonify({"ok": True})
+    brut = request.get_data()
+    if len(brut) > 300_000:
+        return jsonify({"erreur": "Parcours trop volumineux."}), 413
+    try:
+        d = json.loads(brut or b"{}")
+    except ValueError:
+        return jsonify({"erreur": "Données illisibles."}), 400
+    t = f.with_suffix(".tmp")
+    t.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    t.replace(f)
+    return jsonify({"ok": True})
+
+
 @app.post("/api/boutique/importe_lien")
 @connecte
 def boutique_importe_lien():
