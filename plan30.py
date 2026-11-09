@@ -56,8 +56,8 @@ SEQUENCE = [
 JOURS_PUBLICATION = (1, 4)  # mardi, vendredi (0 = lundi)
 
 CHAMPS_BRIEF = {
-    "produit": 100, "prix": 30, "lien": 300, "date_cle": 10, "transformation": 300, "cible": 200, "histoire": 800,
-    "ton": 20, "tutoiement": 5, "emojis": 12, "produit_id": 12,
+    "produit": 300, "prix": 120, "lien": 300, "date_cle": 10, "transformation": 300, "cible": 200, "histoire": 800,
+    "ton": 20, "tutoiement": 5, "emojis": 12, "produit_id": 300,
 }
 TONS = ["Complice", "Experte", "Inspirante", "Directe"]
 
@@ -103,7 +103,7 @@ def sauve_brief(esp: Espace, champs: dict, bid=None) -> dict:
     for k, n in CHAMPS_BRIEF.items():
         if k in champs:
             b[k] = str(champs[k] or "").strip()[:n]
-    for k, maxi, n in (("problemes", 3, 200), ("objections", 3, 200), ("temoignages", 5, 600), ("resultats", 3, 200)):
+    for k, maxi, n in (("problemes", 3, 200), ("objections", 3, 200), ("temoignages", 5, 600), ("resultats", 3, 200), ("produits", 12, 160)):
         if isinstance(champs.get(k), list):
             b[k] = [str(x).strip()[:n] for x in champs[k] if str(x or "").strip()][:maxi]
     if "accord_temoignages" in champs:
@@ -281,7 +281,14 @@ def _sujets_demo(b: dict, cases: list) -> list[dict]:
 
 
 def _contexte_brief(b: dict) -> str:
-    l = [f"Offre du mois : {b.get('produit')} — prix : {b.get('prix')} — lien ou mot-clé : {b.get('lien')}",
+    prods = b.get("produits") or []
+    if len(prods) > 1:
+        offre = (f"Offres du mois ({len(prods)} produits) : " + " / ".join(prods) + f" — lien ou mot-clé : {b.get('lien')}\n"
+                 "Chaque carrousel de vente ou de preuve sociale met en avant UN seul de ces produits ; "
+                 "répartis-les sur le mois sans en oublier, le premier de la liste en priorité.")
+    else:
+        offre = f"Offre du mois : {b.get('produit')} — prix : {b.get('prix')} — lien ou mot-clé : {b.get('lien')}"
+    l = [offre,
          f"Transformation promise : {b.get('transformation')}",
          f"Cliente idéale : {b.get('cible')}",
          "Ses problèmes : " + " / ".join(b.get("problemes") or []),

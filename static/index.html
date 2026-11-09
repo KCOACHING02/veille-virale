@@ -559,6 +559,11 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .p30-q-pied{display:grid;gap:8px}
 .p30-produits button{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .p30-produits button span{font-weight:500;color:var(--ink-2);white-space:nowrap}
+.p30-produits button b{flex:1;text-align:left}
+.p30-coche{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-style:normal}
+.p30-produits .choisi .p30-coche{background:var(--glow);border-color:var(--glow)}
+.p30-produits .choisi .p30-coche::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
+.p30-plusieurs{margin:-6px 0 10px}
 .p30-choix .p30-sous{display:block;font-weight:400;font-size:14px;color:var(--ink-2);margin-top:3px}
 .p30-autre{border:1.5px dashed var(--line)!important;background:none!important;color:var(--ink-2)!important;font-weight:500!important}
 .p30-offre{margin-top:14px}.p30-offre .lien{font-size:inherit}
@@ -2684,7 +2689,7 @@ async function renduPlan30() {
 // t : texte court · long : texte long · liste : plusieurs lignes · choix : boutons (touchés = étape suivante) · fin : création du plan
 const Q30 = [
   {cle: "produit", type: "produit", q: "Qu'est-ce que tu vends ?", aide: "Une seule fois : on s'en souviendra pour tes prochains plans.", ex: "Coaching glow-up 6 semaines", max: 100},
-  {cle: "prix", type: "t", q: "Combien ça coûte ?", ex: "297 €", max: 30, saute: b => !!b.produit_id},
+  {cle: "prix", type: "t", q: "Combien ça coûte ?", ex: "297 €", max: 120, saute: b => !!b.produit_id},
   {cle: "lien", type: "t", q: "Comment on l'achète ?", aide: "Le lien de ta boutique, ou le mot à t'envoyer en message privé.", ex: "GLOW", max: 300, saute: b => !!b.produit_id},
   {cle: "transformation", type: "long", q: "Qu'est-ce qui change pour ta cliente ?", aide: "Avant, après. En une phrase.", ex: "Elle passe de fatiguée et débordée à rayonnante, sans y passer des heures", max: 300},
   {cle: "cible", type: "t", q: "À qui tu parles ?", ex: "Mamans actives de 30 à 45 ans", max: 200},
@@ -2708,12 +2713,23 @@ function sauveBrief30(immediat) {
   if (immediat) return go();
   S.p30Sauve = setTimeout(go, 700);
 }
+// Produits de la boutique choisis pour le plan : ids séparés par des virgules dans produit_id
+const ids30 = b => (b.produit_id || "").split(",").filter(Boolean);
+function choisis30(b, ps) {
+  b.produit_id = ps.map(p => p.id).join(",");
+  b.produits = ps.map(p => `${p.titre} (${p.prix_txt})`);
+  b.produit = ps.map(p => p.titre).join(" + ");
+  if (!ps.length) return;
+  b.prix = ps.map(p => p.prix_txt).join(" / ");
+  // Plusieurs produits : le lien mène à la boutique, qui les montre tous
+  b.lien = ps.length > 1 ? (ps[0].lien || "").replace(/\/p\/[^/]+$/, "") || b.lien : ps[0].lien || b.lien;
+}
 function renduBrief30() {
   const el = $("#studio"), r = S.p30, b = r.brief;
   const k = Math.max(0, Math.min(S.p30Etape || 0, DERNIERE30)), q = Q30[k];
   let corps = "";
   const produits = r.produits || [];
-  if (q.type === "produit" && produits.length && !S.p30Autre) corps = `<div class="p30-choix p30-produits">${produits.map(p => `<button type="button" data-prod="${esc(p.id)}" class="${b.produit_id === p.id ? "choisi" : ""}"><b>${esc(p.titre)}</b><span>${esc(p.prix_txt)}</span></button>`).join("")}
+  if (q.type === "produit" && produits.length && !S.p30Autre) corps = `<p class="p30-aide p30-plusieurs">Tu peux en choisir plusieurs.</p><div class="p30-choix p30-produits">${produits.map(p => `<button type="button" data-prod="${esc(p.id)}" aria-pressed="${ids30(b).includes(p.id)}" class="${ids30(b).includes(p.id) ? "choisi" : ""}"><i class="p30-coche" aria-hidden="true"></i><b>${esc(p.titre)}</b><span>${esc(p.prix_txt)}</span></button>`).join("")}
       <button type="button" class="p30-autre" id="p30-autre">Autre chose</button></div>`;
   else if (q.type === "produit" && !S.p30Autre && !(b.produit || "").trim()) corps = `<div class="p30-choix">
       <button type="button" id="p30-creeprod"><b>${S.etat?.boutique ? "Créer mon produit dans ma boutique" : "Créer ma boutique et mon produit"}</b><span class="p30-sous">Le plan mènera tes abonnées vers sa page de paiement.</span></button>
@@ -2738,7 +2754,7 @@ function renduBrief30() {
   const bouton = q.type === "fin"
     ? (r.reste > 0 ? `<button class="btn prim large" id="p30-cree" ${r.brief_manque || !Object.values(r.veille || {}).some(Boolean) ? "disabled" : ""}>Créer mon plan</button>`
       : `<button class="btn prim large" onclick="va('abonnement')">Voir les formules</button><p class="p30-aide">Tu as utilisé ${r.quota > 1 ? "tes " + r.quota + " plans" : "ton plan"} de la période.</p>`)
-    : q.type === "choix" || (q.type === "produit" && !S.p30Autre && (produits.length || !(b.produit || "").trim())) ? "" : `<button class="btn prim large" id="p30-suiv" ${ok ? "" : "disabled"}>Continuer</button>${q.facultatif ? '<button class="btn large p30-passer" id="p30-passer">Passer</button>' : ""}`;
+    : q.type === "choix" || (q.type === "produit" && !S.p30Autre && !produits.length && !(b.produit || "").trim()) ? "" : `<button class="btn prim large" id="p30-suiv" ${ok ? "" : "disabled"}>Continuer</button>${q.facultatif ? '<button class="btn large p30-passer" id="p30-passer">Passer</button>' : ""}`;
   el.innerHTML = `<div class="p30 p30-q">
     <div class="p30-q-haut"><button class="p30-q-retour" id="p30-retour" aria-label="Retour">←</button>
       <div class="p30-q-barre" aria-label="Question ${k + 1} sur ${Q30.length}"><i style="width:${(k + 1) / Q30.length * 100}%"></i></div>
@@ -2750,9 +2766,13 @@ function renduBrief30() {
     const sens = i < k ? -1 : 1;
     while (i > 0 && i < DERNIERE30 && Q30[i].saute?.(b)) i += sens;
     await sauveBrief30(true); S.p30Etape = i; S.p30Autre = false; renduBrief30(); window.scrollTo(0, 0); };
-  $$("[data-prod]", el).forEach(x => x.onclick = () => { const p = produits.find(y => y.id === x.dataset.prod);
-    Object.assign(b, {produit: p.titre, prix: p.prix_txt, lien: p.lien || b.lien, produit_id: p.id}); x.classList.add("choisi"); setTimeout(() => vers(k + 1), 180); });
-  $("#p30-autre")?.addEventListener("click", () => { S.p30Autre = true; b.produit_id = ""; b.produit = ""; renduBrief30(); });
+  $$("[data-prod]", el).forEach(x => x.onclick = () => {
+    const ids = ids30(b), i = ids.indexOf(x.dataset.prod);
+    if (i < 0) ids.push(x.dataset.prod); else ids.splice(i, 1);
+    // Dans l'ordre de la liste (le plus cher d'abord) : le premier est mis en avant
+    choisis30(b, produits.filter(p => ids.includes(p.id)));
+    const on = i < 0; x.classList.toggle("choisi", on); x.setAttribute("aria-pressed", on); maj(); });
+  $("#p30-autre")?.addEventListener("click", () => { S.p30Autre = true; choisis30(b, []); renduBrief30(); });
   $("#p30-creeprod")?.addEventListener("click", () => { sauveBrief30(true); S.plan30Vue = false; S.p30Brief = false; S.p30 = null; BQ.onglet = "produits"; va("boutique");
     toast("Crée ton produit, puis reviens dans Studio : ton plan t'attend", {duree: 6000}); });
   $("#p30-infos")?.addEventListener("click", () => vers(0));
@@ -2760,7 +2780,7 @@ function renduBrief30() {
   $("#p30-retour").onclick = () => k ? vers(k - 1) : quitte();
   $("#p30-fermer").onclick = quitte;
   const maj = () => { const s = $("#p30-suiv"); if (s) s.disabled = !remplie30(q, b); sauveBrief30(); };
-  $$("[data-b]", el).forEach(i => i.oninput = () => { b[i.dataset.b] = i.value; if (i.dataset.b === "produit") b.produit_id = ""; maj(); });
+  $$("[data-b]", el).forEach(i => i.oninput = () => { b[i.dataset.b] = i.value; if (i.dataset.b === "produit") { b.produit_id = ""; b.produits = []; } maj(); });
   $$("[data-l]", el).forEach(i => i.oninput = () => { b[i.dataset.l] = $$(`[data-l="${i.dataset.l}"]`, el).map(x => x.value); maj(); });
   $("[data-accord]", el)?.addEventListener("change", e => { b.accord_temoignages = e.target.checked; sauveBrief30(); });
   $$("[data-c]", el).forEach(x => x.onclick = () => { b[x.dataset.c] = x.dataset.v; x.classList.add("choisi"); setTimeout(() => vers(k + 1), 180); });
