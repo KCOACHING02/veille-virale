@@ -2786,6 +2786,15 @@ def boutique_avis_modere(aid):
     return jsonify({"ok": True})
 
 
+@app.get("/api/qr_app.svg")
+@connecte
+def qr_app():
+    """Code QR vers l'application, pour l'ouvrir (et l'installer) sur son téléphone depuis l'ordinateur."""
+    import boutique_ventes as bv
+    return Response(bv.qr_svg(f"{url_site()}/app?source=qr", "#1C1420", "#FFFFFF"), mimetype="image/svg+xml",
+                    headers={"Cache-Control": "private, max-age=86400"})
+
+
 @app.get("/api/boutique/qr.<ext>")
 @connecte
 def boutique_qr(ext):
