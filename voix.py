@@ -120,16 +120,26 @@ def voix_eleven(cle: str) -> str:
         if voix_:
             choisie = voix_[0]
             break
-    if not choisie:
-        raise RuntimeError("Aucune voix française trouvée chez ElevenLabs.")
-    if not choisie.get("is_added_by_user"):
+    vid = None
+    if choisie and choisie.get("is_added_by_user"):
+        vid = choisie["voice_id"]
+    elif choisie:
         r = requests.post(f"{ELEVEN}/voices/add/{choisie['public_owner_id']}/{choisie['voice_id']}", headers=h, timeout=30,
                           json={"new_name": f"Virallink {cle}"})
-        if r.status_code >= 400:
-            log(f"  ⚠️  Voix ElevenLabs non ajoutée ({r.status_code}) : {r.text[:200]}")
-            raise RuntimeError("La voix off n'a pas pu être préparée (vérifie l'abonnement ElevenLabs).")
-        vid = r.json().get("voice_id") or choisie["voice_id"]
-    else:
+        if r.status_code < 400:
+            vid = r.json().get("voice_id") or choisie["voice_id"]
+        else:  # compte gratuit : les voix de la bibliothèque sont réservées aux abonnements payants
+            log(f"  Voix de la bibliothèque non ajoutée ({r.status_code}) : voix d'ElevenLabs à la place")
+    if not vid:  # voix fournies avec tout compte (multilingues : elles parlent français)
+        genre = RECHERCHE_ELEVEN.get(cle, {}).get("gender", "female")
+        r = requests.get(f"{ELEVEN}/voices", headers=h, timeout=30)
+        r.raise_for_status()
+        siennes = [v for v in r.json().get("voices", []) if v.get("voice_id") not in deja
+                   and (v.get("labels") or {}).get("gender") == genre]
+        if not siennes:
+            raise RuntimeError("Aucune voix disponible chez ElevenLabs.")
+        douces = [v for v in siennes if any(m in str(v.get("labels")) .lower() for m in ("calm", "soft", "warm"))]
+        choisie = (douces if cle == "douce" and douces else siennes)[0]
         vid = choisie["voice_id"]
     log(f"  Voix « {cle} » : {choisie.get('name')} ({choisie.get('accent') or 'français'})")
     memo[cle] = vid
