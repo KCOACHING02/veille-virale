@@ -27,6 +27,7 @@ gratuit:
   gratuit: true
   analyses_par_mois: 3          # classements de comptes, sans adaptation
   adaptations_par_mois: 0
+  contenus_offerts_par_mois: 1  # une publication de sa niche réécrite pour elle, offerte chaque mois (sans ouvrir l'essai)
   comptes_surveilles: 3         # comptes par classement
   comptes_perso: false          # pas de collecte de ses propres comptes : tendances de la bibliothèque seulement
   studio_par_mois: 2            # carrousels avec ses propres textes

@@ -106,13 +106,13 @@ def contenu_pret(email: str, prenom: str, type_: str, titre: str, url: str):
         ("Publier mon contenu", url)))
 
 
-def synthese(email: str, prenom: str, blocs: list[tuple[str, str]], url: str, url_reglages: str):
+def synthese(email: str, prenom: str, blocs: list[tuple[str, str]], url: str, url_reglages: str, sujet: str = ""):
     """Récapitulatif du lundi : veille, publications, boutique. blocs = [(titre, html)]."""
     p = html.escape(prenom or "")
     corps = "".join(f'<h2 style="font-size:16px;margin:22px 0 8px">{html.escape(t)}</h2>{h}' for t, h in blocs)
     corps += (f'<p style="font-size:12px;color:#8A7F78;margin-top:26px">Tu reçois ce récapitulatif chaque lundi. '
               f'<a href="{html.escape(url_reglages)}" style="color:#8A7F78">Le désactiver</a></p>')
-    envoie(email, "Ta semaine sur " + NOM_PRODUIT, _gabarit(f"Bonjour{' ' + p if p else ''}, voici ta semaine", corps, ("Ouvrir mon espace", url)))
+    envoie(email, sujet or "Ta semaine sur " + NOM_PRODUIT, _gabarit(f"Bonjour{' ' + p if p else ''}, voici ta semaine", corps, ("Ouvrir mon espace", url)))
 
 
 def relance(email: str, prenom: str, url: str):

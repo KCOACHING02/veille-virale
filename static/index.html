@@ -267,6 +267,12 @@ main{min-width:0;padding:20px 28px 80px}
 .carte-essai p{margin:4px 0 12px;color:var(--ink-2);font-size:14px}
 .carte-essai .ferme-carte{position:absolute;top:8px;right:8px;width:30px;height:30px;border:0;background:none;color:var(--ink-3);cursor:pointer;border-radius:8px}
 .liste-essai{margin:0 0 14px;padding-left:20px;display:grid;gap:8px}
+.m-prix{margin:4px 0 16px;color:var(--ink-2)}.m-prix b{font:800 28px var(--display);color:var(--ink);margin-right:4px}
+.m-offert{text-align:center;margin:12px 0 4px}
+.lim-choix{display:grid;gap:10px;margin:0 0 16px}
+.lim-carte{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.lim-carte b{display:block}.lim-carte small{color:var(--ink-3);font-size:13px}.lim-carte .btn{flex:none;white-space:nowrap}
+.carte-quota .bt-rangee{margin-top:2px}
 .adapter-cta{background:var(--glow-soft);border-radius:var(--r-m);padding:18px;text-align:center}
 .adapter-cta p{color:var(--ink-2);margin:4px 0 12px}
 .points{letter-spacing:2px;color:var(--glow)}
@@ -424,6 +430,9 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .acc-tend em{position:absolute;left:8px;bottom:8px;background:rgba(20,12,24,.72);color:#fff;font:600 12px var(--body);border-radius:99px;padding:3px 9px}
 .acc-tend b{font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .acc-tend small{color:var(--ink-3);font-size:12.5px}
+.acc-msg{display:flex;gap:12px 18px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface);border:1.5px solid var(--glow);border-radius:14px;padding:14px 16px;max-width:760px;margin-bottom:12px}
+.acc-msg b{font:700 17px/1.25 var(--display)}.acc-msg p{margin:4px 0 0;color:var(--ink-2);font-size:14.5px}.acc-msg>div{flex:1 1 280px}
+@media (max-width:860px){.acc-msg .btn{width:100%;justify-content:center}}
 .acc-vide{display:flex;gap:10px 14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;max-width:760px;color:var(--ink-2);font-size:14.5px}
 @media (max-width:860px){.hero-auj{grid-template-columns:1fr!important}.hero-auj .ic-hero{display:none}.hero-auj .btn.large{width:100%;min-width:0}
   .hero-auj .actions{flex-direction:column;align-items:stretch}.parcours-ligne{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-16px;padding-right:16px}
@@ -1659,7 +1668,7 @@ const api = async (url, opts = {}) => {
   if (r.status === 401) { location.href = "/connexion#connexion"; throw new Error("Session expirée"); }
   if (r.status === 403 && j.verification) { setTimeout(() => { fermeTiroir(); demandeConfirmation(); }, 50); }
   else if (r.status === 402 && essaiDispo()) { setTimeout(() => { fermeTiroir(); proposeEssai("Cette fonction fait partie des formules payantes. Tu peux tout essayer gratuitement, ta boutique ne change pas."); }, 50); }
-  else if (r.status === 402) { setTimeout(() => { fermeModale(); fermeTiroir(); va("abonnement"); }, 50); toast(j.erreur || "Limite de ta formule atteinte", {duree: 7000}); }
+  else if (r.status === 402) { setTimeout(() => { fermeModale(); fermeTiroir(); limiteAtteinte(j); }, 50); }
   if (!r.ok) throw Object.assign(new Error(j.erreur || "Erreur " + r.status), {data: j});
   return j;
 };
@@ -1754,14 +1763,14 @@ const verrouille = () => !!S.etat?.abonnement?.gratuit && !S.etat?.admin;
 function bloqueGratuit(raison = "", apres = null) {
   if (!verrouille()) return false;
   if (S.ouvert) fermeTiroir();
-  if (essaiDispo()) proposeEssai(raison, apres); else { toast("Inclus dans les formules payantes", {duree: 3500}); va("abonnement"); }
+  if (essaiDispo()) proposeEssai(raison, apres); else fenetrePrix(raison);
   return true;
 }
 function va(vue, depuisHistorique) {
   if (vuesPayantes().includes(vue) && verrouille()) {
     if (essaiDispo() && !depuisHistorique) return proposeEssai("", () => va(vue));
-    if (!essaiDispo() && !depuisHistorique) toast("Inclus dans les formules payantes", {duree: 3500});
-    vue = essaiDispo() ? "accueil" : "abonnement";
+    if (!essaiDispo() && !depuisHistorique) return fenetrePrix(RAISONS_VUES[vue] || "");
+    vue = "accueil";
   }
   if (vue !== "reels" && S.analyse?.id === "tendances") { S.tendances = S.analyse; S.analyse = S.analyseVeille || null; }  // les autres écrans parlent de la veille
   if (vue !== "boutique" && BQ.assist?.fini) { BQ.assist = null; BQ.htmlAssist = null; }  // écran « Ta boutique est en ligne » : vu une fois
@@ -1791,7 +1800,7 @@ function majParcours() {
 new MutationObserver(() => { if (majParcours.attente) return; majParcours.attente = true;
   requestAnimationFrame(() => { majParcours.attente = false; majParcours(); }); }).observe($("main"), {childList: true, subtree: true});
 $$(".nav").forEach(b => b.onclick = () => {
-  if (b.classList.contains("verrou")) { toast("Inclus dans les formules payantes", {duree: 3500}); return va("abonnement"); }
+  if (b.classList.contains("verrou")) return fenetrePrix(RAISONS_VUES[b.dataset.vue] || "");
   if (b.dataset.vue === "studio") S.plan30Vue = false; va(b.dataset.vue); });
 function majVerrous() { $$(".nav").forEach(b => b.classList.toggle("verrou", verrouille() && !essaiDispo() && vuesPayantes().includes(b.dataset.vue))); }
 $("#choix-analyse").onchange = e => chargeAnalyse(e.target.value);
@@ -1968,7 +1977,7 @@ async function renduAccueil() {
       <p>Chaque lundi, ta veille continue : de nouveaux Reels viraux, réécrits pour ta niche, avec ton planning. ${esc(S.etat.offre?.nom || "")} : ${prixOffre()}, sans engagement.</p>
       <button class="btn petit prim" type="button" onclick="va('abonnement')">Garder ma veille</button></div>`; })() : "";
   if (carteJour || gratuitNA) $$("#accueil > .hero:not(#hero-job):not([data-garde])").forEach(h => h.remove());
-  let html = parcours + bilanEssai, aTourner = false;
+  let html = parcours + carteQuota() + bilanEssai, aTourner = false;
   // Reels prévus aujourd'hui (sinon les meilleurs Reels adaptés)
   if (a) {
     const jour = JOURS[(new Date().getDay() + 6) % 7];
@@ -1990,12 +1999,22 @@ async function renduAccueil() {
     <div class="acc-tendances">${tend.map(p => `<button type="button" class="acc-tend" data-tend="${esc(p.cle)}">
       <span class="vign">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}<em>${estCarrousel(p) ? nb(p.likes) + " j'aime" : nb(p.vues) + " vues"}</em></span>
       <b>${esc(titrePost(p))}</b><small>@${esc(p.compte)} · ${esc(libFormat(p))}</small></button>`).join("")}</div></section>`;
-  // Les chiffres de sa boutique, dès qu'elle est en ligne
+  // Sa boutique : un message lié à ce qui vient de s'y passer (aucune visite, premières visites, première inscrite, première vente),
+  // avec une proposition précise, puis ses chiffres de la semaine
   if (sb && be.publie) {
-    const rien = !sb.vues_7j && !sb.inscrits_7j && !sb.ventes_7j, url = S.etat.boutique ? `${location.origin}/@${S.etat.boutique}` : "";
+    const url = S.etat.boutique ? `${location.origin}/@${S.etat.boutique}` : "", jours = sb.cree ? (Date.now() - new Date(sb.cree)) / 864e5 : 99;
+    // (pas de message tant que la carte « Aujourd'hui » parle déjà de la boutique : une seule action à la fois)
+    const m = b1 ? null : sb.ventes && sb.ventes === sb.ventes_7j ? {t: `🎉 ${sb.ventes > 1 ? "Tes premières ventes" : "Ta première vente"} cette semaine !`, p: "Raconte-la en stories : une vraie cliente, c'est ce qui donne le plus envie d'acheter.", b: "Raconter ma vente en stories", a: "vente"}
+      : sb.inscrits && sb.inscrits === sb.inscrits_7j ? {t: `💌 ${sb.inscrits > 1 ? `Tes ${sb.inscrits} premières inscrites` : "Ta première inscrite"} !`, p: `Une suite d'e-mails automatique ${sb.inscrits > 1 ? "leur" : "lui"} écrit pour toi, jusqu'à ton offre.`, b: "Préparer mes e-mails", a: "emails"}
+      : sb.vues_7j && !sb.inscrits && !sb.ventes ? (be.cadeau ? {t: `👀 ${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`, p: "On passe, on regarde… Des stories qui présentent ton offre donnent envie d'aller plus loin.", b: "Annoncer mon offre en stories", a: "stories"}
+        : {t: `👀 ${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine, pas encore d'inscrite`, p: "Un petit cadeau contre un e-mail transforme une visite en contact : une checklist, un mini-guide…", b: "Ajouter un cadeau gratuit", a: "cadeau"})
+      : !sb.vues_7j && jours >= 3 ? {t: "Personne n'est passé cette semaine", p: "Une publication qui cartonne dans ta niche, avec ton lien en story, et ça change.", b: tend[0] || (S.tendances?.posts || [])[0] ? "L'écrire pour moi" : "Annoncer ma boutique en stories", a: tend[0] || (S.tendances?.posts || [])[0] ? "ecrire" : "stories"}
+      : null;
+    const chiffres = sb.vues_7j || sb.inscrits_7j || sb.ventes_7j;
     html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Ta boutique cette semaine</h2><button class="lien" onclick="BQ.onglet='stats';va('boutique')">Statistiques →</button></div>
-      ${rien ? `<div class="acc-vide"><span>Pas encore de visite cette semaine. Mets ton lien dans ta bio Instagram et dans tes stories.</span>${url ? `<button class="btn petit" data-copier="${esc(url)}">Copier mon lien</button>` : ""}</div>`
-        : `<div class="bt-kpis"><div class="bt-kpi"><b>${sb.vues_7j}</b><span>visites</span></div><div class="bt-kpi"><b>${sb.inscrits_7j}</b><span>nouvelles inscrites</span></div><div class="bt-kpi"><b>${sb.ventes_7j}</b><span>ventes</span></div><div class="bt-kpi"><b>${euros(sb.chiffre_7j).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div></div>`}</section>`;
+      ${m ? `<div class="acc-msg"><div><b>${esc(m.t)}</b><p>${esc(m.p)}</p></div><button class="btn prim" data-msg-bq="${m.a}">${esc(m.b)}</button></div>` : ""}
+      ${chiffres ? `<div class="bt-kpis"><div class="bt-kpi"><b>${sb.vues_7j}</b><span>visites</span></div><div class="bt-kpi"><b>${sb.inscrits_7j}</b><span>nouvelles inscrites</span></div><div class="bt-kpi"><b>${sb.ventes_7j}</b><span>ventes</span></div><div class="bt-kpi"><b>${euros(sb.chiffre_7j).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div></div>`
+        : m ? "" : `<div class="acc-vide"><span>Pas encore de visite cette semaine. Mets ton lien dans ta bio Instagram et dans tes stories.</span>${url ? `<button class="btn petit" data-copier="${esc(url)}">Copier mon lien</button>` : ""}</div>`}</section>`;
   }
   const recents = (st?.projets || []).slice(0, 4);
   if (recents.length) html += `<details class="plus-accueil"><summary>Tes dernières créations</summary><section class="bloc-accueil"><div class="titre-bloc"><h2>Tes dernières créations</h2><button class="lien" onclick="va('studio')">Ouvrir le studio →</button></div>
@@ -2010,6 +2029,15 @@ async function renduAccueil() {
   S.accueilSuite = html;
   $("#accueil-suite").innerHTML = html;
   $$("[data-studio-acc]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); choisirFormat(b.dataset.studioAcc); });
+  $$("[data-msg-bq]", el).forEach(b => b.onclick = () => {
+    const a = b.dataset.msgBq, premier = (S.tendances?.posts || [])[0];
+    if (a === "vente") annonceStories("Ma première vente sur ma boutique", null, "preuve");
+    else if (a === "stories") annonceStories("Ce que tu trouves dans ma boutique");
+    else if (a === "cadeau") { nouvelleOffre(); if (BQ.offre) { BQ.offre.mode = "cadeau"; BQ.offre.etape = 1; if (S.vue === "boutique" && BQ.etat?.url) renduEditeur($("#boutique")); } }
+    else if (a === "emails") { const go = () => { BQ.onglet = "emails"; va("boutique"); };
+      if (!bloqueGratuit("Une suite d'e-mails automatique écrit à tes inscrites pour toi, jusqu'à ton offre. C'est inclus dans l'essai.", go)) go(); }
+    else if (a === "ecrire" && premier) adapteDepuisGalerie(premier.cle);
+  });
   $$("[data-tend]", el).forEach(b => b.onclick = () => { const k = b.dataset.tend; S.source = "tendances"; S.filtreChoisi = false; S.cat = ""; va("reels");
     if (S.analyse?.id === "tendances") ouvreReel(k); });
   $("#acc-offre-tard")?.addEventListener("click", () => { try { localStorage.setItem("vv-offre-plus-tard", "1"); } catch {}
@@ -2203,7 +2231,7 @@ function renduReels() {
         "Après l'avoir publié, clique <b>J'ai publié</b> pour suivre ses résultats."]);
   renduSonsTendance(a);
   // Une seule phrase en haut ; les détails (critères, coût, notes) sont rangés dans le panneau « Filtres »
-  $("#resume").innerHTML = a.id === "tendances" ? `<p class="resume-ligne">Ce qui cartonne en ce moment dans ta niche (<b>${esc((a.noms_niches || []).join(" + "))}</b>), mis à jour chaque jour. <button class="lien" onclick="choixNiche()">Changer</button>${a.posts.length && !a.posts.some(adapte) ? "<br>Touche <b>Adapter pour moi</b> sur celle qui te plaît : Virall.ai la réécrit pour ton audience." : ""}</p>`
+  $("#resume").innerHTML = a.id === "tendances" ? `<p class="resume-ligne">Ce qui cartonne en ce moment dans ta niche (<b>${esc((a.noms_niches || []).join(" + "))}</b>), mis à jour chaque jour. <button class="lien" onclick="choixNiche()">Changer</button>${a.posts.length && !a.posts.some(adapte) ? "<br>Touche <b>Adapter pour moi</b> sur celle qui te plaît : Virall.ai la réécrit pour ton audience." : ""}${verrouille() && S.etat.abonnement?.offert_restant > 0 ? " Ce mois-ci, une publication t'est offerte 🎁" : ""}</p>`
     : a.en_cours ? `<p class="encours" style="width:100%;margin:0"><span class="spin"></span>Ta veille tourne : les Reels arrivent au fur et à mesure.</p>`
     : `<p class="resume-ligne">${a.classement_seul ? `<b>${cdc}</b> publication${cdc > 1 ? "s" : ""} virale${cdc > 1 ? "s" : ""} trouvée${cdc > 1 ? "s" : ""}. Ouvre-en une pour voir pourquoi elle a marché.`
         : ad ? `<b>${ad}</b> contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi. Touche <b>Créer</b> sur celui qui te plaît.` : `Ouvre une publication et touche <b>Adapter</b> : Virall.ai l'écrit pour ta niche.`}</p>`;
@@ -2232,11 +2260,12 @@ document.addEventListener("click", async e => {
   e.stopPropagation(); e.preventDefault();
   if (b.dataset.reelAct === "creer") return bloqueGratuit("", () => choisirFormat(b.dataset.k)) || choisirFormat(b.dataset.k);
   if (b.classList.contains("attente")) return;
-  if (bloqueGratuit(RAISON_ADAPTER, () => adapteDepuisGalerie(b.dataset.k))) return;
+  if (bloqueAdapter(() => adapteDepuisGalerie(b.dataset.k))) return;
   try {
     const r = await api(`/api/analyses/${S.analyse.id}/adapter`, {method: "POST", body: {cle: b.dataset.k}});
     b.classList.add("attente"); b.innerHTML = '<span class="spin"></span>Écriture…';
-    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); rendu(); toast("C'est prêt : touche Créer"); });
+    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); if (r.offert) await chargeEtat(); rendu();
+      toast(r.offert ? "Ta publication offerte du mois est prête : ouvre-la pour la lire" : "C'est prêt : touche Créer", {duree: r.offert ? 4500 : 2400}); });
   } catch (err) { toast(err.message); }
 }, true);
 
@@ -2477,15 +2506,16 @@ function adapteDepuisGalerie(cle) {
   const lance = n => { const p = S.analyse?.posts?.find(x => x.cle === cle);
     if (p) { ouvreReel(cle); $(`#tiroir [data-adapter="${CSS.escape(cle)}"]`)?.click(); }
     else if (n) setTimeout(() => lance(n - 1), 400); };
-  lance(10);
+  lance(20);
 }
 document.addEventListener("click", async e => {
   const b = e.target.closest("[data-adapter]"); if (!b) return;
-  if (bloqueGratuit(RAISON_ADAPTER, () => adapteDepuisGalerie(b.dataset.adapter))) return;
+  if (bloqueAdapter(() => adapteDepuisGalerie(b.dataset.adapter))) return;
   try {
     const r = await api(`/api/analyses/${S.analyse.id}/adapter`, {method: "POST", body: {cle: b.dataset.adapter}});
     b.disabled = true; b.innerHTML = '<span class="spin"></span>Adaptation en cours…';
-    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); if (S.ouvert) ouvreReel(S.ouvert); else rendu(); toast("Reel adapté"); });
+    suisJob(r.job, false, async () => { await chargeAnalyse(S.analyse.id); if (r.offert) await chargeEtat(); if (S.ouvert) ouvreReel(S.ouvert); else rendu();
+      toast(r.offert ? "Ta publication offerte du mois est prête 🎁" : "Reel adapté"); });
   } catch (err) { toast(err.message); }
 });
 
@@ -2536,6 +2566,90 @@ function majBandeauOffre() {
   }
 }
 
+// ---- Payer au bon moment (lot 3) : fenêtre de prix au clic, publication offerte du mois, limite atteinte (packs), alerte à 80 %
+const RAISONS_VUES = {studio: "Le studio fabrique tes carrousels, tes Reels et tes stories, prêts à publier.",
+  planning: "Ton planning de la semaine : les publications qui cartonnent dans ta niche, réécrites pour toi, jour par jour."};
+async function formulesPubliques() { if (!S.formules) S.formules = await api("/api/formules").catch(() => null); return S.formules; }
+async function passeFormule(id, b) {
+  if (b) b.disabled = true;
+  try { const r = await api("/api/abonnement/choisir", {method: "POST", body: {plan: id}});
+    if (r.url) { location.href = r.url; return; }
+    fermeModale(); toast("Formule activée 🎉"); await chargeEtat(); majVerrous(); rendu(); }
+  catch (e) { toast(e.message); if (b) b.disabled = false; }
+}
+async function acheterPack(id, b) {
+  if (b) b.disabled = true;
+  try { const r = await api("/api/packs/acheter", {method: "POST", body: {pack: id}});
+    if (r.url) { location.href = r.url; return; }
+    fermeModale(); toast("C'est ajouté ✓ Tu peux continuer"); await chargeEtat(); rendu(); }
+  catch (e) { toast(e.message); if (b) b.disabled = false; }
+}
+// Formule gratuite, essai déjà utilisé : ce qu'elle obtient, le prix, et le paiement en un clic (au lieu de l'écran Abonnement)
+async function fenetrePrix(raison = "") {
+  if (S.ouvert) fermeTiroir();
+  const o = S.etat?.offre || {}; if (!o.id) return va("abonnement");
+  const p = (await formulesPubliques())?.plans?.find(x => x.id === o.id);
+  $("#feuille").innerHTML = `<h2 id="m-titre">Passe à ${esc(o.nom)}</h2>
+    <p class="sous">${esc(raison || "Ta boutique reste gratuite. Pour y amener du monde, Virall.ai écrit tes contenus à partir de ce qui cartonne dans ta niche.")}</p>
+    ${p ? `<ul class="liste-essai">${limites(p)}</ul>` : ""}
+    <p class="m-prix"><b>${prixFr(o.prix)} €</b> par mois · sans engagement, tu arrêtes quand tu veux</p>
+    <div class="pied-modale"><button class="btn" data-fermer>Plus tard</button><button class="btn prim" id="m-passe">Passer à ${esc(o.nom)}</button></div>
+    <p class="m-offert"><button type="button" class="lien" id="m-toutes">Voir toutes les formules</button></p>`;
+  $("#m-passe").onclick = e => passeFormule(o.id, e.currentTarget);
+  $("#m-toutes").onclick = () => { fermeModale(); va("abonnement"); };
+  $("#modale").classList.add("ouvert");
+}
+// « Adapter pour moi » en gratuit : la publication offerte du mois, ou l'essai, ou la fenêtre de prix. Renvoie true si l'action est arrêtée.
+function bloqueAdapter(apres) {
+  if (!verrouille()) return false;
+  if (S.offertChoisi) { S.offertChoisi = false; return false; }
+  const ab = S.etat.abonnement, off = (ab.offert_restant || 0) > 0;
+  if (off && !essaiDispo()) return false;  // essai déjà utilisé : la publication offerte part directement
+  if (S.ouvert) fermeTiroir();
+  if (essaiDispo()) proposeEssai(RAISON_ADAPTER, apres, off ? () => { S.offertChoisi = true; apres(); } : null);
+  else fenetrePrix(`Ta publication offerte du mois est utilisée : la prochaine arrive le ${ab.renouvellement_fr}. Avec ${S.etat.offre?.nom || "une formule"}, Virall.ai t'en écrit chaque semaine.`);
+  return true;
+}
+// Limite atteinte (réponse 402) : en gratuit la fenêtre de prix ; abonnée, un pack ponctuel ou la formule au-dessus
+async function limiteAtteinte(j = {}) {
+  if (verrouille()) return fenetrePrix(j.offert ? j.erreur : "");
+  try { await chargeEtat(); } catch {}
+  const ab = S.etat.abonnement, sup = S.etat.formule_sup, budget = /limite d'usage/.test(j.erreur || "");
+  const packs = (S.etat.packs || []).filter(p => budget || (ab.reste?.[p.quota] ?? 1) <= 0);
+  if (!packs.length && !sup) { toast(j.erreur || "Limite de ta formule atteinte", {duree: 7000}); return va("abonnement"); }
+  $("#feuille").innerHTML = `<h2 id="m-titre">Tu es au bout de ton mois</h2>
+    <p class="sous">${esc(!budget && packs.length ? `Tu as utilisé toutes tes ${packs[0].quota === "studio" ? "créations au studio" : "publications réécrites"} de la période : elles reviennent le ${ab.renouvellement_fr}. Pour continuer dès maintenant :` : j.erreur || "Tu as utilisé ce que comprend ta formule pour cette période.")}</p>
+    <div class="lim-choix">${packs.map(p => `<div class="lim-carte"><div><b>${esc(p.nom)}</b><small>Une seule fois, valable jusqu'au ${esc(ab.renouvellement_fr)}</small></div>
+        <button class="btn prim" data-pack="${esc(p.id)}">${prixFr(p.prix)} €</button></div>`).join("")}
+      ${sup ? `<div class="lim-carte"><div><b>Passer à ${esc(sup.nom)}</b><small>${sup.adaptations_par_mois} publications et ${sup.studio_par_mois} créations chaque mois</small></div>
+        <button class="btn${packs.length ? "" : " prim"}" id="m-sup">${prixFr(sup.prix_mensuel)} €/mois</button></div>` : ""}</div>
+    <div class="pied-modale"><button class="btn" data-fermer>Plus tard</button></div>`;
+  $$("[data-pack]", $("#feuille")).forEach(b => b.onclick = () => acheterPack(b.dataset.pack, b));
+  $("#m-sup")?.addEventListener("click", e => passeFormule(sup.id, e.currentTarget));
+  $("#modale").classList.add("ouvert");
+}
+// Abonnée à 80 % d'un quota : une carte refermable sur l'accueil (jusqu'à la fin de sa période)
+function carteQuota() {
+  const ab = S.etat?.abonnement; if (!ab || ab.gratuit || ab.statut !== "actif" || S.etat.admin) return "";
+  const lib = {adaptations: ["publication réécrite", "publications réécrites", "adaptations_par_mois"], studio: ["création au studio", "créations au studio", "studio_par_mois"]};
+  for (const k of ["adaptations", "studio"]) {
+    const total = (ab.quotas?.[lib[k][2]] || 0) + (ab.bonus?.[k] || 0), reste = ab.reste?.[k] ?? total;
+    if (!total || total >= 9000 || reste <= 0 || (total - reste) / total < 0.8) continue;
+    const cle = `vv-quota-${k}-${ab.renouvellement}`; try { if (localStorage.getItem(cle)) continue; } catch {}
+    const pack = (S.etat.packs || []).find(p => p.quota === k), sup = S.etat.formule_sup;
+    return `<div class="carte-essai carte-quota"><button class="ferme-carte" type="button" aria-label="Masquer" data-quota-x="${esc(cle)}">✕</button>
+      <b>Il te reste ${reste} ${lib[k][reste > 1 ? 1 : 0]} sur ${total}</b><p>Jusqu'au ${esc(ab.renouvellement_fr)}. Pour ne pas t'arrêter en route :</p>
+      <div class="bt-rangee">${pack ? `<button class="btn petit prim" data-pack="${esc(pack.id)}">Ajouter ${esc(pack.court)} · ${prixFr(pack.prix)} €</button>` : ""}
+        ${sup ? `<button class="btn petit" data-sup="${esc(sup.id)}">Passer à ${esc(sup.nom)}</button>` : ""}</div></div>`;
+  }
+  return "";
+}
+document.addEventListener("click", e => {
+  const x = e.target.closest("[data-quota-x]"); if (x) { try { localStorage.setItem(x.dataset.quotaX, "1"); } catch {} x.closest(".carte-quota")?.remove(); return; }
+  const p = e.target.closest(".carte-quota [data-pack]"); if (p) return acheterPack(p.dataset.pack, p);
+  const s = e.target.closest(".carte-quota [data-sup]"); if (s) passeFormule(s.dataset.sup, s);
+});
+
 // ---- Confirmation de l'adresse e-mail (exigée avant tout ce qui consomme de la collecte ou de l'IA)
 async function renvoieConfirmation(b) {
   if (b) b.disabled = true;
@@ -2554,8 +2668,8 @@ function demandeConfirmation() {
   $("#modale").classList.add("ouvert");
 }
 // `apres` : ce qu'elle voulait faire en cliquant (repris une fois l'essai démarré et, la première fois, son profil rempli)
-function proposeEssai(raison = "", apres = null) {
-  if (!essaiDispo()) return va("abonnement");
+function proposeEssai(raison = "", apres = null, offert = null) {
+  if (!essaiDispo()) return fenetrePrix(raison);
   const ab = S.etat.abonnement, j = ab.essai_jours, inc = ab.essai_inclus || {};
   $("#feuille").innerHTML = `<h2 id="m-titre">Essaie tout Virallink pendant ${j} jours</h2>
     <p class="sous">${raison || "Ta boutique reste gratuite, quoi qu'il arrive. Pour y amener du monde, Virall.ai écrit tes contenus à partir de ce qui cartonne dans ta niche."}</p>
@@ -2566,7 +2680,9 @@ function proposeEssai(raison = "", apres = null) {
       <li><b>Virall.ai pour ta boutique</b> : page de vente, idées de produits, guide PDF.</li>
     </ul>
     <p class="aide">${inc.adaptations && inc.studio ? `L'essai comprend ${inc.adaptations} publications réécrites et ${inc.studio} créations au studio. ` : ""}Sans carte bancaire. Au bout de ${j} jours, si tu ne choisis rien, rien n'est prélevé : tu restes en gratuit et ta boutique ne bouge pas.</p>
-    <div class="pied-modale"><button class="btn" data-fermer>Plus tard</button><button class="btn prim" id="m-essai">Démarrer mon essai gratuit</button></div>`;
+    <div class="pied-modale"><button class="btn" data-fermer>Plus tard</button><button class="btn prim" id="m-essai">Démarrer mon essai gratuit</button></div>
+    ${offert ? `<p class="m-offert"><button type="button" class="lien" id="m-offert">Juste celle-ci : utiliser ma publication offerte du mois 🎁</button></p>` : ""}`;
+  $("#m-offert")?.addEventListener("click", () => { fermeModale(); offert(); });
   $("#m-essai").onclick = async () => {
     const b = $("#m-essai"); b.disabled = true;
     try { await api("/api/essai", {method: "POST"}); }
@@ -5372,9 +5488,9 @@ function relanceAssistantBoutique() {
 }
 // Premier contenu : les stories qui annoncent la boutique ou une offre (assistant des stories déjà rempli).
 // Fonction payante : en formule gratuite elle démarre l'essai s'il est en réserve, puis reprend ici.
-function annonceStories(sujet, produit = null) {
+function annonceStories(sujet, produit = null, objectif = "lancement") {
   const ouvre = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.offre = null; S.stOpt = null;
-    S.stw = {etape: ETAPES_STW.indexOf("sujet"), mode: "sequence", objectif: "lancement", sujet, produit, photos: "banque"};
+    S.stw = {etape: ETAPES_STW.indexOf("sujet"), mode: "sequence", objectif, sujet, produit, photos: "banque"};
     S.projetId = null; S.projet = null; S.plan30Vue = false;
     if (S.vue !== "studio") va("studio"); else renduStoriesAssistant(); window.scrollTo(0, 0); };
   if (!bloqueGratuit("Virall.ai écrit les stories qui annoncent ta boutique, et Virallink fabrique les vidéos : c'est ton premier contenu. Ta boutique reste gratuite, quoi qu'il arrive.", ouvre)) ouvre();
@@ -7185,6 +7301,7 @@ function assistantMessage(el) {
   S.apercu = ["essai", "fini"].includes(q.get("apercu")) ? q.get("apercu") : ""; S.apercuJours = +(q.get("jours") ?? 5);
   await Promise.all([chargeEtat(), chargePubs()]); await chargeListe(); va("accueil", true); history.replaceState({vue: "accueil"}, "", location.pathname);
   if (q.get("paiement") === "ok") { toast("Merci, ton abonnement est actif"); va("abonnement"); }
+  if (q.get("pack") === "ok") { toast("Merci ! Ton pack est ajouté à ton mois", {duree: 4000}); setTimeout(() => chargeEtat().then(() => S.vue === "accueil" && renduAccueil()).catch(() => {}), 2500); }
   if (q.get("stripe")) { await chargeBoutique(true);
     // Retour de Stripe pendant la création de la boutique : on reprend le parcours là où il en était
     let enCours = null; try { enCours = JSON.parse(sessionStorage.getItem("vv_assist") || "null"); sessionStorage.removeItem("vv_assist"); } catch {}
@@ -7200,7 +7317,7 @@ function assistantMessage(el) {
   if (q.get("confirme") === "0") toast("Ce lien de confirmation n'est plus valable : demande un nouvel e-mail depuis le bandeau.", {duree: 6000});
   if (q.get("projet")) ouvreProjet(q.get("projet")).catch(() => toast("Ce contenu n'existe plus."));  // lien de l'e-mail « contenu prêt »
   else if ((q.get("essai") || essaiVoulu) && essaiDispo()) proposeEssai();  // lien des e-mails de conseils, ou retour après confirmation de l'adresse
-  else if (q.get("tendances") && S.etat.bibliotheque?.active) { S.source = "tendances"; va("reels"); }  // lien de l'e-mail « ce qui cartonne dans ta niche »
+  else if (q.get("tendances") && S.etat.bibliotheque?.active) { S.source = "tendances"; va("reels"); if (q.get("adapter")) adapteDepuisGalerie(q.get("adapter")); }  // lien de l'e-mail « ce qui cartonne dans ta niche »
   else if (q.get("boutique") || (boutiqueSeule() && !S.etat.boutique_etat?.publie)) va("boutique");  // venue pour sa boutique : droit dessus tant qu'elle n'est pas en ligne
   // Démarrage (compte, activité, niche) : au début de l'essai seulement. En gratuit, l'accueil mène d'abord à la boutique.
   else if (!S.etat.utilisateur.onboarding && !verrouille() && S.vue !== "messages") ouvreAssistant(0);

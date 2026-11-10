@@ -28,6 +28,14 @@ def plans() -> dict:
     return yaml.safe_load((CODE / "plans.yaml").read_text(encoding="utf-8"))
 
 
+def packs() -> dict:
+    """Packs ponctuels (packs.yaml) : crédit ajouté à la période en cours, quand un quota est atteint."""
+    try:
+        return yaml.safe_load((CODE / "packs.yaml").read_text(encoding="utf-8")) or {}
+    except OSError:
+        return {}
+
+
 def _db():
     BASE.parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(BASE, check_same_thread=False)
@@ -49,6 +57,7 @@ def init():
         CREATE TABLE IF NOT EXISTS push(endpoint TEXT PRIMARY KEY, uid INTEGER NOT NULL, p256dh TEXT, auth TEXT, cree TEXT);
         CREATE TABLE IF NOT EXISTS migrations(nom TEXT PRIMARY KEY, fait TEXT);
         CREATE TABLE IF NOT EXISTS lectures_profil(uid INTEGER, ip TEXT, quand TEXT);
+        CREATE TABLE IF NOT EXISTS packs_achetes(session TEXT PRIMARY KEY, uid INTEGER, pack TEXT, mois TEXT, prix REAL, quand TEXT);
         """)
         for table, col, typ in (("usage", "cout_usd", "REAL DEFAULT 0"), ("usage", "studio", "INTEGER DEFAULT 0"), ("utilisateurs", "derniere_connexion", "TEXT"),
                                 ("utilisateurs", "cgv_acceptees", "TEXT"), ("utilisateurs", "code_parrain", "TEXT"),
@@ -57,7 +66,9 @@ def init():
                                 ("utilisateurs", "derniere_synthese", "TEXT"), ("utilisateurs", "a_paye", "INTEGER DEFAULT 0"),
                                 ("utilisateurs", "debut_cycle", "TEXT"), ("utilisateurs", "origine", "TEXT"),
                                 ("utilisateurs", "relances_boutique", "INTEGER DEFAULT 0"), ("utilisateurs", "essai_utilise", "INTEGER DEFAULT 0"),
-                                ("utilisateurs", "email_verifie", "INTEGER DEFAULT 0"), ("utilisateurs", "relances_essai", "INTEGER DEFAULT 0")):
+                                ("utilisateurs", "email_verifie", "INTEGER DEFAULT 0"), ("utilisateurs", "relances_essai", "INTEGER DEFAULT 0"),
+                                ("usage", "bonus_adaptations", "INTEGER DEFAULT 0"), ("usage", "bonus_studio", "INTEGER DEFAULT 0"),
+                                ("usage", "bonus_budget", "REAL DEFAULT 0")):
             try:
                 c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
                 if col == "essai_utilise":  # comptes existants : ils ont tous eu leur essai à l'inscription
@@ -342,9 +353,55 @@ def _cle_periode(uid: int) -> str:
 
 def usage(uid: int) -> dict:
     with _db() as c:
-        r = c.execute("SELECT analyses, adaptations, studio, cout_usd FROM usage WHERE uid=? AND mois=?", (uid, _cle_periode(uid))).fetchone()
+        r = c.execute("SELECT analyses, adaptations, studio, cout_usd, bonus_adaptations, bonus_studio, bonus_budget FROM usage WHERE uid=? AND mois=?",
+                      (uid, _cle_periode(uid))).fetchone()
     return {"analyses": r["analyses"] if r else 0, "adaptations": r["adaptations"] if r else 0, "studio": (r["studio"] or 0) if r else 0,
-            "cout_usd": (r["cout_usd"] or 0) if r else 0.0}
+            "cout_usd": (r["cout_usd"] or 0) if r else 0.0,
+            "bonus_adaptations": (r["bonus_adaptations"] or 0) if r else 0, "bonus_studio": (r["bonus_studio"] or 0) if r else 0,
+            "bonus_budget": (r["bonus_budget"] or 0) if r else 0.0}
+
+
+def credite_pack(uid: int, pack: str, session: str = "", mois: str = "", prix: float = 0) -> bool:
+    """Ajoute le crédit d'un pack à la période (celle de l'achat). Une seule fois par paiement (session Stripe)."""
+    p = packs().get(pack)
+    if not p:
+        return False
+    mois = mois or _cle_periode(uid)
+    with _verrou, _db() as c:
+        if session:
+            try:
+                c.execute("INSERT INTO packs_achetes(session, uid, pack, mois, prix, quand) VALUES(?,?,?,?,?,?)",
+                          (session, uid, pack, mois, prix, datetime.now().isoformat(timespec="seconds")))
+            except sqlite3.IntegrityError:
+                return False  # déjà crédité (Stripe peut renvoyer le même événement)
+        a, s, b = int(p.get("adaptations") or 0), int(p.get("studio") or 0), float(p.get("budget_usd") or 0)
+        c.execute("INSERT INTO usage(uid, mois, bonus_adaptations, bonus_studio, bonus_budget) VALUES (?,?,?,?,?) "
+                  "ON CONFLICT(uid, mois) DO UPDATE SET bonus_adaptations=bonus_adaptations+?, bonus_studio=bonus_studio+?, bonus_budget=bonus_budget+?",
+                  (uid, mois, a, s, b, a, s, b))
+    return True
+
+
+def checkout_pack(u: dict, pack: str, url_retour: str) -> str:
+    """Paiement unique d'un pack (Stripe Checkout, prix fixé ici : pas de produit à créer dans Stripe)."""
+    p = packs().get(pack)
+    if not p:
+        raise ValueError("Pack inconnu.")
+    data = {
+        "mode": "payment", "line_items[0][quantity]": 1,
+        "line_items[0][price_data][currency]": "eur", "line_items[0][price_data][unit_amount]": int(round(float(p["prix"]) * 100)),
+        "line_items[0][price_data][product_data][name]": f"Virallink : {p['nom']}",
+        "success_url": url_retour + "?pack=ok", "cancel_url": url_retour + "?pack=annule",
+        "client_reference_id": str(u["id"]), "metadata[uid]": str(u["id"]), "metadata[pack]": pack, "metadata[mois]": _cle_periode(u["id"]),
+        "locale": "fr",
+    }
+    if u.get("stripe_client"):
+        data["customer"] = u["stripe_client"]
+    else:
+        data["customer_email"] = u["email"]
+    r = requests.post("https://api.stripe.com/v1/checkout/sessions", data=data, auth=(os.environ["STRIPE_SECRET_KEY"], ""), timeout=30)
+    if r.status_code >= 400:
+        raise ValueError(r.json().get("error", {}).get("message", "Erreur Stripe"))
+    return r.json()["url"]
 
 
 def compte_usage(uid: int, analyses: int = 0, adaptations: int = 0, cout: float = 0.0, studio: int = 0):
@@ -470,8 +527,12 @@ def droits(u: dict) -> dict:
         "essai_dispo": essai_dispo(u), "essai_jours": p["essai"].get("duree_jours", 7) + (JOURS_FILLEULE if u.get("parrain") and essai_dispo(u) else 0),
         # ce que l'essai comprend, annoncé avant de le démarrer
         "essai_inclus": {"adaptations": p["essai"].get("adaptations_par_mois", 0), "studio": p["essai"].get("studio_par_mois", 0)},
-        "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"],
-                  "studio": plan.get("studio_par_mois", 10) - us["studio"]},
+        "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"],
+                  "adaptations": plan["adaptations_par_mois"] + us["bonus_adaptations"] - us["adaptations"],
+                  "studio": plan.get("studio_par_mois", 10) + us["bonus_studio"] - us["studio"]},
+        "bonus": {"adaptations": us["bonus_adaptations"], "studio": us["bonus_studio"]},
+        # formule gratuite : une publication réécrite offerte par mois (contenus_offerts_par_mois)
+        "offert_restant": max(0, int(plan.get("contenus_offerts_par_mois") or 0) - us["adaptations"]) if plan.get("gratuit") else 0,
     }
 
 
@@ -508,9 +569,27 @@ def peut(u: dict, analyses: int = 0, adaptations: int = 0, studio: int = 0) -> s
     if studio and d["reste"]["studio"] < studio:
         return f"Tu as utilisé tes {d['quotas']['studio_par_mois']} créations de la période au studio. {_suite(u, d)}"
     # Garde-fou : coût réel (collecte + IA) plafonné par formule et par mois (budget_usd dans plans.yaml)
-    budget = float(plans().get(plan_effectif(u), {}).get("budget_usd") or 0)
-    if (analyses or adaptations) and budget and usage(u["id"])["cout_usd"] >= budget:
+    if (analyses or adaptations) and budget_atteint(u):
         return f"Tu as atteint la limite d'usage de ta formule pour cette période. {_suite(u, d)}"
+    return None
+
+
+def budget_atteint(u: dict) -> bool:
+    """Coût réel de la période (collecte + IA) au plafond de la formule, packs compris."""
+    budget = float(plans().get(plan_effectif(u), {}).get("budget_usd") or 0)
+    us = usage(u["id"])
+    return bool(budget) and us["cout_usd"] >= budget + us["bonus_budget"]
+
+
+def peut_offert(u: dict) -> str | None:
+    """Formule gratuite : la publication offerte du mois est-elle encore disponible ?"""
+    d = droits(u)
+    if not d["gratuit"] or not d["actif"]:
+        return MSG_ABONNEES
+    if d["offert_restant"] <= 0:
+        return f"Tu as déjà utilisé ta publication offerte ce mois-ci : la prochaine arrive le {d['renouvellement_fr']}."
+    if budget_atteint(u):
+        return f"Ta publication offerte revient le {d['renouvellement_fr']}."
     return None
 
 
@@ -584,6 +663,12 @@ def webhook(charge_utile: bytes, signature: str) -> str:
     ev = json.loads(charge_utile)
     obj = ev["data"]["object"]
     typ = ev["type"]
+    if typ == "checkout.session.completed" and (obj.get("metadata") or {}).get("pack"):
+        m = obj["metadata"]
+        if obj.get("payment_status") in (None, "paid"):
+            credite_pack(int(obj.get("client_reference_id") or m["uid"]), m["pack"], obj.get("id") or "", m.get("mois") or "",
+                         (obj.get("amount_total") or 0) / 100)
+        return typ + ":pack"
     if typ == "checkout.session.completed":
         uid = int(obj.get("client_reference_id") or obj["metadata"]["uid"])
         maj(uid, plan=obj["metadata"].get("plan", "createur"), statut="actif", a_paye=1, debut_cycle=date.today().isoformat(),

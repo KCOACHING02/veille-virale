@@ -1,0 +1,17 @@
+# ============================================================
+#  Packs ponctuels (achat unique) proposés quand une abonnée arrive au bout d'un quota de sa formule.
+#  Le crédit vaut jusqu'à la fin de sa période en cours (date anniversaire). Décision de Mohamed du 10 novembre 2026.
+#  budget_usd : marge ajoutée au plafond de coût réel de la période (budget_usd de la formule).
+# ============================================================
+publications:
+  nom: "+10 publications réécrites"
+  court: "10 publications"
+  adaptations: 10
+  prix: 5
+  budget_usd: 1.5
+creations:
+  nom: "+5 créations au studio"
+  court: "5 créations"
+  studio: 5
+  prix: 5
+  budget_usd: 1.5

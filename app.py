@@ -573,7 +573,27 @@ def etat():
         "boutique": bq.pseudo_de(g.u["id"]), "boutique_etat": _avancement_boutique(g.u["id"]),
         "bibliotheque": {"active": bibliotheque.active(), "niches": [bibliotheque.niches()[k]["nom"] for k in bibliotheque.niches_de(cfg)],
                          "a_choisir": not bibliotheque.niche_connue(cfg)},  # ni choisie ni devinable : on la lui demande
+        "packs": _packs_de(g.u), "formule_sup": _formule_sup(g.u),
     })
+
+
+def _packs_de(u: dict) -> list[dict]:
+    """Packs ponctuels proposés à une abonnée (pas en gratuit, pas en essai) quand un quota est presque atteint."""
+    d = droits(u)
+    if d["gratuit"] or d["statut"] != "actif" or est_admin(u) or not (ab.stripe_actif() or en_demo()):
+        return []
+    return [{"id": k, "nom": v["nom"], "court": v.get("court", v["nom"]), "prix": float(v["prix"]),
+             "quota": "adaptations" if v.get("adaptations") else "studio", "quantite": int(v.get("adaptations") or v.get("studio") or 0)}
+            for k, v in ab.packs().items()]
+
+
+def _formule_sup(u: dict) -> dict | None:
+    """La formule juste au-dessus de la sienne (fenêtre de limite atteinte)."""
+    p = ab.plans()
+    actuel = float(p.get(ab.plan_effectif(u), {}).get("prix_mensuel") or 0)
+    sup = sorted(((k, v) for k, v in p.items() if not v.get("gratuit") and k != "essai" and float(v.get("prix_mensuel") or 0) > actuel),
+                 key=lambda x: float(x[1]["prix_mensuel"]))
+    return _formule(*sup[0]) if sup else None
 
 
 def _avancement_boutique(uid) -> dict:
@@ -587,6 +607,7 @@ def _avancement_boutique(uid) -> dict:
     st = page.get("stripe") or {}
     a_livrer = lambda p: p.get("type") in ("rdv", "pack") or p.get("fichier") or p.get("lien")  # noqa: E731
     return {"cree": bool(bq.pseudo_de(uid)), "produits": len(prods), "payants": payants, "prets": sum(1 for p in prods if a_livrer(p)),
+            "cadeau": any(not p.get("prix") and p.get("type") != "rdv" for p in prods),
             "paiements": bool(st.get("pret")) or not bq.stripe_actif() or not payants, "publie": bool(page.get("publie"))}
 
 
@@ -687,13 +708,19 @@ def estimation():
 def adapter(aid):
     if job_en_cours(g.u["id"]):
         return jsonify({"erreur": "Une tâche est déjà en cours."}), 409
-    msg = reserve(g.u, "ia") or refus(g.u, adaptations=1)
+    # Formule gratuite : une publication réécrite offerte par mois (adresse confirmée, budget de la formule)
+    offert = droits(g.u)["gratuit"] and not est_admin(g.u)
+    if offert:
+        _exige_confirmation(g.u)
+        msg = ab.peut_offert(g.u)
+    else:
+        msg = reserve(g.u, "ia") or refus(g.u, adaptations=1)
     if msg:
-        return jsonify({"erreur": msg, "quota": True}), 402
+        return jsonify({"erreur": msg, "quota": True, **({"offert": True} if offert else {})}), 402
     uid = g.u["id"]
     jid = lance(uid, "Adaptation d'un Reel", moteur.adapter_un, g.esp, g.esp.lit_config(), aid, request.get_json(force=True).get("cle"),
                 demo=en_demo(), apres=lambda _: ab.compte_usage(uid, adaptations=1))
-    return jsonify({"job": jid})
+    return jsonify({"job": jid, **({"offert": True} if offert else {})})
 
 
 @app.get("/api/jobs/<jid>")
@@ -993,6 +1020,21 @@ def choisir_plan():
         ab.recompense_parrain(g.u["id"])
         return jsonify({"ok": True, "simule": True})
     return jsonify({"erreur": "Le paiement n'est pas encore configuré (STRIPE_SECRET_KEY)."}), 400
+
+
+@app.post("/api/packs/acheter")
+@connecte
+def acheter_pack():
+    pack = (request.get_json(force=True) or {}).get("pack")
+    if pack not in {x["id"] for x in _packs_de(g.u)}:
+        return jsonify({"erreur": "Ce pack n'est pas disponible pour ta formule."}), 400
+    if ab.stripe_actif():
+        try:
+            return jsonify({"url": ab.checkout_pack(g.u, pack, request.host_url.rstrip("/") + "/app")})
+        except ValueError as e:
+            return jsonify({"erreur": str(e)}), 400
+    ab.credite_pack(g.u["id"], pack)  # démo : crédit direct
+    return jsonify({"ok": True, "simule": True})
 
 
 @app.post("/api/abonnement/portail")
@@ -2513,9 +2555,10 @@ def _ip_cliente() -> str:
 
 
 def _instagram_avant_confirmation(u: dict) -> bool:
-    """Exception à la règle « adresse confirmée avant toute consommation », coupée par défaut (INSTAGRAM_AVANT_CONFIRMATION=1 pour
-    l'ouvrir) : une seule lecture de profil par compte avant la confirmation, pour préparer la boutique dès l'inscription."""
-    return os.getenv("INSTAGRAM_AVANT_CONFIRMATION") == "1" and ab.lectures_profil(24 * 90, uid=u["id"]) == 0
+    """Exception à la règle « adresse confirmée avant toute consommation », décidée par Mohamed le 10 novembre 2026 :
+    une seule lecture de profil par compte avant la confirmation, pour préparer la boutique dès l'inscription
+    (INSTAGRAM_AVANT_CONFIRMATION=0 pour la couper)."""
+    return os.getenv("INSTAGRAM_AVANT_CONFIRMATION", "1") != "0" and ab.lectures_profil(24 * 90, uid=u["id"]) == 0
 
 
 @app.post("/api/boutique/instagram")
@@ -2590,6 +2633,7 @@ def boutique_stats():
     if not page:
         return jsonify({})
     s = bq.stats(uid, page)
+    s["cree"] = page.get("cree") or ""
     src = (bq._lit(bq.dossier(uid) / "stats.json", {}).get("sources") or {})
     s["sources"] = sorted(({"id": k, "nom": bv.nom_source(page, k), **v} for k, v in src.items()), key=lambda x: (-x.get("ca", 0), -x.get("vues", 0)))[:40]
     return jsonify(s)
@@ -2932,6 +2976,31 @@ def vitrines():
     return rep
 
 
+def _bloc_tendances(esp) -> list[tuple[str, str]]:
+    """Trois publications de la bibliothèque de sa niche, chacune avec « L'écrire pour moi » (sans coût : déjà collectées)."""
+    import html as _h
+    from urllib.parse import quote as _q
+    cfg = esp.lit_config()
+    if not bibliotheque.active() or not bibliotheque.niche_connue(cfg):
+        return []
+    posts = (moteur.tendances(esp, cfg).get("posts") or [])[:3]
+    if not posts:
+        return []
+    def titre(p):
+        ad = p.get("adaptation") or {}
+        return (ad.get("hook_viral") or (ad.get("hooks_adaptes") or [""])[0] or (p.get("legende") or "").split("\n")[0] or "@" + p["compte"])[:120]
+    def chiffre(p):
+        n, mot = (p.get("likes"), "j'aime") if p.get("format") in ("Carrousel", "Photo") else (p.get("vues"), "vues")
+        return f"{n:,}".replace(",", " ") + " " + mot if n else ""
+    lignes = "".join(
+        f'<li style="margin:0 0 14px"><b>{_h.escape(titre(p))}</b><br><span style="color:#8A7F78;font-size:13px">@{_h.escape(p["compte"])}'
+        f'{" · " + chiffre(p) if chiffre(p) else ""}</span><br>'
+        f'<a href="{url_site()}/app?tendances=1&amp;adapter={_q(p["cle"], safe="")}" style="color:#FF4F79;font-weight:600">L\'écrire pour moi →</a></li>'
+        for p in posts)
+    return [("🔥 Ce qui a explosé dans ta niche", f"<p>Trois publications qui cartonnent en ce moment. Touche celle qui te plaît : "
+                                                  f"Virall.ai la réécrit pour ton audience.</p><ol style=\"padding-left:20px\">{lignes}</ol>")]
+
+
 def synthese_de(u: dict) -> list[tuple[str, str]]:
     """Blocs du récapitulatif du lundi (vide s'il n'y a rien à raconter)."""
     import html as _h
@@ -2944,6 +3013,12 @@ def synthese_de(u: dict) -> list[tuple[str, str]]:
         if adaptes:
             hooks = "".join(f"<li>{_h.escape((p['adaptation'].get('hook_viral') or '')[:120])}</li>" for p in adaptes[:3])
             blocs.append(("🔥 Ta veille", f"<p><b>{len(adaptes)} Reels viraux</b> adaptés à ta niche. À tourner en priorité :</p><ol>{hooks}</ol>"))
+    # Pas de veille cette semaine (formule gratuite, ou veille pas relancée) : trois publications qui ont explosé dans sa niche
+    if not blocs:
+        try:
+            blocs += _bloc_tendances(esp)
+        except Exception:  # noqa: BLE001
+            traceback.print_exc()
     try:
         b = pubs.bilan_semaine(esp, esp.lit_config())
         if b["publies"]:
@@ -3019,12 +3094,15 @@ def envoie_syntheses():
     semaine = maintenant.strftime("%G-%V")
     for u in ab.tous():
         try:
-            if not u.get("synthese", 1) or (u.get("derniere_synthese") or "") == semaine or not droits(u)["actif"] or not (u.get("onboarding") or u.get("origine") == "boutique"):
+            if (not u.get("synthese", 1) or (u.get("derniere_synthese") or "") == semaine or not droits(u)["actif"] or verification_requise(u)
+                    or not (u.get("onboarding") or u.get("origine") == "boutique" or bq.pseudo_de(u["id"]))):
                 continue
             ab.maj(u["id"], derniere_synthese=semaine)
             blocs = synthese_de(u)
             if blocs:
-                emails.synthese(u["email"], u.get("prenom") or "", blocs, url_site() + "/app", url_site() + "/app#parametres")
+                tendances_seules = len(blocs) == 1 and blocs[0][0].startswith("🔥 Ce qui a explosé")
+                emails.synthese(u["email"], u.get("prenom") or "", blocs, url_site() + "/app", url_site() + "/app#parametres",
+                                sujet="3 publications qui ont explosé dans ta niche" if tendances_seules else "")
                 nt.notifie(u["id"], "Ta semaine est prête ☀️", "Ta veille, tes publications et ta boutique en un coup d'œil.", "/app")
         except Exception:  # noqa: BLE001
             traceback.print_exc()
