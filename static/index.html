@@ -1626,12 +1626,12 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
     <!-- PLANNING -->
     <section data-section="planning" hidden>
-      <div class="sous-nav" data-groupe="reels"></div>
+      <div class="sous-nav" data-groupe="studio"></div>
       <div id="planning"></div>
     </section>
 
     <!-- STUDIO -->
-    <section data-section="studio" hidden><div id="studio"></div></section>
+    <section data-section="studio" hidden><div class="sous-nav" data-groupe="studio"></div><div id="studio"></div></section>
 
     <!-- RÉSULTATS -->
     <section data-section="boutique" hidden><div class="sous-nav"></div><div id="boutique"></div></section>
@@ -1755,14 +1755,15 @@ async function chargeAnalyse(id) {
 }
 
 // ---------------------------------------------------------------- Navigation
-const TITRES = {boutique: "Ma boutique", messages: "Messages automatiques", accueil: "Accueil", reels: "Tendances", planning: "Tendances", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
+const TITRES = {boutique: "Ma boutique", messages: "Messages automatiques", accueil: "Accueil", reels: "Tendances", planning: "Studio", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
 const titreDe = vue => MOBILE.matches && groupeDe(vue) === "parametres" ? "Moi" : TITRES[vue];
 // Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
-const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]], boutique: [["boutique", "Ma boutique"], ["messages", "Messages auto"]],
+const GROUPES = {studio: [["studio", "Créer"], ["planning", "Mon planning"]], boutique: [["boutique", "Ma boutique"], ["messages", "Messages auto"]],
                  parametres: [["parametres", "Mon profil"], ["comptes", "Ma niche"], ["abonnement", "Abonnement"]]};
 // Sur téléphone, la barre du bas n'a que 5 entrées : « Moi » regroupe résultats, profil, comptes et abonnement
 const MOBILE = matchMedia("(max-width:860px)");
 const groupes = () => MOBILE.matches ? {...GROUPES, parametres: [["resultats", "Résultats"], ["parametres", "Profil"], ["comptes", "Niche"], ["abonnement", "Abonnement"]]} : GROUPES;
+const veillePerso = () => !S.etat?.bibliotheque?.active || !!S.etat?.abonnement?.options?.comptes_perso || !!S.etat?.admin;
 const groupeDe = vue => Object.keys(groupes()).find(g => groupes()[g].some(([v]) => v === vue)) || vue;
 MOBILE.addEventListener?.("change", () => S.etat && va(S.vue, true));
 // ---- Historique du navigateur : le bouton « précédent » revient à l'écran précédent de l'outil au lieu d'en sortir
@@ -1799,11 +1800,14 @@ function va(vue, depuisHistorique) {
   $$(".nav").forEach(b => b.setAttribute("aria-current", b.dataset.vue === g ? "page" : "false"));
   $$("[data-section]").forEach(s => s.hidden = s.dataset.section !== vue);
   $("#titre").textContent = vue === "accueil" ? `Bonjour${S.etat?.utilisateur?.prenom ? " " + S.etat.utilisateur.prenom : ""}` : titreDe(vue);
-  const avecVeille = ["reels", "planning"].includes(vue);
+  // Veille quotidienne commune (bibliothèque) : plus de « Nouvelle veille » ni de menu des veilles, sauf pour qui suit ses propres comptes
+  const avecVeille = vue === "reels" && veillePerso();
   $("#choix-analyse").hidden = !avecVeille || $("#choix-analyse").options.length < 2;
   $("#ouvrir-nouvelle").hidden = !avecVeille || verrouille();  // formule gratuite : les tendances se lisent, on ne lance pas de veille
   majBandeauOffre();
-  const onglets = groupes()[g];
+  let onglets = groupes()[g];
+  // Studio : l'onglet « Mon planning » n'apparaît que s'il y a des publications planifiées
+  if (g === "studio" && !((S.analyseVeille || (S.analyse?.id !== "tendances" ? S.analyse : null))?.planning?.length)) onglets = null;
   if (g === "reels" && S.etat?.bibliotheque?.active) majOngletsReels();
   else $$(`[data-section="${vue}"] .sous-nav`).forEach(el => { el.hidden = !onglets; el.innerHTML = onglets ? `<div class="seg" role="tablist">${onglets.map(([v, t]) =>
     `<button role="tab" aria-pressed="${v === vue}" onclick="va('${v}')">${t}</button>`).join("")}</div>` : ""; });
@@ -2169,11 +2173,11 @@ function sourceGalerie() {
 // Formule gratuite sans veille : rien d'autre que les tendances, donc pas d'onglets du tout.
 function majOngletsReels() {
   const a = S.analyseVeille || (S.analyse?.id !== "tendances" ? S.analyse : null), libre = !verrouille();
-  const L = [["tendances", "Tendances", "S.source='tendances';S.filtreChoisi=false;S.cat='';va('reels')"],
-    ...(libre || a ? [["veille", "Ma veille", "S.source='veille';S.filtreChoisi=false;S.cat='';va('reels')"]] : []),
-    ...(libre && (a?.planning?.length || !S.etat?.abonnement?.gratuit) ? [["planning", "Planning", "va('planning')"]] : [])];
-  const actif = S.vue === "planning" ? "planning" : S.source === "veille" ? "veille" : "tendances";
-  $$('[data-section="reels"] .sous-nav, [data-section="planning"] .sous-nav').forEach(el => {
+  // Un seul écran : ce qui cartonne dans sa niche, et ce qui est déjà réécrit pour elle (sélection du lundi)
+  const L = [["tendances", "Ce qui cartonne", "S.source='tendances';S.filtreChoisi=false;S.cat='';va('reels')"],
+    ...(libre || a ? [["veille", "Prêtes pour toi", "S.source='veille';S.filtre='adaptes';S.filtreChoisi=false;S.cat='';va('reels')"]] : [])];
+  const actif = S.source === "veille" ? "veille" : "tendances";
+  $$('[data-section="reels"] .sous-nav').forEach(el => {
     el.hidden = L.length < 2;
     el.innerHTML = L.length < 2 ? "" : `<div class="seg" role="tablist">${L.map(([k, t, js]) => `<button role="tab" aria-pressed="${k === actif}" onclick="${js}">${t}</button>`).join("")}</div>`; });
 }
@@ -2239,7 +2243,9 @@ function renduReels() {
   if (a?.id === "tendances" && !S.filtreChoisi) S.filtre = "tous";
   if (!a) {
     $("#resume").innerHTML = "";
-    g.innerHTML = `<div class="vide"><h2>Lance ta première analyse</h2><p>Colle des comptes Instagram ou TikTok à décortiquer, ou lance ta veille de la semaine.</p><button class="btn prim" onclick="ouvreNouvelle()">Nouvelle analyse</button></div>`;
+    g.innerHTML = veillePerso()
+      ? `<div class="vide"><h2>Lance ta première analyse</h2><p>Colle des comptes Instagram ou TikTok à décortiquer, ou lance ta veille de la semaine.</p><button class="btn prim" onclick="ouvreNouvelle()">Nouvelle analyse</button></div>`
+      : `<div class="vide"><h2>Ta sélection arrive chaque lundi</h2><p>Les meilleures publications de ta niche, déjà réécrites pour toi. Pas envie d'attendre ?</p><button class="btn prim" onclick="lanceVeilleDirecte()">Préparer ma sélection maintenant</button></div>`;
     $("#n-reels").textContent = ""; renduSonsTendance(null); return;
   }
   const s = a.stats, cdc = a.posts.filter(p => p.criteres_ok || p.demande).length, ad = a.posts.filter(adapte).length;
