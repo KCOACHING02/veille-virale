@@ -2456,7 +2456,7 @@ function texteComplet(p) {
     if (ad.texte_ecran_adapte) l.push("TEXTE À L'ÉCRAN\n" + ad.texte_ecran_adapte);
     if (ad.script_reel) l.push("SCRIPT\n" + ad.script_reel);
   }
-  if (ad.legende_reprise || ad.legende_adaptee) l.push("LÉGENDE\n" + (ad.legende_reprise || ad.legende_adaptee));
+  if (ad.legende_reprise || ad.legende_adaptee) l.push("LÉGENDE\n" + sansAuteur(ad.legende_reprise || ad.legende_adaptee, p.compte));
   return l.join("\n\n");
 }
 document.addEventListener("click", e => {
@@ -2464,6 +2464,8 @@ document.addEventListener("click", e => {
   const p = S.analyse?.posts.find(x => x.cle === b.dataset.toutCopier); if (!p) return;
   navigator.clipboard.writeText(texteComplet(p)).then(() => { b.textContent = "✓ Tout est copié"; toast("Copié : colle-le dans tes notes"); setTimeout(() => b.textContent = "Tout copier d'un coup", 1800); });
 });
+// La légende reprise ne garde ni le @ ni le # du compte d'origine (aussi pour les adaptations déjà enregistrées)
+const sansAuteur = (txt, compte) => !txt || !compte ? txt || "" : txt.split("\n").map(l => l.replace(new RegExp(`[#@]${compte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b\\S*`, "gi"), "").replace(/[ \t]{2,}/g, " ").trim()).join("\n").trim();
 function corpsOnglet(p, o) {
   const ad = p.adaptation || {};
   if (o === "Vidéo") return `
@@ -2472,7 +2474,7 @@ function corpsOnglet(p, o) {
   const pert = `<p class="pertinence">Transposabilité à ta niche <span class="points">${"●".repeat(ad.pertinence || 0)}${"○".repeat(5 - (ad.pertinence || 0))}</span> ${ad.pertinence || 0}/5</p>`;
   const variantes = (titre, liste) => liste.length ? `<details class="variantes"><summary>${titre} (${liste.length})</summary><div class="hooks">${liste.map(h => copiable(h)).join("")}</div></details>` : "";
   const legendes = () => {
-    const principale = ad.legende_reprise || ad.legende_adaptee;
+    const principale = sansAuteur(ad.legende_reprise || ad.legende_adaptee, p.compte);
     return `${copiable(principale)}${ad.legende_reprise && ad.legende_reprise !== p.legende ? '<p class="aide-et">Traduite fidèlement de l\'original.</p>' : ""}
       ${ad.legende_reprise && ad.legende_adaptee ? variantes("Variante adaptée à ta niche", [ad.legende_adaptee]) : ""}`;
   };

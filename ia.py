@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import os
 import concurrent.futures as cf
 import time
@@ -190,6 +191,18 @@ OUTIL_CARROUSEL = {
 # ------------------------------------------------------------
 #  Messages d'erreur compréhensibles
 # ------------------------------------------------------------
+def _sans_auteur(res: dict, compte: str) -> dict:
+    """La légende reprise ne garde ni le @ ni le # du compte d'origine : la cliente publie sous son nom, pas sous celui d'un autre."""
+    if res.get("erreur") or not compte:
+        return res
+    nom = re.escape(str(compte).lstrip("@"))
+    for k in ("legende_reprise", "legende_adaptee"):
+        if isinstance(res.get(k), str):
+            t = re.sub(rf"(?i)[#@]{nom}\b[^\s#@]*", "", res[k])
+            res[k] = "\n".join(re.sub(r"[ \t]{2,}", " ", l).strip() for l in t.split("\n")).strip()
+    return res
+
+
 def explique_erreur(e) -> str:
     t = str(e)
     bas = t.lower()
@@ -382,7 +395,7 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
         # Même langue : la légende est recopiée telle quelle depuis la source (aucun risque de reformulation)
         if not res.get("erreur") and p.legende and str(res.get("langue_originale", "")).strip().lower() == str(self.cfg["niche"].get("langue", "français")).strip().lower():
             res["legende_reprise"] = p.legende
-        return res
+        return _sans_auteur(res, p.compte)
 
     def _adapte_carrousel(self, p: Post, nb: int) -> dict:
         n = len(p.images)
@@ -423,7 +436,7 @@ Propose {nb} hooks adaptés. Remplis l'outil enregistrer_adaptation."""
                     res["slides_modele"] = []
             if p.legende and str(res.get("langue_originale", "")).strip().lower() == str(self.cfg["niche"].get("langue", "français")).strip().lower():
                 res["legende_reprise"] = p.legende
-        return res
+        return _sans_auteur(res, p.compte)
 
     def carrousel(self, ad: dict, nb: int | None = None, style: str = "", reel: bool = False, source: dict | None = None,
                   tunnel: str = "") -> dict:
