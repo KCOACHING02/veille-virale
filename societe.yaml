@@ -1,14 +1,14 @@
 nom_produit: "Virallink"
 # Entrepreneur individuel : prénom et nom du titulaire suivis de « EI » (obligatoire sur les documents commerciaux)
-societe: "[Prénom Nom du titulaire de la micro-entreprise] EI"
+societe: "Mohamed Chouhad EI"
 nom_commercial: "Kcoaching"
 forme_juridique: "entrepreneur individuel (micro-entreprise)"
 capital: ""  # pas de capital social pour un entrepreneur individuel
-siege: "[numéro] boulevard Édouard Branly, 02200 Soissons"
+siege: "2 boulevard Édouard Branly, 02200 Soissons"
 immatriculation: "immatriculé au registre national des entreprises sous le n° SIREN 931 144 752"
 tva: "TVA non applicable, art. 293 B du CGI"
-directeur_publication: "[prénom et nom du titulaire]"
+directeur_publication: "Mohamed Chouhad"
 email_contact: "contact@virallink.fr"
 prix_ttc: true
-mediateur: "[nom, adresse et site du médiateur de la consommation auquel tu adhères]"
+mediateur: ""  # à remplir à la première vente (nom, adresse et site du médiateur) : la phrase réapparaît alors dans les CGV
 date_maj: "10 novembre 2026"

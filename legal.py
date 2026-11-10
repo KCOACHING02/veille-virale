@@ -43,6 +43,8 @@ SOUS_TRAITANTS = [
 def cgv(s: dict) -> str:
     p = _v(s, "nom_produit")
     ttc = "toutes taxes comprises" if s.get("prix_ttc", True) else "hors taxes"
+    mediateur = (f"Le consommateur peut recourir gratuitement au médiateur de la consommation : {_v(s, 'mediateur')}. "
+                 if str(s.get("mediateur") or "").strip() else "")
     if "293 B" in str(s.get("tva", "")):  # franchise en base de TVA (micro-entreprise)
         ttc = "TVA non applicable (article 293 B du code général des impôts)"
     return f"""
@@ -102,7 +104,7 @@ def cgv(s: dict) -> str:
 <p>L'Éditeur peut faire évoluer les présentes conditions. L'utilisateur est informé de toute modification importante au moins 30 jours avant son entrée en vigueur et peut résilier son abonnement s'il la refuse.</p>
 
 <h2>15. Droit applicable et litiges</h2>
-<p>Les présentes conditions sont soumises au droit français. En cas de réclamation, l'utilisateur écrit d'abord à {_v(s, 'email_contact')}. Le consommateur peut recourir gratuitement au médiateur de la consommation : {_v(s, 'mediateur')}. À défaut d'accord amiable, les tribunaux français sont compétents ; entre professionnels, compétence exclusive est attribuée aux tribunaux du ressort du siège de l'Éditeur.</p>
+<p>Les présentes conditions sont soumises au droit français. En cas de réclamation, l'utilisateur écrit d'abord à {_v(s, 'email_contact')}. {mediateur}À défaut d'accord amiable, les tribunaux français sont compétents ; entre professionnels, compétence exclusive est attribuée aux tribunaux du ressort du siège de l'Éditeur.</p>
 """
 
 
