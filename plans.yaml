@@ -14,7 +14,7 @@ essai:
   plans_30j_par_mois: 1          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: false
   budget_usd: 3             # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  boutiques: 100                # boutiques illimitées et gratuites (décision de Mohamed) ; 100 = plafond technique anti-abus
+  boutiques: 20                 # boutiques gratuites, 20 par compte quelle que soit la formule (décision de Mohamed)
   stripe_price: ""
 
 # Formule gratuite : tout nouveau compte y démarre (l'essai reste en réserve et ne commence qu'au premier usage d'une
@@ -43,7 +43,7 @@ gratuit:
   mention_boutique: true        # « Créé avec Virallink » en bas de la boutique
   commission_boutique: 0        # % prélevé sur les ventes de la boutique (ex. 5) — à annoncer dans les CGV avant de l'activer
   budget_usd: 0.5           # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  boutiques: 100                # boutiques illimitées et gratuites (décision de Mohamed) ; 100 = plafond technique anti-abus
+  boutiques: 20                 # boutiques gratuites, 20 par compte quelle que soit la formule (décision de Mohamed)
   stripe_price: ""
 
 createur:
@@ -57,7 +57,7 @@ createur:
   plans_30j_par_mois: 1          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: true
   budget_usd: 10            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  boutiques: 100                # boutiques illimitées et gratuites (décision de Mohamed) ; 100 = plafond technique anti-abus
+  boutiques: 20                 # boutiques gratuites, 20 par compte quelle que soit la formule (décision de Mohamed)
   stripe_price: "price_1UWimyRIieNlv5TvJS6JmW5o"
 
 pro:
@@ -70,7 +70,7 @@ pro:
   plans_30j_par_mois: 3          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: true
   budget_usd: 35            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  boutiques: 100                # boutiques illimitées et gratuites (décision de Mohamed) ; 100 = plafond technique anti-abus
+  boutiques: 20                 # boutiques gratuites, 20 par compte quelle que soit la formule (décision de Mohamed)
   stripe_price: "price_1UWinTRIieNlv5Tvk6amJHgi"
 
 agence:
@@ -83,5 +83,5 @@ agence:
   plans_30j_par_mois: 20          # plans de contenu de 30 jours (8 carrousels en tunnel de vente) : environ un par compte client géré
   veille_auto: true
   budget_usd: 60            # plafond du coût réel (collecte + IA) par mois, en $ : au-delà, plus de nouvelle analyse
-  boutiques: 100                # boutiques illimitées et gratuites (décision de Mohamed) ; 100 = plafond technique anti-abus
+  boutiques: 20                 # boutiques gratuites, 20 par compte quelle que soit la formule (décision de Mohamed)
   stripe_price: "price_1UWinjRIieNlv5TvGnA56Loj"

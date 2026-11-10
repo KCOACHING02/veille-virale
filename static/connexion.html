@@ -77,7 +77,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <h1>Tout pour vendre sur Instagram.</h1>
     <p>Tes boutiques en ligne d'abord, une par activité. Et quand tu veux plus de visites, les publications qui cartonnent dans ta niche, écrites pour toi.</p>
     <ul class="atouts">
-      <li>Boutiques gratuites et illimitées, une par activité</li>
+      <li>Jusqu'à 20 boutiques gratuites, une par activité</li>
       <li>Sans carte bancaire</li>
       <li><span><span class="essai-jours">7 jours</span> d'essai du reste, quand tu veux</span></li>
     </ul>
@@ -117,8 +117,8 @@ const suite = (params.get("suite") || "").match(/^\/(?!\/)[^\\]*$/) ? params.get
 const offre = params.get("offre") === "boutique" ? "boutique" : "";  // boutique gratuite (page /boutique-gratuite)
 let joursEssai = 7 + (params.get("parrain") ? 30 : 0);  // l'essai reste en réserve : il démarre au premier usage d'une fonction payante
 const TEXTES = {
-  inscription: () => offre ? ["Crée tes boutiques", "Gratuites et illimitées, sans carte bancaire.", "Créer ma boutique gratuite"]
-    : ["Crée ton compte", `Tes boutiques sont gratuites et illimitées. Le reste s'essaie ${joursEssai} jours quand tu veux, sans carte bancaire.`, "Créer mon compte"],
+  inscription: () => offre ? ["Crée tes boutiques", "Jusqu'à 20, gratuites et sans carte bancaire.", "Créer ma boutique gratuite"]
+    : ["Crée ton compte", `Tes boutiques sont gratuites (jusqu'à 20). Le reste s'essaie ${joursEssai} jours quand tu veux, sans carte bancaire.`, "Créer mon compte"],
   connexion: ["Bon retour", "Connecte-toi pour retrouver tes boutiques et tes contenus.", "Se connecter"],
   oubli: ["Mot de passe oublié", "Indique ton e-mail : tu reçois un lien pour en choisir un nouveau.", "Recevoir le lien"],
   nouveau: ["Nouveau mot de passe", "Choisis ton nouveau mot de passe (8 caractères minimum).", "Enregistrer et me connecter"],

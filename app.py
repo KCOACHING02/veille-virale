@@ -2213,7 +2213,7 @@ def bq_active():
 
 
 def max_boutiques(u: dict) -> int:
-    return 999 if est_admin(u) else int((ab.plans().get(ab.plan_effectif(u)) or {}).get("boutiques", 100) or 100)
+    return 999 if est_admin(u) else int((ab.plans().get(ab.plan_effectif(u)) or {}).get("boutiques", 20) or 20)
 
 
 @app.get("/api/boutiques")
