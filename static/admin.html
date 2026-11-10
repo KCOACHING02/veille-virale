@@ -95,16 +95,16 @@ async function charge() {
   if (!r.ok) { document.body.innerHTML = "<p style='padding:24px'>Accès réservé.</p>"; return; }
   D = await r.json();
   const k = D.kpi;
-  $("#kpis").innerHTML = [[k.clients, "clients inscrits"], [k.payants, "clients payants"], [k.essais, "essais en cours"],
+  $("#kpis").innerHTML = [[k.clients, "clients inscrits"], [k.payants, "clients payants"], [k.essais, `essais en cours · ${k.essais_reserve || 0} pas encore démarrés`],
     [k.mrr.toLocaleString("fr-FR") + " €", "revenu mensuel (abonnements actifs)"], [usd(k.cout_mois_usd), "coût Apify + Claude ce mois-ci"],
     ...(D.serveur?.total_mo ? [[`${(D.serveur.utilise_mo / 1024).toLocaleString("fr-FR", {maximumFractionDigits: 1})} / ${(D.serveur.total_mo / 1024).toLocaleString("fr-FR", {maximumFractionDigits: 1})} Go`, `disque utilisé${D.serveur.libre_mo < 300 ? " ⚠️ presque plein" : ""}${D.serveur.nettoyage?.date ? ` · nettoyage auto le ${new Date(D.serveur.nettoyage.date).toLocaleDateString("fr-FR")} : ${D.serveur.nettoyage.mo.toLocaleString("fr-FR")} Mo libérés` : ""}`],
       [`${(D.serveur.memoire_mo / 1024).toLocaleString("fr-FR", {maximumFractionDigits: 1})} Go`, `mémoire du serveur${D.serveur.memoire_mo <= 2048 ? " (petite machine : vidéos traitées une par une)" : ""}`]] : [])]
     .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
   const g = D.croissance || {};
-  $("#croissance").innerHTML = [[g.conversion == null ? "—" : g.conversion + " %", "conversion essai → payant (inscrites depuis 14 j+)"],
+  $("#croissance").innerHTML = [[g.conversion == null ? "—" : g.conversion + " %", "des inscrites depuis 14 j+ ont déjà payé"],
     [g.inactives, "clientes inactives depuis 14 jours"], [g.resilies, "abonnements résiliés"], [g.parrainages, "inscriptions par parrainage"],
     [g.boutiques, "boutiques en ligne"], [(g.ca_boutiques || 0).toLocaleString("fr-FR") + " €", `vendus par les boutiques (${g.ventes_boutiques || 0} ventes)`],
-    [(g.boutique_gratuite || {}).inscrites || 0, `inscrites par la boutique gratuite : ${(g.boutique_gratuite || {}).essais || 0} ont essayé la veille, ${(g.boutique_gratuite || {}).abonnees || 0} abonnées`]]
+    [(g.boutique_gratuite || {}).inscrites || 0, `inscrites par la boutique gratuite : ${(g.boutique_gratuite || {}).essais || 0} ont démarré leur essai, ${(g.boutique_gratuite || {}).abonnees || 0} abonnées`]]
     .map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
   const c = D.config;
   $("#config").innerHTML = [["Apify", c.apify], ["Claude", c.claude], ["Paiement Stripe", c.stripe], ["E-mails Resend", c.emails], ["Banque d'images", c.banque]]
@@ -119,8 +119,8 @@ function rendu() {
       <td class="qui"><b>${esc(c.prenom || "—")}${c.admin ? " · admin" : ""}</b><small>${esc(c.email)}</small>${c.job ? `<br><small>⏳ ${esc(c.job)}</small>` : ""}
         ${c.inactive ? '<br><span class="statut fin">inactive</span>' : ""}${c.parrain ? `<br><small>parrainée par ${esc(c.parrain)}</small>` : ""}${c.filleules ? `<br><small>💌 ${c.filleules} filleule${c.filleules > 1 ? "s" : ""}</small>` : ""}</td>
       <td><select data-champ="plan" aria-label="Formule">${plans.map(([id, nom]) => `<option value="${id}" ${id === c.plan ? "selected" : ""}>${esc(nom)}</option>`).join("")}</select></td>
-      <td><select data-champ="statut" aria-label="Statut">${["essai", "actif", "impaye", "resilie", "suspendu"].map(s => `<option ${s === c.statut ? "selected" : ""}>${s}</option>`).join("")}</select>
-        <br><span class="statut ${c.actif ? "actif" : "fin"}">${c.actif ? "accès ouvert" : "accès fermé"}</span>${c.statut === "essai" ? `<br><small>fin d'essai ${d(c.fin_essai)}</small>` : ""}</td>
+      <td><select data-champ="statut" aria-label="Statut">${["gratuit", "essai", "actif", "impaye", "resilie", "suspendu"].map(s => `<option ${s === c.statut ? "selected" : ""}>${s}</option>`).join("")}</select>
+        <br><span class="statut ${c.actif ? "actif" : "fin"}">${c.actif ? "accès ouvert" : "accès fermé"}</span>${c.statut === "essai" ? `<br><small>fin d'essai ${d(c.fin_essai)}</small>` : c.essai_dispo ? "<br><small>essai en réserve</small>" : ""}</td>
       <td>${d(c.cree)}</td><td>${d(c.derniere_connexion)}</td>
       <td class="num">${c.analyses_mois}</td><td class="num">${c.adaptations_mois}</td>
       <td class="num ${c.prix && c.cout_mois * 0.95 > c.prix * 0.5 ? "cher" : ""}">${usd(c.cout_mois)}</td><td class="num">${usd(c.cout_total)}</td>

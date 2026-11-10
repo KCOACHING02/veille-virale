@@ -58,13 +58,13 @@ def envoie(destinataire: str, sujet: str, contenu_html: str, attendre: bool = Fa
     return True
 
 
-def bienvenue(email: str, prenom: str, url: str, lien_confirmation: str = ""):
+def bienvenue(email: str, prenom: str, url: str, lien_confirmation: str = "", jours_essai: int = 7):
     p = html.escape(prenom or "")
     envoie(email, f"Bienvenue sur {NOM_PRODUIT} : confirme ton adresse", _gabarit(
         f"Bienvenue{' ' + p if p else ''} !",
-        "<p>Ton compte est prêt. Clique sur le bouton pour confirmer ton adresse : c'est ce qui débloque ta première veille.</p>"
-        "<p>Ensuite, en 5 minutes, l'assistant configure ta niche, ta voix et les comptes à surveiller. Chaque semaine, "
-        "tu reçois les Reels qui ont explosé chez les autres, déjà adaptés à ta niche : hook, script, légende et séquence DM.</p>",
+        "<p>Ton compte est prêt. Confirme ton adresse en un clic, puis crée ta boutique : elle est gratuite, sans limite de durée.</p>"
+        "<p>Ensuite, pour y amener du monde, Virallink te montre les publications qui cartonnent dans ta niche et les écrit pour toi. "
+        f"Tu as {jours_essai} jours d'essai gratuit pour ça, à démarrer quand tu veux.</p>",
         ("Confirmer mon adresse", lien_confirmation or url)))
 
 
@@ -72,7 +72,7 @@ def confirmation(email: str, prenom: str, lien: str):
     p = html.escape(prenom or "")
     envoie(email, "Confirme ton adresse e-mail", _gabarit(
         f"{'Bonjour ' + p + ', u' if p else 'U'}n clic et c'est bon",
-        "<p>Clique sur le bouton pour confirmer ton adresse e-mail. Ça débloque la veille, l'essai gratuit et l'écriture par Virall.ai.</p>"
+        "<p>Clique sur le bouton pour confirmer ton adresse e-mail. Ça débloque ton essai gratuit et l'écriture par Virall.ai.</p>"
         "<p style='color:#8A7F78;font-size:13px'>Si tu n'as pas créé de compte, ignore simplement cet e-mail.</p>",
         ("Confirmer mon adresse", lien)))
 
@@ -117,19 +117,19 @@ def synthese(email: str, prenom: str, blocs: list[tuple[str, str]], url: str, ur
 
 def relance(email: str, prenom: str, url: str):
     p = html.escape(prenom or "")
-    envoie(email, "Ta veille t'attend", _gabarit(
+    envoie(email, "Du nouveau dans ta niche", _gabarit(
         f"{'Coucou ' + p + ', t' if p else 'T'}u nous manques !",
-        "<p>Ça fait quelques jours qu'on ne t'a pas vue. Pendant ce temps, les comptes que tu surveilles ont continué à publier : "
-        "les Reels qui ont explosé cette semaine t'attendent, déjà adaptés à ta niche.</p><p>Dix minutes suffisent pour choisir les trois prochains à tourner.</p>",
-        ("Voir mes Reels", url)))
+        "<p>Ça fait quelques jours qu'on ne t'a pas vue. Pendant ce temps, de nouvelles publications ont explosé dans ta niche : "
+        "elles t'attendent dans ton espace.</p><p>Dix minutes suffisent pour choisir les trois prochaines à refaire à ta façon.</p>",
+        ("Voir ce qui cartonne", url)))
 
 
 def bienvenue_boutique(email: str, prenom: str, url: str, lien_confirmation: str = ""):
     p = html.escape(prenom or "")
     envoie(email, "Ta boutique t'attend : confirme ton adresse", _gabarit(
         f"Bienvenue{' ' + p if p else ''} !",
-        "<p>Ton compte est prêt. Confirme ton adresse en un clic, puis termine ta boutique : ton nom et ta photo, "
-        "un style, tes premiers liens. Compte deux minutes.</p>"
+        "<p>Ton compte est prêt. Confirme ton adresse en un clic, puis termine ta boutique : ton nom, tes couleurs, "
+        "ta première offre. Compte quelques minutes, les questions arrivent une par une.</p>"
         "<p>C'est gratuit, sans limite de durée. Tu pourras ajouter tes produits, récolter des e-mails et suivre tes visites.</p>",
         ("Confirmer et finir ma boutique", lien_confirmation or url)))
 
@@ -139,15 +139,23 @@ def _pied_conseils(url_reglages: str) -> str:
             f'<a href="{html.escape(url_reglages)}" style="color:#8A7F78">Ne plus les recevoir</a></p>')
 
 
-def conseil_boutique(n: int, email: str, prenom: str, publiee: bool, jours_essai: int, url_boutique: str, url_essai: str, url_reglages: str):
-    """Suite d'e-mails des inscrites par la boutique gratuite : utile d'abord, puis l'essai de la veille, sans insister."""
+def conseil_boutique(n: int, email: str, prenom: str, publiee: bool, jours_essai: int, url_boutique: str, url_essai: str, url_reglages: str,
+                     commencee: bool = True, url_tendances: str = ""):
+    """Suite d'e-mails des comptes dont l'essai n'a pas encore servi : la boutique d'abord, puis ce qui lui amène du monde
+    (les tendances de sa niche, gratuites), puis l'essai, sans insister. `url_tendances` vide : bibliothèque de niche coupée."""
     p = html.escape(prenom or "")
     salut = f"<p>Bonjour{' ' + p if p else ''},</p>"
     if n == 1:
-        if not publiee:
+        if not commencee:
+            sujet, titre = "Ta boutique gratuite t'attend", "Quelques minutes et elle est en ligne"
+            corps = (salut + "<p>Tu as créé ton compte, mais pas encore ta boutique. Virallink te pose les questions une par une : "
+                     "ton nom, tes couleurs, ta première offre. À la fin, tu as un lien à coller dans ta bio Instagram.</p>"
+                     "<p>C'est gratuit, sans limite de durée.</p>")
+            bouton = ("Créer ma boutique", url_boutique)
+        elif not publiee:
             sujet, titre = "Ta boutique n'est pas encore en ligne", "Il ne manque presque rien"
-            corps = (salut + "<p>Tu as commencé ta boutique mais elle n'est pas encore publiée. Le plus long est fait : "
-                     "choisis un style, ajoute un ou deux liens, et clique sur Publier.</p>"
+            corps = (salut + "<p>Tu as commencé ta boutique mais elle n'est pas encore en ligne. Le plus long est fait : "
+                     "tes réponses sont gardées, tu reprends là où tu t'es arrêtée.</p>"
                      "<p>Ensuite, colle ton lien dans ta bio Instagram. Tes abonnés le voient dès la minute suivante.</p>")
             bouton = ("Finir ma boutique", url_boutique)
         else:
@@ -160,38 +168,50 @@ def conseil_boutique(n: int, email: str, prenom: str, publiee: bool, jours_essai
             bouton = ("Ouvrir ma boutique", url_boutique)
         return envoie(email, sujet, _gabarit(titre, corps + _pied_conseils(url_reglages), bouton))
     if n == 2:
-        corps = (salut + "<p>Une boutique ne vend que si des gens arrivent dessus. Et sur Instagram, ce qui amène du monde "
-                 "dans ta bio, ce sont les Reels qui accrochent dès la première seconde.</p>"
-                 "<p>C'est exactement ce que fait le reste de Virallink : chaque semaine, il repère les Reels qui ont explosé "
-                 "dans ta niche, comprend pourquoi, et te les réécrit pour ton audience. Hook, script, légende, prêts à tourner.</p>"
-                 f"<p>Tu peux l'essayer {jours_essai} jours, sans carte bancaire. Si tu ne choisis rien ensuite, tu restes en gratuit "
-                 "et ta boutique ne bouge pas.</p>")
+        corps = salut + ("<p>Une boutique ne vend que si des gens arrivent dessus. Sur Instagram, ils viennent des publications "
+                         "qui accrochent dès la première seconde.</p>")
+        if url_tendances:
+            corps += ("<p>Dans ton espace, tu vois déjà celles qui explosent en ce moment dans ta niche. C'est gratuit, "
+                      "et mis à jour chaque jour.</p>"
+                      "<p>Quand l'une te plaît, Virall.ai peut la réécrire pour ton audience : accroche, texte, légende, prête à publier. "
+                      f"C'est ce que tu peux essayer {jours_essai} jours, sans carte bancaire. Si tu ne choisis rien ensuite, tu restes "
+                      "en gratuit et ta boutique ne bouge pas.</p>")
+            bouton = ("Voir ce qui cartonne dans ma niche", url_tendances)
+        else:
+            corps += ("<p>C'est ce que fait le reste de Virallink : il repère les publications qui ont explosé dans ta niche "
+                      "et te les réécrit pour ton audience. Accroche, texte, légende, prêtes à publier.</p>"
+                      f"<p>Tu peux l'essayer {jours_essai} jours, sans carte bancaire. Si tu ne choisis rien ensuite, tu restes en gratuit "
+                      "et ta boutique ne bouge pas.</p>")
+            bouton = (f"Essayer {jours_essai} jours", url_essai)
         return envoie(email, "D'où viennent les visites d'une boutique", _gabarit(
-            "Le secret, c'est ce qui se passe avant la boutique", corps + _pied_conseils(url_reglages), (f"Essayer {jours_essai} jours", url_essai)))
-    corps = (salut + f"<p>Petit rappel : ton essai de {jours_essai} jours de la veille est toujours disponible. "
-             "Tu choisis quelques comptes qui cartonnent dans ta niche, et tu reçois leurs meilleurs Reels réécrits pour toi, "
-             "avec ton planning de la semaine.</p>"
+            "Ce qui se passe avant la boutique", corps + _pied_conseils(url_reglages), bouton))
+    corps = (salut + f"<p>Petit rappel : tes {jours_essai} jours d'essai sont toujours disponibles. "
+             "Virall.ai réécrit pour toi les publications qui ont explosé dans ta niche, prépare ton mois de carrousels "
+             "et les met en images au studio.</p>"
              "<p>Pas de carte bancaire, pas d'engagement. C'est le dernier message à ce sujet.</p>")
-    return envoie(email, f"Ton essai de {jours_essai} jours t'attend toujours", _gabarit(
-        "Toujours partante ?", corps + _pied_conseils(url_reglages), (f"Démarrer mon essai", url_essai)))
+    return envoie(email, f"Tes {jours_essai} jours d'essai t'attendent toujours", _gabarit(
+        "Toujours partante ?", corps + _pied_conseils(url_reglages), ("Démarrer mon essai", url_essai)))
 
 
-def fin_essai(n: int, email: str, prenom: str, adaptes: int, formule: dict, url: str, url_reglages: str):
-    """n=1 : deux jours avant la fin ; n=2 : le jour où l'essai se termine."""
+def fin_essai(n: int, email: str, prenom: str, adaptes: int, formule: dict, url: str, url_reglages: str, crees: int = 0):
+    """n=1 : deux jours avant la fin ; n=2 : le jour où l'essai se termine. Le bilan ne cite que ce qu'elle a vraiment utilisé."""
     p = html.escape(prenom or "")
     prix = f"{formule.get('prix', 0):.2f}".replace(".", ",").replace(",00", "")
     nom = html.escape(formule.get("nom") or "Créateur")
-    bilan = (f"<p>Pendant ton essai, Virallink a écrit <b>{adaptes} publication{'s' if adaptes > 1 else ''}</b> pour toi, "
-             "à partir des Reels qui ont explosé dans ta niche.</p>") if adaptes else ""
+    faits = [f"Virall.ai a écrit <b>{adaptes} publication{'s' if adaptes > 1 else ''}</b> pour toi" if adaptes else "",
+             f"tu as créé <b>{crees} contenu{'s' if crees > 1 else ''}</b> au studio" if crees else ""]
+    faits = [x for x in faits if x]
+    bilan = f"<p>Pendant ton essai, {' et '.join(faits)}.</p>" if faits else ""
     pied = (f'<p style="font-size:12px;color:#8A7F78;margin-top:26px">Sans engagement, résiliable en un clic. '
             f'<a href="{html.escape(url_reglages)}" style="color:#8A7F78">Ne plus recevoir ces e-mails</a></p>')
     if n == 1:
         corps = (f"<p>Bonjour{' ' + p if p else ''},</p><p>Ton essai gratuit se termine dans deux jours.</p>" + bilan +
-                 f"<p>Pour garder ta veille du lundi, ton planning et l'écriture par Virall.ai, la formule <b>{nom}</b> "
-                 f"est à <b>{prix} € par mois</b>. Ta veille continue sans interruption.</p>")
+                 f"<p>Pour continuer à recevoir chaque lundi les publications qui cartonnent dans ta niche, écrites pour toi, "
+                 f"la formule <b>{nom}</b> est à <b>{prix} € par mois</b>.</p>"
+                 "<p>Si tu ne choisis rien, rien n'est prélevé : tu passes en gratuit et ta boutique reste en ligne.</p>")
         return envoie(email, "Ton essai se termine dans 2 jours", _gabarit("Plus que deux jours", corps + pied, ("Choisir ma formule", url)))
-    corps = (f"<p>Bonjour{' ' + p if p else ''},</p><p>Ton essai gratuit est terminé. Ton compte reste ouvert : tu gardes ta boutique, "
-             "tes Reels et tes créations.</p>" + bilan +
-             f"<p>La veille du lundi et les adaptations sont en pause. Pour les retrouver, la formule <b>{nom}</b> est à "
-             f"<b>{prix} € par mois</b>, sans engagement.</p>")
-    return envoie(email, "Ton essai est terminé : ta veille est en pause", _gabarit("Ta veille est en pause", corps + pied, ("Reprendre ma veille", url)))
+    corps = (f"<p>Bonjour{' ' + p if p else ''},</p><p>Ton essai gratuit est terminé, et rien n'est prélevé. Ton compte reste ouvert "
+             "en gratuit : tu gardes ta boutique en ligne et tout ce que tu as créé.</p>" + bilan +
+             f"<p>L'écriture par Virall.ai, ton plan du mois et le studio sont en pause. Pour les retrouver, la formule <b>{nom}</b> est à "
+             f"<b>{prix} € par mois</b>.</p>")
+    return envoie(email, "Ton essai est terminé", _gabarit("Ton essai est terminé", corps + pied, ("Choisir ma formule", url)))

@@ -17,9 +17,10 @@ essai:
   boutiques: 1                  # boutiques en lien dans la bio
   stripe_price: ""
 
-# Formule gratuite : à la fin de l'essai (ou après une résiliation), le compte y passe automatiquement.
-# Elle ne consomme presque rien : classement des Reels viraux (sans adaptation ni vidéo lue), boutique, carrousels
-# écrits par la cliente elle-même (avec filigrane). Tout ce qui fait travailler Claude, Apify ou le montage est réservé aux abonnées.
+# Formule gratuite : tout nouveau compte y démarre (l'essai reste en réserve et ne commence qu'au premier usage d'une
+# fonction payante) ; à la fin de l'essai ou après une résiliation, le compte y revient automatiquement.
+# Elle ne consomme presque rien : la boutique et les tendances de sa niche en lecture (bibliothèque commune, déjà collectée).
+# Tout ce qui fait travailler Claude, Apify ou le montage est réservé aux abonnées.
 gratuit:
   nom: "Gratuit"
   prix_mensuel: 0
@@ -27,6 +28,7 @@ gratuit:
   analyses_par_mois: 3          # classements de comptes, sans adaptation
   adaptations_par_mois: 0
   comptes_surveilles: 3         # comptes par classement
+  comptes_perso: false          # pas de collecte de ses propres comptes : tendances de la bibliothèque seulement
   studio_par_mois: 2            # carrousels avec ses propres textes
   plans_30j_par_mois: 0          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: false

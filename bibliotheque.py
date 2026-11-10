@@ -438,18 +438,34 @@ def _norm(t: str) -> str:
     return "".join(ch for ch in unicodedata.normalize("NFD", str(t or "").lower()) if unicodedata.category(ch) != "Mn")
 
 
-def devine_niches(cfg: dict) -> list[str]:
-    """Niche(s) d'une cliente d'après son profil (mots-clés, sans IA). La 2e seulement si elle est presque aussi proche."""
+def _scores_niches(cfg: dict, plus: str = "") -> list[tuple[int, str]]:
     n = cfg.get("niche") or {}
     texte = _norm(" ".join(str(x) for x in [n.get("nom"), n.get("description"), n.get("cible"), n.get("offre"),
-                                              " ".join(n.get("douleurs") or [])] if x))
-    scores = sorted(((sum(texte.count(_norm(m)) for m in v["mots"]), k) for k, v in niches().items()), reverse=True)
+                                              " ".join(n.get("douleurs") or []), plus] if x))
+    return sorted(((sum(texte.count(_norm(m)) for m in v["mots"]), k) for k, v in niches().items()), reverse=True)
+
+
+def devine_niches(cfg: dict, plus: str = "", strict: bool = False) -> list[str]:
+    """Niche(s) d'une cliente d'après son profil (mots-clés, sans IA). La 2e seulement si elle est presque aussi proche.
+    `plus` : ce qu'elle a déjà dit ailleurs (création de sa boutique), pour ne pas lui reposer la question à vide.
+    `strict` : rien si aucun mot ne correspond (au lieu de la niche par défaut)."""
+    scores = _scores_niches(cfg, plus)
     if not scores or scores[0][0] == 0:
+        if strict:
+            return []
         return ["coaching"] if "coaching" in niches() else list(niches())[:1]
     res = [scores[0][1]]
     if len(scores) > 1 and scores[1][0] and scores[1][0] >= 0.7 * scores[0][0]:
         res.append(scores[1][1])
     return res
+
+
+def niche_connue(cfg: dict) -> bool:
+    """La niche a été choisie, ou son profil suffit à la deviner. Sinon on la lui demande avant de montrer des tendances."""
+    if [k for k in ((cfg.get("bibliotheque") or {}).get("niches") or []) if k in niches()]:
+        return True
+    scores = _scores_niches(cfg)
+    return bool(scores and scores[0][0])
 
 
 def niches_de(cfg: dict) -> list[str]:

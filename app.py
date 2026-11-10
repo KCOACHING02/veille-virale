@@ -125,14 +125,18 @@ def en_demo() -> bool:
     return DEMO_FORCE or not (os.getenv("APIFY_TOKEN") and os.getenv("ANTHROPIC_API_KEY"))
 
 
+def _admins() -> set[str]:
+    return {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()}
+
+
 def est_admin(u: dict) -> bool:
-    return u["email"] in {e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()}
+    return u["email"] in _admins()
 
 
 def droits(u: dict) -> dict:
     d = ab.droits(u)
     if est_admin(u):
-        d.update(actif=True, nom_plan="Administrateur", veille_auto=bool(u.get("veille_auto")), gratuit=False,
+        d.update(actif=True, nom_plan="Administrateur", veille_auto=bool(u.get("veille_auto")), gratuit=False, essai_dispo=False,
                  options={**ab.OPTIONS_DEFAUT, "filigrane": False, "mention_boutique": False},
                  reste={"analyses": 9999, "adaptations": 9999, "studio": 9999})
     return d
@@ -277,6 +281,29 @@ def reprend_analyses():
             traceback.print_exc()
 
 
+def remet_essais_en_reserve():
+    """Passage à « l'essai au premier usage payant » (une seule fois, au démarrage) : les essais lancés à l'inscription et
+    jamais utilisés repassent en réserve. On écarte aussi les comptes qui ont une analyse, finie ou interrompue : leur essai
+    a servi même si rien n'est encore compté (l'usage est enregistré à la fin d'une analyse)."""
+    entames = set()
+    try:
+        for f in JOBS_DIR.glob("*.json") if JOBS_DIR.exists() else []:
+            try:
+                entames.add(int(json.loads(f.read_text(encoding="utf-8")).get("uid")))
+            except (ValueError, TypeError, OSError):
+                pass
+        espaces = DATA / "espaces"
+        for d in espaces.iterdir() if espaces.exists() else []:
+            if d.name.isdigit() and any(x.name != f"{moteur.TENDANCES}.json" and not x.name.startswith("lot_")
+                                        for x in (d / "analyses").glob("*.json")):
+                entames.add(int(d.name))
+        n = ab.remet_essais_en_reserve(_admins(), RELANCES_BOUTIQUE_JOURS, entames)
+        if n:
+            print(f"Essai au premier usage payant : {n} compte(s) dont l'essai n'avait jamais servi le retrouvent en réserve.")
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+
+
 def job_en_cours(uid: int, studio_: bool = False):
     return next((j for j in JOBS.values() if j["uid"] == uid and j["statut"] in ("en attente", "en cours")
                  and j.get("studio", False) == studio_), None)
@@ -343,7 +370,8 @@ def inscription():
     if u.get("origine") == "boutique":
         emails.bienvenue_boutique(u["email"], u.get("prenom") or "", url_site() + "/app?boutique=1", lien_confirmation(u))
     else:
-        emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app", lien_confirmation(u))
+        emails.bienvenue(u["email"], u.get("prenom") or "", url_site() + "/app", lien_confirmation(u),
+                         jours_essai=ab.droits(ab.get(u["id"]))["essai_jours"])
     return jsonify({"ok": True, "boutique": u.get("origine") == "boutique"})
 
 
@@ -376,10 +404,10 @@ def renvoie_confirmation():
 @app.post("/api/essai")
 @connecte
 def demarre_essai():
-    """Inscrite par la boutique gratuite : elle démarre l'essai de la veille quand elle le décide."""
+    """L'essai est en réserve depuis l'inscription : il démarre ici, au premier usage d'une fonction payante."""
     _exige_confirmation(g.u)
     if not ab.demarre_essai(g.u["id"]):
-        return jsonify({"erreur": "Ton essai gratuit a déjà été utilisé. Choisis une formule pour profiter de la veille."}), 400
+        return jsonify({"erreur": "Ton essai gratuit a déjà été utilisé. Choisis une formule pour continuer."}), 400
     return jsonify({"ok": True, "abonnement": droits(ab.get(g.u["id"]))})
 
 
@@ -458,16 +486,38 @@ def application():
     return _page("index.html")
 
 
+def _commission(plan: dict) -> float:
+    """% prélevé sur les ventes de la boutique pour cette formule (plans.yaml, sinon BOUTIQUE_COMMISSION)."""
+    com = plan.get("commission_boutique")
+    try:
+        return max(0.0, min(30.0, float(os.getenv("BOUTIQUE_COMMISSION", "0") if com is None else com)))
+    except ValueError:
+        return 0.0
+
+
+def _messages_ouverts() -> bool:
+    """Messages automatiques proposés à toutes (application Meta validée, ou démo) : sinon on ne les annonce pas dans les formules."""
+    return en_demo() or (ma.configure() and os.getenv("INSTAGRAM_OUVERT") == "1")
+
+
+def _formule(k: str, v: dict) -> dict:
+    """Ce qu'une carte de formule affiche : les bénéfices d'abord (accueil public et page Abonnement), les limites en détail."""
+    opt = {o: bool(v.get(o, d)) for o, d in ab.OPTIONS_DEFAUT.items()}
+    return {"id": k, "nom": v.get("nom"), "prix_mensuel": v.get("prix_mensuel"), "gratuit": bool(v.get("gratuit")),
+            "analyses_par_mois": v.get("analyses_par_mois"), "adaptations_par_mois": v.get("adaptations_par_mois"),
+            "comptes_surveilles": v.get("comptes_surveilles"), "veille_auto": bool(v.get("veille_auto")),
+            "studio_par_mois": v.get("studio_par_mois"), "plans_30j_par_mois": v.get("plans_30j_par_mois", 1),
+            "boutiques": v.get("boutiques", 1), "comptes_perso": opt["comptes_perso"], "tunnels": opt["tunnels"],
+            "sequences_emails": opt["sequences_emails"], "messages_auto": opt["messages_auto"] and _messages_ouverts(),
+            "mention_boutique": opt["mention_boutique"], "commission": _commission(v)}
+
+
 @app.get("/api/formules")
 def formules_publiques():
     p = ab.plans()
-    g_ = p.get("gratuit") or {}
-    com = g_.get("commission_boutique")
-    com = float(os.getenv("BOUTIQUE_COMMISSION", "0") if com is None else com)
-    return jsonify({"essai_jours": p["essai"].get("duree_jours", 7), "commission_gratuit": com,
-                    "plans": [{"id": k, **{x: v.get(x) for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois",
-                                                                 "comptes_surveilles", "veille_auto", "studio_par_mois", "gratuit")}}
-                              for k, v in p.items() if k != "essai"]})
+    return jsonify({"essai_jours": p["essai"].get("duree_jours", 7), "commission_gratuit": _commission(p.get("gratuit") or {}),
+                    "tendances": bibliotheque.active(),
+                    "plans": [_formule(k, v) for k, v in p.items() if k != "essai"]})
 
 
 @app.get("/<any(cgv, confidentialite, 'mentions-legales'):page>")
@@ -521,7 +571,8 @@ def etat():
         "niche": cfg["niche"]["nom"], "criteres": cfg["analyse"], "objectifs": cfg["objectifs"],
         "comptes": cfg["comptes"], "mon_compte": cfg.get("mon_compte") or {}, "job": job_en_cours(g.u["id"]),
         "boutique": bq.pseudo_de(g.u["id"]), "boutique_etat": _avancement_boutique(g.u["id"]),
-        "bibliotheque": {"active": bibliotheque.active(), "niches": [bibliotheque.niches()[k]["nom"] for k in bibliotheque.niches_de(cfg)]},
+        "bibliotheque": {"active": bibliotheque.active(), "niches": [bibliotheque.niches()[k]["nom"] for k in bibliotheque.niches_de(cfg)],
+                         "a_choisir": not bibliotheque.niche_connue(cfg)},  # ni choisie ni devinable : on la lui demande
     })
 
 
@@ -703,7 +754,11 @@ def profil():
     voix = "\n".join(l for l in voix.splitlines() if not l.startswith("<!--") and "COLLE ICI" not in l).strip()
     import json
     prof = json.loads(g.esp.profil_compte.read_text(encoding="utf-8")) if g.esp.profil_compte.exists() else None
-    return jsonify({"niche": cfg["niche"], "objectifs": cfg["objectifs"], "analyse": cfg["analyse"], "comptes": cfg["comptes"],
+    try:  # ce qu'elle a déjà dit en créant sa boutique (ses clientes, ce qu'elle leur apporte) : repris, pas redemandé
+        act = (bq.lit_page(g.u["id"]) or {}).get("activite") or {}
+    except Exception:  # noqa: BLE001
+        act = {}
+    return jsonify({"activite_boutique": {k: str(act.get(k) or "") for k in ("cible", "apport")}, "niche": cfg["niche"], "objectifs": cfg["objectifs"], "analyse": cfg["analyse"], "comptes": cfg["comptes"],
                     "mon_compte": cfg.get("mon_compte") or {}, "hashtags": {"instagram": cfg["decouverte"].get("hashtags_instagram") or [],
                                                                              "tiktok": cfg["decouverte"].get("hashtags_tiktok") or []},
                     "voix": voix, "profil_compte": prof, "limite_comptes": droits(g.u)["quotas"]["comptes_surveilles"],
@@ -916,8 +971,7 @@ def _lance_releve(uid: int, forcer: bool = False):
 def abonnement():
     p = ab.plans()
     return jsonify({"droits": droits(g.u), "stripe": ab.stripe_actif(), "demo": en_demo(),
-                    "plans": [{"id": k, **{x: v[x] for x in ("nom", "prix_mensuel", "analyses_par_mois", "adaptations_par_mois", "comptes_surveilles", "veille_auto", "studio_par_mois")}}
-                              for k, v in p.items() if k not in ("essai", "gratuit")],
+                    "plans": [_formule(k, v) for k, v in p.items() if k not in ("essai", "gratuit")],
                     "portail": bool(g.u.get("stripe_client"))})
 
 
@@ -2755,7 +2809,7 @@ def boutique_stripe():
 @app.get("/manifest.webmanifest")
 def manifeste():
     from flask import Response
-    m = {"name": "Virallink", "short_name": "Virallink", "description": "Les Reels viraux de ta niche, adaptés pour toi.",
+    m = {"name": "Virallink", "short_name": "Virallink", "description": "Tout pour vendre sur Instagram : ta boutique et les contenus de ta niche, écrits pour toi.",
          "start_url": "/app?source=app", "scope": "/", "display": "standalone", "orientation": "portrait",
          "background_color": "#F6F4F8", "theme_color": "#FF4F79", "lang": "fr",
          "icons": [{"src": "/static/icones/icone-192.png", "sizes": "192x192", "type": "image/png"},
@@ -2852,7 +2906,7 @@ def synthese_de(u: dict) -> list[tuple[str, str]]:
     return blocs
 
 
-RELANCES_BOUTIQUE_JOURS = (2, 5, 10)  # e-mails des inscrites par la boutique gratuite
+RELANCES_BOUTIQUE_JOURS = (2, 5, 10)  # conseils par e-mail tant que l'essai est en réserve (même calendrier dans ab.remet_essais_en_reserve)
 
 
 def envoie_relances_essai():
@@ -2870,28 +2924,36 @@ def envoie_relances_essai():
             if not n or deja >= n:
                 continue
             ab.maj(u["id"], relances_essai=n)
-            emails.fin_essai(n, u["email"], u.get("prenom") or "", ab.usage(u["id"])["adaptations"], ab.formule_conseillee(),
-                             url_site() + "/app?formules=1", url_site() + "/app#parametres")
+            us = ab.usage(u["id"])
+            emails.fin_essai(n, u["email"], u.get("prenom") or "", us["adaptations"], ab.formule_conseillee(),
+                             url_site() + "/app?formules=1", url_site() + "/app#parametres", crees=us["studio"])
         except Exception:  # noqa: BLE001
             traceback.print_exc()
 
 
 def envoie_relances_boutique():
-    """Conseils puis invitation à l'essai de la veille, aux inscrites par la boutique gratuite (3 e-mails au plus)."""
+    """Tant que l'essai est en réserve (3 e-mails au plus) : un conseil pour sa boutique, puis ce qui lui amène du monde
+    (les tendances de sa niche), puis l'invitation à l'essai. Tout compte, venu ou non par la boutique gratuite."""
     if not 9 <= datetime.now().hour < 20:
         return
     for u in ab.tous():
         try:
-            n = (u.get("relances_boutique") or 0) + 1
-            if (u.get("origine") != "boutique" or n > len(RELANCES_BOUTIQUE_JOURS) or not u.get("synthese", 1)
+            deja = u.get("relances_boutique") or 0
+            if (deja >= len(RELANCES_BOUTIQUE_JOURS) or not u.get("synthese", 1) or est_admin(u)
                     or not ab.essai_dispo(u) or not u.get("cree")):
                 continue
-            if (datetime.now() - datetime.fromisoformat(u["cree"])).days < RELANCES_BOUTIQUE_JOURS[n - 1]:
+            age = (datetime.now() - datetime.fromisoformat(u["cree"])).days
+            n = sum(1 for j in RELANCES_BOUTIQUE_JOURS if age >= j)  # un seul e-mail à la fois : le dernier dû, sans rattraper les manqués
+            if n <= deja:
                 continue
             ab.maj(u["id"], relances_boutique=n)
+            if age > RELANCES_BOUTIQUE_JOURS[-1] + 7:  # compte ancien resté sans conseil (e-mails coupés à l'époque…) : on n'écrit plus
+                continue
             page = bq.lit_page(u["id"]) or {}
-            emails.conseil_boutique(n, u["email"], u.get("prenom") or "", bool(page.get("publie")), ab.plans()["essai"].get("duree_jours", 7),
-                                    url_site() + "/app?boutique=1", url_site() + "/app?essai=1", url_site() + "/app#parametres")
+            emails.conseil_boutique(n, u["email"], u.get("prenom") or "", bool(page.get("publie")), ab.droits(u)["essai_jours"],
+                                    url_site() + "/app?boutique=1", url_site() + "/app?essai=1", url_site() + "/app#parametres",
+                                    commencee=bool(bq.pseudo_de(u["id"])),
+                                    url_tendances=url_site() + "/app?tendances=1" if bibliotheque.active() else "")
         except Exception:  # noqa: BLE001
             traceback.print_exc()
 
@@ -2942,8 +3004,17 @@ def tendances():
 @connecte
 def bib_niches():
     cfg = g.esp.lit_config()
+    choisies = bool((cfg.get("bibliotheque") or {}).get("niches"))
+    miennes = bibliotheque.niches_de(cfg)
+    if not choisies and not bibliotheque.niche_connue(cfg):  # rien dans son profil : ce qu'elle a dit en créant sa boutique
+        try:
+            act = (bq.lit_page(g.u["id"]) or {}).get("activite") or {}
+            plus = " ".join(str(x) for x in (act.get("cible"), act.get("apport")) if x)
+            miennes = bibliotheque.devine_niches(cfg, plus, strict=True)
+        except Exception:  # noqa: BLE001
+            miennes = []
     return jsonify({"niches": [{"id": k, "nom": v["nom"]} for k, v in bibliotheque.niches().items()],
-                    "miennes": bibliotheque.niches_de(cfg), "choisies": bool((cfg.get("bibliotheque") or {}).get("niches"))})
+                    "miennes": miennes, "choisies": choisies})
 
 
 @app.put("/api/bibliotheque/niches")
@@ -3047,6 +3118,7 @@ def admin_donnees():
         c["filleules"] = sum(1 for x in tous_.values() if x.get("parrain") == c["id"])
         c["a_paye"] = bool(u.get("a_paye"))
         c["origine"] = u.get("origine") or ""
+        c["essai_dispo"] = bool(u) and not c["admin"] and ab.essai_dispo(u)  # essai gardé en réserve (pas encore démarré)
     anciens = [c for c in clients if (c["cree"] or "") < limite]
     mois = datetime.now().strftime("%Y-%m")
     ca_boutiques, boutiques_publiees, ventes_boutiques = 0, 0, 0
@@ -3074,6 +3146,7 @@ def admin_donnees():
         "clients": clients, "plans": {k: v["nom"] for k, v in p.items()},
         "kpi": {"clients": len(clients), "payants": sum(1 for c in clients if c["prix"]),
                 "essais": sum(1 for c in clients if c["statut"] == "essai" and c["actif"]),
+                "essais_reserve": sum(1 for c in clients if c["essai_dispo"]),
                 "mrr": mrr, "cout_mois_usd": round(cout_mois, 2)},
         "config": {"apify": bool(os.getenv("APIFY_TOKEN")), "claude": bool(os.getenv("ANTHROPIC_API_KEY")), "banque": banque.active(),
                    "stripe": ab.stripe_actif(), "emails": emails.actif(), "demo": en_demo(), "url": url_site()},
@@ -3113,6 +3186,8 @@ def admin_modifie(uid):
     if c.get("prolonger_jours"):
         base = max(datetime.now(), datetime.fromisoformat(u["fin_essai"]) if u.get("fin_essai") else datetime.now())
         champs.update(fin_essai=(base + timedelta(days=int(c["prolonger_jours"]))).isoformat(timespec="minutes"), statut="essai")
+        if champs.get("plan", u["plan"]) == "gratuit":  # compte resté en gratuit (essai en réserve) : l'essai démarre maintenant
+            champs.update(plan="essai", essai_utilise=1)
     ab.maj(uid, **champs)
     res = {"ok": True}
     if c.get("lien_mdp"):
@@ -3404,6 +3479,7 @@ def main():
     ap.add_argument("--sans-planificateur", action="store_true")
     args = ap.parse_args()
     DEMO_FORCE = args.demo
+    remet_essais_en_reserve()
     reprend_analyses()
     if not args.sans_planificateur:
         threading.Thread(target=planificateur, daemon=True).start()

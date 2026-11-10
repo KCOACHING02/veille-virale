@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Virallink — tes Reels de la semaine, inspirés de ceux qui ont explosé</title>
-<meta name="description" content="Repère les Reels Instagram et TikTok qui explosent dans ta niche, comprends pourquoi, et reçois-les adaptés à ton audience : hook, script, légende, carrousel et messages privés.">
+<title>Virallink — tout pour vendre sur Instagram : ta boutique gratuite et les contenus de ta niche</title>
+<meta name="description" content="Crée ta boutique lien en bio, gratuite et sans limite de durée. Puis vois les publications qui cartonnent dans ta niche et fais-les réécrire pour ton audience : accroche, texte, légende, carrousels et Reels prêts à publier.">
 <link rel="icon" type="image/png" href="/static/icones/favicon.png">
 <link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
 <meta name="theme-color" content="#FF4F79">
@@ -44,19 +44,27 @@ h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em}
 /* Héros */
 .heros{background:var(--nuit);color:#fff;overflow:hidden}
 .heros .l{display:grid;grid-template-columns:1.15fr 1fr;gap:40px;align-items:center;padding-top:72px;padding-bottom:80px}
-.heros h1{font-weight:800;font-size:clamp(40px,6vw,70px);line-height:.98;font-stretch:78%;max-width:13ch}
+.heros h1{font-weight:800;font-size:clamp(40px,6vw,70px);line-height:.98;font-stretch:78%;max-width:15ch;text-wrap:balance}
 .heros h1 em{font-style:normal;color:var(--glow)}
 .heros p{color:#D8CEDD;font-size:18px;max-width:46ch;margin:22px 0 30px}
 .heros .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .heros .cta small{color:#B9AEC0;font-size:14px}
-.pile{display:flex;gap:16px;justify-content:center;transform:rotate(-4deg)}
-.tel{width:150px;aspect-ratio:9/16;border-radius:22px;background:linear-gradient(160deg,#4A2F55,#2E1F35);position:relative;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0;box-shadow:0 30px 60px -24px rgba(0,0,0,.7)}
-.tel:nth-child(2){transform:translateY(-30px);background:linear-gradient(160deg,#FF4F79,#B9305A)}
-.tel:nth-child(3){transform:translateY(14px);background:linear-gradient(160deg,#3D2A49,#22172A)}
-.tel b{font:800 36px/1 var(--display);font-stretch:75%}
-.tel small{font-size:12px;opacity:.85}
-.tel .ok{position:absolute;top:12px;left:12px;font-size:11px;font-weight:600;background:#13936B;border-radius:99px;padding:3px 8px}
-.tel .hook{position:absolute;top:44px;left:12px;right:12px;font:700 15px/1.2 var(--display);background:rgba(0,0,0,.35);border-radius:10px;padding:8px}
+.heros .sur{color:var(--glow);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 14px}
+/* Illustration du héros : sa boutique, et une publication de sa niche écrite pour elle */
+.scene{position:relative;display:grid;place-items:center;padding:6px 0 18px}
+.maquette{width:260px;border-radius:34px;border:8px solid #120C15;background:linear-gradient(170deg,#FFE3EA,#F6F4F8 60%);padding:26px 18px 22px;color:#271B2D;box-shadow:0 30px 60px -24px rgba(0,0,0,.7);transform:rotate(3deg)}
+.maquette .av{width:64px;height:64px;border-radius:50%;margin:0 auto 10px;background:linear-gradient(140deg,#FF4F79,#B9305A)}
+.maquette b{display:block;text-align:center;font:800 18px/1.1 var(--display)}
+.maquette small{display:block;text-align:center;color:#5E5166;font-size:12px;margin:4px 0 14px}
+.maquette i{display:block;font-style:normal;background:#fff;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:13px;font-weight:600;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.maquette i.fort{background:#FF4F79;color:#fff}
+.maquette .prod{display:flex;gap:10px;align-items:center;background:#fff;border-radius:12px;padding:8px;margin:8px 0;font-size:12.5px;font-weight:600}
+.maquette .prod span{width:38px;height:38px;border-radius:9px;background:#EDE9F1;flex-shrink:0}
+.maquette .prod em{font-style:normal;margin-left:auto;color:#FF4F79;white-space:nowrap}
+.tendance{position:absolute;left:max(0px,calc(50% - 250px));bottom:-6px;width:178px;border-radius:18px;padding:14px;background:linear-gradient(160deg,#4A2F55,#22172A);color:#fff;transform:rotate(-6deg);box-shadow:0 24px 50px -20px rgba(0,0,0,.8);display:grid;gap:8px;border:1px solid rgba(255,255,255,.12)}
+.tendance .ok{justify-self:start;font-size:11px;font-weight:600;background:#13936B;border-radius:99px;padding:3px 8px}
+.tendance b{font:700 15px/1.25 var(--display)}
+.tendance small{font-size:12px;color:#FFB7C7;font-weight:600}
 /* Sections */
 section.s{padding:84px 0}
 .surtitre{color:var(--glow);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
@@ -80,12 +88,15 @@ section.s{padding:84px 0}
 .tarif.fort{border-color:var(--glow)}
 .tarif .badge{align-self:flex-start;background:var(--glow);color:#fff;font-size:12px;font-weight:600;border-radius:99px;padding:3px 10px;margin-bottom:10px}
 .tarif h3{font-size:22px}
-.tarif .prix{font:800 44px/1 var(--display);font-stretch:80%;margin:12px 0 4px}
+.tarif .prix{font:800 40px/1 var(--display);font-stretch:80%;margin:12px 0 4px;white-space:nowrap}
 .tarif .prix small{font:500 15px var(--body);color:var(--ink-3)}
 .tarif ul{list-style:none;padding:0;margin:16px 0 22px;color:var(--ink-2);font-size:15px}
 .tarif li{padding:5px 0 5px 24px;position:relative}
 .tarif li::before{content:"";position:absolute;left:2px;top:12px;width:12px;height:7px;border-left:2px solid var(--ok);border-bottom:2px solid var(--ok);transform:rotate(-45deg)}
-.tarif .btn{margin-top:auto}
+.tarif .detail{margin:-12px 0 20px;color:var(--ink-3);font-size:13px}
+.tarif .btn{margin-top:auto;padding:12px 8px;font-size:15px;white-space:normal;text-align:center}
+.apres-tarifs{color:var(--ink-2);font-size:15px;margin:22px 0 0;max-width:70ch}
+.note-cta{color:var(--ink-3);margin-left:8px}
 .ce-qui-compte{max-width:720px;margin:22px auto 0;color:var(--ink-2);font-size:15px;text-align:left}
 .ce-qui-compte summary{cursor:pointer;font-weight:600;text-align:center}
 .ce-qui-compte p{margin:10px 0 0}
@@ -104,99 +115,110 @@ footer .l{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
 footer .l span{margin-right:auto}
 @media (max-width:900px){
   .heros .l{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px}
-  .pile{transform:rotate(-4deg) scale(.8);margin:-10px 0 -30px}
+  .scene{margin-top:4px}
+  .note-cta{display:block;margin:10px 0 0}
   .etapes,.grille{grid-template-columns:1fr}
   .tete nav{display:none}
   section.s{padding:60px 0}
 }
-@media (max-width:420px){.tel{width:110px}.tel b{font-size:28px}.tel .hook{font-size:12px}.tete .btn{display:none}}
+@media (max-width:420px){.maquette{width:232px}.tendance{left:0;width:158px}.tete .btn{display:none}}
 </style>
 </head>
 <body>
 <div class="bandeau-parrain" id="bandeau-parrain" hidden>💌 Une amie t'a invitée : tu as <b>un mois d'essai gratuit en plus</b>.</div>
 <header class="tete"><div class="l">
   <a class="marque" href="/"><i></i>Virallink</a>
-  <nav aria-label="Sections"><a href="#fonctionnement">Comment ça marche</a><a href="#contenu">Ce que tu reçois</a><a href="#tarifs">Tarifs</a><a href="#faq">Questions</a></nav>
+  <nav aria-label="Sections"><a href="#fonctionnement">Comment ça marche</a><a href="#boutiques">Ta boutique</a><a href="#contenu">Tes contenus</a><a href="#tarifs">Tarifs</a><a href="#faq">Questions</a></nav>
   <a class="connexion" href="/connexion#connexion">Se connecter</a>
-  <a class="btn prim" href="/connexion">Essai gratuit</a>
+  <a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique</a>
 </div></header>
 
 <section class="heros"><div class="l">
   <div>
-    <h1>Les Reels qui explosent chez les autres, <em>réécrits pour ta niche.</em></h1>
-    <p>Choisis les comptes que tu admires. Chaque semaine, Virallink repère leurs Reels qui ont fait bien plus de vues que d'habitude, comprend pourquoi, et te les rend adaptés à ton audience, prêts à tourner et à publier.</p>
-    <div class="cta"><a class="btn prim" href="/connexion" id="cta-essai">Essayer 7 jours gratuitement</a><small>Sans carte bancaire</small></div>
+    <p class="sur">Tout pour vendre sur Instagram</p>
+    <h1>Ta boutique en ligne, <em id="h1-accent">gratuite et sans commission.</em></h1>
+    <p>Vends tes e-books, tes séances et tes liens affiliés depuis ta bio. Ensuite, Virallink te montre ce qui cartonne dans ta niche et l'écrit pour toi.</p>
+    <div class="cta"><a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique gratuite</a><small>Sans carte bancaire · sans limite de durée</small></div>
   </div>
-  <div class="pile" aria-hidden="true">
-    <div class="tel"><span class="ok">✓ Retenu</span><b>1,2 M</b><small>vues · 3× sa moyenne</small></div>
-    <div class="tel"><span class="ok">✓ Adapté</span><span class="hook">« Arrête de faire ça le matin si… »</span><b>2,8 M</b><small>vues · 8,4 % d'engagement</small></div>
-    <div class="tel"><b>740 k</b><small>vues · 4,9 % d'engagement</small></div>
+  <div class="scene" aria-hidden="true">
+    <div class="maquette">
+      <div class="av"></div><b>Léa · Coach bien-être</b><small>Routines simples pour femmes pressées</small>
+      <i class="fort">Réserve ton appel découverte</i>
+      <div class="prod"><span></span>Guide « Matins sereins »<em>19 €</em></div>
+      <div class="prod"><span></span>Programme 21 jours<em>47 €</em></div>
+      <i>Reçois ma checklist gratuite</i>
+    </div>
+    <div class="tendance"><span class="ok">🔥 Viral dans ta niche</span><b>« Arrête de faire ça le matin si… »</b><small>✨ Réécrit pour ton audience</small></div>
   </div>
 </div></section>
 
 <section class="s" id="fonctionnement"><div class="l">
   <p class="surtitre">Comment ça marche</p>
-  <h2>Ton contenu de la semaine en trois étapes.</h2>
+  <h2>De ta bio à tes premières ventes, en trois étapes.</h2>
   <div class="etapes">
-    <div class="etape"><h3>Tu choisis tes modèles</h3><p>Les comptes Instagram et TikTok qui cartonnent dans ta niche, ou dans une niche voisine. L'assistant t'aide aussi à décrire ta cible et ta façon d'écrire.</p></div>
-    <div class="etape"><h3>L'outil trouve ce qui a explosé</h3><p>Il ne garde que les Reels des 3 derniers mois qui ont fait plusieurs fois les vues habituelles du compte, avec un vrai engagement. Puis il regarde chaque vidéo et comprend ce qui a accroché.</p></div>
-    <div class="etape"><h3>Tu reçois tout, prêt à publier</h3><p>Le hook qui a marché, son adaptation à ton sujet, le script, la légende, le mot-clé à faire commenter et les messages privés qui suivent. Tu ajoutes tes images : le carrousel ou le Reel sort monté.</p></div>
+    <div class="etape"><h3>Tu crées ta boutique</h3><p>Virallink te pose les questions une par une : ton nom, tes couleurs, ta première offre. Tu colles le lien dans ta bio. C'est gratuit, sans limite de durée.</p></div>
+    <div class="etape"><h3>Tu vois ce qui cartonne dans ta niche</h3><p>Chaque jour, Virallink repère les Reels et les carrousels qui ont fait plusieurs fois les vues habituelles de leur compte. <span id="tendances-gratuites">Les consulter est gratuit.</span></p></div>
+    <div class="etape"><h3>Virall.ai les écrit pour toi</h3><p>Tu choisis une publication : son accroche, son texte et sa légende sont réécrits pour ton sujet et ton audience, puis mis en images. C'est la partie payante, <span class="essai-txt">à essayer 7 jours</span> sans carte bancaire.</p></div>
   </div>
 </div></section>
 
-<section class="s alt" id="contenu"><div class="l">
-  <p class="surtitre">Ce que tu reçois</p>
-  <h2>Moins de temps à chercher quoi poster, plus de conversations en privé.</h2>
-  <div class="grille">
-    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><h3>Les vrais Reels viraux</h3><p>Filtrés selon la taille de chaque compte : un petit compte qui fait 10 fois sa moyenne compte autant qu'un gros.</p></div>
-    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg></div><h3>Le hook qui a marché</h3><p>Repris mot pour mot, et traduit fidèlement quand le Reel vient d'un compte étranger. Avec des variantes pour ton sujet.</p></div>
-    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 8l4 2.5-4 2.5z"/></svg></div><h3>Le script et le texte écran</h3><p>Seconde par seconde, dans ton ton à toi, appris à partir de tes propres légendes.</p></div>
-    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg></div><h3>Le mot-clé et les messages privés</h3><p>Un appel à commenter qui ouvre la conversation, et la suite des messages pour la transformer en rendez-vous.</p></div>
-    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg></div><h3>Le studio</h3><p>Tu ajoutes tes photos ou ta vidéo : l'outil sort le carrousel avec les textes posés, ou le Reel avec le hook et les sous-titres incrustés.</p></div>
-    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Ce qui marche chez toi</h3><p>Tes publications sont suivies à J+2 et J+7. L'outil apprend quels types de Reels te rapportent le plus de conversations.</p></div>
-  </div>
-</div></section>
-
-<section class="s" id="boutiques"><div class="l">
-  <p class="surtitre">Et pour vendre</p>
-  <h2>Ta boutique en lien dans la bio, incluse.</h2>
-  <p class="intro">Tes liens, tes produits numériques, tes rendez-vous et ton kit média sur une seule page, avec des dizaines de styles. Virall.ai t'aide à trouver quoi vendre et écrit même ton guide PDF.</p>
+<section class="s alt" id="boutiques"><div class="l">
+  <p class="surtitre">Ta boutique</p>
+  <h2>Ton lien en bio qui vend, gratuit pour de vrai.</h2>
+  <p class="intro">Tes liens, tes produits numériques, tes rendez-vous et ton kit média sur une seule page à ton image. <span id="com-intro">Virallink ne prend aucune commission sur tes ventes.</span></p>
   <div class="atouts-boutique">
-    <div><b>🎨 100 thèmes, 272 boutons</b><span>Formes, polices, fonds animés : une page qui te ressemble, en deux minutes.</span></div>
-    <div><b>✨ Quoi vendre ?</b><span>Virall.ai propose tes produits d'après ce qui marche dans ta niche, et écrit ton guide PDF.</span></div>
-    <div><b>📅 Ventes et rendez-vous</b><span>Paiement sur ton propre Stripe, codes promo, offres limitées, appels réservés en ligne.</span></div>
-    <div><b>📊 Ce qui rapporte</b><span>Chaque Reel a son lien suivi : tu sais lequel amène des ventes.</span></div>
+    <div><b>🎨 126 thèmes, 272 boutons</b><span>Formes, polices, fonds animés, ou les couleurs de ton logo : une page qui te ressemble.</span></div>
+    <div><b id="com-atout">💶 0 % de commission</b><span>Le paiement arrive sur ton propre compte Stripe, le fichier part tout seul chez ta cliente.</span></div>
+    <div><b>📅 Ventes et rendez-vous</b><span>Codes promo, offres limitées dans le temps, appels réservés en ligne, liens d'affiliation.</span></div>
+    <div><b>📊 Ce qui rapporte</b><span>Visites, inscrites, ventes : tu vois d'où vient ton monde et ce qui fait vendre.</span></div>
   </div>
-  <p style="margin:22px 0 0"><a class="btn prim" href="/boutique-gratuite">Créer ma boutique gratuite</a> <small style="color:var(--ink-3);margin-left:8px">Gratuite, même sans abonnement</small></p>
+  <p style="margin:22px 0 0"><a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique gratuite</a> <small class="note-cta">Gratuite, même sans abonnement</small></p>
   <div class="vitrines" id="vitrines" hidden></div>
 </div></section>
 
-<section class="s" id="tarifs"><div class="l">
-  <p class="surtitre">Tarifs</p>
-  <h2>Sans engagement, résiliable en un clic.</h2>
-  <p class="intro" id="intro-tarifs">Commence par 7 jours gratuits, sans carte bancaire.</p>
-  <div class="tarifs" id="tarifs-liste"></div>
-  <details class="ce-qui-compte"><summary>Comment sont comptées les limites ?</summary><p>Une veille utilise 1 analyse et 7 adaptations (les 7 meilleures publications sont écrites pour toi d'office). Chaque publication que tu fais adapter ensuite utilise 1 adaptation. Un carrousel, un Reel monté ou un guide PDF utilise 1 création ; retoucher ou refaire une création ne compte pas. Les compteurs repartent à zéro chaque mois à la date anniversaire de ton abonnement (abonnée le 10, remise à zéro le 10 du mois suivant).</p></details>
+<section class="s" id="contenu"><div class="l">
+  <p class="surtitre">Tes contenus</p>
+  <h2>Moins de temps à chercher quoi poster, plus de monde sur ta boutique.</h2>
+  <p class="intro">Une boutique vend quand des gens arrivent dessus. Avec une formule payante, Virall.ai écrit tes contenus à partir de ce qui marche déjà dans ta niche.</p>
+  <div class="grille">
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><h3>Les vraies publications virales</h3><p>Jugées selon la taille de chaque compte : un petit compte qui fait plusieurs fois sa moyenne compte autant qu'un gros.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg></div><h3>L'accroche qui a marché</h3><p>Reprise fidèlement, traduite quand la publication vient d'un compte étranger, puis adaptée à ton sujet.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 8l4 2.5-4 2.5z"/></svg></div><h3>Le texte complet</h3><p>Le script du Reel ou les slides du carrousel, légende comprise, dans ton ton à toi.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div><h3>Ton plan du mois</h3><p>8 carrousels qui mènent de ton histoire à ton offre : ton parcours, tes conseils, tes preuves, puis la vente.</p></div>
+    <div class="bloc"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg></div><h3>Le studio</h3><p>Carrousels, Reels sous-titrés et stories animées, à tes couleurs, prêts à publier.</p></div>
+    <div class="bloc" id="bloc-messages" hidden><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg></div><h3>Les messages qui transforment</h3><p>Quelqu'un commente ton mot-clé : Instagram lui envoie ton lien en privé, tout seul.</p></div>
+    <div class="bloc" id="bloc-suivi"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>Ce qui marche chez toi</h3><p>Tes publications sont suivies à J+2 et J+7 : tu vois quels contenus t'amènent du monde.</p></div>
+  </div>
 </div></section>
 
-<section class="s alt" id="faq"><div class="l">
+<section class="s alt" id="tarifs"><div class="l">
+  <p class="surtitre">Tarifs</p>
+  <h2>La boutique est gratuite. Le reste s'essaie avant de payer.</h2>
+  <p class="intro" id="intro-tarifs">7 jours d'essai sans carte bancaire, puis sans engagement : résiliable en un clic.</p>
+  <div class="tarifs" id="tarifs-liste"></div>
+  <p class="apres-tarifs" id="apres-tarifs">Tu commences en gratuit. Ton essai de 7 jours démarre quand tu utilises une fonction payante pour la première fois ; tu choisis ta formule ensuite, ou tu restes en gratuit.</p>
+  <details class="ce-qui-compte"><summary>Comment sont comptées les limites ?</summary><p>Une veille est la sélection de la semaine : elle utilise 1 analyse et 7 adaptations (les 7 meilleures publications sont écrites pour toi d'office). Chaque publication que tu fais adapter ensuite utilise 1 adaptation. Un carrousel, un Reel monté ou un guide PDF utilise 1 création ; retoucher ou refaire une création ne compte pas. Les compteurs repartent à zéro chaque mois à la date anniversaire de ton abonnement (abonnée le 10, remise à zéro le 10 du mois suivant).</p></details>
+</div></section>
+
+<section class="s" id="faq"><div class="l">
   <p class="surtitre">Questions</p>
   <h2>Ce qu'on nous demande souvent.</h2>
   <div class="faq">
-    <details><summary>Est-ce que c'est du copier-coller ?</summary><p>Non. L'outil reprend ce qui fait marcher un Reel : l'accroche, la structure, le format. Le reste est réécrit pour ton sujet, ta cible et ta façon de parler. Tu tournes ta propre vidéo.</p></details>
-    <details><summary>Faut-il se montrer face caméra ?</summary><p>Non. Pour chaque Reel, l'outil propose un format : face caméra, voix off, texte à l'écran ou carrousel. Le studio permet de faire un carrousel avec tes propres images.</p></details>
-    <details><summary>Quels réseaux sont pris en charge ?</summary><p>Instagram et TikTok, pour les comptes publics. Tu peux mélanger les deux dans ta veille.</p></details>
-    <details><summary>Combien de temps prend une veille ?</summary><p>De quelques minutes à une demi-heure selon le nombre de comptes, sans rien faire de ton côté. Avec les formules payantes, elle se lance toute seule chaque lundi matin et tu reçois un e-mail quand elle est prête.</p></details>
-    <details><summary>Il faut donner mon mot de passe Instagram ?</summary><p>Jamais. L'outil ne lit que des publications publiques et ne publie rien à ta place.</p></details>
-    <details><summary>Je peux arrêter quand je veux ?</summary><p>Oui. L'abonnement est mensuel, sans engagement, et se résilie depuis ton espace. Tu gardes l'accès jusqu'à la fin du mois payé.</p></details>
+    <details><summary>La boutique est vraiment gratuite ?</summary><p>Oui, sans limite de durée et sans carte bancaire. <span id="faq-commission">Virallink ne prend aucune commission : les paiements arrivent directement sur ton compte Stripe, qui prend ses frais habituels.</span> La seule contrepartie : une petite mention « Créé avec Virallink » en bas de ta page.</p></details>
+    <details><summary>Comment marche l'essai ?</summary><p>Il dure <span class="essai-jours">7 jours</span> et démarre quand tu le décides, au premier clic sur une fonction payante. Pas de carte bancaire : à la fin, si tu ne choisis pas de formule, rien n'est prélevé et tu restes en gratuit, avec ta boutique.</p></details>
+    <details><summary>Est-ce que c'est du copier-coller ?</summary><p>Non. Virall.ai reprend ce qui fait marcher une publication : l'accroche, la structure, le format. Le reste est réécrit pour ton sujet, ta cible et ta façon de parler, avec tes propres images.</p></details>
+    <details><summary>Faut-il se montrer face caméra ?</summary><p>Non. Carrousels, stories animées, diaporamas : le studio les fabrique avec tes images ou avec une banque d'images libres de droits. Et si tu filmes un Reel, il y incruste l'accroche et les sous-titres.</p></details>
+    <details><summary>Quels réseaux sont pris en charge ?</summary><p>Les tendances de ta niche viennent d'Instagram : Reels, carrousels et publications de comptes publics. Avec les formules Pro et Agence, tu peux ajouter tes propres comptes à suivre, sur Instagram ou TikTok.</p></details>
+    <details><summary>Il faut donner mon mot de passe Instagram ?</summary><p>Jamais. Virallink ne lit que des publications publiques et ne publie rien à ta place.</p></details>
+    <details><summary>Je peux arrêter quand je veux ?</summary><p>Oui. L'abonnement est mensuel, sans engagement, et se résilie depuis ton espace. Tu gardes l'accès jusqu'à la fin du mois payé, puis ta boutique reste en ligne en formule gratuite.</p></details>
   </div>
 </div></section>
 
 <section class="s"><div class="l">
   <div class="final">
-    <h2>Ta prochaine semaine de Reels est déjà quelque part.</h2>
-    <p>Indique les comptes que tu suis. Dans quelques minutes, tu sais lesquels de leurs Reels refaire, et comment.</p>
-    <a class="btn prim" href="/connexion">Commencer mon essai gratuit</a>
+    <h2>Ta boutique en ligne avant ce soir.</h2>
+    <p>Crée ton compte, réponds à quelques questions, colle le lien dans ta bio. Le reste peut attendre.</p>
+    <a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique gratuite</a>
   </div>
 </div></section>
 
@@ -206,9 +228,10 @@ footer .l span{margin-right:auto}
 document.getElementById("annee").textContent = new Date().getFullYear();
 // Invitation d'une amie (lien de parrainage) : essai plus long, rappelé partout
 const parrain = new URLSearchParams(location.search).get("parrain") || (document.cookie.match(/(?:^|; )vv_parrain=([^;]+)/) || [])[1];
+const lienInscription = () => "/connexion?offre=boutique" + (parrain ? "&parrain=" + encodeURIComponent(parrain) : "");
 if (parrain) {
   document.getElementById("bandeau-parrain").hidden = false;
-  document.querySelectorAll('a[href="/connexion"]').forEach(a => a.href = "/connexion?parrain=" + encodeURIComponent(parrain));
+  document.querySelectorAll('a[href="/connexion?offre=boutique"]').forEach(a => a.href = lienInscription());
 }
 fetch("/api/vitrines").then(r => r.json()).then(v => {
   if (!v.vitrines.length) return;
@@ -216,29 +239,46 @@ fetch("/api/vitrines").then(r => r.json()).then(v => {
   z.innerHTML = v.vitrines.map(x => `<a class="vitrine" href="/@${encodeURIComponent(x.pseudo)}" target="_blank" rel="noopener"><div class="tel-v"><iframe loading="lazy" tabindex="-1" title="${esc(x.nom)}" src="/@${encodeURIComponent(x.pseudo)}"></iframe></div>${esc(x.nom)}</a>`).join("");
 }).catch(() => {});
 const prixFr = x => Number(x).toLocaleString("fr-FR", {minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2});
-const limites = p => p.gratuit ? [
-  "Ta boutique lien en bio complète",
-  `<b>${p.analyses_par_mois}</b> classements de comptes par mois (sans adaptation)`,
-  `<b>${p.studio_par_mois}</b> carrousels au studio par mois`,
-  "Mention « Créé avec Virallink »"].map(x => `<li>${x}</li>`).join("") : [
-  `<b>${p.analyses_par_mois}</b> veilles ou analyses par mois`,
-  `<b>${p.adaptations_par_mois}</b> publications adaptées à ta niche par mois`,
-  `<b>${p.comptes_surveilles}</b> comptes surveillés`,
-  p.studio_par_mois ? `<b>${p.studio_par_mois}</b> créations au studio par mois` : "",
-  p.veille_auto ? "Veille automatique chaque lundi" : ""].filter(Boolean).map(x => `<li>${x}</li>`).join("");
+// Carte d'une formule : ce qu'elle apporte d'abord, la limite d'analyses en petit dessous (même liste que la page Abonnement)
+const limites = (p, f) => (p.gratuit ? [
+  "Ta boutique en ligne, sans limite de durée",
+  p.commission ? `<b>${String(p.commission).replace(".", ",")} %</b> de commission sur tes ventes` : "<b>0 %</b> de commission sur tes ventes",
+  f.tendances ? "Les tendances de ta niche, mises à jour chaque jour" : "",
+  "Mention « Créé avec Virallink » en bas de ta page"] : [
+  `<b>${p.adaptations_par_mois}</b> publications de ta niche réécrites pour toi chaque mois`,
+  p.veille_auto ? "Ta sélection prête chaque lundi" : "",
+  p.plans_30j_par_mois > 1 ? `<b>${p.plans_30j_par_mois}</b> plans du mois de 8 carrousels` : p.plans_30j_par_mois ? "Ton plan du mois : 8 carrousels jusqu'à ton offre" : "",
+  p.studio_par_mois ? `<b>${p.studio_par_mois}</b> créations au studio : carrousels, Reels, stories` : "",
+  `${p.boutiques > 1 ? `<b>${p.boutiques}</b> boutiques` : "Ta boutique"}${p.mention_boutique ? "" : ", sans la mention Virallink"}`,
+  p.tunnels ? `Pages de vente, quiz${p.sequences_emails ? " et e-mails automatiques" : ""}` : "",
+  p.messages_auto ? "Messages privés automatiques sur Instagram" : "",
+  p.comptes_perso ? `<b>${p.comptes_surveilles}</b> comptes à toi, suivis en plus de ta niche` : ""]).filter(Boolean).map(x => `<li>${x}</li>`).join("");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $id = id => document.getElementById(id);
 fetch("/api/formules").then(r => r.json()).then(f => {
   const jours = f.essai_jours + (parrain ? 30 : 0);
-  document.getElementById("intro-tarifs").textContent = `Commence par ${jours} jours gratuits, sans carte bancaire.`;
-  document.getElementById("cta-essai").textContent = `Essayer ${jours} jours gratuitement`;
+  $id("intro-tarifs").textContent = `${jours} jours d'essai sans carte bancaire, puis sans engagement : résiliable en un clic.`;
+  $id("apres-tarifs").textContent = `Tu commences en gratuit. Ton essai de ${jours} jours démarre quand tu utilises une fonction payante pour la première fois ; tu choisis ta formule ensuite, ou tu restes en gratuit.`;
+  document.querySelectorAll(".essai-txt").forEach(e => e.textContent = `à essayer ${jours} jours`);
+  document.querySelectorAll(".essai-jours").forEach(e => e.textContent = `${jours} jours`);
+  if (!f.tendances) $id("tendances-gratuites").remove();
+  if (f.plans.some(p => p.messages_auto)) { $id("bloc-messages").hidden = false; $id("bloc-suivi").hidden = true; }  // 6 blocs au plus
+  if (f.commission_gratuit) {  // une commission est réglée sur la formule gratuite : on ne promet pas « sans commission »
+    const t = String(f.commission_gratuit).replace(".", ",");
+    $id("h1-accent").textContent = "gratuite pour de vrai.";
+    $id("com-intro").textContent = "";
+    $id("com-atout").textContent = `💶 ${t} % de commission seulement`;
+    $id("faq-commission").textContent = `Virallink prélève ${t} % sur chaque vente. Les paiements arrivent directement sur ton compte Stripe, qui prend aussi ses frais habituels.`;
+  }
   const milieu = f.plans.length > 2 ? 1 : 0;
-  document.getElementById("tarifs-liste").innerHTML = f.plans.map((p, i) => `
+  $id("tarifs-liste").innerHTML = f.plans.map((p, i) => `
     <div class="tarif ${i === milieu ? "fort" : ""}">
       ${i === milieu ? '<span class="badge">Le plus choisi</span>' : ""}
       <h3>${esc(p.nom)}</h3>
       <div class="prix">${prixFr(p.prix_mensuel)} €<small> / mois</small></div>
-      <ul>${limites(p)}</ul>
-      <a class="btn ${i === milieu ? "prim" : ""}" href="/connexion">Essayer gratuitement</a>
+      <ul>${limites(p, f)}</ul>
+      ${p.gratuit ? "" : `<p class="detail">${p.analyses_par_mois} veilles ou analyses par mois</p>`}
+      <a class="btn ${i === milieu ? "prim" : ""}" href="${lienInscription()}">${p.gratuit ? "Créer ma boutique gratuite" : "Commencer gratuitement"}</a>
     </div>`).join("");
 }).catch(() => {});
 </script>

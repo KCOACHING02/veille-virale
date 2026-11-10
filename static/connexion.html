@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Virallink — connexion</title>
+<title>Virallink — crée ton compte ou connecte-toi</title>
 <link rel="icon" type="image/png" href="/static/icones/favicon.png">
 <link rel="apple-touch-icon" href="/static/icones/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -22,13 +22,9 @@ button,input{font:inherit;color:inherit}
 .marque i{width:12px;height:22px;border-radius:4px;background:var(--glow);display:inline-block;transform:skewX(-10deg)}
 .scene h1{font:800 clamp(38px,5vw,64px)/.98 var(--display);font-stretch:78%;letter-spacing:-.02em;margin:0 0 18px;max-width:12ch}
 .scene p{color:#D8CEDD;max-width:44ch;margin:0;font-size:16px}
-.pile{display:flex;gap:14px;margin:36px 0 0;transform:rotate(-4deg) translateX(10px)}
-.tel{width:118px;aspect-ratio:9/16;border-radius:18px;background:linear-gradient(160deg,#4A2F55,#2E1F35);position:relative;padding:10px;display:flex;flex-direction:column;justify-content:flex-end;flex-shrink:0;box-shadow:0 20px 40px -20px rgba(0,0,0,.6)}
-.tel:nth-child(2){transform:translateY(-22px);background:linear-gradient(160deg,#FF4F79,#B9305A)}
-.tel:nth-child(3){transform:translateY(8px);background:linear-gradient(160deg,#3D2A49,#22172A)}
-.tel b{font:800 30px/1 var(--display);font-stretch:75%}
-.tel small{font-size:11px;opacity:.85}
-.tel .ok{position:absolute;top:10px;left:10px;white-space:nowrap;font-size:10px;font-weight:600;background:#13936B;border-radius:99px;padding:2px 7px}
+.atouts{list-style:none;padding:0;margin:30px 0 0;display:grid;gap:12px;font-size:16px;font-weight:500}
+.atouts li{display:flex;gap:12px;align-items:center}
+.atouts li::before{content:"";width:22px;height:22px;border-radius:50%;flex-shrink:0;background:var(--glow) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/14px no-repeat}
 .form{display:flex;align-items:center;justify-content:center;padding:32px 20px}
 .carte{width:min(400px,100%)}
 .carte h2{font:700 30px/1.1 var(--display);font-stretch:85%;margin:0 0 6px}
@@ -49,7 +45,8 @@ input{width:100%;border:1px solid var(--line);background:var(--surface);border-r
 .lien-oubli{text-align:right;margin:10px 0 0}
 .lien-oubli button,.bascule button{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0;font-size:14px}
 [hidden]{display:none!important}
-@media (max-width:860px){body{grid-template-columns:1fr}.scene{padding:28px 20px}.pile{display:none}.scene h1{font-size:38px}}
+@media (max-width:860px){body{grid-template-columns:1fr;grid-template-rows:auto 1fr}.scene{padding:18px 20px 16px;display:block}.scene p,.atouts,.scene>span{display:none}
+  .scene h1{font-size:22px;line-height:1.1;margin:12px 0 0;max-width:none}.form{align-items:flex-start;padding:26px 20px}}
 /* iPhone : Safari zoome sur tout champ dont le texte fait moins de 16 px (et la page reste zoomée) */
 @media (max-width:860px),(pointer:coarse){
   input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea{font-size:16px !important}
@@ -61,13 +58,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 <section class="scene">
   <a class="marque" href="/" style="color:inherit;text-decoration:none"><i></i>Virallink</a>
   <div>
-    <h1>Les Reels qui cartonnent, réécrits pour ta niche.</h1>
-    <p>Repère les Reels et carrousels qui ont explosé chez les comptes que tu admires, comprends pourquoi ils marchent et reçois-les chaque semaine adaptés à ton audience : hook, script, légende, slides et messages privés.</p>
-    <div class="pile" aria-hidden="true">
-      <div class="tel"><span class="ok">✓ Retenu</span><b>1,2 M</b><small>vues · 6,1 % d'engagement</small></div>
-      <div class="tel"><span class="ok">✓ Retenu</span><b>2,8 M</b><small>vues · 8,4 % d'engagement</small></div>
-      <div class="tel"><b>740 k</b><small>vues · 4,9 % d'engagement</small></div>
-    </div>
+    <h1>Tout pour vendre sur Instagram.</h1>
+    <p>Ta boutique en ligne d'abord. Et quand tu veux plus de visites, les publications qui cartonnent dans ta niche, écrites pour toi.</p>
+    <ul class="atouts">
+      <li>Boutique gratuite, sans limite de durée</li>
+      <li>Sans carte bancaire</li>
+      <li><span><span class="essai-jours">7 jours</span> d'essai du reste, quand tu veux</span></li>
+    </ul>
   </div>
   <span></span>
 </section>
@@ -80,7 +77,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div id="champ-email"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email"></div>
     <div id="champ-mdp"><label for="mdp" id="l-mdp">Mot de passe</label><input id="mdp" type="password" autocomplete="new-password" minlength="8"></div>
     <label class="coche" id="champ-cgv"><input type="checkbox" id="cgv"> <span>J'accepte les <a href="/cgv" target="_blank">conditions générales</a> et la <a href="/confidentialite" target="_blank">politique de confidentialité</a>.</span></label>
-    <button class="btn" id="b">Commencer mon essai</button>
+    <button class="btn" id="b">Créer mon compte</button>
     <p class="lien-oubli" id="oubli"><button type="button" id="b-oubli">Mot de passe oublié ?</button></p>
     <div class="bascule" id="bas"></div>
     <p class="mentions"><a href="/">Accueil</a> · <a href="/cgv">CGV</a> · <a href="/confidentialite">Confidentialité</a> · <a href="/mentions-legales">Mentions légales</a></p>
@@ -94,15 +91,17 @@ let mode = params.get("t") ? "nouveau" : (location.hash.includes("connexion") ||
 // Page à rouvrir après connexion (lien reçu par e-mail) : uniquement une adresse interne au site
 const suite = (params.get("suite") || "").match(/^\/(?!\/)[^\\]*$/) ? params.get("suite") : "/app";
 const offre = params.get("offre") === "boutique" ? "boutique" : "";  // boutique gratuite (page /boutique-gratuite)
+let joursEssai = 7 + (params.get("parrain") ? 30 : 0);  // l'essai reste en réserve : il démarre au premier usage d'une fonction payante
 const TEXTES = {
-  inscription: offre ? ["Crée ta boutique", "Gratuite pour toujours, sans carte bancaire. Et 7 jours d'essai de toutes les fonctions Virallink.", "Créer ma boutique gratuite"]
-    : ["Crée ton compte", "Ta boutique gratuite pour toujours, et 7 jours d'essai de toutes les fonctions, sans carte bancaire.", "Commencer"],
-  connexion: ["Bon retour", "Connecte-toi pour retrouver tes Reels.", "Se connecter"],
+  inscription: () => offre ? ["Crée ta boutique", "Gratuite, sans limite de durée et sans carte bancaire.", "Créer ma boutique gratuite"]
+    : ["Crée ton compte", `Ta boutique est gratuite, sans limite de durée. Le reste s'essaie ${joursEssai} jours quand tu veux, sans carte bancaire.`, "Créer mon compte"],
+  connexion: ["Bon retour", "Connecte-toi pour retrouver ta boutique et tes contenus.", "Se connecter"],
   oubli: ["Mot de passe oublié", "Indique ton e-mail : tu reçois un lien pour en choisir un nouveau.", "Recevoir le lien"],
   nouveau: ["Nouveau mot de passe", "Choisis ton nouveau mot de passe (8 caractères minimum).", "Enregistrer et me connecter"],
 };
 function maj() {
-  const [t, s, b] = TEXTES[mode];
+  const [t, s, b] = typeof TEXTES[mode] === "function" ? TEXTES[mode]() : TEXTES[mode];
+  document.querySelectorAll(".essai-jours").forEach(e => e.textContent = `${joursEssai} jours`);
   $("#t").textContent = t; $("#s").textContent = s; $("#b").textContent = b; $("#b").disabled = false;
   $("#champ-prenom").hidden = $("#champ-cgv").hidden = mode !== "inscription";
   $("#champ-email").hidden = mode === "nouveau";
@@ -117,6 +116,7 @@ function maj() {
 }
 $("#b-oubli").onclick = () => { mode = "oubli"; $("#e").innerHTML = ""; maj(); $("#email").focus(); };
 maj();
+fetch("/api/formules").then(r => r.json()).then(f => { joursEssai = f.essai_jours + (params.get("parrain") ? 30 : 0); const d = $("#b").disabled; maj(); $("#b").disabled = d; }).catch(() => {});
 const message = (txt, ok) => $("#e").innerHTML = `<p class="${ok ? "info" : "erreur"}">${txt.replace(/</g, "&lt;")}</p>`;
 $("#f").onsubmit = async ev => {
   ev.preventDefault();

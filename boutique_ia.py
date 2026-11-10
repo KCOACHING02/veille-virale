@@ -90,14 +90,24 @@ def idees(esp: Espace, cfg: dict, demo: bool = False) -> dict:
     return r
 
 
+def _dans_phrase(t: str, defaut: str, sans_a: bool = False) -> str:
+    """Réponse libre remise en forme pour se glisser dans une phrase (« J'aide … à … ») : sans ponctuation finale,
+    sans « à » en tête, minuscule au début (sauf sigle)."""
+    t = " ".join(str(t or "").split()).rstrip(" .!…;,:") or defaut
+    if sans_a:
+        t = re.sub(r"^[àaÀA]\s+", "", t) or defaut
+    return t[0].lower() + t[1:] if len(t) > 1 and t[1].islower() else t
+
+
 def bios(esp: Espace, cfg: dict, infos: dict, demo: bool = False) -> dict:
     """Trois propositions de présentation pour la page, à partir de ce que vend la cliente et à qui."""
     log("J'écris tes présentations…")
     cible, apport = infos.get("cible") or "mes clientes", infos.get("apport") or "avancer"
     if demo:
-        return {"bios": [f"J'aide {cible} à {apport}. Tout est ici ⬇️",
-                         f"Pour {cible} qui veulent {apport}, sans se compliquer la vie 💛\nMes ressources juste en dessous.",
-                         f"{apport[:1].upper() + apport[1:]} : c'est possible, et je te montre comment. ✨"]}
+        c, a = _dans_phrase(cible, "mes clientes"), _dans_phrase(apport, "avancer", sans_a=True)
+        return {"bios": [f"J'aide {c} à {a}. Tout est ici ⬇️",
+                         f"Pour {c} qui veulent {a}, sans se compliquer la vie 💛\nMes ressources juste en dessous.",
+                         f"{a[:1].upper() + a[1:]} : c'est possible, et je te montre comment. ✨"]}
     from ia import ecrit_bios
     t = (f"Nom de la boutique : {infos.get('nom') or ''}\nSes clientes : {cible}\nElle les aide à : {apport}\n"
          f"Ce qu'elle vend : {', '.join(infos.get('produits') or []) or 'pas encore de produit'}")

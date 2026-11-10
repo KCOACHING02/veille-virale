@@ -47,6 +47,7 @@ def init():
             uid INTEGER, mois TEXT, analyses INTEGER DEFAULT 0, adaptations INTEGER DEFAULT 0, PRIMARY KEY(uid, mois));
         CREATE TABLE IF NOT EXISTS reinit(jeton TEXT PRIMARY KEY, uid INTEGER, expire TEXT);
         CREATE TABLE IF NOT EXISTS push(endpoint TEXT PRIMARY KEY, uid INTEGER NOT NULL, p256dh TEXT, auth TEXT, cree TEXT);
+        CREATE TABLE IF NOT EXISTS migrations(nom TEXT PRIMARY KEY, fait TEXT);
         """)
         for table, col, typ in (("usage", "cout_usd", "REAL DEFAULT 0"), ("usage", "studio", "INTEGER DEFAULT 0"), ("utilisateurs", "derniere_connexion", "TEXT"),
                                 ("utilisateurs", "cgv_acceptees", "TEXT"), ("utilisateurs", "code_parrain", "TEXT"),
@@ -70,27 +71,67 @@ def init():
 #  Utilisateurs
 # ------------------------------------------------------------
 def cree(email: str, mdp: str, prenom: str = "", cgv: bool = False, offre: str = "") -> dict:
-    """offre="boutique" : arrivée par la boutique gratuite (aimant à prospects), notée dans « origine »."""
+    """Tout nouveau compte démarre en formule gratuite (boutique, tendances de sa niche), l'essai gardé en réserve :
+    il ne commence qu'au premier usage d'une fonction payante (`demarre_essai`), pour ne pas s'écouler pendant qu'elle
+    monte sa boutique. offre="boutique" : arrivée par la boutique gratuite, notée dans « origine »."""
     email = email.strip().lower()
     if "@" not in email or len(mdp) < 8:
         raise ValueError("Adresse e-mail invalide ou mot de passe trop court (8 caractères minimum).")
     if adresse_jetable(email):
         raise ValueError("Les adresses e-mail temporaires ne sont pas acceptées. Utilise ton adresse habituelle.")
-    duree = plans()["essai"].get("duree_jours", 7)
+    p = plans()
+    maintenant = datetime.now().isoformat(timespec="minutes")
+    if "gratuit" in p:
+        plan, fin, utilise = "gratuit", None, 0
+    else:  # pas de formule gratuite dans plans.yaml : l'essai démarre à l'inscription
+        plan, utilise = "essai", 1
+        fin = (datetime.now() + timedelta(days=p["essai"].get("duree_jours", 7))).isoformat(timespec="minutes")
     with _verrou, _db() as c:
         try:
-            # Tout nouveau compte a 7 jours d'essai de toutes les fonctions, même inscrit par la boutique gratuite ;
-            # à la fin de l'essai, sans abonnement, il passe en formule gratuite (boutique seule, le reste grisé).
-            boutique = offre == "boutique"
             c.execute("INSERT INTO utilisateurs(email, mdp, prenom, fin_essai, cree, cgv_acceptees, plan, statut, origine, essai_utilise) "
                       "VALUES (?,?,?,?,?,?,?,?,?,?)",
-                      (email, generate_password_hash(mdp), prenom.strip(),
-                       (datetime.now() + timedelta(days=duree)).isoformat(timespec="minutes"),
-                       datetime.now().isoformat(timespec="minutes"), datetime.now().isoformat(timespec="minutes") if cgv else None,
-                       "essai", "essai", "boutique" if boutique else None, 1))
+                      (email, generate_password_hash(mdp), prenom.strip(), fin, maintenant, maintenant if cgv else None,
+                       plan, plan, "boutique" if offre == "boutique" else None, utilise))
         except sqlite3.IntegrityError:
             raise ValueError("Un compte existe déjà avec cette adresse.") from None
     return verifie(email, mdp)
+
+
+def remet_essais_en_reserve(exclus: set[str] | None = None, jours_conseils: tuple = (2, 5, 10), entames: set[int] | None = None) -> int:
+    """Passage à « l'essai au premier usage payant » (novembre 2026), une seule fois : les comptes dont l'essai a démarré
+    à l'inscription mais n'a jamais servi (aucune analyse, adaptation ni création, aucun coût) le retrouvent en réserve.
+    Ne touche ni aux abonnées, ni aux essais qui ont servi, ni à ceux que l'administrateur a prolongés.
+    `exclus` : adresses à ne pas toucher (administrateurs) ; `jours_conseils` : calendrier des e-mails de conseils ;
+    `entames` : comptes dont l'essai a servi sans que ce soit encore compté (analyse en cours ou interrompue).
+    Renvoie le nombre de comptes remis en réserve."""
+    nom = "essai_en_reserve_2026_11"
+    p = plans()
+    with _verrou, _db() as c:
+        if c.execute("SELECT 1 FROM migrations WHERE nom=?", (nom,)).fetchone():
+            return 0
+        n = 0
+        if "gratuit" in p:
+            duree = p["essai"].get("duree_jours", 7)
+            servi = {r["uid"] for r in c.execute("SELECT uid FROM usage GROUP BY uid HAVING "
+                                                 "SUM(analyses) + SUM(adaptations) + SUM(COALESCE(studio, 0)) > 0 OR SUM(COALESCE(cout_usd, 0)) > 0")}
+            for u in [dict(r) for r in c.execute("SELECT * FROM utilisateurs WHERE statut='essai' AND plan='essai'")]:
+                if (u["id"] in servi or u["id"] in (entames or set()) or u.get("a_paye") or u.get("stripe_abonnement")
+                        or not u.get("fin_essai") or not u.get("cree") or u["email"] in (exclus or set())):
+                    continue
+                try:  # essai plus long que la durée normale (+ le mois de parrainage) : prolongé à la main, on n'y touche pas
+                    prevu = datetime.fromisoformat(u["cree"]) + timedelta(days=duree + (JOURS_FILLEULE if u.get("parrain") else 0), hours=1)
+                    if datetime.fromisoformat(u["fin_essai"]) > prevu:
+                        continue
+                except ValueError:
+                    continue
+                # Conseils par e-mail (J+2, J+5, J+10 après l'inscription) : ceux dont la date est passée ne sont pas rattrapés
+                age = (datetime.now() - datetime.fromisoformat(u["cree"])).days
+                passes = max(sum(1 for j in jours_conseils if age >= j), u.get("relances_boutique") or 0)
+                c.execute("UPDATE utilisateurs SET plan='gratuit', statut='gratuit', fin_essai=NULL, essai_utilise=0, relances_essai=0, "
+                          "relances_boutique=? WHERE id=?", (passes, u["id"]))
+                n += 1
+        c.execute("INSERT OR IGNORE INTO migrations(nom, fait) VALUES (?,?)", (nom, datetime.now().isoformat(timespec="minutes")))
+    return n
 
 
 # ------------------------------------------------------------
@@ -361,8 +402,10 @@ def formule_conseillee() -> dict:
 
 
 def essai_dispo(u: dict) -> bool:
-    """L'essai de la veille n'a pas encore servi (inscription par la boutique gratuite) et la cliente n'est pas abonnée."""
-    return not u.get("essai_utilise") and plan_effectif(u) == "gratuit"
+    """L'essai est encore en réserve : il n'a jamais servi, la cliente n'a jamais été abonnée et son compte n'est pas suspendu.
+    Il démarre au premier usage d'une fonction payante (`demarre_essai`)."""
+    return (not u.get("essai_utilise") and not u.get("a_paye") and u.get("statut") != "suspendu"
+            and plan_effectif(u) == "gratuit")
 
 
 def demarre_essai(uid: int) -> bool:
@@ -388,7 +431,7 @@ def droits(u: dict) -> dict:
     p = plans()
     cle = plan_effectif(u)
     plan = p[cle]
-    actif = cle == "gratuit" or u["statut"] in ("actif", "essai")
+    actif = (cle == "gratuit" or u["statut"] in ("actif", "essai")) and u["statut"] != "suspendu"
     if cle != "gratuit" and u["statut"] == "essai" and u.get("fin_essai") and u["fin_essai"] < datetime.now().isoformat():
         actif = False
     us = usage(u["id"])
@@ -402,7 +445,9 @@ def droits(u: dict) -> dict:
         "veille_auto": bool(plan.get("veille_auto")) and bool(u.get("veille_auto")),
         "usage": {k: us[k] for k in ("analyses", "adaptations", "studio")},  # le coût réel reste côté administrateur
         "renouvellement": periode(u)[1].isoformat(), "renouvellement_fr": date_fr(periode(u)[1]),
-        "essai_dispo": essai_dispo(u), "essai_jours": p["essai"].get("duree_jours", 7),
+        "essai_dispo": essai_dispo(u), "essai_jours": p["essai"].get("duree_jours", 7) + (JOURS_FILLEULE if u.get("parrain") and essai_dispo(u) else 0),
+        # ce que l'essai comprend, annoncé avant de le démarrer
+        "essai_inclus": {"adaptations": p["essai"].get("adaptations_par_mois", 0), "studio": p["essai"].get("studio_par_mois", 0)},
         "reste": {"analyses": plan["analyses_par_mois"] - us["analyses"], "adaptations": plan["adaptations_par_mois"] - us["adaptations"],
                   "studio": plan.get("studio_par_mois", 10) - us["studio"]},
     }
@@ -410,7 +455,7 @@ def droits(u: dict) -> dict:
 
 MSG_ABONNEES = "Cette fonction est réservée aux abonnées : choisis une formule pour l'utiliser."
 MSG_OPTIONS = {
-    "ia": "L'adaptation à ta niche et l'écriture par l'IA sont réservées aux abonnées. Choisis une formule pour les débloquer.",
+    "ia": "L'écriture par Virall.ai est réservée aux abonnées. Choisis une formule pour la débloquer.",
     "montage_reel": "Le montage des Reels est réservé aux abonnées. En gratuit, tu peux créer des carrousels.",
     "suivi_publications": "Le suivi automatique de tes Reels publiés est réservé aux abonnées.",
     "sequences_emails": "Les séquences d'e-mails automatiques sont réservées aux abonnées.",
