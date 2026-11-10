@@ -61,6 +61,7 @@ h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em}
 .maquette .prod{display:flex;gap:10px;align-items:center;background:#fff;border-radius:12px;padding:8px;margin:8px 0;font-size:12.5px;font-weight:600}
 .maquette .prod span{width:38px;height:38px;border-radius:9px;background:#EDE9F1;flex-shrink:0}
 .maquette .prod em{font-style:normal;margin-left:auto;color:#FF4F79;white-space:nowrap}
+.maquette.vraie{padding:0;overflow:hidden;background:#fff;width:270px}.maquette.vraie img{display:block;width:100%;height:auto}
 .tendance{position:absolute;left:max(0px,calc(50% - 250px));bottom:-6px;width:178px;border-radius:18px;padding:14px;background:linear-gradient(160deg,#4A2F55,#22172A);color:#fff;transform:rotate(-6deg);box-shadow:0 24px 50px -20px rgba(0,0,0,.8);display:grid;gap:8px;border:1px solid rgba(255,255,255,.12)}
 .tendance .ok{justify-self:start;font-size:11px;font-weight:600;background:#13936B;border-radius:99px;padding:3px 8px}
 .tendance b{font:700 15px/1.25 var(--display)}
@@ -113,6 +114,25 @@ details p{color:var(--ink-2);margin:10px 0 0}
 footer{padding:36px 0 50px;color:var(--ink-3);font-size:14px}
 footer .l{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
 footer .l span{margin-right:auto}
+.demo-niches{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 20px}
+.demo-niches button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:8px 14px;font:600 14px var(--body);cursor:pointer}
+.demo-niches button[aria-pressed=true]{border-color:var(--glow);background:var(--glow-soft);color:var(--ink)}
+.demo-posts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-height:120px}
+.demo-post{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:10px;align-content:start}
+.demo-post .h{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:600}
+.demo-post .vir{color:#fff;background:#13936B;border-radius:99px;padding:3px 9px}.demo-post .fmt{color:var(--ink-3)}
+.demo-post b{font:700 18px/1.25 var(--display)}
+.demo-post small{color:var(--ink-2);font-size:13.5px}
+.demo-post .ecrit{border-top:1px dashed var(--line);padding-top:10px;color:var(--glow);font-weight:600;font-size:13.5px}
+.demo-cta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:20px}.demo-cta small{color:var(--ink-2)}
+.duo-ex{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.stories-ex{display:flex;gap:16px;justify-content:center}.stories-ex img{width:min(220px,44%);height:auto;border-radius:20px;box-shadow:0 24px 50px -24px rgba(0,0,0,.5)}
+.stories-ex img:last-child{transform:translateY(28px)}
+.cta-fixe{display:none}
+@media (max-width:900px){.demo-posts{grid-template-columns:1fr}.demo-niches{flex-wrap:nowrap;overflow-x:auto;margin-right:-20px;padding-right:20px;scrollbar-width:none}.demo-niches button{flex:none}.duo-ex{grid-template-columns:1fr}
+  .cta-fixe{display:block;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;transition:transform .25s,opacity .25s}
+  .cta-fixe .btn{width:100%;box-shadow:0 14px 30px -10px rgba(0,0,0,.45)}.cta-fixe.cache{transform:translateY(120%);opacity:0}
+  footer{padding-bottom:90px}}
 @media (max-width:900px){
   .heros .l{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px}
   .scene{margin-top:4px}
@@ -141,15 +161,24 @@ footer .l span{margin-right:auto}
     <div class="cta"><a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique gratuite</a><small>Sans carte bancaire · sans limite de durée</small></div>
   </div>
   <div class="scene" aria-hidden="true">
-    <div class="maquette">
-      <div class="av"></div><b>Léa · Coach bien-être</b><small>Routines simples pour femmes pressées</small>
-      <i class="fort">Réserve ton appel découverte</i>
-      <div class="prod"><span></span>Guide « Matins sereins »<em>19 €</em></div>
-      <div class="prod"><span></span>Programme 21 jours<em>47 €</em></div>
-      <i>Reçois ma checklist gratuite</i>
-    </div>
+    <div class="maquette vraie"><img src="/static/captures/boutique.jpg" alt="Une boutique Virallink sur téléphone" width="560" height="1092"></div>
     <div class="tendance"><span class="ok">🔥 Viral dans ta niche</span><b>« Arrête de faire ça le matin si… »</b><small>✨ Réécrit pour ton audience</small></div>
   </div>
+</div></section>
+
+<section class="s demo" id="demo"><div class="l">
+  <p class="surtitre">Essaie, là, maintenant</p>
+  <h2>Choisis ta niche. Regarde ce qui cartonne cette semaine.</h2>
+  <div class="demo-niches" id="demo-niches" role="group" aria-label="Niches"></div>
+  <div class="demo-posts" id="demo-posts" aria-live="polite"></div>
+  <div class="demo-cta" id="demo-cta" hidden><a class="btn prim" href="/connexion?offre=boutique">Les écrire pour moi</a><small>Une publication offerte chaque mois, même en gratuit</small></div>
+</div></section>
+
+<section class="s alt" id="stories-ex"><div class="l duo-ex">
+  <div><p class="surtitre">Le studio</p><h2>Tes stories, prêtes à publier.</h2>
+    <p class="intro">Virall.ai écrit tes stories, tu choisis le style, Virallink fabrique les vidéos à tes couleurs. Ici, deux mises en page parmi dix, pour annoncer une boutique.</p>
+    <a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique gratuite</a></div>
+  <div class="stories-ex"><img src="/static/captures/story1.jpg" alt="Story en conversation : Ma boutique est en ligne" loading="lazy" width="360" height="640"><img src="/static/captures/story2.jpg" alt="Story en affiche : Ma boutique est en ligne" loading="lazy" width="360" height="640"></div>
 </div></section>
 
 <section class="s" id="fonctionnement"><div class="l">
@@ -222,6 +251,7 @@ footer .l span{margin-right:auto}
   </div>
 </div></section>
 
+<div class="cta-fixe cache" id="cta-fixe"><a class="btn prim" href="/connexion?offre=boutique">Créer ma boutique gratuite</a></div>
 <footer><div class="l"><span>© <span id="annee"></span> Virallink</span><a href="/cgv">CGV</a><a href="/confidentialite">Confidentialité</a><a href="/mentions-legales">Mentions légales</a><a href="/connexion#connexion">Se connecter</a></div></footer>
 
 <script>
@@ -233,6 +263,38 @@ if (parrain) {
   document.getElementById("bandeau-parrain").hidden = false;
   document.querySelectorAll('a[href="/connexion?offre=boutique"]').forEach(a => a.href = lienInscription());
 }
+// Bouton fixe (téléphone) : visible une fois le héros passé, caché quand un autre bouton d'inscription est à l'écran
+(() => {
+  const fixe = document.getElementById("cta-fixe"), heros = document.querySelector(".heros");
+  const visibles = new Set();
+  const maj = () => fixe.classList.toggle("cache", visibles.size > 0);
+  const obs = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? visibles.add(e.target) : visibles.delete(e.target)); maj(); });
+  obs.observe(heros); document.querySelectorAll(".tarif .btn, #demo-cta .btn, #stories-ex .btn, section:last-of-type .btn").forEach(b => obs.observe(b));
+  setTimeout(() => document.querySelectorAll(".tarif .btn").forEach(b => obs.observe(b)), 1500);
+})();
+// Démonstration : les publications qui cartonnent dans la niche choisie (bibliothèque du jour, sans compte ni image)
+const nbFr = n => n >= 1e6 ? (n / 1e6).toLocaleString("fr-FR", {maximumFractionDigits: 1}) + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
+const FORMATS = {Reel: "Reel", Carrousel: "Carrousel", Photo: "Publication"};
+async function demoNiche(id) {
+  document.querySelectorAll("#demo-niches button").forEach(b => b.setAttribute("aria-pressed", b.dataset.n === id));
+  const z = document.getElementById("demo-posts"); z.style.opacity = .4;
+  try {
+    const r = await (await fetch("/api/public/tendances?niche=" + encodeURIComponent(id))).json();
+    z.innerHTML = r.posts.length ? r.posts.map(p => `<article class="demo-post"><div class="h"><span class="vir">🔥 ${p.multiple ? String(p.multiple).replace(".", ",") + "× sa moyenne" : "Viral"}</span><span class="fmt">${esc(FORMATS[p.format] || p.format)}</span></div>
+      <b>« ${esc(p.titre.replace(/^\[démo\]\s*/, ""))} »</b><small>${p.vues ? nbFr(p.vues) + " vues" : p.likes ? nbFr(p.likes) + " j'aime" : ""}</small>
+      <span class="ecrit">✨ Virall.ai la réécrit pour ton audience</span></article>`).join("")
+      : `<p class="intro">Les publications de cette niche arrivent : reviens demain, ou crée ta boutique en attendant.</p>`;
+    document.getElementById("demo-cta").hidden = !r.posts.length;
+  } catch { z.innerHTML = ""; }
+  z.style.opacity = 1;
+}
+fetch("/api/public/tendances").then(r => r.json()).then(r => {
+  if (!r.niches?.length) return document.getElementById("demo").remove();
+  const z = document.getElementById("demo-niches");
+  z.innerHTML = r.niches.map(n => `<button type="button" data-n="${esc(n.id)}" aria-pressed="false">${esc(n.nom)}</button>`).join("");
+  z.querySelectorAll("button").forEach(b => b.onclick = () => demoNiche(b.dataset.n));
+  demoNiche(r.niches[0].id);
+}).catch(() => document.getElementById("demo")?.remove());
 fetch("/api/vitrines").then(r => r.json()).then(v => {
   if (!v.vitrines.length) return;
   const z = document.getElementById("vitrines"); z.hidden = false;

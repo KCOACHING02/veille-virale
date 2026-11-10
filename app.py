@@ -447,6 +447,76 @@ def connexion():
     return jsonify({"ok": True})
 
 
+# ------------------------------------------------------------
+#  Connexion avec Google (OpenID Connect, flux « code » côté serveur, sans bibliothèque)
+#  Variables Railway : GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET (identifiants OAuth « application Web » de la console Google Cloud),
+#  adresse de retour autorisée : <URL du site>/auth/google/retour. Sans elles, le bouton n'apparaît pas.
+#  Google garantit l'adresse : elle est confirmée d'office (pas d'e-mail de confirmation).
+# ------------------------------------------------------------
+def _google_actif() -> bool:
+    return bool(os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET"))
+
+
+def _retour_google() -> str:
+    return url_site() + "/auth/google/retour"
+
+
+@app.get("/auth/google")
+def google_debut():
+    if not _google_actif():
+        return redirect("/connexion")
+    etat = secrets.token_urlsafe(24)
+    suite = request.args.get("suite") or ""
+    session["google"] = {"etat": etat, "offre": "boutique" if request.args.get("offre") == "boutique" else "",
+                         "parrain": (request.args.get("parrain") or request.cookies.get("vv_parrain") or "").strip().lower()[:40],
+                         "suite": suite if suite.startswith("/") and not suite.startswith("//") and "\\" not in suite else ""}
+    from urllib.parse import urlencode
+    return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
+        "client_id": os.environ["GOOGLE_CLIENT_ID"], "redirect_uri": _retour_google(), "response_type": "code",
+        "scope": "openid email profile", "state": etat, "prompt": "select_account"}))
+
+
+@app.get("/auth/google/retour")
+def google_retour():
+    import requests as _rq
+    d = session.pop("google", None) or {}
+    echec = "/connexion?erreur=google" + ("&offre=boutique" if d.get("offre") else "")
+    if not _google_actif() or not d.get("etat") or not hmac.compare_digest(d["etat"], request.args.get("state", "")) or not request.args.get("code"):
+        return redirect(echec)
+    try:
+        jeton = _rq.post("https://oauth2.googleapis.com/token", timeout=15, data={
+            "code": request.args["code"], "client_id": os.environ["GOOGLE_CLIENT_ID"], "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+            "redirect_uri": _retour_google(), "grant_type": "authorization_code"}).json()
+        info = _rq.get("https://openidconnect.googleapis.com/v1/userinfo", timeout=15,
+                       headers={"Authorization": f"Bearer {jeton['access_token']}"}).json()
+    except Exception:  # noqa: BLE001
+        traceback.print_exc()
+        return redirect(echec)
+    email = str(info.get("email") or "").strip().lower()
+    if not email or not info.get("email_verified"):
+        return redirect(echec)
+    u, nouveau = ab.par_email(email), False
+    if not u:
+        try:  # mot de passe aléatoire : elle pourra en choisir un avec « Mot de passe oublié »
+            u = ab.cree(email, secrets.token_urlsafe(24), str(info.get("given_name") or "")[:40], cgv=True, offre=d.get("offre") or "")
+        except ValueError:
+            return redirect(echec)
+        nouveau = True
+    if not u.get("email_verifie"):
+        ab.maj(u["id"], email_verifie=1)
+    session.permanent, session["uid"] = True, u["id"]
+    ab.maj(u["id"], derniere_connexion=datetime.now().isoformat(timespec="minutes"))
+    if nouveau:
+        if d.get("parrain") and ab.rattache_parrain(u["id"], d["parrain"]):
+            p = ab.par_code(d["parrain"])
+            if p:
+                nt.notifie(p["id"], "Ta filleule s'est inscrite 💌", f"{u.get('prenom') or 'Une amie'} a rejoint Virallink grâce à toi.", "/app")
+        emails.bienvenue_google(u["email"], u.get("prenom") or "", url_site() + ("/app?boutique=1" if d.get("offre") else "/app"),
+                                boutique=bool(d.get("offre")))
+        return redirect("/app?boutique=1" if d.get("offre") else "/app")
+    return redirect(d.get("suite") or "/app")
+
+
 @app.post("/api/deconnexion")
 def deconnexion():
     session.clear()
@@ -516,8 +586,34 @@ def _formule(k: str, v: dict) -> dict:
 def formules_publiques():
     p = ab.plans()
     return jsonify({"essai_jours": p["essai"].get("duree_jours", 7), "commission_gratuit": _commission(p.get("gratuit") or {}),
-                    "tendances": bibliotheque.active(),
+                    "tendances": bibliotheque.active(), "google": _google_actif(),
                     "plans": [_formule(k, v) for k, v in p.items() if k != "essai"]})
+
+
+_DEMO_PUBLIQUE: dict = {}
+
+
+@app.get("/api/public/tendances")
+def tendances_publiques():
+    """Démonstration de l'accueil public : les 3 publications qui cartonnent dans une niche (sans compte, sans image :
+    la première ligne, le format et la force du succès). Gratuit : la bibliothèque est déjà collectée. Mise en cache 30 min."""
+    ns = bibliotheque.niches()
+    k = request.args.get("niche") or ""
+    if k not in ns:
+        return jsonify({"niches": [{"id": i, "nom": v["nom"]} for i, v in ns.items()], "posts": []})
+    c = _DEMO_PUBLIQUE.get(k)
+    if not c or time.time() - c[0] > 1800:
+        posts = []
+        for e in bibliotheque.liste([k], limite=12):
+            t = " ".join((e.get("legende") or "").split("\n")[0].split())[:110]
+            if len(t) < 12 or "http" in t or "@" in t:
+                continue
+            posts.append({"titre": t, "format": e["format"], "vues": e.get("vues"), "likes": e.get("likes"),
+                          "multiple": round(float(e.get("multiple") or 0), 1)})
+            if len(posts) == 3:
+                break
+        c = _DEMO_PUBLIQUE[k] = (time.time(), posts)
+    return jsonify({"niche": ns[k]["nom"], "posts": c[1]})
 
 
 @app.get("/<any(cgv, confidentialite, 'mentions-legales'):page>")

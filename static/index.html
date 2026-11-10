@@ -601,6 +601,14 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .p30-produits .choisi .p30-coche::after{content:"✓";color:#fff;font-size:13px;font-weight:700}
 .p30-plusieurs{margin:-6px 0 10px}
 /* Stories animées */
+.st-tuiles{margin:0 0 24px}.st-tuiles h2{font-size:22px;margin:0 0 12px}
+.st-grille-t{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.st-tuile{display:grid;gap:4px;align-content:start;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:10px 10px 14px;cursor:pointer;color:var(--ink);font:inherit;box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.st-tuile:hover{transform:translateY(-2px);border-color:var(--ink-3)}
+.st-ill{display:grid;place-items:center;aspect-ratio:16/10;border-radius:12px;font-size:38px;margin-bottom:6px}
+.st-tuile b{font:700 17px var(--display);padding:0 4px}.st-tuile small{color:var(--ink-3);font-size:13px;line-height:1.35;padding:0 4px}
+.st-mes{font-size:20px;margin:0;width:100%}.st-vide{margin-top:-8px}
+@media (max-width:860px){.st-grille-t{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.st-ill{font-size:30px}.st-tuile b{font-size:15.5px}}
 .stc-carte{display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center;background:var(--surface);border-radius:20px;padding:20px 24px;box-shadow:var(--shadow);margin:0 0 18px}
 .stc-carte h2{margin:2px 0 4px;font:800 22px/1.2 var(--display)} .stc-carte p{margin:0;color:var(--ink-2)}
 .stc-anim{display:flex;gap:6px}.stc-anim .fx-mini{width:46px}
@@ -1495,6 +1503,12 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-liens-rapides{display:grid;gap:8px;margin-bottom:12px}
 .bt-liens-rapides div{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
 .bt-liens-rapides input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
+.bt-menu{position:relative}.bt-menu>summary{list-style:none;cursor:pointer;font-size:18px;line-height:1;padding:6px 12px}
+.bt-menu>summary::-webkit-details-marker{display:none}
+.bt-menu-l{position:absolute;right:0;top:calc(100% + 6px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px;display:grid;min-width:250px}
+.bt-menu-l>button,.bt-menu-l>label{display:flex;align-items:center;gap:8px;border:0;background:none;text-align:left;padding:10px 12px;border-radius:10px;font:inherit;font-size:14.5px;color:var(--ink);cursor:pointer;margin:0}
+.bt-menu-l>button:hover,.bt-menu-l>label:hover{background:var(--sunk)}
+@media (max-width:860px){.bt-menu-l{right:auto;left:auto;right:0}}
 .bt-bravo{text-align:center}
 .bt-bravo .bt-bravo-suite{margin:18px auto 14px;max-width:440px;color:var(--ink-2)}
 .bt-bravo .btn.large{max-width:440px;margin:0 auto}
@@ -1516,7 +1530,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 @media (max-width:1100px){
   .bt-grille{grid-template-columns:minmax(0,1fr)}
   .bt-droite{display:none}
-  .bt-flottant{display:inline-flex;position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:20;background:#1C1420;color:#fff;border:0;border-radius:99px;padding:12px 20px;font-weight:600;gap:8px;align-items:center;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);cursor:pointer}
+  .bt-flottant{display:inline-flex;position:fixed;right:16px;bottom:24px;z-index:20;background:#1C1420;color:#fff;border:0;border-radius:99px;padding:12px 20px;font-weight:600;gap:8px;align-items:center;box-shadow:0 12px 30px -10px rgba(0,0,0,.5);cursor:pointer}
 }
 @media (max-width:860px){
   .bt-flottant{bottom:calc(76px + env(safe-area-inset-bottom))}
@@ -1544,7 +1558,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <nav class="rail" aria-label="Navigation">
     <div class="marque"><i></i>Virallink</div>
     <button class="nav" data-vue="accueil" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></svg>Accueil</button>
-    <button class="nav" data-vue="reels" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg><span class="long">Mes Reels</span><span class="court">Reels</span><span class="n" id="n-reels"></span></button>
+    <button class="nav" data-vue="reels" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="11" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="18" width="7" height="3" rx="1.5"/></svg><span class="long">Tendances</span><span class="court">Tendances</span><span class="n" id="n-reels"></span></button>
     <button class="nav" data-vue="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><path d="M17 13v8M13 17h8"/></svg>Studio</button>
     <button class="nav" data-vue="boutique"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9c0 1.7 1.3 3 3 3s3-1.3 3-3c0 1.7 1.3 3 2 3s2-1.3 2-3c0 1.7 1.3 3 3 3s3-1.3 3-3M9.5 20v-5h5v5"/></svg><span class="long">Ma boutique</span><span class="court">Boutique</span></button>
     <button class="nav nav-bureau" data-vue="resultats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="long">Mes résultats</span><span class="court">Résultats</span></button>
@@ -1736,7 +1750,7 @@ async function chargeAnalyse(id) {
 }
 
 // ---------------------------------------------------------------- Navigation
-const TITRES = {boutique: "Ma boutique", messages: "Messages automatiques", accueil: "Accueil", reels: "Mes Reels", planning: "Mes Reels", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
+const TITRES = {boutique: "Ma boutique", messages: "Messages automatiques", accueil: "Accueil", reels: "Tendances", planning: "Tendances", studio: "Studio", voix: "Voix du client", resultats: "Mes résultats", comptes: "Réglages", parametres: "Réglages", abonnement: "Réglages"};
 const titreDe = vue => MOBILE.matches && groupeDe(vue) === "parametres" ? "Moi" : TITRES[vue];
 // Vues regroupées sous une même entrée du menu, avec des onglets en haut de page
 const GROUPES = {reels: [["reels", "Galerie"], ["planning", "Planning de la semaine"]], boutique: [["boutique", "Ma boutique"], ["messages", "Messages auto"]],
@@ -1785,7 +1799,8 @@ function va(vue, depuisHistorique) {
   $("#ouvrir-nouvelle").hidden = !avecVeille || verrouille();  // formule gratuite : les tendances se lisent, on ne lance pas de veille
   majBandeauOffre();
   const onglets = groupes()[g];
-  $$(`[data-section="${vue}"] .sous-nav`).forEach(el => { el.hidden = !onglets; el.innerHTML = onglets ? `<div class="seg" role="tablist">${onglets.map(([v, t]) =>
+  if (g === "reels" && S.etat?.bibliotheque?.active) majOngletsReels();
+  else $$(`[data-section="${vue}"] .sous-nav`).forEach(el => { el.hidden = !onglets; el.innerHTML = onglets ? `<div class="seg" role="tablist">${onglets.map(([v, t]) =>
     `<button role="tab" aria-pressed="${v === vue}" onclick="va('${v}')">${t}</button>`).join("")}</div>` : ""; });
   window.scrollTo(0, 0);
   rendu();
@@ -2141,15 +2156,21 @@ function sourceGalerie() {
     if (S.analyse?.id !== "tendances") S.analyseVeille = S.analyse;
     if (S.tendances) S.analyse = S.tendances; else pret = false;  // pas encore chargées : la bascule s'affiche quand même
   } else if (S.analyse?.id === "tendances") { S.tendances = S.analyse; S.analyse = S.analyseVeille || null; }
-  const el = $("#src-gal");
-  const veilleALire = S.source === "veille" ? S.analyse : S.analyseVeille;
-  el.hidden = !bib || (verrouille() && !veilleALire);  // formule gratuite sans veille passée : rien d'autre que les tendances
-  if (!el.hidden) {
-    el.innerHTML = `<div class="seg" role="tablist">${[["tendances", "Tendances de ma niche"], ["veille", "Ma veille"]].map(([v, t]) =>
-      `<button role="tab" aria-pressed="${S.source === v}" data-src="${v}">${t}</button>`).join("")}</div>`;
-    $$("[data-src]", el).forEach(b => b.onclick = () => { S.source = b.dataset.src; S.filtreChoisi = false; S.cat = ""; renduReels(); });
-  }
+  $("#src-gal").hidden = true;  // Tendances / Ma veille / Planning : un seul rang d'onglets (majOngletsReels)
+  if (bib) majOngletsReels();
   return pret;
+}
+// Un seul rang d'onglets en haut de la galerie (bibliothèque active) : Tendances de sa niche, sa veille, son planning.
+// Formule gratuite sans veille : rien d'autre que les tendances, donc pas d'onglets du tout.
+function majOngletsReels() {
+  const a = S.analyseVeille || (S.analyse?.id !== "tendances" ? S.analyse : null), libre = !verrouille();
+  const L = [["tendances", "Tendances", "S.source='tendances';S.filtreChoisi=false;S.cat='';va('reels')"],
+    ...(libre || a ? [["veille", "Ma veille", "S.source='veille';S.filtreChoisi=false;S.cat='';va('reels')"]] : []),
+    ...(libre && (a?.planning?.length || !S.etat?.abonnement?.gratuit) ? [["planning", "Planning", "va('planning')"]] : [])];
+  const actif = S.vue === "planning" ? "planning" : S.source === "veille" ? "veille" : "tendances";
+  $$('[data-section="reels"] .sous-nav, [data-section="planning"] .sous-nav').forEach(el => {
+    el.hidden = L.length < 2;
+    el.innerHTML = L.length < 2 ? "" : `<div class="seg" role="tablist">${L.map(([k, t, js]) => `<button role="tab" aria-pressed="${k === actif}" onclick="${js}">${t}</button>`).join("")}</div>`; });
 }
 // Puces des niches (2 au plus) : fenêtre « Ta niche », première visite de la galerie, assistant de démarrage
 function pucesNiches(zone, r, sel, change) {
@@ -3056,14 +3077,25 @@ async function renduStudio() {
   S.optionsStudio = r;
   if (p30) S.p30 = p30;
   if (S.vue !== "studio" || S.projetId || S.plan30Vue) return;
-  const plan30 = cartePlan30(p30, gratuitP30) + (gratuitP30 ? "" : carteStories());
-  const branchePlan30 = () => $("#p30-ouvre")?.addEventListener("click", () => ouvrePlan30(!p30?.plan));
+  const plan30 = gratuitP30 ? cartePlan30(p30, gratuitP30) : tuilesStudio(p30);
+  const branchePlan30 = () => { $("#p30-ouvre")?.addEventListener("click", () => ouvrePlan30(!p30?.plan));
+    $$("[data-tuile]", el).forEach(b => b.onclick = () => {
+      const t = b.dataset.tuile;
+      if (t === "plan") ouvrePlan30(!p30?.plan);
+      else if (t === "stories") ouvreStories();
+      else if (t === "carrousel") api("/api/studio", {method: "POST", body: {vierge: true}}).then(x => ouvreProjet(x.projet.id)).catch(e => { if (!e.data?.quota) toast(e.message); });
+      else { S.filtre = "adaptes"; S.filtreChoisi = true; if (S.etat?.bibliotheque?.active) S.source = S.analyseVeille || S.analyse ? "veille" : "tendances"; va("reels");
+        toast("Choisis une publication prête pour toi, puis touche Créer → Reel", {duree: 4500}); } }); };
   const quota = `<p class="aide st-quota">${r.reste >= 9000 ? "Créations illimitées" : `${Math.max(r.reste, 0)} création${r.reste > 1 ? "s" : ""} restante${r.reste > 1 ? "s" : ""} sur ${r.quota}${S.etat?.abonnement?.renouvellement_fr ? ` jusqu'au ${esc(S.etat.abonnement.renouvellement_fr)}` : ""}`} · retoucher et refaire une création ne compte pas.</p>`;
   const gratuit = !!S.etat?.abonnement?.gratuit;
   const nouveau = `<button class="btn${gratuit ? " prim" : ""}" id="st-vierge">+ Nouveau carrousel</button>`;
   const brancheVierge = () => $("#st-vierge")?.addEventListener("click", async () => {
     try { const x = await api("/api/studio", {method: "POST", body: {vierge: true}}); ouvreProjet(x.projet.id); }
     catch (e) { if (!e.data?.quota) toast(e.message); } });
+  if (!r.projets.length && !gratuit) {
+    el.innerHTML = plan30 + `<p class="aide st-vide">Tes créations apparaîtront ici. ${quota.replace(/<\/?p[^>]*>/g, "")}</p>`;
+    branchePlan30(); return;
+  }
   if (!r.projets.length) {
     el.innerHTML = gratuit ? `<div class="vide"><h2>Ton studio est vide</h2><p>Écris ton carrousel slide par slide, ajoute tes photos (ou celles de la banque d'images),<br>et récupère les slides prêtes à publier.</p>${nouveau}</div>${quota}`
       : `<div class="vide"><h2>Ton studio est vide</h2><p>Ouvre un Reel <b>Prêt pour toi</b> dans la galerie et clique sur <b>Créer le contenu</b> :<br>tu choisis carrousel ou Reel, tu ajoutes tes photos ou ta vidéo, et tu récupères tout prêt à publier.</p>
@@ -3082,7 +3114,7 @@ async function renduStudio() {
       gratuit ? "Clique <b>Nouveau carrousel</b> et écris tes slides." : "Depuis un Reel <b>Prêt pour toi</b>, clique <b>Créer le contenu</b> (ou <b>Nouveau carrousel</b> pour partir de zéro).",
       "Ajoute tes photos ou ta vidéo (ou celles de la banque d'images).",
       "Clique <b>Créer</b>, puis <b>Enregistrer dans mes photos</b> et <b>Copier la légende</b>.",
-      "Publie sur Instagram, puis reviens cliquer <b>J'ai publié</b> sur la fiche du Reel."]) + plan30 + `<div class="st-haut">${quota}${nouveau}</div>` + `<div class="st-liste">${r.projets.map(p => `
+      "Publie sur Instagram, puis reviens cliquer <b>J'ai publié</b> sur la fiche du Reel."]) + plan30 + `<div class="st-haut"><h2 class="st-mes">Mes créations</h2>${quota}${gratuit ? nouveau : ""}</div>` + `<div class="st-liste">${r.projets.map(p => `
     <article class="st-carte">
       <button class="st-ouvre" data-projet="${p.id}" aria-label="Ouvrir ${esc(p.titre)}">
         ${vignette(p) ? `<img src="${vignette(p)}" alt="" loading="lazy">` : '<div class="ph"></div>'}
@@ -3339,6 +3371,16 @@ function barreTunnel(mini) {
   return `<div class="p30-barre${mini ? " mini" : ""}" aria-hidden="true">${SEM30.map(([n, c]) => `<span style="--c:${c}"><i></i>${mini ? "" : `<b>${n}</b>`}</span>`).join("")}</div>`;
 }
 // Carte en haut du studio : point d'entrée du plan
+// Studio : « Que veux-tu créer ? » en quatre tuiles (plan du mois, carrousel, Reel, stories), puis ses créations
+function tuilesStudio(r) {
+  const plan = r?.plans?.[0];
+  const T = [["plan", "🗓️", "Plan du mois", plan ? `Ton plan : ${plan.prets}/${plan.total} carrousels prêts` : "8 carrousels, de ton histoire jusqu'à ton offre", "linear-gradient(135deg,#271B2D,#5A2E6B)"],
+    ["carrousel", "🖼️", "Carrousel", "Tes slides, tes photos ou celles de la banque", "linear-gradient(135deg,#FF4F79,#FF9A8B)"],
+    ["reel", "🎬", "Reel", "À partir d'une publication qui cartonne, avec ta vidéo", "linear-gradient(135deg,#3B5BDB,#7AA2FF)"],
+    ["stories", "✨", "Stories", "Une suite qui fait vendre, ou une story seule", "linear-gradient(135deg,#F08C00,#FFD43B)"]];
+  return `<section class="st-tuiles"><h2>Que veux-tu créer ?</h2><div class="st-grille-t">${T.map(([k, e, t, d, fond]) =>
+    `<button type="button" class="st-tuile" data-tuile="${k}"><span class="st-ill" style="background:${fond}" aria-hidden="true">${e}</span><b>${t}</b><small>${esc(d)}</small></button>`).join("")}</div></section>`;
+}
 function cartePlan30(r, gratuit) {
   const plan = r?.plans?.[0];
   const btn = gratuit ? `<button class="btn prim" onclick="va('abonnement')">Débloquer avec une formule</button>`
@@ -5573,12 +5615,14 @@ function renduEditeur(el) {
   el.classList.toggle("en-offre", !!BQ.offre);  // parcours « Ajouter une offre » : seule l'étape en cours est visible
   el.innerHTML = `
     <div class="bt-haut">
-      <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button><button class="btn petit" id="bt-qr" title="QR code">QR</button></div>
+      <div class="bt-url"><span class="pastille ${p.publie ? "" : "off"}"></span><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button></div>
       <label class="bt-publie"><input type="checkbox" id="bt-publie" ${p.publie ? "checked" : ""}><span>${p.publie ? "En ligne" : "Brouillon"}</span></label>
-      <button class="btn petit" id="bt-mes" type="button">🏪 Mes boutiques</button>
-      <button class="btn petit" id="bt-nouvelle" type="button">+ Nouvelle boutique</button>
-      <button class="btn petit prim" id="bt-guide" type="button">✨ Création pas à pas</button>
-      <label class="bt-mode" title="Afficher toutes les options"><input type="checkbox" id="bt-avance" ${BQ.avance ? "checked" : ""}><span>Mode avancé</span></label>
+      <details class="bt-menu"><summary class="btn petit" aria-label="Plus d'options">⋯</summary><div class="bt-menu-l">
+        <button type="button" id="bt-qr">QR code de ma boutique</button>
+        <button type="button" id="bt-mes">🏪 Mes boutiques</button>
+        <button type="button" id="bt-nouvelle">+ Nouvelle boutique</button>
+        <button type="button" id="bt-guide">✨ Refaire ma boutique pas à pas</button>
+        <label class="bt-mode" title="Afficher toutes les options"><input type="checkbox" id="bt-avance" ${BQ.avance ? "checked" : ""}><span>Mode avancé</span></label></div></details>
       <span class="bt-statut" id="bt-statut"></span>
     </div>
     <div id="bt-suite"></div>
@@ -5592,7 +5636,8 @@ function renduEditeur(el) {
     BQ.vueAp = BQ.onglet === "kit" ? "kit" : BQ.onglet === "tunnels" && BQ.tunnelId ? "t:" + BQ.tunnelId : "page"; renduOnglet(); apercu(); });
   $("#bt-publie").onchange = e => { p.publie = e.target.checked; e.target.nextElementSibling.textContent = p.publie ? "En ligne" : "Brouillon";
     $(".bt-url .pastille").classList.toggle("off", !p.publie); sauveBoutique(true); toast(p.publie ? "Ta page est en ligne" : "Ta page est masquée"); };
-  $("#bt-qr").onclick = ouvreQR;
+  $("#bt-qr").onclick = () => { $(".bt-menu").open = false; ouvreQR(); };
+  if (!BQ.menuEcoute) { BQ.menuEcoute = true; document.addEventListener("click", e => { const m = $(".bt-menu"); if (m?.open && !m.contains(e.target)) m.open = false; }); }
   $("#bt-avance").onchange = e => basculeAvance(e.target.checked);
   $("#bt-guide").onclick = () => relanceAssistantBoutique();
   $("#bt-mes").onclick = () => mesBoutiques();

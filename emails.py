@@ -68,6 +68,16 @@ def bienvenue(email: str, prenom: str, url: str, lien_confirmation: str = "", jo
         ("Confirmer mon adresse", lien_confirmation or url)))
 
 
+def bienvenue_google(email: str, prenom: str, url: str, boutique: bool = False):
+    """Inscription avec Google : l'adresse est déjà vérifiée, pas de lien de confirmation."""
+    p = html.escape(prenom or "")
+    envoie(email, f"Bienvenue sur {NOM_PRODUIT}", _gabarit(
+        f"Bienvenue{' ' + p if p else ''} !",
+        "<p>Ton compte est prêt. Commence par ta boutique : elle est gratuite, sans limite de durée, et en ligne en deux minutes.</p>"
+        "<p>Pour te reconnecter, utilise le bouton « Continuer avec Google ».</p>",
+        ("Créer ma boutique" if boutique else "Ouvrir mon espace", url)))
+
+
 def confirmation(email: str, prenom: str, lien: str):
     p = html.escape(prenom or "")
     envoie(email, "Confirme ton adresse e-mail", _gabarit(

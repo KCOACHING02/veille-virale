@@ -112,6 +112,8 @@ def confidentialite(s: dict) -> str:
 <h2>Données traitées</h2>
 <ul>
 <li><b>Compte</b> : prénom, adresse e-mail, mot de passe (stocké chiffré, jamais en clair), dates d'inscription et de connexion, acceptation des conditions.</li>
+<li><b>Connexion avec Google</b> (facultative) : Google transmet l'adresse e-mail, le prénom et la confirmation que l'adresse est vérifiée ; aucun autre accès au compte Google n'est demandé.</li>
+<li><b>Profil Instagram public</b> (création de la boutique, facultatif) : nom, présentation, lien et photo de profil du compte indiqué par l'utilisateur, lus une fois pour pré-remplir sa boutique.</li>
 <li><b>Abonnement</b> : formule, historique d'utilisation. Les données de carte bancaire sont traitées uniquement par Stripe et ne sont jamais stockées par l'Éditeur.</li>
 <li><b>Paramétrage</b> : niche, cible, ton, textes de référence, comptes surveillés, hashtags, publications suivies et résultats saisis.</li>
 <li><b>Fichiers importés</b> : images et vidéos utilisées pour créer des contenus.</li>
