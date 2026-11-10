@@ -167,7 +167,7 @@ def mentions(s: dict) -> str:
     return f"""
 <h1>Mentions légales</h1>
 <h2>Éditeur du site</h2>
-<p>{_editeur(s)}.<br>Directeur de la publication : {_v(s, 'directeur_publication')}.<br>Contact : {_v(s, 'email_contact')}.</p>
+<p>{_editeur(s)}.<br>{html.escape(s.get('titre_publication') or 'Directeur de la publication')} : {_v(s, 'directeur_publication')}.<br>Contact : {_v(s, 'email_contact')}.</p>
 <h2>Hébergement</h2>
 <p>Railway Corporation, San Francisco, Californie, États-Unis — <a href="https://railway.com" rel="noopener">railway.com</a>.</p>
 <h2>Propriété intellectuelle</h2>
