@@ -39,7 +39,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, Response, abort, g, has_request_context, jsonify, redirect, request, send_from_directory, session
+from flask import Flask, Response, abort, g, has_request_context, jsonify, redirect, request, send_file, send_from_directory, session
 
 import abonnements as ab
 import emails
@@ -1193,7 +1193,24 @@ def _options_studio():
             "modeles": [{"id": k, "nom": m["nom"], "note": bool(m.get("note")), "couleur": m.get("couleur", "blanc"), "titre": "#%02x%02x%02x" % m["titre"], "texte": "#%02x%02x%02x" % m["texte"]}
                         for k, m in studio.SS.MODELES.items()],
             "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
+            "voix_off": voix.options() if voix.dispo(en_demo()) else [], "voix_exemples": voix.dispo(),
             "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv()}
+
+
+import voix  # noqa: E402
+
+
+@app.get("/api/studio/voix/<cle>.mp3")
+@connecte
+def studio_voix_exemple(cle):
+    """Extrait d'une voix off à écouter avant de la choisir (créé une seule fois pour tout le site)."""
+    try:
+        f = voix.exemple(cle)
+    except Exception:  # noqa: BLE001
+        f = None
+    if not f:
+        return jsonify({"erreur": "Extrait indisponible"}), 404
+    return send_file(f, mimetype="audio/mpeg", max_age=86400)
 
 
 @app.post("/api/studio")

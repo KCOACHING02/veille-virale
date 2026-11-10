@@ -495,6 +495,10 @@ def choisit_banque(esp: Espace, sid: str, slide_i: int | None, element: dict) ->
             ancien.unlink()
         dest = banque.telecharge(element, d / "sources" / "video.mp4")
         p["video"], p["video_duree"] = dest.name, round(_duree(dest) or 0, 1)
+        import voix
+        if not p.get("voix_off") and voix.dispo():  # vidéo sans paroles : Virall.ai lit le script
+            p["voix_off"] = "femme"
+        sauve(esp, p)
     else:
         nom = f"banque_{re.sub(r'[^a-z0-9]', '', str(element.get('id', '')).lower())[:20]}_{uuid.uuid4().hex[:4]}.jpg"
         banque.telecharge(element, d / "sources" / nom)
@@ -625,6 +629,11 @@ def modifie(esp: Espace, sid: str, champs: dict) -> dict:
     for k in ("legende", "hook", "theme", "sous_titres", "type", "pseudo", "titre", "script", "style", "typo", "afficher_pseudo"):
         if k in champs:
             p[k] = champs[k]
+    if "voix_off" in champs:  # voix off lue par Virall.ai : "" (aucune) ou une clé de voix.VOIX
+        import voix
+        p["voix_off"] = champs["voix_off"] if champs["voix_off"] in voix.VOIX else ""
+    if "texte_voix" in champs:
+        p["texte_voix"] = str(champs["texte_voix"] or "")[:3500]
     if p.get("titre") in ("Nouveau carrousel", "Nouveau Reel"):  # titre par défaut qui suit le format choisi
         p["titre"] = "Nouveau Reel" if p.get("type") == "reel" else "Nouveau carrousel"
     # Couverture du Reel : style, texte, image (moment de la vidéo ou une des photos)
@@ -1388,15 +1397,32 @@ def normalise(src: Path, d: Path) -> tuple[Path, Path | None]:
     return image, son
 
 
-def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
+def voix_du_projet(p: dict, d: Path, demo: bool = False) -> Path | None:
+    """Voix off du Reel (MP3), si la cliente l'a choisie : le texte retouché, sinon le script sans ses repères."""
+    if not p.get("voix_off"):
+        return None
+    import voix
+    if not voix.dispo(demo):
+        log("  ⚠️  Voix off indisponible pour le moment : Reel monté sans")
+        return None
+    texte = (p.get("texte_voix") or "").strip() or voix.texte_du_script(p.get("script") or "")
+    if not texte:
+        log("  ⚠️  Pas de script à lire : Reel monté sans voix off")
+        return None
+    log("Virall.ai enregistre la voix off…")
+    return voix.synthese(texte, p["voix_off"], d / "voix.mp3", demo=demo)
+
+
+def monte_reel(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
     src = d / "sources" / p["video"]
-    duree = min(_duree(src) or 0, DUREE_MAX_REEL)
+    voix_off = voix_du_projet(p, d, demo)
+    duree = min(((_duree(voix_off) or 0) + 0.6) if voix_off else (_duree(src) or 0), DUREE_MAX_REEL)
     log("Je recadre ta vidéo au format Reel…")
     blocs = []
     if p.get("sous_titres", True):
-        log("J'écoute ta vidéo pour écrire les sous-titres…")
+        log("J'écoute la voix off pour écrire les sous-titres…" if voix_off else "J'écoute ta vidéo pour écrire les sous-titres…")
         try:
-            blocs = sous_titres(src, d)
+            blocs = sous_titres(voix_off or src, d)
             log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée : pas de sous-titres")
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Sous-titres impossibles ({str(e)[:120]}) : le Reel est monté sans")
@@ -1413,18 +1439,25 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
         return "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1," + hdr + "format=yuv420p," + ass + "[v]"
     filtre = filtre_pour(tm)
     log("Montage de ton Reel (hook + sous-titres)…")
+    # Voix off : la vidéo tourne en boucle sous la voix (son d'origine remplacé), le Reel dure le temps de la voix
+    boucle = ["-stream_loop", "-1", "-t", f"{duree:.2f}"] if voix_off else []
     try:
-        son = ["-map", "0:a:0", "-c:a", "aac", "-b:a", "128k"] if _a_du_son(src) else []
-        _ffmpeg([*LEGER, "-i", str(src), "-t", str(DUREE_MAX_REEL), "-filter_complex", filtre, "-map", "[v]", *son, *ENCODAGE,
-                 str(sortie / "reel.mp4")], d)
+        if voix_off:
+            entrees = [*boucle, "-i", str(src), "-i", str(voix_off)]
+            son = ["-map", "1:a:0", "-af", "apad", "-c:a", "aac", "-b:a", "128k", "-t", f"{duree:.2f}"]
+        else:
+            entrees = ["-i", str(src)]
+            son = ["-t", str(DUREE_MAX_REEL)] + (["-map", "0:a:0", "-c:a", "aac", "-b:a", "128k"] if _a_du_son(src) else [])
+        _ffmpeg([*LEGER, *entrees, "-filter_complex", filtre, "-map", "[v]", *son, *ENCODAGE, str(sortie / "reel.mp4")], d)
     except RuntimeError as e:
         log(f"  Montage direct impossible ({str(e)[:100]}) : nouvel essai en mode compatible…")
         image, piste = normalise(src, d)
-        entrees = ["-i", str(image)] + (["-i", str(piste)] if piste else [])
-        son = ["-map", "1:a:0", "-c:a", "aac", "-b:a", "128k", "-shortest"] if piste else []
+        piste = voix_off or piste
+        entrees = [*boucle, "-i", str(image)] + (["-i", str(piste)] if piste else [])
+        son = (["-map", "1:a:0", "-c:a", "aac", "-b:a", "128k"] + (["-af", "apad", "-t", f"{duree:.2f}"] if voix_off else ["-shortest"])) if piste else []
         _ffmpeg([*LEGER, *entrees, "-filter_complex", filtre_pour(""), "-map", "[v]", *son, *ENCODAGE, str(sortie / "reel.mp4")], d)
         image.unlink(missing_ok=True)
-        if piste:
+        if piste and piste != voix_off:
             piste.unlink(missing_ok=True)
     log("Je crée la couverture…")
     try:
@@ -1434,10 +1467,12 @@ def monte_reel(p: dict, d: Path, sortie: Path) -> list[str]:
         return ["reel.mp4"]
 
 
-def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
+def monte_diaporama(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
     """Reel sans vidéo : chaque slide (texte + image) devient un plan de 3 s, en 9:16."""
     log("Je prépare les plans de ton Reel…")
     slides = p["slides"] or [{"titre": p.get("hook") or "", "texte": ""}]
+    voix_off = voix_du_projet(p, d, demo)
+    par_plan = max(SLIDE_DIAPORAMA_S, ((_duree(voix_off) or 0) + 0.6) / len(slides)) if voix_off else SLIDE_DIAPORAMA_S
     images = attribue(slides, [d / "sources" / i for i in p["images"]]) if p["images"] else [None] * len(slides)
     plans = d / "plans"
     shutil.rmtree(plans, ignore_errors=True)
@@ -1446,13 +1481,17 @@ def monte_diaporama(p: dict, d: Path, sortie: Path) -> list[str]:
         img = images[i]
         slide(s, i, len(slides), img, theme_de(p), pseudo_visible(p), VERTICAL, reel=True,
               typo=typo_projet(p)).save(plans / f"{i:02d}.jpg", "JPEG", quality=92)
-    liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {SLIDE_DIAPORAMA_S}\n" for i in range(len(slides)))
+    liste_ = "".join(f"file 'plans/{i:02d}.jpg'\nduration {par_plan:.2f}\n" for i in range(len(slides)))
     liste_ += f"file 'plans/{len(slides) - 1:02d}.jpg'\n"
     (d / "plans.txt").write_text(liste_, encoding="utf-8")
     log("Montage du diaporama…")
-    duree = SLIDE_DIAPORAMA_S * len(slides)
-    _ffmpeg(["-f", "concat", "-safe", "0", "-i", "plans.txt", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
-             "-vf", "fps=30,format=yuv420p,setsar=1", "-t", f"{duree:.1f}", "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "64k",
+    duree = min(par_plan * len(slides), DUREE_MAX_REEL)
+    if voix_off:  # la voix, prolongée de silence jusqu'à la fin du dernier plan
+        son = ["-i", str(voix_off)], ["-af", "apad", "-b:a", "128k"]
+    else:
+        son = ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"], ["-b:a", "64k"]
+    _ffmpeg(["-f", "concat", "-safe", "0", "-i", "plans.txt", *son[0],
+             "-vf", "fps=30,format=yuv420p,setsar=1", "-t", f"{duree:.1f}", "-map", "0:v", "-map", "1:a", "-c:a", "aac", *son[1],
              *ENCODAGE, str(sortie / "reel.mp4")], d)
     shutil.rmtree(plans, ignore_errors=True)
     return ["reel.mp4", *couvertures(p, d, sortie)]
@@ -1486,11 +1525,11 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
         elif p.get("video"):
-            fichiers = monte_reel(p, d, sortie)
+            fichiers = monte_reel(p, d, sortie, demo)
         else:
             if not (p["slides"] or p["images"]):
                 raise ValueError("Ajoute ta vidéo, ou des images pour un Reel en diaporama.")
-            fichiers = monte_diaporama(p, d, sortie)
+            fichiers = monte_diaporama(p, d, sortie, demo)
         log("Je prépare ton package prêt à publier…")
         p = charge(esp, sid)
         p.update(fichiers=fichiers, zip=package(p, d, sortie, fichiers), statut="pret",
@@ -1533,6 +1572,8 @@ def _txt_dm(p: dict) -> str:
 
 
 def _ligne_son(p: dict) -> str:
+    if p.get("voix_off") and p.get("type") == "reel":
+        return "3. Ton Reel contient déjà la voix off : ajoute un son tendance à volume très bas si tu veux."
     so = (p.get("source") or {}).get("son") or {}
     if so.get("titre") and not so.get("original"):
         return (f"3. Son du Reel modèle : « {so['titre']} »{' — ' + so['artiste'] if so.get('artiste') else ''}. Cherche-le dans Instagram "

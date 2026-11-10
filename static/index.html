@@ -826,6 +826,14 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-med-actions{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:4px;background:linear-gradient(transparent,rgba(0,0,0,.55))}
 .st-med-actions button{border:0;background:rgba(255,255,255,.92);color:#271B2D;width:26px;height:26px;border-radius:8px;cursor:pointer;font-weight:700}
 .st-med-actions button:disabled{opacity:.35;cursor:default}
+.st-voix{margin:14px 0 4px;padding:14px;border-radius:14px;background:var(--sunk)}
+.st-voix-titre{font-weight:700;margin:0 0 10px}
+.st-voix-choix{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.st-voix-item{display:inline-flex;gap:2px}
+.st-voix-choix button{border:1.5px solid var(--line);background:var(--surface);color:inherit;border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.st-voix-choix button[aria-pressed=true]{border-color:var(--glow);background:var(--glow);color:var(--glow-ink,#fff)}
+.st-voix-item [data-voix]{border-radius:999px 0 0 999px}
+.st-voix-choix .st-ecoute{border-radius:0 999px 999px 0;padding:8px 12px;min-width:42px}
 .st-video{display:flex;gap:12px;align-items:center;margin-top:14px;background:var(--sunk);border-radius:12px;padding:8px}
 .st-video video{width:54px;height:96px;object-fit:cover;border-radius:8px;background:#000}
 .st-video div{display:grid;flex:1} .st-video span{color:var(--ink-3);font-size:13px}
@@ -3707,10 +3715,46 @@ function sauveProjet(immediat) {
     if ($("#st-hook")) corps.hook = $("#st-hook").value;
     if ($("#st-script")) corps.script = $("#st-script").value;
     if ($("#st-sous")) corps.sous_titres = $("#st-sous").checked;
+    if ($("#st-texte-voix")) corps.texte_voix = $("#st-texte-voix").value;
     try { S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: corps}); $("#st-enregistre").textContent = "Enregistré"; majApercu(); } catch (e) { toast(e.message); }
   };
   $("#st-enregistre") && ($("#st-enregistre").textContent = "…");
   return immediat ? go() : (S.minuteurStudio = setTimeout(go, 450));
+}
+// ---- Voix off : Virall.ai lit le script (le son de la vidéo est remplacé, les sous-titres suivent la voix)
+function texteDuScript(script) {
+  return (script || "").split("\n").map(l => {
+    l = l.replace(/\[[^\]]*\]/g, " ").replace(/\([^)]*\)/g, " ")
+      .split(/\b(?:texte (?:à l')?écran|texte écran|à l'écran|sur l'écran)\s*:/i)[0]
+      .replace(/^\s*(?:hook|corps|fin|cta|voix off|intro|outro)\s*:\s*/i, "").replace(/[+*_#>|]+/g, " ").replace(/\s+/g, " ").replace(/^[\s\-–—:]+|[\s\-–—:]+$/g, "");
+    return l && !/[.?!…]$/.test(l) ? l + "." : l;
+  }).filter(Boolean).join(" ");
+}
+function blocVoixOff(p) {
+  const voix = S.optionsStudio?.voix_off || [];
+  if (!voix.length) return "";
+  const ecoute = S.optionsStudio?.voix_exemples;
+  return `<div class="st-voix" id="st-voix"><p class="st-voix-titre">🎙️ Une voix qui lit ton script</p>
+    <div class="st-voix-choix" role="group" aria-label="Voix off">
+      <button type="button" data-voix="" aria-pressed="${!p.voix_off}">Pas de voix off</button>
+      ${voix.map(v => `<span class="st-voix-item"><button type="button" data-voix="${v.cle}" aria-pressed="${p.voix_off === v.cle}">${esc(v.nom)}</button>${ecoute ? `<button type="button" class="st-ecoute" data-ecoute="${v.cle}" aria-label="Écouter : ${esc(v.nom)}">▶</button>` : ""}</span>`).join("")}
+    </div>
+    ${p.voix_off ? `<div class="champ"><label for="st-texte-voix">Ce que la voix va dire</label><textarea id="st-texte-voix" rows="4">${esc(p.texte_voix || texteDuScript(p.script))}</textarea></div>
+      <p class="aide">Le son de la vidéo est remplacé par la voix, et les sous-titres suivent ce qu'elle dit.</p>` : ""}</div>`;
+}
+function brancheVoixOff(p, el) {
+  $$("[data-voix]", el).forEach(b => b.onclick = async () => {
+    await sauveProjet(true);
+    S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {voix_off: b.dataset.voix}}); renduProjet();
+  });
+  $$("[data-ecoute]", el).forEach(b => b.onclick = () => {
+    if (S.voixLue && !S.voixLue.paused) { S.voixLue.pause(); const meme = S.voixLue._voix === b.dataset.ecoute; $$(".st-ecoute").forEach(x => x.textContent = "▶"); if (meme) return; }
+    const a = new Audio("/api/studio/voix/" + b.dataset.ecoute + ".mp3"); a._voix = b.dataset.ecoute; S.voixLue = a;
+    b.textContent = "…"; a.onplaying = () => b.textContent = "■"; a.onended = a.onpause = () => b.textContent = "▶";
+    a.onerror = () => { b.textContent = "▶"; toast("Extrait indisponible pour le moment"); };
+    a.play().catch(() => { b.textContent = "▶"; });
+  });
+  $("#st-texte-voix", el)?.addEventListener("input", () => sauveProjet());
 }
 // ---- Couverture du Reel : style, texte, image (moment de la vidéo ou photo), aperçu fil + grille
 function blocCouverture(p, avecVideo) {
@@ -3911,8 +3955,9 @@ function renduProjet() {
           <hr class="st-sep">
           ${p.type === "reel" && p.source?.son ? blocSon({son: p.source.son}) : ""}
           ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
-            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (ce que tu dis dans la vidéo)</label>` : ""}
-            <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>` : ""}
+            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (${p.voix_off ? "ce que dit la voix off" : "ce que tu dis dans la vidéo"})</label>` : ""}
+            <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>
+            ${blocVoixOff(p)}` : ""}
           ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Virall.ai écrit tes slides…</p>` : `
             ${p.type === "reel" ? '<p class="aide">Chaque slide devient un plan de 3 secondes du diaporama.</p>' : ""}
             <ol class="st-slides">${(() => { const att = attribueJS(p.slides, p.images); return p.slides.map((x, i) => `<li class="st-slide">
@@ -3956,7 +4001,7 @@ function renduProjet() {
         <div class="st-bloc st-final" id="st-final">
           ${enCours ? `<div class="st-attente"><span class="spin gros"></span><b id="st-phrase">${esc(tache?.phrase || "Création en cours…")}</b>${tache ? (() => { const pr = progStudio(tache); return `<div class="st-barre" id="st-barre" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pr.pct}"><i style="width:${pr.pct}%"></i></div><span class="aide" id="st-reste">${pr.texte}</span>`; })() : ""}<p class="aide">Tu peux continuer à naviguer : je te préviens quand c'est prêt.</p></div>`
             : p.statut === "erreur" ? `<p class="erreur">${esc(p.erreur || "La création a échoué.")}</p><button class="btn prim large" id="st-generer">Réessayer</button>`
-            : resultat || `<h3>Prêt à créer ?</h3><p class="aide">${p.type === "carrousel" ? `${p.slides.length} slides, ${p.images.length} photo${p.images.length > 1 ? "s" : ""}.` : avecVideo ? "Ta vidéo sera recadrée en 9:16 avec le hook et les sous-titres." : p.images.length ? `Diaporama de ${p.slides.length} plans avec tes photos.` : "Ajoute ta vidéo ou des photos."}</p>
+            : resultat || `<h3>Prêt à créer ?</h3><p class="aide">${p.type === "carrousel" ? `${p.slides.length} slides, ${p.images.length} photo${p.images.length > 1 ? "s" : ""}.` : avecVideo ? (p.voix_off ? "Ta vidéo sera recadrée en 9:16, avec la voix off, le hook et les sous-titres." : "Ta vidéo sera recadrée en 9:16 avec le hook et les sous-titres.") : p.images.length ? `Diaporama de ${p.slides.length} plans avec tes photos.` : "Ajoute ta vidéo ou des photos."}</p>
               <button class="btn prim large" id="st-generer" ${p.type === "reel" && !avecVideo && !p.images.length && !p.slides.length ? "disabled" : ""}>${p.type === "carrousel" ? "Créer mon carrousel" : avecVideo ? "Monter mon Reel" : "Créer mon diaporama"}</button>
               <p class="aide">${p.type === "reel" && avecVideo ? "Compte 1 à 3 minutes selon la longueur de ta vidéo." : "Quelques secondes."}</p>`}
         </div>
@@ -3976,6 +4021,7 @@ function renduProjet() {
   $$(".st-input, #st-legende, .st-slide textarea, .st-mise input", el).forEach(i => i.addEventListener("input", () => sauveProjet()));
   $$(".st-mise select", el).forEach(i => i.addEventListener("change", () => sauveProjet()));
   $("#st-sous")?.addEventListener("change", () => sauveProjet());
+  brancheVoixOff(p, el);
   $("#st-ajout")?.addEventListener("click", async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: [...S.projet.slides, {titre: "", texte: ""}]}}); renduProjet(); $$(".st-slide [data-k=titre]").pop()?.focus(); });
   $$("[data-moins]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); const sl = S.projet.slides.filter((_, i) => i !== +b.dataset.moins); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: sl}}); renduProjet(); });
   $("#st-ecrire")?.addEventListener("click", async () => {
