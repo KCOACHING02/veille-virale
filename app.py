@@ -3281,6 +3281,18 @@ def bib_media(rel):
     return send_from_directory(f.parent, f.name, max_age=7 * 86400)
 
 
+@app.get("/api/admin/google")
+@admin_requis
+def admin_google():
+    """Diagnostic de la connexion Google : l'ID client (public) tel que le serveur le lit, jamais le code secret."""
+    brut, cid = os.getenv("GOOGLE_CLIENT_ID") or "", _cle_google("GOOGLE_CLIENT_ID")
+    sec = _cle_google("GOOGLE_CLIENT_SECRET")
+    return jsonify({"id_client": cid, "longueur": len(cid), "nettoye": brut != cid,
+                    "forme_ok": bool(re.fullmatch(r"\d+-[a-z0-9]+\.apps\.googleusercontent\.com", cid)),
+                    "secret_present": bool(sec), "secret_forme_ok": sec.startswith("GOCSPX-"),
+                    "id_ressemble_au_secret": cid.startswith("GOCSPX-"), "adresse_retour": _retour_google()})
+
+
 @app.get("/api/admin/services")
 @admin_requis
 def admin_services():
