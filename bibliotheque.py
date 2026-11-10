@@ -46,7 +46,7 @@ DELAI_H = 48          # chiffres stables
 PAR_COMPTE = 12       # publications lues par compte et par format chaque jour
 PAR_COMPTE_LUNDI = 40  # le lundi : lecture plus profonde (publications devenues virales sur la durée)
 LOT = 40              # comptes par lancement du collecteur
-MAX_PREPARATIONS = 60  # nouvelles publications virales préparées par jour (lecture vidéo sur le serveur)
+MAX_PREPARATIONS = 120  # nouvelles publications virales préparées par jour (lecture vidéo sur le serveur)
 
 _VERROU = threading.RLock()
 
@@ -98,6 +98,41 @@ def sauve_niches(d: dict) -> dict:
                          "comptes": list(dict.fromkeys(_propre(c) for c in (v.get("comptes") or []) if _propre(c)))[:80]}
         _ecrit("niches.json", propre)
         return propre
+
+
+def ajoute_comptes_depart(demo: bool = False) -> int:
+    """Une fois : les comptes ajoutés à bibliotheque.yaml (liste doublée le 10 novembre 2026) rejoignent la liste
+    modifiée dans l'admin, puis les nouveaux sont vérifiés et retirés s'ils sont introuvables ou privés."""
+    if etat().get("comptes_depart_v2") or not _lit("niches.json", None):
+        return 0  # déjà fait, ou pas de liste modifiée (la liste de départ s'applique telle quelle)
+    depart = yaml.safe_load(SEED.read_text(encoding="utf-8")) or {}
+    with _VERROU:
+        d = niches()
+        nouveaux = []
+        for k, v in depart.items():
+            if k not in d:
+                continue
+            for c in v.get("comptes") or []:
+                c = _propre(c)
+                if c and c not in d[k]["comptes"]:
+                    d[k]["comptes"].append(c)
+                    nouveaux.append(c)
+        sauve_niches(d)
+        _ecrit("etat.json", {**etat(), "comptes_depart_v2": datetime.now().isoformat(timespec="minutes")})
+    nouveaux = list(dict.fromkeys(nouveaux))
+    log(f"Bibliothèque : {len(nouveaux)} comptes ajoutés, vérification…")
+    if nouveaux:
+        verifie_comptes(nouveaux, demo=demo)
+        verif = _lit("verif.json", {})  # seulement les comptes vraiment lus (une panne d'Apify ne retire rien)
+        ko = {c for c in nouveaux if verif.get(c, {}).get("introuvable") or verif.get(c, {}).get("prive")}
+        if ko:
+            with _VERROU:
+                d = niches()
+                for v in d.values():
+                    v["comptes"] = [c for c in v["comptes"] if c not in ko]
+                sauve_niches(d)
+            log(f"  {len(ko)} compte(s) introuvables ou privés retirés : {', '.join(sorted(ko))[:300]}")
+    return len(nouveaux)
 
 
 def tous_les_comptes() -> list[str]:

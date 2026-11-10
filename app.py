@@ -3801,6 +3801,11 @@ def planificateur():
 def _marque_faceless():
     """Publications de la bibliothèque préparées avant la détection des visages : jugées une fois, au démarrage."""
     try:
+        if not en_demo():
+            bibliotheque.ajoute_comptes_depart()
+    except Exception as e:  # noqa: BLE001
+        log(f"⚠️  Ajout des comptes de la bibliothèque impossible : {str(e)[:120]}")
+    try:
         bibliotheque.marque_faceless(maxi=5000)
     except Exception as e:  # noqa: BLE001
         log(f"⚠️  Détection des visages impossible : {str(e)[:120]}")
