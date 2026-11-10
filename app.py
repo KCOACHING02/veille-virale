@@ -722,7 +722,7 @@ def analyses():
 @connecte
 def analyse(aid):
     try:
-        return jsonify(moteur.charge(g.esp, aid))
+        return jsonify(_avec_visages(moteur.charge(g.esp, aid)))
     except FileNotFoundError:
         abort(404)
 
@@ -3289,7 +3289,19 @@ def admin_requis(f):
 def tendances():
     """Tendances de ma niche : publications virales de la bibliothèque, sans coût. Rafraîchies quand elle change."""
     a = moteur.tendances(g.esp, g.esp.lit_config(), force=bool(request.args.get("force")))
-    return jsonify(a)
+    return jsonify(_avec_visages(a))
+
+
+def _avec_visages(a: dict) -> dict:
+    """« Sans visage » : repris de la bibliothèque pour les publications analysées avant la détection (veilles déjà faites)."""
+    try:
+        pubs = bibliotheque.publications()
+        for x in a.get("posts") or []:
+            if x.get("faceless") is None and x.get("id") in pubs:
+                x["faceless"] = pubs[x["id"]].get("faceless")
+    except Exception:  # noqa: BLE001
+        pass
+    return a
 
 
 @app.get("/api/bibliotheque/niches")
