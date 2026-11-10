@@ -19,6 +19,7 @@ Variables d'environnement (.env) :
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import hashlib
 import hmac
@@ -362,6 +363,7 @@ def inscription():
         return jsonify({"erreur": str(e)}), 400
     session.permanent, session["uid"] = True, u["id"]
     ab.maj(u["id"], derniere_connexion=datetime.now().isoformat(timespec="minutes"))
+    alerte_admin("Nouvelle inscription 👋", f"{_qui(u)} vient de créer son compte" + (" (boutique gratuite)." if u.get("origine") == "boutique" else "."))
     code = (c.get("parrain") or request.cookies.get("vv_parrain") or "").strip().lower()
     if code and ab.rattache_parrain(u["id"], code):
         p = ab.par_code(code)
@@ -401,6 +403,26 @@ def renvoie_confirmation():
     return jsonify({"ok": True})
 
 
+def alerte_admin(titre: str, texte: str, url: str = "/admin"):
+    """Prévient les administrateurs (notification sur le téléphone + e-mail) : inscriptions, essais, abonnements, résiliations."""
+    if en_demo():
+        return
+    for a in [e.strip() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]:
+        try:
+            u = ab.par_email(a)
+            if u:
+                nt.notifie(u["id"], titre, texte, url)
+            emails.envoie(a, f"Virallink : {titre}", emails._gabarit(titre, f"<p>{html.escape(texte)}</p>", ("Ouvrir l'admin", url_site() + url)))
+        except Exception as e:  # noqa: BLE001
+            log(f"⚠️  Alerte admin non envoyée : {str(e)[:120]}")
+
+
+def _qui(u: dict | None) -> str:
+    if not u:
+        return "Une cliente"
+    return f"{u.get('prenom') or ''} ({u.get('email')})".strip()
+
+
 @app.post("/api/essai")
 @connecte
 def demarre_essai():
@@ -408,6 +430,8 @@ def demarre_essai():
     _exige_confirmation(g.u)
     if not ab.demarre_essai(g.u["id"]):
         return jsonify({"erreur": "Ton essai gratuit a déjà été utilisé. Choisis une formule pour continuer."}), 400
+    if not est_admin(g.u):
+        alerte_admin("Essai démarré 🚀", f"{_qui(g.u)} vient de démarrer ses 7 jours d'essai.")
     return jsonify({"ok": True, "abonnement": droits(ab.get(g.u["id"]))})
 
 
@@ -512,6 +536,7 @@ def google_retour():
     session.permanent, session["uid"] = True, u["id"]
     ab.maj(u["id"], derniere_connexion=datetime.now().isoformat(timespec="minutes"))
     if nouveau:
+        alerte_admin("Nouvelle inscription 👋", f"{_qui(u)} vient de créer son compte avec Google.")
         if d.get("parrain") and ab.rattache_parrain(u["id"], d["parrain"]):
             p = ab.par_code(d["parrain"])
             if p:
@@ -1153,7 +1178,31 @@ def stripe_webhook():
         typ = ab.webhook(request.get_data(), request.headers.get("Stripe-Signature", ""))
     except PermissionError:
         abort(400)
+    try:
+        _alerte_stripe(json.loads(request.get_data()))
+    except Exception as e:  # noqa: BLE001
+        log(f"⚠️  Alerte Stripe : {str(e)[:120]}")
     return jsonify({"recu": typ})
+
+
+def _alerte_stripe(ev: dict):
+    """Nouvel abonnement, pack acheté, résiliation ou impayé : l'administrateur est prévenu (signature déjà vérifiée)."""
+    obj, typ = ev["data"]["object"], ev["type"]
+    meta = obj.get("metadata") or {}
+    uid = int(obj.get("client_reference_id") or meta.get("uid") or 0) or ab._uid_stripe(obj.get("subscription") or obj.get("id"), obj.get("customer"))
+    u = ab.get(uid) if uid else None
+    montant = f"{(obj.get('amount_total') or 0) / 100:.2f} €".replace(".", ",")
+    if typ == "checkout.session.completed" and meta.get("pack"):
+        alerte_admin("Pack acheté 💶", f"{_qui(u)} a acheté un pack ({meta['pack']}) : {montant}.")
+    elif typ == "checkout.session.completed":
+        nom = (ab.plans().get(meta.get("plan") or "") or {}).get("nom") or meta.get("plan") or "une formule"
+        alerte_admin("Nouvel abonnement 🎉", f"{_qui(u)} vient de s'abonner à {nom} : {montant}.")
+    elif typ == "customer.subscription.deleted":
+        alerte_admin("Abonnement résilié", f"{_qui(u)} a résilié son abonnement.")
+    elif typ == "customer.subscription.updated" and obj.get("status") in ("past_due", "unpaid"):
+        alerte_admin("Paiement refusé ⚠️", f"Le paiement de {_qui(u)} n'est pas passé (abonnement impayé).")
+    elif typ == "customer.subscription.updated" and obj.get("cancel_at_period_end") and not (ev["data"].get("previous_attributes") or {}).get("cancel_at_period_end", True):
+        alerte_admin("Résiliation programmée", f"{_qui(u)} a demandé à arrêter son abonnement à la fin de la période.")
 
 
 # ------------------------------------------------------------
