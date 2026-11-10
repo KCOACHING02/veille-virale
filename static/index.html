@@ -826,6 +826,13 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .st-med-actions{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;padding:4px;background:linear-gradient(transparent,rgba(0,0,0,.55))}
 .st-med-actions button{border:0;background:rgba(255,255,255,.92);color:#271B2D;width:26px;height:26px;border-radius:8px;cursor:pointer;font-weight:700}
 .st-med-actions button:disabled{opacity:.35;cursor:default}
+.st-plans{margin:14px 0 4px;padding:14px;border-radius:14px;background:var(--sunk)}
+.st-plans ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.st-plans li{display:flex;gap:12px;align-items:center}
+.st-plans li div{display:grid;gap:2px;flex:1;font-size:14px} .st-plans small{color:var(--ink-3);font-size:12px}
+.st-plan-vign{position:relative;flex:none;width:58px;height:100px;border:0;padding:0;border-radius:10px;overflow:hidden;background:#000;cursor:pointer}
+.st-plan-vign video,.st-plan-vign img{width:100%;height:100%;object-fit:cover;display:block}
+.st-plan-vign em{position:absolute;inset:auto 0 0;background:rgba(0,0,0,.55);color:#fff;font-style:normal;font-size:11px;padding:3px 0;text-align:center}
 .st-voix{margin:14px 0 4px;padding:14px;border-radius:14px;background:var(--sunk)}
 .st-voix-titre{font-weight:700;margin:0 0 10px}
 .st-voix-choix{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
@@ -3090,8 +3097,8 @@ async function choisirFormat(cle, videoBanque = false) {
         ? {id: r.job, sid: r.projet.id, titre: "Choix des images", phrase: "Je choisis des images pour tes slides…"}
         : {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Virall.ai écrit tes textes…"}) : null;
       va("studio"); if (r.job) suisTacheStudio(r.job);
-      // Reel sans se filmer : la banque de vidéos (Pixabay) s'ouvre directement sur le projet
-      if (format === "reel" && videoBanque && opts.banque) setTimeout(() => S.projet?.id === r.projet.id && ouvreBanque(0, true), 600);
+      // Reel sans se filmer : Virall.ai choisit une vidéo par phrase, une fois le script écrit
+      if (format === "reel" && videoBanque && opts.banque) { if (r.job) S.plansApres = r.projet.id; else lancePlans(r.projet.id); }
     } catch (e) { toast(e.message); b.disabled = false; b.textContent = (format === "carrousel" ? "Créer le carrousel" : "Créer le Reel") + " →"; }
   };
 }
@@ -3721,6 +3728,20 @@ function sauveProjet(immediat) {
   $("#st-enregistre") && ($("#st-enregistre").textContent = "…");
   return immediat ? go() : (S.minuteurStudio = setTimeout(go, 450));
 }
+// ---- Reel en plusieurs plans : une vidéo de la banque par phrase de la voix off
+async function lancePlans(pid) {
+  try { const r = await api(`/api/studio/${pid}/plans`, {method: "POST"});
+    S.tacheStudio = {id: r.job, sid: pid, titre: "Choix des vidéos", phrase: "Virall.ai choisit une vidéo pour chaque phrase…"};
+    if (S.projetId === pid) renduProjet(); suisTacheStudio(r.job);
+  } catch (e) { toast(e.message); }
+}
+function blocPlans(p) {
+  return `<div class="st-plans"><p class="st-voix-titre">🎬 Tes plans : une vidéo par phrase</p>
+    <ol>${p.plans.map((x, i) => `<li><button type="button" class="st-plan-vign" data-plan="${i}" aria-label="Changer la vidéo du plan ${i + 1}">
+      ${x.miniature ? `<img src="${esc(x.miniature)}" alt="">` : `<video src="/studio/${p.id}/sources/${encodeURIComponent(x.video)}#t=0.5" muted playsinline preload="metadata"></video>`}<em>Changer</em></button>
+      <div><span>${esc(x.texte)}</span><small>Vidéo de ${Math.round(x.duree || 0)} s${x.auteur ? " · " + esc(x.auteur) : ""}</small></div></li>`).join("")}</ol>
+    <div class="st-outils"><button class="btn petit" data-plans>↻ Choisir d'autres vidéos</button><button class="btn petit" data-retire="${esc(p.video)}">Retirer les vidéos</button></div></div>`;
+}
 // ---- Voix off : Virall.ai lit le script (le son de la vidéo est remplacé, les sous-titres suivent la voix)
 function texteDuScript(script) {
   return (script || "").split("\n").map(l => {
@@ -3933,7 +3954,9 @@ function renduProjet() {
           ${S.optionsStudio?.banque && !(p.type === "reel" && p.video) ? `<div class="st-outils" style="margin:0 0 12px">
             ${p.slides.length ? `<button class="btn petit" id="st-bq-auto">✨ ${p.images.length ? "Compléter avec" : "Proposer"} des images de la banque</button>
               <button class="btn petit" id="st-bq-toutes">🖼️ Une image sur chaque slide</button>` : ""}
-            ${p.type === "reel" ? `<button class="btn petit" id="st-bq-video">🎬 Choisir une vidéo dans la banque</button>` : ""}</div>` : ""}
+            ${p.type === "reel" ? `<button class="btn petit prim" data-plans>✨ Virall.ai choisit une vidéo par phrase</button><button class="btn petit" id="st-bq-video">🎬 Une seule vidéo de la banque</button>` : ""}</div>` : ""}
+          ${p.type === "reel" && S.tacheStudio?.sid === p.id && /vidéos/i.test(S.tacheStudio.titre || "") ? `<p class="encours"><span class="spin"></span>${esc(S.tacheStudio.phrase || "Virall.ai choisit tes vidéos…")}</p>` : ""}
+          ${p.type === "reel" && p.plans?.length ? blocPlans(p) : ""}
           <p class="aide">${p.type === "carrousel" ? (p.nb_photos ? "Ajoute-les dans cet ordre : chacune va sur sa slide. Les autres slides sont sur fond uni." : "Une photo par slide, dans l'ordre. Les slides sans photo sont sur fond uni.") : "Ta vidéo (face caméra, voix off…) : je la recadre et j'ajoute le hook et les sous-titres. Pas de vidéo ? Ajoute des photos : je monte un diaporama avec les textes."}</p>
           <label class="depot" id="st-depot"><input type="file" id="st-fichiers" multiple accept="${p.type === "reel" ? "image/*,video/*" : "image/*"}" hidden>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
@@ -3941,7 +3964,7 @@ function renduProjet() {
             <i class="st-envoi" id="st-envoi" hidden><i></i></i>
             <span class="st-envoi-txt" id="st-envoi-txt" hidden></span>
           </label>
-          ${avecVideo ? `<div class="st-video"><video src="${src(p.video)}" muted playsinline preload="metadata"></video><div><b>Ta vidéo</b><span>${p.video_duree ? Math.round(p.video_duree) + " s" : ""}${p.video_duree > 180 ? " · seules les 3 premières minutes seront gardées" : ""}</span></div><button class="btn petit" data-retire="${esc(p.video)}">Retirer</button></div>` : ""}
+          ${avecVideo && !p.plans?.length ? `<div class="st-video"><video src="${src(p.video)}" muted playsinline preload="metadata"></video><div><b>Ta vidéo</b><span>${p.video_duree ? Math.round(p.video_duree) + " s" : ""}${p.video_duree > 180 ? " · seules les 3 premières minutes seront gardées" : ""}</span></div><button class="btn petit" data-retire="${esc(p.video)}">Retirer</button></div>` : ""}
           ${p.images.length ? `<div class="st-medias">${p.images.map((n, i) => `<figure><img src="${src(n)}" alt="Photo ${i + 1}"><figcaption>${i + 1}</figcaption>
             <div class="st-med-actions"><button data-bouge="${i}" data-sens="-1" aria-label="Avancer" ${i ? "" : "disabled"}>←</button><button data-retire="${esc(n)}" aria-label="Retirer">×</button><button data-bouge="${i}" data-sens="1" aria-label="Reculer" ${i < p.images.length - 1 ? "" : "disabled"}>→</button></div></figure>`).join("")}</div>` : ""}
         </div>
@@ -4022,6 +4045,8 @@ function renduProjet() {
   $$(".st-mise select", el).forEach(i => i.addEventListener("change", () => sauveProjet()));
   $("#st-sous")?.addEventListener("change", () => sauveProjet());
   brancheVoixOff(p, el);
+  $$("[data-plans]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); lancePlans(p.id); });
+  $$("[data-plan]", el).forEach(b => b.onclick = () => ouvreBanque(0, true, +b.dataset.plan));
   $("#st-ajout")?.addEventListener("click", async () => { await sauveProjet(true); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: [...S.projet.slides, {titre: "", texte: ""}]}}); renduProjet(); $$(".st-slide [data-k=titre]").pop()?.focus(); });
   $$("[data-moins]", el).forEach(b => b.onclick = async () => { await sauveProjet(true); const sl = S.projet.slides.filter((_, i) => i !== +b.dataset.moins); S.projet = await api("/api/studio/" + p.id, {method: "PUT", body: {slides: sl}}); renduProjet(); });
   $("#st-ecrire")?.addEventListener("click", async () => {
@@ -4056,11 +4081,12 @@ function renduProjet() {
   if (p.statut === "pret") brancheResultat(p);
 }
 // ---- Banque d'images (Pexels) : choisir l'image d'une slide, ou sa propre photo
-async function ouvreBanque(i, video = false) {
-  const p = S.projet, sl = p.slides[i] || {};
+async function ouvreBanque(i, video = false, plan = null) {
+  const p = S.projet, sl = p.slides[i] || {}, pl = plan != null ? p.plans?.[plan] : null;
   // Vidéo : les mots-clés (en anglais) écrits par Virall.ai pour la 1re slide, sinon le visuel du modèle, sinon le hook
-  const q0 = video ? (p.slides?.[0]?.recherche || p.source?.slides_modele?.[0]?.visuel || p.hook || "") : (sl.recherche || sl.photo || sl.titre || "");
-  $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:24px;font-stretch:85%">${video ? "Une vidéo pour ton Reel" : `Image de la slide ${i + 1}`}</h2>
+  const q0 = pl ? pl.recherche || pl.texte : video ? (p.slides?.[0]?.recherche || p.source?.slides_modele?.[0]?.visuel || p.hook || "") : (sl.recherche || sl.photo || sl.titre || "");
+  $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:24px;font-stretch:85%">${pl ? `Vidéo du plan ${plan + 1}` : video ? "Une vidéo pour ton Reel" : `Image de la slide ${i + 1}`}</h2>
+    ${pl ? `<p class="aide" style="margin:6px 0 12px">« ${esc(pl.texte)} »</p>` : ""}
     ${!video && sl.photo ? `<p class="aide" style="margin:6px 0 12px">📷 Idée : ${esc(sl.photo)}</p>` : ""}
     ${video ? "" : `<div class="seg" style="margin:0 0 12px"><button type="button" aria-pressed="true" data-bq="banque">Banque d'images</button><button type="button" aria-pressed="false" data-bq="moi">Ma photo</button></div>`}
     <div id="bq-banque">
@@ -4078,12 +4104,17 @@ async function ouvreBanque(i, video = false) {
     const q = $("#bq-q").value.trim(); if (!q) return;
     $("#bq-res").innerHTML = '<p class="encours"><span class="spin"></span>Recherche…</p>';
     try { const r = await api(`/api/banque?type=${video ? "video" : "photo"}&q=${encodeURIComponent(q)}`); res = r.resultats || [];
+      if (video) { // les vidéos assez longues pour le texte d'abord (une phrase pour un plan, tout le script pour une vidéo seule)
+        const mots = (pl ? pl.texte : (p.texte_voix || texteDuScript(p.script) || "")).split(/\s+/).filter(Boolean).length;
+        const besoin = Math.max(3, mots / 2.6);
+        res = res.map((x, k) => [x, k]).sort((a, b) => ((b[0].duree || 0) >= besoin) - ((a[0].duree || 0) >= besoin) || a[1] - b[1]).map(x => x[0]);
+      }
       if (r.source && $("#bq-source")) $("#bq-source").textContent = `${video ? "Vidéos" : "Photos"} libres de droits fournies par ${r.source === "démo" ? "la banque de démonstration" : r.source}, utilisables gratuitement pour tes publications.`;
       $("#bq-res").innerHTML = res.length ? res.map((x, k) => `<button type="button" class="bq-el" data-k="${k}"><img src="${esc(x.miniature)}" alt="${esc(x.alt || "")}" loading="lazy">${x.type === "video" ? `<span class="bq-duree">${x.duree || ""} s</span>` : ""}<small>${esc(x.auteur)}</small></button>`).join("")
         : '<p class="aide">Aucun résultat : essaie des mots plus simples (en anglais, c\'est souvent mieux).</p>';
       $$(".bq-el").forEach(b => b.onclick = async () => {
         $$(".bq-el").forEach(x => x.disabled = true); b.classList.add("choisi");
-        try { S.projet = await api(`/api/studio/${p.id}/banque`, {method: "POST", body: {slide: video ? null : i, element: res[+b.dataset.k]}});
+        try { S.projet = await api(`/api/studio/${p.id}/banque`, {method: "POST", body: {slide: video ? null : i, plan, element: res[+b.dataset.k]}});
           fermeModale(); renduProjet(); toast(video ? "Vidéo ajoutée" : "Image ajoutée à la slide " + (i + 1)); }
         catch (e) { toast(e.message); $$(".bq-el").forEach(x => x.disabled = false); }
       });
@@ -4198,7 +4229,9 @@ function suisTacheStudio(jid) {
     majBarreStudio();
     if (j.statut === "terminé" || j.statut === "erreur") {
       clearInterval(S.pollStudio); S.tacheStudio = null;
+      if (j.statut === "terminé" && S.plansApres === sid) { S.plansApres = null; if (S.vue === "studio" && S.projetId === sid) S.projet = await api("/api/studio/" + sid); return lancePlans(sid); }
       if (j.statut === "erreur") toast("Studio : " + j.erreur);
+      else if (/choix des vidéos/i.test(j.titre)) toast("Tes vidéos sont choisies : change celles qui ne te plaisent pas");
       else toast(/retouche des stories/i.test(j.titre) ? "Retouche appliquée : regarde l'aperçu" : /écriture des stories/i.test(j.titre) ? "Tes stories sont écrites : retouche-les puis fabrique-les" : /fabrication des stories/i.test(j.titre) ? "Tes stories sont prêtes" : /slides/i.test(j.titre) ? "Tes textes sont prêts" : /images/i.test(j.titre) ? "Images proposées : touche une slide pour en changer" : /préparation/i.test(j.titre) ? "Ta vidéo est prête : tu peux monter ton Reel" : "Ton contenu est prêt à publier");
       if (S.vue === "studio" && S.projetId === sid) { S.projet = await api("/api/studio/" + sid); renduProjet(); }
     }

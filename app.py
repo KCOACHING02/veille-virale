@@ -1320,6 +1320,23 @@ def studio_ecrire(sid):
                                  demo=en_demo(), file_=FILE_STUDIO)})
 
 
+@app.post("/api/studio/<sid>/plans")
+@connecte
+def studio_plans(sid):
+    """Reel sans se filmer : Virall.ai choisit une vidéo de la banque pour chaque phrase de la voix off."""
+    _projet(sid)
+    if not (_banque_dispo() or en_demo()):
+        return jsonify({"erreur": "La banque de vidéos n'est pas disponible pour le moment."}), 400
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    msg = reserve(g.u, "montage_reel")
+    if msg:
+        return bloque(msg)
+    avec_ia = not reserve(g.u, "ia")
+    return jsonify({"job": lance(g.u["id"], "Choix des vidéos", studio.prepare_plans, g.esp, sid, demo=en_demo(), avec_ia=avec_ia,
+                                 file_=FILE_STUDIO)})
+
+
 def _apres_studio(uid: int, sid: str):
     """Première création d'un projet : compte le quota et prévient par e-mail (le montage peut prendre quelques minutes)."""
     def fin(_):
@@ -1676,7 +1693,7 @@ def studio_banque(sid):
                                                    "/banque-demo/")):
         return jsonify({"erreur": "Image non autorisée."}), 400
     try:
-        p = studio.choisit_banque(g.esp, sid, c.get("slide"), el)
+        p = studio.choisit_banque(g.esp, sid, c.get("slide"), el, c.get("plan"))
     except Exception as e:  # noqa: BLE001
         return jsonify({"erreur": f"Téléchargement impossible : {str(e)[:120]}"}), 502
     p.pop("adaptation", None)

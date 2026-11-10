@@ -1014,3 +1014,29 @@ def ecrit_plan30(cfg: dict, voix: str, contexte: str, cases: str, consigne_voix:
              "Le modèle viral indique seulement le type d'accroche qui marche dans la niche. N'invente aucun témoignage ni chiffre.")
     return _ia_simple(cfg)._appel(OUTIL_PLAN30, texte, max_tokens=2500,
                                   systeme=_systeme_marque(cfg, voix, "Tu es stratège de contenu Instagram : tu construis des plans mensuels qui mènent à la vente."))
+
+
+OUTIL_PLANS_REEL = {
+    "name": "enregistrer_plans",
+    "description": "Une vidéo de banque (Pixabay) à chercher pour chaque phrase de la voix off d'un Reel, dans l'ordre.",
+    "input_schema": {"type": "object", "properties": {
+        "plans": {"type": "array", "items": {"type": "object", "properties": {
+            "recherche": {"type": "string", "description": "2 à 4 mots-clés EN ANGLAIS décrivant une scène filmable concrète qui illustre la phrase "
+                                                           "(personnes, gestes, objets, lieux : « woman typing phone cafe », « package delivery doorstep »). "
+                                                           "Jamais d'idée abstraite, de texte, de logo ni de marque."},
+            "secours": {"type": "string", "description": "1 ou 2 mots-clés EN ANGLAIS plus larges si la première recherche ne donne rien (« smartphone », « laptop work »)."}},
+            "required": ["recherche", "secours"]}}},
+        "required": ["plans"]},
+}
+
+
+def plans_reel(cfg: dict, phrases: list[str]) -> list[dict]:
+    """Mots-clés de recherche vidéo pour chaque phrase de la voix off (modèle léger)."""
+    texte = ("Voici les phrases de la voix off d'un Reel Instagram, dans l'ordre. Pour chacune, donne la vidéo de banque à chercher : "
+             "des plans variés d'une phrase à l'autre (pas deux fois la même scène), cohérents avec le sujet du compte "
+             f"({(cfg.get('niche') or {}).get('nom') or 'créatrice de contenu'}), plutôt avec des femmes si une personne apparaît.\n\n"
+             + "\n".join(f"{i + 1}. {p}" for i, p in enumerate(phrases)))
+    res = _ia_simple(cfg)._appel(OUTIL_PLANS_REEL, texte, max_tokens=900, modele=MODELE_LEGER,
+                                 systeme="Tu choisis des plans vidéo pour illustrer des Reels.")
+    plans = res.get("plans") or []
+    return [plans[i] if i < len(plans) else {"recherche": "", "secours": ""} for i in range(len(phrases))]

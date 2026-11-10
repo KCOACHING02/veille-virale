@@ -484,13 +484,25 @@ def _remplace_image_slide(d: Path, p: dict, i: int, nom: str):
         p.setdefault("credits", {}).pop(ancienne, None)
 
 
-def choisit_banque(esp: Espace, sid: str, slide_i: int | None, element: dict) -> dict:
-    """Image (ou vidéo, pour un Reel) de la banque choisie pour une slide : téléchargée dans le projet."""
+def choisit_banque(esp: Espace, sid: str, slide_i: int | None, element: dict, plan_i: int | None = None) -> dict:
+    """Image (ou vidéo, pour un Reel) de la banque choisie pour une slide ou un plan : téléchargée dans le projet."""
     import banque
     p = charge(esp, sid)
     d = dossier(esp, sid)
     (d / "sources").mkdir(exist_ok=True)
+    if element.get("type") == "video" and plan_i is not None and 0 <= plan_i < len(p.get("plans") or []):
+        pl = p["plans"][plan_i]
+        nom = f"plan_{plan_i:02d}_{uuid.uuid4().hex[:4]}.mp4"
+        banque.telecharge(element, d / "sources" / nom)
+        (d / "sources" / pl["video"]).unlink(missing_ok=True)
+        pl.update(video=nom, duree=round(_duree(d / "sources" / nom) or 0, 1), miniature=element.get("miniature", ""),
+                  auteur=element.get("auteur", ""), lien=element.get("lien", ""), id_banque=element.get("id"))
+        if plan_i == 0:
+            p["video"], p["video_duree"] = nom, pl["duree"]
+        sauve(esp, p)
+        return p
     if element.get("type") == "video":
+        _oublie_plans(d, p)
         for ancien in (d / "sources").glob("video.*"):
             ancien.unlink()
         dest = banque.telecharge(element, d / "sources" / "video.mp4")
@@ -620,8 +632,154 @@ def retire_fichier(esp: Espace, sid: str, nom: str) -> dict:
             x.pop("image")
     if p.get("video") == nom:
         p["video"] = None
+        _oublie_plans(dossier(esp, sid), p)
     sauve(esp, p)
     return p
+
+
+# ------------------------------------------------------------
+#  Reel « sans se filmer » en plusieurs plans : une vidéo de la banque par phrase de la voix off
+# ------------------------------------------------------------
+MOTS_PAR_SECONDE = 2.6  # débit d'une voix off française naturelle
+MAX_PLANS = 8
+
+
+def _oublie_plans(d: Path, p: dict):
+    for x in p.get("plans") or []:
+        (d / "sources" / x.get("video", "-")).unlink(missing_ok=True)
+    p["plans"] = []
+
+
+def decoupe_phrases(texte: str, max_plans: int = MAX_PLANS) -> list[str]:
+    """Les phrases de la voix off, les très courtes rattachées à la suivante, au plus `max_plans` morceaux."""
+    res = []
+    for m in (x.strip() for x in re.split(r"(?<=[.!?…])\s+", texte or "")):
+        if not m:
+            continue
+        if res and len(res[-1].split()) < 6:
+            res[-1] += " " + m
+        else:
+            res.append(m)
+    if len(res) > 1 and len(res[-1].split()) < 4:  # « Commente BOUTIQUE. » : avec la phrase d'avant
+        res[-2] += " " + res.pop()
+    while len(res) > max_plans:
+        i = min(range(len(res) - 1), key=lambda k: len(res[k]) + len(res[k + 1]))
+        res[i:i + 2] = [res[i] + " " + res[i + 1]]
+    return res
+
+
+def _video_demo(q: str, dest: Path, secondes: float) -> Path:
+    import hashlib
+    teinte = "#" + hashlib.sha1(q.encode()).hexdigest()[:6]
+    _ffmpeg(["-f", "lavfi", "-i", f"color=c={teinte}:s=720x1280:r=30:d={secondes:.1f}", "-f", "lavfi", "-i", f"testsrc=s=320x240:r=30:d={secondes:.1f}",
+             "-filter_complex", "[0:v][1:v]overlay=(W-w)/2:(H-h)/2", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", str(dest)], dest.parent)
+    return dest
+
+
+def prepare_plans(esp: Espace, sid: str, demo: bool = False, avec_ia: bool = True) -> dict:
+    """Virall.ai découpe la voix off en phrases et choisit, pour chacune, une vidéo de la banque assez longue qui montre ce qui est dit."""
+    import banque
+    import voix
+    p = charge(esp, sid)
+    d = dossier(esp, sid)
+    texte = (p.get("texte_voix") or "").strip() or voix.texte_du_script(p.get("script") or "") or (p.get("hook") or "")
+    phrases = decoupe_phrases(texte)
+    if not phrases:
+        raise ValueError("Écris d'abord le script de ton Reel : Virall.ai choisit une vidéo pour chaque phrase.")
+    log(f"Virall.ai cherche une vidéo pour chacune de tes {len(phrases)} phrases…")
+    cles = []
+    if avec_ia:
+        try:
+            import ia
+            cles = ia.plans_reel(esp.lit_config(), phrases)
+        except Exception as e:  # noqa: BLE001
+            log(f"  ⚠️  Mots-clés indisponibles ({str(e)[:80]}) : recherche avec les mots de tes phrases")
+    (d / "sources").mkdir(exist_ok=True)
+    _oublie_plans(d, p)
+    deja, plans, en_attente = set(), [], ""
+    for i, ph in enumerate(phrases):
+        besoin = max(2.5, len(ph.split()) / MOTS_PAR_SECONDE)
+        k = cles[i] if i < len(cles) else {}
+        choix, requete = None, ""
+        for q in [x for x in (k.get("recherche"), k.get("secours"), ph) if x]:
+            if demo and not banque.active():
+                choix, requete = {"id": f"demo{i}", "demo": True, "duree": besoin + 2}, q
+                break
+            try:
+                res = [r for r in banque.videos(q, n=15) if r.get("id") not in deja]
+            except Exception as e:  # noqa: BLE001
+                log(f"  ⚠️  Banque indisponible ({str(e)[:80]})")
+                res = []
+            if res:
+                longues = [r for r in res if (r.get("duree") or 0) >= besoin]
+                choix = (longues or sorted(res, key=lambda r: -(r.get("duree") or 0)))[0]
+                requete = q
+                break
+        ph = (en_attente + " " + ph).strip()
+        if not choix:  # rien trouvé : la phrase reste sur le plan précédent (ou passe au suivant)
+            if plans:
+                plans[-1]["texte"] += " " + ph
+            else:
+                en_attente = ph
+            continue
+        en_attente = ""
+        deja.add(choix.get("id"))
+        nom = f"plan_{i:02d}_{uuid.uuid4().hex[:4]}.mp4"
+        log(f"  Plan {len(plans) + 1} : « {requete} »")
+        try:
+            if choix.get("demo"):
+                _video_demo(requete, d / "sources" / nom, choix["duree"])
+            else:
+                banque.telecharge(choix, d / "sources" / nom)
+        except Exception as e:  # noqa: BLE001
+            log(f"  ⚠️  Vidéo non téléchargée ({str(e)[:80]})")
+            if plans:
+                plans[-1]["texte"] += " " + ph
+            else:
+                en_attente = ph
+            continue
+        plans.append({"texte": ph, "recherche": requete, "video": nom, "duree": round(_duree(d / "sources" / nom) or 0, 1),
+                      "miniature": banque.via_serveur([dict(choix)])[0].get("miniature", ""), "auteur": choix.get("auteur", ""),
+                      "lien": choix.get("lien", ""), "id_banque": choix.get("id")})
+    if not plans:
+        raise ValueError("Aucune vidéo trouvée pour ce script : choisis-en une dans la banque.")
+    if en_attente:
+        plans[-1]["texte"] += " " + en_attente
+    p = charge(esp, sid)
+    for f_ in (d / "sources").glob("video.*"):
+        f_.unlink()
+    p.update(plans=plans, video=plans[0]["video"], video_duree=plans[0]["duree"])
+    p["texte_voix"] = p.get("texte_voix") or texte
+    if not p.get("voix_off") and voix.dispo(demo):
+        p["voix_off"] = "femme"
+    sauve(esp, p)
+    log(f"✅ {len(plans)} vidéos choisies : change celles qui ne te plaisent pas")
+    return {"id": sid}
+
+
+def monte_plans(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
+    """Les plans bout à bout, chacun le temps de sa phrase, puis le montage habituel (voix, hook, sous-titres, couverture)."""
+    plans = [x for x in p["plans"] if (d / "sources" / x["video"]).exists()]
+    voix_off = voix_du_projet(p, d, demo)
+    total = ((_duree(voix_off) or 0) + 0.6) if voix_off else sum(max(2.5, len(x["texte"].split()) / MOTS_PAR_SECONDE) for x in plans)
+    total = min(max(total, 3.0), DUREE_MAX_REEL)
+    poids = [max(1, len(x["texte"])) for x in plans]
+    log(f"J'assemble tes {len(plans)} plans…")
+    morceaux = d / "morceaux"
+    shutil.rmtree(morceaux, ignore_errors=True)
+    morceaux.mkdir()
+    for i, x in enumerate(plans):
+        di = max(1.2, total * poids[i] / sum(poids))
+        _ffmpeg([*LEGER, "-stream_loop", "-1", "-t", f"{di:.2f}", "-i", str(d / "sources" / x["video"]), "-an",
+                 "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,format=yuv420p",
+                 "-c:v", "libx264", "-threads", _FILS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", str(morceaux / f"{i:02d}.mp4")], d)
+    (morceaux / "liste.txt").write_text("".join(f"file '{i:02d}.mp4'\n" for i in range(len(plans))), encoding="utf-8")
+    _ffmpeg(["-f", "concat", "-safe", "0", "-i", "liste.txt", "-c", "copy", str(d / "sources" / "plans_assembles.mp4")], morceaux)
+    shutil.rmtree(morceaux, ignore_errors=True)
+    try:
+        return monte_reel({**p, "video": "plans_assembles.mp4", "couv_temps": p.get("couv_temps") or 0.6}, d, sortie, demo)
+    finally:
+        (d / "sources" / "plans_assembles.mp4").unlink(missing_ok=True)
 
 
 def modifie(esp: Espace, sid: str, champs: dict) -> dict:
@@ -1409,8 +1567,14 @@ def voix_du_projet(p: dict, d: Path, demo: bool = False) -> Path | None:
     if not texte:
         log("  ⚠️  Pas de script à lire : Reel monté sans voix off")
         return None
+    dest, signature = d / "voix.mp3", d / "voix.sig"
+    cle = f"{voix.fournisseur()}|{p['voix_off']}|{texte}"
+    if dest.exists() and signature.exists() and signature.read_text(encoding="utf-8") == cle:
+        return dest  # même texte, même voix : on la réutilise (rien n'est refacturé)
     log("Virall.ai enregistre la voix off…")
-    return voix.synthese(texte, p["voix_off"], d / "voix.mp3", demo=demo)
+    voix.synthese(texte, p["voix_off"], dest, demo=demo)
+    signature.write_text(cle, encoding="utf-8")
+    return dest
 
 
 def monte_reel(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
@@ -1524,6 +1688,8 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
                 slide(s, i, n, img, theme_de(p), pseudo_visible(p), typo=typo_projet(p), filigrane=filigrane).save(
                     sortie / nom, "JPEG", quality=92)
                 fichiers.append(nom)
+        elif p.get("plans"):
+            fichiers = monte_plans(p, d, sortie, demo)
         elif p.get("video"):
             fichiers = monte_reel(p, d, sortie, demo)
         else:

@@ -1,6 +1,8 @@
-"""Voix off des Reels : Virall.ai lit le script (synthèse vocale OpenAI, modèle « mini », moins d'un centime par Reel).
+"""Voix off des Reels : Virall.ai lit le script.
 
-Sans clé OPENAI_API_KEY la voix off n'est pas proposée ; en mode démo, une piste muette de la bonne durée la remplace.
+ElevenLabs en priorité (ELEVENLABS_API_KEY : voix françaises natives de leur bibliothèque, choisies et ajoutées au compte
+automatiquement, ou imposées par ELEVENLABS_VOIX_FEMME / _DOUCE / _HOMME), sinon OpenAI (OPENAI_API_KEY, nettement moins
+naturel en français). Sans clé la voix off n'est pas proposée ; en mode démo, une piste muette de la bonne durée la remplace.
 """
 
 from __future__ import annotations
@@ -28,8 +30,28 @@ CONSIGNES = ("Voix off d'un Reel Instagram, en français de France, accent neutr
 EXEMPLE = "Tu publies tous les jours et rien ne bouge ? Regarde ce qui cartonne dans ta niche, et fais pareil, à ta façon."
 
 
+ELEVEN = "https://api.elevenlabs.io/v1"
+ELEVEN_MODELE = os.getenv("ELEVENLABS_MODELE", "eleven_multilingual_v2")
+ELEVEN_USD_PAR_CARACTERE = 0.00018  # formule Starter : ~5 $ pour 30 000 caractères
+# Ce qu'on cherche dans la bibliothèque d'ElevenLabs pour chaque voix (voix françaises natives, les plus utilisées)
+RECHERCHE_ELEVEN = {"femme": {"gender": "female", "age": "young"}, "douce": {"gender": "female", "descriptives": "calm"},
+                    "homme": {"gender": "male", "age": "middle_aged"}}
+
+
+def _cle_eleven() -> str:
+    return os.getenv("ELEVENLABS_API_KEY", "").strip().strip('"').strip("'")
+
+
+def _cle_openai() -> str:
+    return os.getenv("OPENAI_API_KEY", "").strip().strip('"').strip("'")
+
+
+def fournisseur() -> str:
+    return "elevenlabs" if _cle_eleven() else "openai" if _cle_openai() else ""
+
+
 def dispo(demo: bool = False) -> bool:
-    return demo or bool(os.getenv("OPENAI_API_KEY", "").strip())
+    return demo or bool(fournisseur())
 
 
 def options() -> list[dict]:
@@ -66,18 +88,84 @@ def _silence(secondes: float, dest: Path) -> Path:
     return dest
 
 
+def _memo_eleven() -> Path:
+    return DATA / "voix_elevenlabs.json"
+
+
+def voix_eleven(cle: str) -> str:
+    """Identifiant ElevenLabs de la voix : imposé par variable, sinon une voix française native de la bibliothèque,
+    choisie une fois (la plus utilisée correspondant au profil) et ajoutée au compte."""
+    import json
+    impose = os.getenv(f"ELEVENLABS_VOIX_{cle.upper()}", "").strip()
+    if impose:
+        return impose
+    memo = {}
+    try:
+        memo = json.loads(_memo_eleven().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    if memo.get(cle):
+        return memo[cle]
+    h = {"xi-api-key": _cle_eleven()}
+    deja = set(memo.values())
+    choisie = None
+    for filtres in (RECHERCHE_ELEVEN.get(cle, {}), {"gender": RECHERCHE_ELEVEN.get(cle, {}).get("gender", "female")}):
+        r = requests.get(f"{ELEVEN}/shared-voices", headers=h, timeout=30,
+                         params={"language": "fr", "page_size": 40, "sort": "usage_character_count_1y", **filtres})
+        if r.status_code >= 400:
+            log(f"  ⚠️  Bibliothèque ElevenLabs illisible ({r.status_code}) : {r.text[:200]}")
+            break
+        voix_ = [v for v in r.json().get("voices", []) if v.get("voice_id") not in deja
+                 and (v.get("language") or "fr").startswith("fr") and (v.get("accent") or "").lower() not in ("canadian", "quebecois", "québécois", "african", "belgian", "swiss")]
+        if voix_:
+            choisie = voix_[0]
+            break
+    if not choisie:
+        raise RuntimeError("Aucune voix française trouvée chez ElevenLabs.")
+    if not choisie.get("is_added_by_user"):
+        r = requests.post(f"{ELEVEN}/voices/add/{choisie['public_owner_id']}/{choisie['voice_id']}", headers=h, timeout=30,
+                          json={"new_name": f"Virallink {cle}"})
+        if r.status_code >= 400:
+            log(f"  ⚠️  Voix ElevenLabs non ajoutée ({r.status_code}) : {r.text[:200]}")
+            raise RuntimeError("La voix off n'a pas pu être préparée (vérifie l'abonnement ElevenLabs).")
+        vid = r.json().get("voice_id") or choisie["voice_id"]
+    else:
+        vid = choisie["voice_id"]
+    log(f"  Voix « {cle} » : {choisie.get('name')} ({choisie.get('accent') or 'français'})")
+    memo[cle] = vid
+    _memo_eleven().write_text(json.dumps(memo), encoding="utf-8")
+    return vid
+
+
+def _eleven(texte: str, voix: str, dest: Path) -> Path:
+    r = requests.post(f"{ELEVEN}/text-to-speech/{voix_eleven(voix)}", params={"output_format": "mp3_44100_128"},
+                      headers={"xi-api-key": _cle_eleven()}, timeout=180,
+                      json={"text": texte, "model_id": ELEVEN_MODELE,
+                            "voice_settings": {"stability": 0.4, "similarity_boost": 0.8, "style": 0.25, "use_speaker_boost": True}})
+    if r.status_code >= 400:
+        log(f"  ⚠️  Voix off ElevenLabs refusée ({r.status_code}) : {r.text[:200]}")
+        if r.status_code in (400, 404) and "voice" in r.text.lower():  # voix retirée de la bibliothèque : on en choisira une autre
+            _memo_eleven().unlink(missing_ok=True)
+        raise RuntimeError("La voix off n'a pas pu être créée. Réessaie dans un instant.")
+    dest.write_bytes(r.content)
+    _ajoute_cout(len(texte) * ELEVEN_USD_PAR_CARACTERE)
+    return dest
+
+
 def synthese(texte: str, voix: str, dest: Path, demo: bool = False) -> Path:
     """Fichier MP3 de la voix qui lit le texte."""
     texte = (texte or "").strip()
     if not texte:
         raise ValueError("Écris le texte que la voix off doit lire.")
-    if not os.getenv("OPENAI_API_KEY", "").strip():
+    if not fournisseur():
         if demo:
             log("  (démo : voix off muette de la bonne durée)")
             return _silence(max(3.0, len(texte.split()) / 2.6), dest)
         raise ValueError("La voix off n'est pas encore disponible.")
+    if fournisseur() == "elevenlabs":
+        return _eleven(texte, voix if voix in VOIX else "femme", dest)
     r = requests.post("https://api.openai.com/v1/audio/speech",
-                      headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}"},
+                      headers={"Authorization": f"Bearer {_cle_openai()}"},
                       json={"model": MODELE, "voice": VOIX.get(voix, VOIX["femme"])[0], "input": texte,
                             "instructions": CONSIGNES, "response_format": "mp3"}, timeout=180)
     if r.status_code >= 400:
@@ -91,11 +179,11 @@ def synthese(texte: str, voix: str, dest: Path, demo: bool = False) -> Path:
 
 def exemple(voix: str) -> Path | None:
     """Petit extrait pour écouter une voix avant de la choisir (créé une fois, gardé ensuite)."""
-    if voix not in VOIX or not os.getenv("OPENAI_API_KEY", "").strip():
+    if voix not in VOIX or not fournisseur():
         return None
     dossier = DATA / "voix_exemples"
     dossier.mkdir(parents=True, exist_ok=True)
-    f = dossier / f"{voix}.mp3"
+    f = dossier / f"{fournisseur()}_{voix}.mp3"
     if not f.exists():
         synthese(EXEMPLE, voix, f)
     return f
