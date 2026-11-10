@@ -1763,7 +1763,7 @@ const GROUPES = {studio: [["studio", "Créer"], ["planning", "Mon planning"]], b
 // Sur téléphone, la barre du bas n'a que 5 entrées : « Moi » regroupe résultats, profil, comptes et abonnement
 const MOBILE = matchMedia("(max-width:860px)");
 const groupes = () => MOBILE.matches ? {...GROUPES, parametres: [["resultats", "Résultats"], ["parametres", "Profil"], ["comptes", "Niche"], ["abonnement", "Abonnement"]]} : GROUPES;
-const veillePerso = () => !S.etat?.bibliotheque?.active || !!S.etat?.abonnement?.options?.comptes_perso || !!S.etat?.admin;
+const veillePerso = () => !S.etat?.bibliotheque?.active || !!S.etat?.abonnement?.options?.comptes_perso;
 const groupeDe = vue => Object.keys(groupes()).find(g => groupes()[g].some(([v]) => v === vue)) || vue;
 MOBILE.addEventListener?.("change", () => S.etat && va(S.vue, true));
 // ---- Historique du navigateur : le bouton « précédent » revient à l'écran précédent de l'outil au lieu d'en sortir
