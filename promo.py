@@ -82,6 +82,7 @@ def prepare(esp: Espace, uid: int) -> dict:
     cfg["niche"] = {**(cfg.get("niche") or {}), **NICHE}
     cfg["marque"] = {**(cfg.get("marque") or {}), **MARQUE}
     cfg.setdefault("bibliotheque", {})["niches"] = ["marketing", "business"]
+    cfg["visuels_marque"] = "promo"  # captures de Virallink (static/promo) à la place de la banque d'images
     cfg.setdefault("mon_compte", {})["instagram"] = COMPTE  # signature @ des carrousels, Reels et stories
     esp.ecrit_config(cfg)
     esp.voix.write_text(VOIX, encoding="utf-8")

@@ -530,9 +530,53 @@ def propositions(esp: Espace, sid: str, i: int, n: int = 8) -> dict:
     return {"requete": q, "resultats": res[:n]}
 
 
+MOTS_VISUELS = {"boutique": ("boutique", "lien en bio", "lien dans la bio", "produit", "vendre", "vente", "offre"),
+                "story": ("stor", "annonce"), "carrousel": ("carrousel", "slide", "publication"),
+                "tendances": ("tendance", "cartonne", "viral", "niche", "idée", "quoi publier", "inspiration"),
+                "studio": ("studio", "créer", "crée", "reel", "contenu", "plan")}
+
+
+def _visuels_marque(esp: Espace, sid: str, toutes: bool) -> bool:
+    """Si le compte a des visuels de marque (cfg « visuels_marque » : dossier de static/), ils remplacent la banque d'images :
+    un visuel différent par slide, dans l'ordre, en partant d'un point différent à chaque carrousel."""
+    dossier_v = (esp.lit_config() or {}).get("visuels_marque")
+    if not dossier_v:
+        return False
+    rep = Path(__file__).resolve().parent / "static" / Path(str(dossier_v)).name
+    fichiers = sorted(rep.glob("*.jpg"))
+    if not fichiers:
+        return False
+    p = charge(esp, sid)
+    if p["type"] == "reel" and p.get("video"):
+        return True
+    deja = attribue(p["slides"], p["images"])
+    # les photos de banque déjà posées sont remplacées aussi (pas ses propres photos)
+    stock = lambda x: (x.get("image") or "").startswith("banque_") and not x["image"].startswith("banque_marque_")  # noqa: E731
+    cibles = [i for i, x in enumerate(p["slides"]) if (x.get("photo") or toutes or stock(x)) and (not deja[i] or stock(x))]
+    d = dossier(esp, sid)
+    (d / "sources").mkdir(exist_ok=True)
+    depart, pris = int(uuid.uuid4().hex[:4], 16), []
+    for n, i in enumerate(cibles):
+        # le visuel dont le nom parle de la slide (boutique, story, carrousel, tendances, studio), sinon le suivant
+        mots = (p["slides"][i].get("titre", "") + " " + p["slides"][i].get("texte", "")).lower()
+        libres = [f for f in fichiers if f not in pris] or fichiers
+        f = next((f for f in libres if any(m in mots for m in MOTS_VISUELS.get(f.stem.split("_")[0], ()))),
+                 libres[(depart + n) % len(libres)])
+        pris.append(f)
+        nom = f"banque_marque_{f.stem[:12]}_{uuid.uuid4().hex[:4]}.jpg"
+        shutil.copy(f, d / "sources" / nom)
+        p["images"].append(nom)
+        _remplace_image_slide(d, p, i, nom)
+    sauve(esp, p)
+    log(f"✅ {len(cibles)} visuel(s) de ta marque posés sur les slides")
+    return True
+
+
 def remplit_banque(esp: Espace, sid: str, demo: bool = False, toutes: bool = False) -> dict:
     """Propose par défaut une image de la banque pour chaque slide qui demande une photo et n'en a pas encore."""
     import banque
+    if _visuels_marque(esp, sid, toutes):  # compte qui a ses propres visuels (promotion de Virallink : captures de l'appli)
+        return {"id": sid}
     if not (banque.active() or demo):
         log("Banque d'images non configurée")
         return {"id": sid}
