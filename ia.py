@@ -269,6 +269,8 @@ class IA:
                 rep = self.client.messages.create(**p)
                 _compte(rep, modele or self.modele)
                 try:
+                    if getattr(rep, "stop_reason", "") == "max_tokens":  # réponse coupée : l'outil est incomplet (slides manquantes…)
+                        raise ValueError("réponse coupée")
                     return self._lit_reponse(rep)
                 except ValueError:
                     texte = "".join(getattr(b, "text", "") for b in rep.content)
@@ -467,7 +469,7 @@ Règles :
 STYLE D'ÉCRITURE DEMANDÉ : {style or "sa voix habituelle, exactement comme sur son compte"}
 Le style change la construction (récit, rythme, angle). Il ne change JAMAIS sa voix : garde son vocabulaire, son tutoiement ou vouvoiement, sa ponctuation, son usage des emojis dans la légende et ses expressions signature.
 Remplis l'outil enregistrer_carrousel."""
-        return self._appel(OUTIL_CARROUSEL, texte, max_tokens=2500 if tunnel else 2000)
+        return self._appel(OUTIL_CARROUSEL, texte, max_tokens=4000 if tunnel else 3000)
 
     def adapte_tous(self, posts: list[Post], apres_chaque=None):
         log(f"Analyse et adaptation par Virall.ai de {len(posts)} Reels…")
