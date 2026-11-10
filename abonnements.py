@@ -426,7 +426,7 @@ def usage_tous() -> dict:
 
 # Options des formules payantes (une formule peut en désactiver une dans plans.yaml, comme la formule gratuite)
 OPTIONS_DEFAUT = {"ia": True, "montage_reel": True, "suivi_publications": True, "sequences_emails": True, "tunnels": True, "messages_auto": True,
-                  "comptes_perso": True,  # veille : comptes choisis par la cliente en plus de la bibliothèque de sa niche
+                  "comptes_perso": False,  # veille : bibliothèque de la niche pour toutes (décision de Mohamed, 10 nov. 2026)
                   "filigrane": False, "mention_boutique": False}
 
 

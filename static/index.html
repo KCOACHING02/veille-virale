@@ -2362,6 +2362,7 @@ function ouvreReel(cle, onglet) {
   $$("[data-onglet]", t).forEach(b => b.onclick = () => ouvreReel(cle, b.dataset.onglet));
   if (onglet === "Séquence DM") remplitLienBoutique(cle);
   $$("[data-studio]", t).forEach(b => b.addEventListener("click", () => choisirFormat(p.cle)));
+  $$("[data-studio-video]", t).forEach(b => b.addEventListener("click", () => choisirFormat(p.cle, true)));
   t.classList.add("ouvert"); t.setAttribute("aria-hidden", "false"); $("#voile").classList.add("ouvert");
 }
 // Pied de la fiche : une seule grande action, le reste dans le menu « ⋯ »
@@ -2503,7 +2504,8 @@ function corpsOnglet(p, o) {
       ${blocSon(p)}
       <div class="deux"><div><h4>3 premières secondes</h4><p>${esc(ad.idee_visuelle)}</p></div><div><h4>Format</h4><p>${esc(ad.format_conseille)}</p></div></div>
       ${ad.texte_ecran_adapte ? `<h4>Texte à l'écran</h4>${copiable(ad.texte_ecran_adapte)}` : ""}
-      <h4>Script</h4>${copiable(ad.script_reel)}`)}
+      <h4>Script</h4>${copiable(ad.script_reel)}
+      ${S.optionsStudio?.banque !== false ? `<button type="button" class="btn" data-studio-video="${esc(p.cle)}" style="margin-top:12px">🎬 Pas envie de te filmer ? Une vidéo libre de droits</button>` : ""}`)}
     ${etapeC(3, "Ta légende", "À coller sous ton Reel au moment de publier.", legendes())}
     ${toutCopier}`;
   }
@@ -3042,7 +3044,7 @@ const themesStudio = () => { const m = S.optionsStudio?.marque; return m ? {marq
 const fondTheme = k => { const m = S.optionsStudio?.marque; return k === "marque" && m ? `style="background:${esc(m.fond)};box-shadow:inset 0 -6px 0 ${esc(m.accent)}"` : ""; };
 const pucesStyles = (opts, actif) => `<div class="st-puces" role="group" aria-label="Style d'écriture">${opts.styles.map(x => `<button type="button" data-style="${x.id}" aria-pressed="${x.id === actif}"><b>${esc(x.nom)}</b><small>${esc(x.aide)}</small></button>`).join("")}</div>`;
 const astuceVoix = opts => opts.voix_connue ? "" : `<p class="st-astuce">« Ma voix » sera plus fidèle quand l'outil aura lu ton compte : <a href="#" onclick="fermeModale();va('parametres');return false">indique ton compte dans Paramètres</a>.</p>`;
-async function choisirFormat(cle) {
+async function choisirFormat(cle, videoBanque = false) {
   S.optionsStudio = S.optionsStudio || await api("/api/studio");
   const opts = S.optionsStudio;
   let style = "ma_voix";
@@ -3056,14 +3058,18 @@ async function choisirFormat(cle) {
         const br = `<button type="button" data-format="reel" aria-pressed="${!estCar}" class="${!estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>${!estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>`;
         return estCar ? bc + br : br + bc; })()}
     </div>
+    ${opts.banque ? `<div id="f-video" ${estCar ? "hidden" : ""}><h3 style="font-size:16px;margin:0 0 6px">Ta vidéo</h3>
+      <div class="seg" role="group" aria-label="Ta vidéo" style="margin:0 0 16px"><button type="button" data-vid="moi" aria-pressed="${!videoBanque}">🤳 Je me filme</button><button type="button" data-vid="banque" aria-pressed="${videoBanque}">🎬 Une vidéo libre de droits</button></div></div>` : ""}
     <h3 style="font-size:16px;margin:0 0 4px">Style d'écriture</h3>
     ${pucesStyles(opts, style)}${astuceVoix(opts)}
     <div class="pied-modale pied-creer" style="margin-top:18px"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="f-creer">${format === "carrousel" ? "Créer le carrousel" : "Créer le Reel"} →</button></div>`;
   $("#modale").classList.add("ouvert");
   $$("#feuille [data-style]").forEach(b => b.onclick = () => { style = b.dataset.style; $$("#feuille [data-style]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  $$("#feuille [data-vid]").forEach(b => b.onclick = () => { videoBanque = b.dataset.vid === "banque"; $$("#feuille [data-vid]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
   $$("[data-format]").forEach(b => b.onclick = () => {
     format = b.dataset.format;
     $$("[data-format]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    if ($("#f-video")) $("#f-video").hidden = format !== "reel";
     $("#f-creer").textContent = (format === "carrousel" ? "Créer le carrousel" : "Créer le Reel") + " →";
   });
   $("#f-creer").onclick = async () => {
@@ -3076,6 +3082,8 @@ async function choisirFormat(cle) {
         ? {id: r.job, sid: r.projet.id, titre: "Choix des images", phrase: "Je choisis des images pour tes slides…"}
         : {id: r.job, sid: r.projet.id, titre: "Écriture des slides", phrase: "Virall.ai écrit tes textes…"}) : null;
       va("studio"); if (r.job) suisTacheStudio(r.job);
+      // Reel sans se filmer : la banque de vidéos (Pixabay) s'ouvre directement sur le projet
+      if (format === "reel" && videoBanque && opts.banque) setTimeout(() => S.projet?.id === r.projet.id && ouvreBanque(0, true), 600);
     } catch (e) { toast(e.message); b.disabled = false; b.textContent = (format === "carrousel" ? "Créer le carrousel" : "Créer le Reel") + " →"; }
   };
 }
@@ -4004,7 +4012,8 @@ function renduProjet() {
 // ---- Banque d'images (Pexels) : choisir l'image d'une slide, ou sa propre photo
 async function ouvreBanque(i, video = false) {
   const p = S.projet, sl = p.slides[i] || {};
-  const q0 = video ? (p.source?.slides_modele?.[0]?.visuel || p.hook || "") : (sl.recherche || sl.photo || sl.titre || "");
+  // Vidéo : les mots-clés (en anglais) écrits par Virall.ai pour la 1re slide, sinon le visuel du modèle, sinon le hook
+  const q0 = video ? (p.slides?.[0]?.recherche || p.source?.slides_modele?.[0]?.visuel || p.hook || "") : (sl.recherche || sl.photo || sl.titre || "");
   $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:24px;font-stretch:85%">${video ? "Une vidéo pour ton Reel" : `Image de la slide ${i + 1}`}</h2>
     ${!video && sl.photo ? `<p class="aide" style="margin:6px 0 12px">📷 Idée : ${esc(sl.photo)}</p>` : ""}
     ${video ? "" : `<div class="seg" style="margin:0 0 12px"><button type="button" aria-pressed="true" data-bq="banque">Banque d'images</button><button type="button" aria-pressed="false" data-bq="moi">Ma photo</button></div>`}
