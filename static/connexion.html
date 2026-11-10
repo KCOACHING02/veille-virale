@@ -49,6 +49,18 @@ input{width:100%;border:1px solid var(--line);background:var(--surface);border-r
 .btn-google:hover{border-color:var(--ink-3)}
 .mentions-g{font-size:12.5px;color:var(--ink-3);margin:8px 0 0;text-align:center}.mentions-g a{color:inherit}
 .ou{display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:13px;margin:18px 0 16px}.ou::before,.ou::after{content:"";flex:1;height:1px;background:var(--line)}
+.ecrans{position:relative;height:clamp(260px,36vh,380px);margin-top:36px;display:flex;justify-content:center;align-items:flex-end;pointer-events:none}
+.ecrans figure{margin:0;position:absolute;bottom:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.ecrans figcaption{font-size:12.5px;font-weight:600;color:#D8CEDD;background:rgba(255,255,255,.08);border-radius:99px;padding:3px 10px;white-space:nowrap}
+.ecrans .tel{height:100%;aspect-ratio:9/17.5;border:6px solid #120C15;border-radius:26px;overflow:hidden;background:#fff;box-shadow:0 30px 60px -20px rgba(0,0,0,.65)}
+.ecrans .tel img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.ecrans .milieu{height:100%;z-index:2}.ecrans .milieu .tel{height:calc(100% - 32px)}
+.ecrans .gauche{height:84%;transform:translateX(-118%) rotate(-7deg);transform-origin:bottom center}.ecrans .gauche .tel{height:calc(100% - 32px)}
+.ecrans .droite{height:66%;transform:translateX(112%) rotate(6deg);transform-origin:bottom center}
+.ecrans .post{height:calc(100% - 32px);aspect-ratio:4/5.6;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 30px 60px -20px rgba(0,0,0,.65);display:flex;flex-direction:column}
+.ecrans .post img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.ecrans .post i{flex:1;display:flex;justify-content:center;align-items:center;gap:4px}.ecrans .post i b{width:5px;height:5px;border-radius:50%;background:#C9C1CC}.ecrans .post i b:first-child{background:#3B82F6}
+@media (max-height:760px),(max-width:1100px){.ecrans{display:none}}
 @media (max-width:860px){body{grid-template-columns:1fr;grid-template-rows:auto 1fr}.scene{padding:18px 20px 16px;display:block}.scene p,.atouts,.scene>span{display:none}
   .scene h1{font-size:22px;line-height:1.1;margin:12px 0 0;max-width:none}.form{align-items:flex-start;padding:26px 20px}}
 /* iPhone : Safari zoome sur tout champ dont le texte fait moins de 16 px (et la page reste zoomée) */
@@ -69,6 +81,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <li>Sans carte bancaire</li>
       <li><span><span class="essai-jours">7 jours</span> d'essai du reste, quand tu veux</span></li>
     </ul>
+    <div class="ecrans" aria-hidden="true">
+      <figure class="gauche"><div class="tel"><img src="/static/captures/story1.jpg" alt="" width="360" height="640"></div><figcaption>Tes stories</figcaption></figure>
+      <figure class="milieu"><div class="tel"><img src="/static/captures/boutique.jpg" alt="" width="560" height="1091"></div><figcaption>Ta boutique</figcaption></figure>
+      <figure class="droite"><div class="post"><img src="/static/captures/carrousel_rose.jpg" alt="" width="432" height="540"><i><b></b><b></b><b></b><b></b><b></b></i></div><figcaption>Tes carrousels</figcaption></figure>
+    </div>
   </div>
   <span></span>
 </section>
