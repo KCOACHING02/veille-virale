@@ -3287,7 +3287,7 @@ def admin_google():
     """Diagnostic de la connexion Google : l'ID client (public) tel que le serveur le lit, jamais le code secret."""
     brut, cid = os.getenv("GOOGLE_CLIENT_ID") or "", _cle_google("GOOGLE_CLIENT_ID")
     sec = _cle_google("GOOGLE_CLIENT_SECRET")
-    return jsonify({"id_client": cid, "longueur": len(cid), "nettoye": brut != cid,
+    return jsonify({"id_client": "(masqué : c'est un code secret, pas un ID)" if cid.startswith("GOCSPX-") else cid, "longueur": len(cid), "nettoye": brut != cid,
                     "forme_ok": bool(_re.fullmatch(r"\d+-[a-z0-9]+\.apps\.googleusercontent\.com", cid)),
                     "secret_present": bool(sec), "secret_forme_ok": sec.startswith("GOCSPX-"),
                     "id_ressemble_au_secret": cid.startswith("GOCSPX-"), "adresse_retour": _retour_google()})
