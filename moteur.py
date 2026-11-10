@@ -528,7 +528,7 @@ def tendances(esp: Espace, cfg: dict, force: bool = False) -> dict:
         ancienne = json.loads(f.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         ancienne = None
-    maj_biblio = bibliotheque.etat().get("fin") or ""
+    maj_biblio = f'{bibliotheque.etat().get("fin") or ""}|{bibliotheque.etat().get("visages") or ""}' 
     niches = bibliotheque.niches_de(cfg)
     if ancienne and not force and ancienne.get("maj_biblio") == maj_biblio and ancienne.get("niches") == niches:
         return ancienne

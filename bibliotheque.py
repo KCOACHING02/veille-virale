@@ -284,6 +284,10 @@ def actualise(demo: bool = False, profond: bool | None = None) -> dict:
                              "cout_usd": cout, "total": len(pubs), "par_format": _par_format(pubs), "journal": journal})
         log(f"✅ Collecte terminée : {len(pubs)} publications virales ({cout:.2f} $). Préparation…")
     prepare_restants(demo=demo)
+    try:
+        marque_faceless()
+    except Exception as e:  # noqa: BLE001
+        log(f"  ⚠️  Détection des visages impossible : {str(e)[:120]}")
     return {"total": len(pubs), "nouvelles": len(nouvelles), "cout_usd": cout}
 
 
@@ -294,6 +298,24 @@ def _par_format(pubs: dict) -> dict:
 def restants() -> list[dict]:
     """Publications virales pas encore préparées (3 essais au plus), les plus fortes d'abord."""
     return sorted([e for e in publications().values() if not e.get("prepare") and (e.get("essais") or 0) < 3], key=rang, reverse=True)
+
+
+def marque_faceless(maxi: int = 400) -> int:
+    """Publications préparées avant la détection des visages : on juge leurs images une fois (local, gratuit)."""
+    import visages
+    a_juger = [e for e in publications().values() if e.get("prepare") and "faceless" not in e][:maxi]
+    if not a_juger:
+        return 0
+    res = {e["id"]: visages.faceless([MEDIA / r for r in e.get("images") or []], e["format"]) for e in a_juger}
+    with _VERROU:
+        pubs = publications()
+        for k, v in res.items():
+            if k in pubs:
+                pubs[k]["faceless"] = v
+        _ecrit("publications.json", pubs)
+        _ecrit("etat.json", {**etat(), "visages": datetime.now().isoformat(timespec="seconds")})  # les tendances des clientes se refont
+    log(f"Bibliothèque : {sum(1 for v in res.values() if v)} publications sans visage sur {len(res)} jugées")
+    return len(res)
 
 
 def prepare_restants(demo: bool = False, maxi: int = MAX_PREPARATIONS, lot: int = 4) -> int:
@@ -360,6 +382,11 @@ def prepare(entrees: list[dict], demo: bool = False):
             shutil.copy(MEDIA / vign, d / "vignette.jpg")
             try:
                 reduit(d / "vignette.jpg")
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                import visages
+                e["faceless"] = visages.faceless([MEDIA / r for r in rels], e["format"])
             except Exception:  # noqa: BLE001
                 pass
             e.update({"images": rels, "vignette": f"{e['id']}/vignette.jpg", "transcription": p.transcription or "",
@@ -486,7 +513,7 @@ def vue(e: dict) -> dict:
     return {"id": e["id"], "compte": e["compte"], "url": e["url"], "format": e["format"], "date": e["date"],
             "legende": (e.get("legende") or "")[:300], "likes": e.get("likes"), "commentaires": e.get("commentaires"),
             "vues": e.get("vues"), "multiple": e.get("multiple"), "badge": badge(e), "nb_slides": len(e.get("images") or []),
-            "vignette": e.get("vignette")}
+            "vignette": e.get("vignette"), "faceless": e.get("faceless")}
 
 
 def en_post(e: dict, media_client: Path | None = None) -> Post:
@@ -495,6 +522,7 @@ def en_post(e: dict, media_client: Path | None = None) -> Post:
              legende=e.get("legende") or "", likes=e.get("likes"), commentaires=e.get("commentaires"), vues=e.get("vues"),
              duree_s=e.get("duree_s"), son=e.get("son") or {}, transcription=e.get("transcription") or "")
     p.images = [str(MEDIA / r) for r in e.get("images") or [] if (MEDIA / r).is_file()]
+    p.faceless = e.get("faceless")
     p.interactions = (p.likes or 0) + (p.commentaires or 0)
     if p.vues:
         p.taux_engagement = round(p.interactions / p.vues, 4)

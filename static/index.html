@@ -120,6 +120,8 @@ main{min-width:0;padding:20px 28px 80px}
 .src-gal{margin:0 0 12px}
 .src-gal .seg button{font-size:15px;padding:8px 14px}
 .f-cat{display:flex;width:max-content;max-width:100%;overflow-x:auto;margin:0 0 12px;scrollbar-width:none}
+.f-cats{display:flex;flex-wrap:wrap;gap:0 8px;align-items:flex-start}
+.f-faceless{display:flex;margin:0 0 12px}.f-faceless button{white-space:nowrap}.f-faceless button:disabled{opacity:.4;cursor:default}
 .f-cat button{white-space:nowrap}
 #f-cat.seg{flex-wrap:nowrap}#f-cat.seg button{flex:none}
 .f-cat button:disabled{opacity:.4;cursor:default}
@@ -1612,7 +1614,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div class="src-gal" id="src-gal" hidden></div>
       <div class="resume" id="resume"></div>
       <div class="sons-tendance" id="sons-tendance" hidden></div>
-      <div class="seg f-cat" id="f-cat" role="group" aria-label="Catégorie"></div>
+      <div class="f-cats"><div class="seg f-cat" id="f-cat" role="group" aria-label="Catégorie"></div><div class="seg f-faceless" id="f-faceless" hidden></div></div>
       <div class="filtres">
         <div class="seg" id="f-statut" role="group" aria-label="Statut">
           <button data-v="adaptes" aria-pressed="true">Prêts pour toi<span class="c"></span></button>
@@ -2129,6 +2131,7 @@ function postsFiltres() {
   let ps = a.posts.filter(p => S.filtre === "tous" || (S.filtre === "cdc" ? (p.criteres_ok || p.demande) : adapte(p)));
   const fmt = S.cat || $("#f-format").value;
   if (fmt) ps = ps.filter(p => categorie(p) === fmt);
+  if (S.faceless) ps = ps.filter(p => p.faceless === true);
   if (pl) ps = ps.filter(p => p.plateforme === pl);
   if (cpt) ps = ps.filter(p => p.plateforme + ":" + p.compte === cpt);
   const typ = $("#f-type").value;
@@ -2244,16 +2247,23 @@ function majCategories(base) {
   if (S.cat && !n[S.cat]) S.cat = "";
   $("#f-cat").innerHTML = CATS.map(([v, t]) => `<button data-cat="${v}" aria-pressed="${(S.cat || "") === v}" ${v && !n[v] ? "disabled" : ""}>${t}<span class="c">${n[v] || 0}</span></button>`).join("");
   $$("[data-cat]").forEach(b => b.onclick = () => { S.cat = b.dataset.cat; renduReels(); });
+  // Sans visage (faceless) : seulement quand la bibliothèque a jugé les publications
+  const juges = (S.analyse?.posts || []).some(p => p.faceless != null), sv = base.filter(p => p.faceless === true).length;
+  if (!juges) S.faceless = false;
+  $("#f-faceless").hidden = !juges;
+  $("#f-faceless").innerHTML = `<button aria-pressed="${!!S.faceless}" ${!sv && !S.faceless ? "disabled" : ""} title="Publications où personne ne montre son visage : texte, mains, objets, paysages, voix off">🙈 Sans visage<span class="c">${sv}</span></button>`;
+  $("#f-faceless button").onclick = () => { S.faceless = !S.faceless; renduReels(); };
 }
 function renduReels() {
   const pret = sourceGalerie();
   const question = S.source === "tendances" && !!S.etat?.bibliotheque?.a_choisir;
   $('[data-section="reels"] .filtres').hidden = question;
-  if (question) { $("#resume").innerHTML = ""; $("#f-cat").innerHTML = ""; $("#f-cat").hidden = true; renduSonsTendance(null); return questionNiche(); }  // la bascule « Ma veille » reste accessible
+  if (question) { $("#resume").innerHTML = ""; $("#f-cat").innerHTML = ""; $("#f-cat").hidden = $("#f-faceless").hidden = true; renduSonsTendance(null); return questionNiche(); }  // la bascule « Ma veille » reste accessible
   if (!pret) { $("#grille").innerHTML = squelette("cartes", 6); $("#resume").innerHTML = ""; $("#f-cat").innerHTML = ""; chargeTendances(); return; }
   const a = S.analyse, g = $("#grille");
   if (a?.id === "tendances") { try { localStorage.setItem("vv-tendances-vues", "1"); } catch {} }
   $("#f-cat").hidden = !a;
+  if (!a) $("#f-faceless").hidden = true;
   $("#f-statut").hidden = a?.id === "tendances";  // tout y est viral : pas besoin du tri « Prêts / Les plus viraux »
   if (a?.id === "tendances" && !S.filtreChoisi) S.filtre = "tous";
   if (!a) {

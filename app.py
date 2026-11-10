@@ -3786,6 +3786,14 @@ def planificateur():
         time.sleep(900)
 
 
+def _marque_faceless():
+    """Publications de la bibliothèque préparées avant la détection des visages : jugées une fois, au démarrage."""
+    try:
+        bibliotheque.marque_faceless(maxi=5000)
+    except Exception as e:  # noqa: BLE001
+        log(f"⚠️  Détection des visages impossible : {str(e)[:120]}")
+
+
 def main():
     global DEMO_FORCE
     ap = argparse.ArgumentParser()
@@ -3798,6 +3806,7 @@ def main():
     remet_essais_en_reserve()
     reprend_analyses()
     if not args.sans_planificateur:
+        threading.Thread(target=_marque_faceless, daemon=True).start()
         threading.Thread(target=planificateur, daemon=True).start()
         threading.Thread(target=planificateur_emails, daemon=True).start()
     print(f"Données : {DATA}")

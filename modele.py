@@ -56,6 +56,7 @@ class Post:
     commentaires_texte: list = field(default_factory=list)   # [{"texte":…, "likes":…}]
     transcription: str = ""
     images: list = field(default_factory=list)              # chemins locaux des images clés
+    faceless: bool | None = None                             # personne ne montre son visage (bibliothèque, visages.py)
     miniature: str = ""                                      # nom du fichier image dans data/media
     # calculés
     interactions: float = 0.0
