@@ -82,6 +82,14 @@ def prepare(esp: Espace, uid: int) -> dict:
     cfg["niche"] = {**(cfg.get("niche") or {}), **NICHE}
     cfg["marque"] = {**(cfg.get("marque") or {}), **MARQUE}
     cfg.setdefault("bibliotheque", {})["niches"] = ["marketing", "business"]
+    cfg["idees_stories"] = [
+        "Ma boutique en lien dans la bio, créée en 2 minutes",
+        "Tu ne sais pas quoi publier ? Regarde ce qui cartonne dans ta niche",
+        "Pourquoi ton lien en bio ne vend rien",
+        "Vendre sans se montrer : c'est possible",
+        "Une boutique gratuite, sans commission : oui, vraiment",
+        "Mes stories de la semaine faites en une minute",
+    ]
     cfg["visuels_marque"] = "promo"  # captures de Virallink (static/promo) à la place de la banque d'images
     cfg.setdefault("mon_compte", {})["instagram"] = COMPTE  # signature @ des carrousels, Reels et stories
     esp.ecrit_config(cfg)

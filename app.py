@@ -1355,7 +1355,19 @@ def _projet_stories(sid):
 @app.get("/api/stories/options")
 @connecte
 def stories_options():
-    return jsonify({**stories.options(g.esp.lit_config()), "produits": _produits_plan30(bq_active()), "banque": _banque_dispo()})
+    cfg = g.esp.lit_config()
+    produits = _produits_plan30(bq_active())
+    return jsonify({**stories.options(cfg), "produits": produits, "banque": _banque_dispo(), "idees": _idees_stories(cfg, produits)})
+
+
+def _idees_stories(cfg: dict, produits: list) -> list[str]:
+    """Sujets proposés d'un toucher à l'écran « De quoi tu veux parler ? » : ceux du compte s'il en a, sinon tirés de ses offres et de sa niche."""
+    if cfg.get("idees_stories"):
+        return [str(x)[:120] for x in cfg["idees_stories"]][:6]
+    idees = [f"Ce que contient « {p['titre']} »" for p in produits[:2]]
+    idees += [f"Les coulisses de « {produits[0]['titre']} »"] if produits else []
+    idees += [str(d)[:120] for d in ((cfg.get("niche") or {}).get("douleurs") or [])[:3]]
+    return idees[:6]
 
 
 @app.post("/api/stories")

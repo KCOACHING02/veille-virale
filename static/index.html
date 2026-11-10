@@ -1348,6 +1348,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .tn-type{text-align:left;border:1.5px solid var(--line);border-radius:16px;background:var(--surface);padding:16px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;cursor:pointer;color:var(--ink);font:inherit}
 .tn-type:hover{border-color:var(--glow)}.tn-type .e{font-size:30px;grid-row:span 3}.tn-type b{font-size:17px}.tn-type p{margin:0;font-size:14.5px;color:var(--ink-2)}.tn-type small{color:var(--ink-3)}
 .tn-exemples{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;font-size:13.5px}
+.stw-idees{margin-top:14px}
 .tn-exemples span{color:var(--ink-3)}.tn-exemples button{border:1px dashed var(--glow);background:transparent;color:var(--glow);border-radius:99px;padding:5px 12px;font:600 13px var(--sans,inherit);cursor:pointer}
 .tn-styles{flex-wrap:wrap;overflow:visible;justify-content:center;scroll-snap-type:none}
 .tn-coches-ed{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:14.5px}
@@ -3174,6 +3175,7 @@ async function renduStoriesAssistant() {
     q = "De quoi tu veux parler ?"; aide = "Une phrase suffit. Virall.ai s'appuie aussi sur ton profil et ta voix.";
     const avecProduit = ["vendre", "lancement"].includes(w.objectif) || w.modele === "produit";
     corps = `<input class="p30-grand" id="stw-sujet" maxlength="300" value="${esc(w.sujet || "")}" placeholder="Ex. ma méthode pour quitter le salariat sans risque" autocomplete="off">
+      ${(o.idees || []).length ? `<div class="tn-exemples stw-idees"><span>Idées :</span>${o.idees.map(x => `<button type="button" data-idee="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : ""}
       ${avecProduit && o.produits.length ? `<p class="p30-aide" style="margin:18px 0 8px">Le produit à mettre en avant :</p><div class="p30-choix p30-produits">${o.produits.map(pr =>
         `<button type="button" data-prod="${esc(pr.id)}" aria-pressed="${w.produit === pr.id}" class="${w.produit === pr.id ? "choisi" : ""}"><i class="p30-coche" aria-hidden="true"></i><b>${esc(pr.titre)}</b><span>${esc(pr.prix_txt)}</span></button>`).join("")}</div>` : ""}`;
     pied = `<button class="btn prim large" id="stw-suiv" ${(w.sujet || "").trim() || w.produit ? "" : "disabled"}>Continuer</button>`;
@@ -3213,6 +3215,7 @@ async function renduStoriesAssistant() {
     sujet.onkeydown = e => { if (e.key === "Enter" && !$("#stw-suiv").disabled) vers(k + 1); };
     if (!MOBILE.matches) sujet.focus(); }
   $$("[data-prod]", el).forEach(b => b.onclick = () => { w.produit = w.produit === b.dataset.prod ? null : b.dataset.prod; renduStoriesAssistant(); });
+  $$("[data-idee]", el).forEach(b => b.onclick = () => { w.sujet = b.dataset.idee; sujet.value = w.sujet; $("#stw-suiv").disabled = false; sujet.focus(); });
   $("#stw-suiv")?.addEventListener("click", () => vers(k + 1));
 }
 function fermeStories() { S.stw = null; renduStudio(); }
