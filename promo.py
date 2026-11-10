@@ -10,6 +10,8 @@ from __future__ import annotations
 import plan30
 from espace import Espace
 
+COMPTE = "virallink.app"  # compte Instagram de Virallink (choisi par Mohamed le 10 novembre 2026)
+
 NICHE = {
     "nom": "Virallink : vendre sur Instagram",
     "description": "Virallink est une application française pour vendre sur Instagram : une boutique gratuite en lien dans la bio "
@@ -77,6 +79,7 @@ def prepare(esp: Espace, bid=None) -> dict:
     cfg["niche"] = {**(cfg.get("niche") or {}), **NICHE}
     cfg["marque"] = {**(cfg.get("marque") or {}), **MARQUE}
     cfg.setdefault("bibliotheque", {})["niches"] = ["marketing", "business"]
+    cfg.setdefault("mon_compte", {})["instagram"] = COMPTE  # signature @ des carrousels, Reels et stories
     esp.ecrit_config(cfg)
     esp.voix.write_text(VOIX, encoding="utf-8")
     # L'histoire du fondateur n'est jamais inventée ni reprise d'un ancien brief (autre produit) : le plan du mois la redemande
