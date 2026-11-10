@@ -3288,7 +3288,7 @@ def admin_google():
     brut, cid = os.getenv("GOOGLE_CLIENT_ID") or "", _cle_google("GOOGLE_CLIENT_ID")
     sec = _cle_google("GOOGLE_CLIENT_SECRET")
     return jsonify({"id_client": cid, "longueur": len(cid), "nettoye": brut != cid,
-                    "forme_ok": bool(re.fullmatch(r"\d+-[a-z0-9]+\.apps\.googleusercontent\.com", cid)),
+                    "forme_ok": bool(_re.fullmatch(r"\d+-[a-z0-9]+\.apps\.googleusercontent\.com", cid)),
                     "secret_present": bool(sec), "secret_forme_ok": sec.startswith("GOCSPX-"),
                     "id_ressemble_au_secret": cid.startswith("GOCSPX-"), "adresse_retour": _retour_google()})
 
