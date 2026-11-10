@@ -453,6 +453,11 @@ def connexion():
 #  adresse de retour autorisée : <URL du site>/auth/google/retour. Sans elles, le bouton n'apparaît pas.
 #  Google garantit l'adresse : elle est confirmée d'office (pas d'e-mail de confirmation).
 # ------------------------------------------------------------
+def _cle_google(nom: str) -> str:
+    """Valeur d'une variable Google sans espaces ni guillemets collés par erreur dans Railway."""
+    return (os.getenv(nom) or "").strip().strip("\"'").strip()
+
+
 def _google_actif() -> bool:
     return bool(os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET"))
 
@@ -472,7 +477,7 @@ def google_debut():
                          "suite": suite if suite.startswith("/") and not suite.startswith("//") and "\\" not in suite else ""}
     from urllib.parse import urlencode
     return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
-        "client_id": os.environ["GOOGLE_CLIENT_ID"], "redirect_uri": _retour_google(), "response_type": "code",
+        "client_id": _cle_google("GOOGLE_CLIENT_ID"), "redirect_uri": _retour_google(), "response_type": "code",
         "scope": "openid email profile", "state": etat, "prompt": "select_account"}))
 
 
@@ -485,7 +490,7 @@ def google_retour():
         return redirect(echec)
     try:
         jeton = _rq.post("https://oauth2.googleapis.com/token", timeout=15, data={
-            "code": request.args["code"], "client_id": os.environ["GOOGLE_CLIENT_ID"], "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+            "code": request.args["code"], "client_id": _cle_google("GOOGLE_CLIENT_ID"), "client_secret": _cle_google("GOOGLE_CLIENT_SECRET"),
             "redirect_uri": _retour_google(), "grant_type": "authorization_code"}).json()
         info = _rq.get("https://openidconnect.googleapis.com/v1/userinfo", timeout=15,
                        headers={"Authorization": f"Bearer {jeton['access_token']}"}).json()
