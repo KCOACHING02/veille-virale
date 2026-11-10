@@ -2213,7 +2213,7 @@ def bq_active():
 
 
 def max_boutiques(u: dict) -> int:
-    return 999 if est_admin(u) else int((ab.plans().get(ab.plan_effectif(u)) or {}).get("boutiques", 1) or 1)
+    return 999 if est_admin(u) else int((ab.plans().get(ab.plan_effectif(u)) or {}).get("boutiques", 100) or 100)
 
 
 @app.get("/api/boutiques")
@@ -2250,7 +2250,7 @@ def boutiques_nouvelle():
     vide = next((b for b in l if "-" in str(b) and not bq.lit_page(b)), None)
     if not vide and len([b for b in l if bq.lit_page(b)]) >= max_boutiques(g.u):
         n = max_boutiques(g.u)
-        return jsonify({"erreur": f"Ta formule comprend {n} boutique{'s' if n > 1 else ''}. Passe à la formule supérieure pour en créer d'autres.", "quota": True}), 402
+        return jsonify({"erreur": f"Tu as déjà {n} boutiques : supprime-en une avant d'en créer une autre."}), 400
     bid = vide or bq.nouvelle_boutique(uid)
     session["bq"] = str(bid)
     return jsonify({"id": str(bid)})

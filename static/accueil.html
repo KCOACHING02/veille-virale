@@ -311,7 +311,7 @@ const limites = (p, f) => (p.gratuit ? [
   p.veille_auto ? "Ta sélection prête chaque lundi" : "",
   p.plans_30j_par_mois > 1 ? `<b>${p.plans_30j_par_mois}</b> plans du mois de 8 carrousels` : p.plans_30j_par_mois ? "Ton plan du mois : 8 carrousels jusqu'à ton offre" : "",
   p.studio_par_mois ? `<b>${p.studio_par_mois}</b> créations au studio : carrousels, Reels, stories` : "",
-  `${p.boutiques > 1 ? `<b>${p.boutiques}</b> boutiques` : "Ta boutique"}${p.mention_boutique ? "" : ", sans la mention Virallink"}`,
+  `${p.boutiques >= 100 ? "Boutiques illimitées" : p.boutiques > 1 ? `<b>${p.boutiques}</b> boutiques` : "Ta boutique"}${p.mention_boutique ? "" : ", sans la mention Virallink"}`,
   p.tunnels ? `Pages de vente, quiz${p.sequences_emails ? " et e-mails automatiques" : ""}` : "",
   p.messages_auto ? "Messages privés automatiques sur Instagram" : "",
   p.comptes_perso ? `<b>${p.comptes_surveilles}</b> comptes à toi, suivis en plus de ta niche` : ""]).filter(Boolean).map(x => `<li>${x}</li>`).join("");
