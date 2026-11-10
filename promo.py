@@ -7,7 +7,10 @@ avec le Studio, comme une cliente. Aucun témoignage ni chiffre inventé : ils r
 
 from __future__ import annotations
 
+import boutique as bq
 import plan30
+from pathlib import Path
+
 from espace import Espace
 
 COMPTE = "virallink.app"  # compte Instagram de Virallink (choisi par Mohamed le 10 novembre 2026)
@@ -73,7 +76,7 @@ BRIEF = {
 }
 
 
-def prepare(esp: Espace, bid=None) -> dict:
+def prepare(esp: Espace, uid: int) -> dict:
     """Remplit le profil, la voix, les niches et le brief du plan du mois. Ne touche ni aux comptes suivis ni aux créations."""
     cfg = esp.lit_config()
     cfg["niche"] = {**(cfg.get("niche") or {}), **NICHE}
@@ -83,7 +86,12 @@ def prepare(esp: Espace, bid=None) -> dict:
     esp.ecrit_config(cfg)
     esp.voix.write_text(VOIX, encoding="utf-8")
     # L'histoire du fondateur n'est jamais inventée ni reprise d'un ancien brief (autre produit) : le plan du mois la redemande
-    b = plan30.sauve_brief(esp, {**BRIEF, "histoire": ""}, bid)
+    bid = boutique(uid)
+    page = bq.lit_page(bid) or {}
+    ids = ",".join(x["id"] for x in page.get("produits") or [])
+    b = plan30.sauve_brief(esp, {**BRIEF, "histoire": "", "produit_id": ids,
+                                 "produits": [f"{x['titre']} ({x['prix'] / 100:.2f} €)".replace(".", ",") if x["prix"] else f"{x['titre']} (gratuit)"
+                                              for x in page.get("produits") or []]}, bid)
     # Les plans faits pour une autre offre sont rangés (pas effacés) : le Studio repart sur un plan Virallink
     racine = esp.racine / "plan30"
     archives = racine / "archives"
@@ -91,4 +99,46 @@ def prepare(esp: Espace, bid=None) -> dict:
         if not f.name.startswith("brief"):
             archives.mkdir(exist_ok=True)
             f.replace(archives / f.name)
-    return {"ok": True, "histoire_a_ecrire": not (b.get("histoire") or "").strip()}
+    return {"ok": True, "bid": str(bid), "pseudo": bq.pseudo_de(bid), "histoire_a_ecrire": not (b.get("histoire") or "").strip()}
+
+
+# ------------------------------------------------------------
+#  Boutique « Virallink » de l'administrateur : ce que vendent ses publications (le plan du mois choisit parmi ces produits)
+# ------------------------------------------------------------
+NOM_BOUTIQUE = "Virallink"
+PSEUDOS = ("virallink", "virallink.app", "virallink-app")
+PRODUITS = [
+    {"titre": "Ta boutique en lien dans la bio, gratuite", "sous_titre": "Gratuite, sans limite de durée et sans commission",
+     "prix": 0, "lien": "https://www.virallink.fr/connexion?offre=boutique", "bouton": "Créer ma boutique"},
+    {"titre": "Virallink Créateur : 7 jours gratuits", "sous_titre": "Ce qui cartonne dans ta niche, écrit pour toi, et le Studio. Puis 29,90 €/mois",
+     "prix": 2990, "lien": "https://www.virallink.fr/connexion", "bouton": "Essayer 7 jours"},
+]
+
+
+def boutique(uid: int):
+    """La boutique « Virallink » de l'administrateur : retrouvée, ou créée avec ses deux offres (liens vers le site, sans paiement Stripe)."""
+    for b in bq.boutiques_de(uid):
+        page = bq.lit_page(b) or {}
+        if page.get("nom") == NOM_BOUTIQUE and page.get("promo_virallink"):
+            return b
+    bid = bq.nouvelle_boutique(uid)
+    if bq.lit_page(bid):  # sa première boutique existe déjà (autre activité) : on en ouvre une autre
+        bid = bq.nouvelle_boutique(uid)
+    for ps in PSEUDOS:
+        if not bq.reserve_pseudo(bid, ps):
+            break
+    page = bq.page_initiale(uid, None, NOM_BOUTIQUE)
+    page.update(nom=NOM_BOUTIQUE, publie=True, promo_virallink=True, reseaux={"instagram": COMPTE},
+                bio="Tout pour vendre sur Instagram ✨ Ta boutique en lien dans la bio, et ce qui cartonne dans ta niche, écrit pour toi.")
+    page["produits"] = [{"id": bq.nouvel_id(), "visible": True, "description": "", "prix_barre": 0, "devise": "eur", "image": "",
+                         "type": "telechargement", "externe": True, "mot_cle": "", "inclus": [], **x} for x in PRODUITS]
+    page["blocs"] = [{"id": "b1", "type": "produits", "visible": True, "titre": "Commence ici"}]
+    page["design"].update({"fond1": "#271B2D", "fond2": "#271B2D", "texte": "#FFFFFF", "bouton_fond": "#FF5C84", "bouton_texte": "#FFFFFF",
+                           "bloc_fond": "#33253A", "bloc_texte": "#FFFFFF", "accent": "#FF5C84"})
+    try:  # le logo de Virallink en photo de la boutique
+        with open(Path(__file__).resolve().parent / "static" / "icones" / "icone-512.png", "rb") as f:
+            page["photo"] = bq.enregistre_image(bid, f, 512)
+    except Exception:  # noqa: BLE001
+        pass
+    bq.ecrit_page(bid, page)
+    return bid

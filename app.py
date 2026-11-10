@@ -3291,6 +3291,7 @@ def admin_promo():
     """Prépare le compte de l'administrateur pour créer les publications qui font connaître Virallink."""
     import promo
     res = promo.prepare(g.esp, g.u["id"])
+    session["bq"] = res["bid"]  # la boutique Virallink devient celle du plan du mois, des stories et de l'éditeur
     ab.maj(g.u["id"], onboarding=1)  # profil rempli : pas d'assistant de démarrage
     return jsonify(res)
 
