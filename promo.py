@@ -79,6 +79,13 @@ def prepare(esp: Espace, bid=None) -> dict:
     cfg.setdefault("bibliotheque", {})["niches"] = ["marketing", "business"]
     esp.ecrit_config(cfg)
     esp.voix.write_text(VOIX, encoding="utf-8")
-    # L'histoire du fondateur n'est jamais inventée : le plan du mois la demande s'il ne l'a pas encore écrite
-    b = plan30.sauve_brief(esp, dict(BRIEF), bid)
+    # L'histoire du fondateur n'est jamais inventée ni reprise d'un ancien brief (autre produit) : le plan du mois la redemande
+    b = plan30.sauve_brief(esp, {**BRIEF, "histoire": ""}, bid)
+    # Les plans faits pour une autre offre sont rangés (pas effacés) : le Studio repart sur un plan Virallink
+    racine = esp.racine / "plan30"
+    archives = racine / "archives"
+    for f in racine.glob("*.json"):
+        if not f.name.startswith("brief"):
+            archives.mkdir(exist_ok=True)
+            f.replace(archives / f.name)
     return {"ok": True, "histoire_a_ecrire": not (b.get("histoire") or "").strip()}
