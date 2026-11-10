@@ -11,6 +11,7 @@ Variables d'environnement (.env) :
     SECRET_KEY                            clé de session (générée automatiquement si absente)
     ADMIN_EMAILS                          e-mails à accès illimité, séparés par des virgules
     STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET   paiement (optionnel ; prix dans plans.yaml)
+    STRIPE_CONNECT_WEBHOOK_SECRET         ventes des boutiques (webhook « comptes connectés » → /api/stripe/connect/webhook)
     RESEND_API_KEY, EMAIL_EXPEDITEUR      e-mails (mot de passe oublié, bienvenue, veille prête)
     PIXABAY_API_KEY (ou PEXELS_API_KEY)   banque d'images et de vidéos libres de droits du studio (gratuite)
     URL_PUBLIQUE                          adresse du site (ex. https://veille.mondomaine.fr), pour les liens des e-mails
@@ -85,7 +86,7 @@ def cle_secrete() -> str:
 
 
 # Nettoie les clés collées avec des espaces, des retours à la ligne ou des guillemets
-for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY", "PIXABAY_API_KEY",
+for _v in ("APIFY_TOKEN", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_CONNECT_WEBHOOK_SECRET", "RESEND_API_KEY", "PEXELS_API_KEY", "PIXABAY_API_KEY",
            "INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET", "INSTAGRAM_CONFIG_ID", "INSTAGRAM_WEBHOOK_TOKEN"):
     if os.getenv(_v):
         os.environ[_v] = os.environ[_v].strip().strip('"').strip("'").removeprefix(_v + "=").strip()
@@ -1183,6 +1184,37 @@ def stripe_webhook():
     except Exception as e:  # noqa: BLE001
         log(f"⚠️  Alerte Stripe : {str(e)[:120]}")
     return jsonify({"recu": typ})
+
+
+@app.post("/api/stripe/connect/webhook")
+def stripe_connect_webhook():
+    """Ventes des boutiques (comptes Stripe Connect des clientes) : l'accès est livré même si l'acheteuse ferme la page
+    avant de revenir sur « merci ». Événements « des comptes connectés » ; secret STRIPE_CONNECT_WEBHOOK_SECRET."""
+    import hashlib
+    import hmac as _hmac
+    secret = os.getenv("STRIPE_CONNECT_WEBHOOK_SECRET", "").strip()
+    corps, sig = request.get_data(), request.headers.get("Stripe-Signature", "")
+    m = dict(x.split("=", 1) for x in sig.split(",") if "=" in x)
+    attendu = _hmac.new(secret.encode(), f"{m.get('t', '')}.".encode() + corps, hashlib.sha256).hexdigest()
+    if not secret or not _hmac.compare_digest(attendu, m.get("v1", "")) or abs(time.time() - int(m.get("t") or 0)) > 600:
+        abort(400)
+    ev = json.loads(corps)
+    obj = ev["data"]["object"]
+    if ev["type"] not in ("checkout.session.completed", "checkout.session.async_payment_succeeded") or obj.get("payment_status") != "paid":
+        return jsonify({"recu": ev["type"]})
+    meta = obj.get("metadata") or {}
+    pseudo = (meta.get("pseudo") or "").lower()
+    uid = bq.uid_de(pseudo) if pseudo else None
+    page = bq.lit_page(uid) if uid else None
+    if not page or (page.get("stripe") or {}).get("compte") != ev.get("account"):
+        return jsonify({"recu": "ignoré"})
+    p = next((x for x in page.get("produits") or [] if x.get("id") == meta.get("produit")), None)
+    if p:
+        rdv = bv.confirme_rdv(uid, meta["rdv"]) if meta.get("rdv") else None
+        _livre(uid, page, pseudo, p, (obj.get("customer_details") or {}).get("email") or obj.get("customer_email") or "",
+               meta.get("prenom", ""), obj.get("amount_total") or 0, obj.get("currency") or "eur", obj["id"],
+               src=bv.source_propre(meta.get("src")), code=meta.get("code", ""), rdv=rdv)
+    return jsonify({"recu": "vente"})
 
 
 def _alerte_stripe(ev: dict):
