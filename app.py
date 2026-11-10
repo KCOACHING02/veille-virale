@@ -1235,6 +1235,10 @@ def studio_cree():
 @connecte
 def studio_projet(sid):
     p = _projet(sid)
+    if p.get("statut") == "en_cours" and not job_en_cours(g.u["id"], studio_=True):
+        # Fabrication interrompue (redémarrage du serveur pendant le montage) : on ne laisse pas tourner la roue pour rien
+        p.update(statut="erreur", erreur="La fabrication a été interrompue. Relance-la : ça repart de zéro, sans compter une création de plus.")
+        studio.sauve(g.esp, p)
     p.pop("adaptation", None)
     return jsonify({**p, "options": _options_studio()})
 

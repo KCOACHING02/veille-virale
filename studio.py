@@ -1163,9 +1163,17 @@ def sous_titres(fichier: Path, dossier_: Path) -> list[tuple[float, float, str]]
         son = lit_wav(wav, DUREE_MAX_REEL)
         if son.size < 1600:
             return []
-        segments, _ = modele_whisper(os.getenv("WHISPER_MODEL", "base")).transcribe(
+        import time
+        debut, limite = time.monotonic(), int(os.getenv("SOUS_TITRES_LIMITE_S", "240"))
+        segments, info = modele_whisper(os.getenv("WHISPER_MODEL", "base")).transcribe(
             son, vad_filter=True, beam_size=1, word_timestamps=True, condition_on_previous_text=False)
-        mots = [(w.start, w.end, w.word.strip()) for s in segments for w in (s.words or []) if w.word.strip()]
+        mots = []
+        for s in segments:  # la transcription avance segment par segment : on montre où elle en est, et on ne bloque jamais
+            mots += [(w.start, w.end, w.word.strip()) for w in (s.words or []) if w.word.strip()]
+            if info.duration:
+                log(f"  Sous-titres : {min(99, int(100 * s.end / info.duration))} %")
+            if time.monotonic() - debut > limite:
+                raise TimeoutError(f"transcription trop longue (plus de {limite} s)")
     finally:
         wav.unlink(missing_ok=True)
     blocs, courant = [], []

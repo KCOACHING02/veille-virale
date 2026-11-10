@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ressources import sacrifiable, travaux_video
+from ressources import sacrifiable, threads_calcul, travaux_video
 import concurrent.futures as cf
 import os
 import shutil
@@ -110,7 +110,7 @@ def modele_whisper(nom: str):
         if nom not in _MODELES:
             from faster_whisper import WhisperModel
             log(f"  Chargement du modèle Whisper « {nom} » (première fois : téléchargement)")
-            _MODELES[nom] = WhisperModel(nom, device="cpu", compute_type="int8", cpu_threads=max(1, (os.cpu_count() or 2) - 1))  # un cœur reste libre pour le site
+            _MODELES[nom] = WhisperModel(nom, device="cpu", compute_type="int8", cpu_threads=threads_calcul())  # cœurs du conteneur, pas de la machine hôte (sinon tout rame)
         return _MODELES[nom]
 
 

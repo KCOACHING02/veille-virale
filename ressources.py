@@ -33,6 +33,37 @@ def memoire_mo() -> int:
     return 4096
 
 
+@lru_cache(maxsize=1)
+def coeurs() -> int:
+    """Cœurs réellement alloués au conteneur (quota cgroup), pas ceux de la machine hôte :
+    sur Railway, os.cpu_count() voit des dizaines de cœurs alors que le conteneur n'en a que quelques-uns."""
+    n = None
+    try:
+        q, per = Path("/sys/fs/cgroup/cpu.max").read_text().split()[:2]
+        if q != "max":
+            n = max(1, round(int(q) / int(per)))
+    except (OSError, ValueError):
+        try:
+            q = int(Path("/sys/fs/cgroup/cpu/cpu.cfs_quota_us").read_text())
+            per = int(Path("/sys/fs/cgroup/cpu/cpu.cfs_period_us").read_text())
+            if q > 0:
+                n = max(1, round(q / per))
+        except (OSError, ValueError):
+            pass
+    try:
+        visibles = len(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        visibles = os.cpu_count() or 2
+    n = min(n or visibles, visibles)
+    return max(1, int(os.getenv("COEURS", n)))
+
+
+def threads_calcul() -> int:
+    """Fils pour un calcul lourd (transcription) : un cœur reste libre pour le site au-delà de 2 cœurs."""
+    c = coeurs()
+    return c - 1 if c >= 3 else c
+
+
 def petite_machine() -> bool:
     return memoire_mo() <= int(os.getenv("SEUIL_PETITE_MACHINE_MO", "2048"))
 
