@@ -406,8 +406,31 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 .anneau::before{content:"";position:absolute;inset:8px;border-radius:50%;background:#271B2D}
 .anneau b{position:relative;font:800 26px/1 var(--display)} .anneau small{font-size:13px;margin-left:1px}
 .bloc-accueil{margin-bottom:26px}
+/* Accueil « Aujourd'hui » : une carte, une action ; le parcours sur une ligne */
+.hero-auj .actions{align-items:center}.hero-auj .btn.large{width:auto;min-width:260px}
+.hero-auj .plus-tard{border:0;background:none;color:#D8CEDD;text-decoration:underline;cursor:pointer;font-size:14px;padding:6px 4px}
+.parcours-ligne{display:flex;gap:6px;margin:-8px 0 26px;flex-wrap:wrap}
+.parcours-ligne button{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px 5px 5px;font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.parcours-ligne button:disabled{cursor:default;opacity:.75;background:transparent}
+.parcours-ligne i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;background:var(--sunk);color:var(--ink-3)}
+.parcours-ligne .fait i{background:var(--ok);color:#fff}
+.parcours-ligne .ici{border-color:var(--glow);color:var(--ink)}.parcours-ligne .ici i{background:var(--glow);color:#fff}
+.parcours-ligne .encours .spin{width:12px;height:12px;border-color:var(--glow);border-right-color:transparent}
+.parcours-ligne .verrou i{background:none}
+.acc-tendances{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:760px}
+.acc-tend{display:grid;gap:6px;align-content:start;text-align:left;border:0;background:none;padding:0;cursor:pointer;color:var(--ink);font:inherit}
+.acc-tend .vign{position:relative;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--sunk);display:block}
+.acc-tend img{width:100%;height:100%;object-fit:cover;display:block}
+.acc-tend em{position:absolute;left:8px;bottom:8px;background:rgba(20,12,24,.72);color:#fff;font:600 12px var(--body);border-radius:99px;padding:3px 9px}
+.acc-tend b{font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.acc-tend small{color:var(--ink-3);font-size:12.5px}
+.acc-vide{display:flex;gap:10px 14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;max-width:760px;color:var(--ink-2);font-size:14.5px}
+@media (max-width:860px){.hero-auj{grid-template-columns:1fr!important}.hero-auj .ic-hero{display:none}.hero-auj .btn.large{width:100%;min-width:0}
+  .hero-auj .actions{flex-direction:column;align-items:stretch}.parcours-ligne{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-16px;padding-right:16px}
+  .parcours-ligne button{flex:none}.acc-tendances{gap:8px}.acc-tend b{font-size:13px}}
 .bloc-accueil h2{font-size:20px;margin:0 0 12px}
 .titre-bloc{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.titre-bloc>.lien{white-space:nowrap}
 .lien{border:0;background:none;color:var(--glow);font-weight:600;cursor:pointer;padding:0;font-size:14px}
 .bt-q h3{font:700 26px/1.15 var(--display);margin:0 0 16px}
 @media (max-width:860px){.bt-q h3{font-size:23px}.bt-assist .bt-pied #as-suite{flex:1;justify-content:center;padding:12px 16px;font-size:15.5px}}
@@ -458,16 +481,6 @@ details.plus{margin:0 0 18px} details.plus summary{cursor:pointer;color:var(--in
 #hero-job{padding:18px 20px;gap:16px;grid-template-columns:auto 1fr!important}#hero-job h2{font-size:19px}#hero-job p{margin:4px 0 0;font-size:14px}
 #hero-job .anneau{width:64px;height:64px}#hero-job .anneau b{font-size:18px}
 /* ---------- Accueil : le parcours, une ligne par étape ---------- */
-.parcours{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-width:760px}
-.parcours button{width:100%;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-m);padding:12px 14px;text-align:left;cursor:pointer;color:var(--ink)}
-.parcours button:hover{border-color:var(--ink-3)}
-.parcours .ic{width:40px;height:40px;border-radius:12px;background:var(--sunk);display:grid;place-items:center;font-size:19px}
-.parcours .fait .ic{background:var(--ok);color:#fff;font-weight:700;font-size:17px}
-.parcours .txt{display:grid;gap:1px;min-width:0}.parcours b{font-size:15.5px}.parcours small{color:var(--ink-3);font-size:13px}
-.parcours .go{color:var(--ink-3);font-size:20px}
-.parcours .suivante{border-color:var(--glow);box-shadow:var(--shadow)}
-.parcours .suivante .go{font-size:13px;font-weight:700;color:var(--glow-ink);background:var(--glow);border-radius:99px;padding:6px 12px}
-.parcours .fait b{color:var(--ink-2)}
 .etapes-s{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .etape-s{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-m);padding:14px;text-align:left;cursor:pointer;display:grid;gap:2px;box-shadow:var(--shadow)}
 .etape-s:hover{border-color:var(--glow)}
@@ -907,6 +920,23 @@ a.btn{text-decoration:none}
   .resume{gap:18px} .resume b{font-size:28px}
   .criteres{margin-left:0}
   .recherche{max-width:none}
+}
+
+/* ---------- Créations guidées en plein écran sur téléphone ----------
+   html.en-parcours : posé par majParcours() tant qu'un parcours est à l'écran (boutique, offre, page de vente, messages, plan du mois, stories).
+   Il ne reste que la question, en haut, et son bouton, collé en bas : ni titre, ni bandeaux, ni onglets, ni barre du bas. */
+.as-fermer{display:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:15px;color:var(--ink-2);place-items:center;flex:none;padding:0}
+@media (max-width:860px){
+  html.en-parcours .rail,html.en-parcours .barre,html.en-parcours main>.bandeau,html.en-parcours main>.bandeau-offre,html.en-parcours .sous-nav,
+  html.en-parcours #boutique .bt-haut,html.en-parcours #bt-suite,html.en-parcours #boutique .bt-onglets{display:none!important}
+  html.en-parcours main{padding:10px 16px 0}
+  html.en-parcours .as-fermer{display:grid}
+  html.en-parcours .bt-assist2,html.en-parcours .p30-q{padding-bottom:0}
+  html.en-parcours .bt-assist2>.bt-assist,html.en-parcours .tn-assist,html.en-parcours .p30-q{display:flex;flex-direction:column;min-height:calc(100vh - 10px);min-height:calc(100dvh - 10px)}
+  html.en-parcours .p30-q-corps{margin-bottom:12px}
+  html.en-parcours .bt-assist>.bt-pied,html.en-parcours .tn-assist>.bt-pied,html.en-parcours .p30-q-pied{margin-top:auto;position:sticky;bottom:0;z-index:6;background:var(--paper);padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+  html.en-parcours .bt-assist>.bt-pied .btn.prim,html.en-parcours .tn-assist>.bt-pied .btn.prim{flex:1;justify-content:center;padding:12px 16px;font-size:15.5px}
+  html.en-parcours .bt-flottant{bottom:calc(74px + env(safe-area-inset-bottom))}
 }
 
 /* ---------- Assistant ---------- */
@@ -1361,6 +1391,24 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .as-logo.plein-f{border-style:solid}
 .as-logo input[type=file]{display:none}
 .as-gros{font-size:18px!important;padding:14px!important}
+/* Création rapide : compte Instagram, lecture du profil, vérification, phrase de présentation */
+.as-tete-droite{display:flex;align-items:center;gap:8px}
+.as-sous{margin:-8px 0 16px!important;font-size:15px;color:var(--ink-2)}
+.as-adresse-gros span{font-size:19px;font-weight:700;padding-left:14px}
+.as-adresse-gros input{font-size:19px!important;padding:14px 12px 14px 4px!important}
+.as-lecture{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin:4px 0 14px}
+.as-lecture .spin{flex:none;width:22px;height:22px;border-color:var(--glow);border-right-color:transparent}
+.as-lecture p{margin:0;display:grid;gap:2px}.as-lecture span:not(.spin){color:var(--ink-2);font-size:14px}
+.as-confirme{background:var(--warn-soft);border-radius:16px;padding:16px 18px;margin:4px 0 14px}
+.as-confirme b{font:700 17px var(--display)}.as-confirme p{margin:6px 0 14px;color:var(--ink-2);font-size:14.5px}
+.as-verif{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:end;margin-bottom:2px}
+.as-logo.as-logo-mini{min-height:0;height:96px;width:96px;padding:6px;border-radius:50%;background-size:cover}
+.as-logo.as-logo-mini .e{font-size:22px}.as-logo.as-logo-mini small{font-size:11.5px}
+.as-phrase{display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center;margin-bottom:16px}
+.as-phrase span{font:700 19px var(--display)}
+.as-phrase input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;font-size:16px}
+.as-lien-bio{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--ink-2);cursor:pointer;margin-top:4px}
+.as-lien-bio input{margin-top:3px;accent-color:var(--glow)}.as-lien-bio b{color:var(--ink);word-break:break-all}
 .as-bios{display:flex;flex-direction:column;gap:8px}
 .as-nav-props{display:flex;align-items:center;justify-content:space-between;gap:10px}.as-nav-props .btn:disabled{opacity:.4;cursor:default}
 .as-bio{text-align:left;font:inherit;font-size:15px;line-height:1.45;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);cursor:pointer}
@@ -1439,6 +1487,14 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-liens-rapides div{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
 .bt-liens-rapides input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
 .bt-bravo{text-align:center}
+.bt-bravo .bt-bravo-suite{margin:18px auto 14px;max-width:440px;color:var(--ink-2)}
+.bt-bravo .btn.large{max-width:440px;margin:0 auto}
+.bt-bravo-liens{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin:16px 0 4px}
+.bt-bravo-liens .lien{text-decoration:none;font-size:14.5px}
+.bt-bio-ig{max-width:460px;margin:14px auto 0;text-align:left}
+.bt-bio-ig summary{cursor:pointer;color:var(--ink-2);font-size:14px;text-align:center;list-style:none}
+.bt-bio-ig summary::-webkit-details-marker{display:none}.bt-bio-ig summary::after{content:" ▾"}.bt-bio-ig[open] summary::after{content:" ▴"}
+.bt-bio-ig .bt-etapes-ig{margin:10px auto 0}
 .bt-bravo .gros{font-size:54px;line-height:1;margin-bottom:8px}
 .bt-bravo .bt-url{justify-content:center;margin:16px auto;width:fit-content}
 .bt-etapes-ig{text-align:left;background:var(--sunk);border-radius:14px;padding:14px 18px 14px 36px;margin:18px auto;max-width:460px;font-size:14.5px}
@@ -1597,6 +1653,7 @@ const nb = n => n == null ? "–" : n >= 1e6 ? (n/1e6).toLocaleString("fr-FR",{m
 const nbLong = n => n == null ? "–" : n.toLocaleString("fr-FR");
 const pc = x => x == null ? "–" : (x*100).toLocaleString("fr-FR",{maximumFractionDigits:1}) + " %";
 const api = async (url, opts = {}) => {
+  if (opts.method && opts.method !== "GET" && url.startsWith("/api/boutique")) S.etatPerime = true;  // l'accueil relira où en est la boutique
   const r = await fetch(url, {headers: {"Content-Type": "application/json"}, ...opts, body: opts.body ? JSON.stringify(opts.body) : undefined});
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) { location.href = "/connexion#connexion"; throw new Error("Session expirée"); }
@@ -1707,6 +1764,7 @@ function va(vue, depuisHistorique) {
     vue = essaiDispo() ? "accueil" : "abonnement";
   }
   if (vue !== "reels" && S.analyse?.id === "tendances") { S.tendances = S.analyse; S.analyse = S.analyseVeille || null; }  // les autres écrans parlent de la veille
+  if (vue !== "boutique" && BQ.assist?.fini) { BQ.assist = null; BQ.htmlAssist = null; }  // écran « Ta boutique est en ligne » : vu une fois
   S.vue = vue;
   if (!depuisHistorique) setTimeout(() => pousseHistorique(), 0);
   const g = groupeDe(vue);
@@ -1722,7 +1780,16 @@ function va(vue, depuisHistorique) {
     `<button role="tab" aria-pressed="${v === vue}" onclick="va('${v}')">${t}</button>`).join("")}</div>` : ""; });
   window.scrollTo(0, 0);
   rendu();
+  majParcours();
 }
+// Création guidée à l'écran (boutique, offre, page de vente, messages, plan du mois, stories) : plein écran sur téléphone (html.en-parcours).
+// Les écrans de fin (« Ta boutique est en ligne », « C'est en vente ») retrouvent la barre du bas.
+function majParcours() {
+  const sec = $(`[data-section="${S.vue}"]`);
+  document.documentElement.classList.toggle("en-parcours", !!sec && !sec.hidden && !!sec.querySelector(".bt-assist2, .tn-assist, .p30-q") && !sec.querySelector(".bt-bravo"));
+}
+new MutationObserver(() => { if (majParcours.attente) return; majParcours.attente = true;
+  requestAnimationFrame(() => { majParcours.attente = false; majParcours(); }); }).observe($("main"), {childList: true, subtree: true});
 $$(".nav").forEach(b => b.onclick = () => {
   if (b.classList.contains("verrou")) { toast("Inclus dans les formules payantes", {duree: 3500}); return va("abonnement"); }
   if (b.dataset.vue === "studio") S.plan30Vue = false; va(b.dataset.vue); });
@@ -1806,12 +1873,23 @@ function cartePlanJour(c) {
     <p>Un carrousel ${esc(cat[0].toLowerCase())}. Virall.ai l'écrit et le met en page pour toi.</p>
     <div class="actions"><button class="btn prim" data-p30fab="${c.i}">Créer ce carrousel</button></div></div></div>`;
 }
+// Accueil « Aujourd'hui » : une carte avec une seule action (l'étape en cours du parcours, puis le contenu du jour),
+// le parcours sur une ligne, trois publications qui cartonnent dans sa niche et les chiffres de sa boutique.
 async function renduAccueil() {
-  const el = $("#accueil"), a = S.analyse, bi = S.bilan || {};
-  el.innerHTML = heroAccueil() + '<div id="accueil-suite"></div>';
+  const el = $("#accueil"), bi = S.bilan || {};
+  if (S.etatPerime) {  // la boutique a changé depuis le dernier affichage : on relit où elle en est
+    S.etatPerime = false; S.accueilSuite = "";
+    if (!el.innerHTML) el.innerHTML = squelette("lignes", 5);
+    try { await chargeEtat(); } catch {}
+    if (S.vue !== "accueil") return;
+  }
+  const a = S.analyse;
+  el.innerHTML = heroAccueil() + `<div id="accueil-suite">${S.accueilSuite || squelette("lignes", 5)}</div>`;
   let st = S.optionsStudio, p30 = null;
   const gratuitAcc = !!S.etat?.abonnement?.gratuit;
-  try { [st, p30] = await Promise.all([api("/api/studio"), gratuitAcc ? null : api("/api/plan30").catch(() => null)]); S.optionsStudio = st; if (p30) S.p30 = p30; } catch {}
+  const bibAcc = S.etat?.bibliotheque || {};
+  try { [st, p30] = await Promise.all([api("/api/studio"), gratuitAcc ? null : api("/api/plan30").catch(() => null),
+    bibAcc.active && !bibAcc.a_choisir && !S.tendances ? api("/api/tendances").then(t => { S.tendances = t; }).catch(() => {}) : null]); S.optionsStudio = st; if (p30) S.p30 = p30; } catch {}
   if (S.vue !== "accueil") return;
   const plan = p30?.plan, auj = new Date().toISOString().slice(0, 10);
   const planActif = plan && plan.fin >= auj;
@@ -1830,37 +1908,39 @@ async function renduAccueil() {
   // 1. La boutique (gratuite, sans limite de durée : l'aimant à abonnées) ; 2 à 5 : fonctions payantes (grisées hors essai/abonnement).
   const jobV = jobAnalyse(), nbC = S.etat.bibliotheque?.active ? 1 : (S.etat.comptes?.instagram || []).length + (S.etat.comptes?.tiktok || []).length;
   const be = S.etat.boutique_etat || {}, publies = (bi.publies || 0) + pubPlan;
-  const sousB = [["Crée ta page", !!be.cree, "Créer ma boutique", "va('boutique')"],
-                 ["Ajoute ta première offre", be.cree && be.produits > 0 && (be.prets ?? be.produits) > 0 && be.paiements, !be.publie ? "Continuer ma boutique" : be.produits > 0 ? "Terminer mon offre" : "Ajouter mon offre", !be.publie ? "continueBoutique()" : be.produits > 0 ? "BQ.onglet='produits';va('boutique')" : "nouvelleOffre()"],
-                 ["Partage ton lien", be.cree && be.publie, "Mettre en ligne et partager", "va('boutique')"]];
-  const sousB1 = sousB.find(x => !x[1]);
+  // Étape 1, la boutique : la mettre en ligne (deux minutes), puis lui donner une première offre (qu'elle peut remettre à plus tard)
+  let offrePlusTard = false; try { offrePlusTard = !!localStorage.getItem("vv-offre-plus-tard"); } catch {}
+  const offreOk = be.produits > 0 && (be.prets ?? be.produits) > 0 && be.paiements;
+  const b1 = !be.cree ? {titre: "Crée ta boutique", pourquoi: "Deux minutes : ton compte Instagram, un design, et elle est en ligne. Gratuite, sans limite de durée.", bouton: "Créer ma boutique", action: "va('boutique')"}
+    : !be.publie ? {titre: "Termine ta boutique", pourquoi: "Elle est presque prête : il ne reste qu'à la mettre en ligne.", bouton: "Continuer ma boutique", action: "continueBoutique()"}
+    : offreOk || offrePlusTard ? null
+    : be.produits > 0 ? {titre: "Termine ta première offre", pourquoi: "Elle est presque en vente : il lui manque ce que reçoit la cliente, ou les paiements. Ta boutique te dit quoi faire.", bouton: "Terminer mon offre", action: "BQ.onglet='produits';va('boutique')"}
+    : {titre: "Ajoute ta première offre", pourquoi: "Ta boutique est en ligne. Il ne lui manque qu'une chose : ce que tu vends, ou ce que tu offres contre un e-mail.", bouton: "Ajouter mon offre", action: "nouvelleOffre()",
+       plusTard: "Je n'ai rien à vendre pour l'instant"};
   // Formule gratuite : boutique et tendances ouvertes. Essai en réserve : la suite s'ouvre au premier clic (il démarre alors) ;
   // essai déjà utilisé : étapes 3 à 5 sous cadenas.
   const gratuitNA = gratuitAcc && !S.etat.admin, verrou = gratuitNA && !essaiDispo();
   const tendances = gratuitNA && !!S.etat.bibliotheque?.active;
   let tendancesVues = false; try { tendancesVues = !!localStorage.getItem("vv-tendances-vues"); } catch {}
   const etapesP = [
-    {etat: sousB1 ? "" : "fait", titre: "Crée ta boutique", ic: "🛍️",
-      pourquoi: "Ta page « lien en bio » pour vendre tes produits. Gratuite, sans limite de durée.",
-      liste: sousB, fait: sb ? (sb.ventes_7j ? `${sb.ventes_7j} vente${sb.ventes_7j > 1 ? "s" : ""} cette semaine` : `${sb.vues_7j} visite${sb.vues_7j > 1 ? "s" : ""} cette semaine`) : "En ligne",
-      bouton: sousB1?.[2], action: sousB1?.[3], revoir: "va('boutique')"},
-    tendances ? {etat: tendancesVues || verrou ? "fait" : "", titre: "Trouve ce qui cartonne", ic: "🔎",
+    {etat: b1 ? "" : "fait", court: "Boutique", ic: "🛍️", ...(b1 || {}), revoir: "va('boutique')"},
+    tendances ? {etat: tendancesVues || verrou ? "fait" : "", titre: "Trouve ce qui cartonne", ic: "🔎", court: "Tendances",
       pourquoi: "Les publications qui explosent en ce moment dans ta niche, mises à jour chaque jour.",
       fait: "Les tendances de ta niche, chaque jour", bouton: "Voir ce qui cartonne dans ma niche",
       action: "S.source='tendances';va('reels')", revoir: "S.source='tendances';va('reels')"}
-    : {etat: jobV ? "encours" : veilleOk ? "fait" : "", titre: "Trouve ce qui cartonne", ic: "🔎", payant: true,
+    : {etat: jobV ? "encours" : veilleOk ? "fait" : "", titre: "Trouve ce qui cartonne", ic: "🔎", court: "Veille", payant: true,
       pourquoi: "Virallink repère les Reels qui explosent dans ta niche et les réécrit pour toi.",
       fait: `${ad} contenu${ad > 1 ? "s" : ""} prêt${ad > 1 ? "s" : ""} pour toi`,
       bouton: !nbC ? "Choisir les comptes à suivre" : "Lancer ma veille",
       action: jobV ? "montreProgression()" : !nbC ? "va('comptes')" : "lanceVeilleDirecte()", revoir: "S.filtre='adaptes';va('reels')"},
-    {etat: planActif ? "fait" : "", titre: "Prépare ton mois", ic: "🗓️", payant: true,
+    {etat: planActif ? "fait" : "", titre: "Prépare ton mois", ic: "🗓️", court: "Plan du mois", payant: true,
       pourquoi: "8 carrousels, de ton histoire jusqu'à ton offre : un vrai chemin vers la vente.",
       fait: `${pretsPlan}/8 carrousels prêts`, bouton: "Créer mon plan du mois", action: "ouvrePlan30(true)", revoir: "ouvrePlan30(false)"},
-    {etat: (planActif ? pretsPlan === 8 : crees >= 3) ? "fait" : "", titre: "Crée tes contenus", ic: "✨", payant: true,
+    {etat: (planActif ? pretsPlan === 8 : crees >= 3) ? "fait" : "", titre: "Crée tes contenus", ic: "✨", court: "Contenus", payant: true,
       pourquoi: "Un clic : textes, images et slides prêts à publier.",
       fait: planActif ? "Tes 8 carrousels sont prêts" : `${crees} contenus cette semaine`,
       bouton: planActif ? `Créer mes carrousels (${pretsPlan}/8)` : "Créer un contenu", action: planActif ? "ouvrePlan30(false)" : "S.filtre='adaptes';va('reels')", revoir: "va('studio')"},
-    {etat: publies >= (bi.objectif_publies || 1) ? "fait" : "", titre: "Publie et vends", ic: "📲", payant: true,
+    {etat: publies >= (bi.objectif_publies || 1) ? "fait" : "", titre: "Publie et vends", ic: "📲", court: "Publier", payant: true,
       pourquoi: "Publie aux dates prévues, puis touche « J'ai publié » : on suit tes vues pour toi.",
       fait: `${publies} publié${publies > 1 ? "s" : ""} cette semaine`, bouton: planActif ? "Voir quoi publier" : "Voir mes résultats",
       action: planActif ? "ouvrePlan30(false)" : "va('resultats')", revoir: "va('resultats')"},
@@ -1868,20 +1948,18 @@ async function renduAccueil() {
   if (verrou) etapesP.forEach(x => { if (x.payant) x.etat = "verrou"; });
   const prochaine = etapesP.findIndex(x => !x.etat);  // une veille en cours ne bloque pas : on passe à l'étape suivante pendant ce temps
   S.setupFini = verrou || prochaine < 0 || prochaine >= 3;
-  const ligneVerrou = (x, k) => `<li class="avenir verrou"><span class="n">🔒</span><div class="corps"><b>${x.titre}</b></div></li>`;
-  const carteDebloque = verrou && !sousB1 ? `<div class="debloque"><b>🔓 Passe à la suite</b><p>Veille, plan du mois et création de tes contenus : tout ce qui amène des clientes sur ta boutique.</p>
+  const carteDebloque = verrou && !b1 ? `<div class="debloque"><b>🔓 Passe à la suite</b><p>${tendances ? "Tu gardes ta boutique et les tendances de ta niche. " : ""}Veille, plan du mois et création de tes contenus : tout ce qui amène des clientes sur ta boutique.</p>
       <button class="btn prim large" onclick="va('abonnement')">Débloquer dès ${esc(prixOffre())}</button></div>` : "";
   S.debloqueVisible = !!carteDebloque; majBandeauOffre();
-  const parcours = `<section class="bloc-accueil"><h2>${prochaine < 0 && !verrou ? "Tout est en place 🎉" : sousB1 ? "Commence par ta boutique" : verrou ? "Ta boutique est prête" : `Étape ${prochaine + 1} sur ${etapesP.length}`}</h2>
-    <p class="parcours-sous">${prochaine < 0 && !verrou ? "Continue chaque semaine : nouvelle veille le lundi, nouveau plan chaque mois." : sousB1 ? "C'est là que tes abonnées achèteront. Ensuite, Virallink t'aide à leur donner envie." : verrou ? (tendances ? "Tu gardes ta boutique et les tendances de ta niche. La suite est réservée aux abonnées." : "La suite est réservée aux abonnées.") : "Suis les étapes dans l'ordre : chacune prépare la suivante."}</p>
-    ${carteDebloque}
-    <ol class="etapes-v">${etapesP.map((x, k) => x.etat === "verrou" ? ligneVerrou(x, k) : k === prochaine
-      ? `<li class="actuelle"><span class="n">${k + 1}</span><div class="corps"><b>${x.ic} ${x.titre}</b><p>${x.pourquoi}</p>
-          ${x.liste ? `<ul class="sous-etapes">${x.liste.map(([t, ok]) => `<li class="${ok ? "ok" : x.liste.find(y => !y[1])?.[0] === t ? "ici" : ""}">${ok ? "✓" : "○"} ${t}</li>`).join("")}</ul>` : ""}
-          <button class="btn prim large" onclick="${x.action}">${x.bouton}</button></div></li>`
-      : x.etat === "encours" ? `<li class="faite en-cours"><span class="n"><span class="spin"></span></span><button class="corps" onclick="${x.action}"><b>${x.titre}</b><small>En cours… tu peux passer à la suite</small><span class="go">›</span></button></li>`
-      : x.etat === "fait" ? `<li class="faite"><span class="n">✓</span><button class="corps" onclick="${x.revoir}"><b>${x.titre}</b><small>${x.fait}</small><span class="go">›</span></button></li>`
-      : `<li class="avenir"><span class="n">${k + 1}</span><div class="corps"><b>${x.titre}</b></div></li>`).join("")}</ol></section>`;
+  // Tant que le parcours n'est pas bouclé, la carte « Aujourd'hui » est son étape en cours ; ensuite c'est le contenu du jour (carte du haut).
+  const x = prochaine >= 0 ? etapesP[prochaine] : null;
+  const carteJour = x ? `<div class="hero hero-auj"><div class="ic-hero">${x.ic}</div><div><span class="sur">Aujourd'hui</span><h2>${x.titre}</h2><p>${x.pourquoi}</p>
+      <div class="actions"><button class="btn prim large" onclick="${x.action}">${x.bouton}</button>${x.plusTard ? `<button type="button" class="plus-tard" id="acc-offre-tard">${x.plusTard}</button>` : ""}</div></div></div>` : "";
+  const ligne = `<nav class="parcours-ligne" aria-label="Ton parcours">${etapesP.map((y, k) => {
+      const cl = y.etat === "verrou" ? "verrou" : k === prochaine ? "ici" : y.etat === "fait" ? "fait" : y.etat === "encours" ? "encours" : "avenir";
+      const act = cl === "fait" ? y.revoir : cl === "ici" || cl === "encours" ? y.action : "";
+      return `<button type="button" class="${cl}" ${act ? `onclick="${act}"` : "disabled"}${cl === "ici" ? ' aria-current="step"' : ""}><i>${cl === "fait" ? "✓" : cl === "verrou" ? "🔒" : cl === "encours" ? '<span class="spin"></span>' : k + 1}</i><span>${y.court}</span></button>`; }).join("")}</nav>`;
+  const parcours = carteJour + carteDebloque + ligne;
   // Pendant l'essai, après une première veille : ce qu'elle a déjà reçu, et comment le garder (refermable)
   const bilanEssai = etatEssai() === "essai" && a && ad ? (() => {
     try { const v = +localStorage.getItem("vv-masque-bilan-essai"); if (v && Date.now() - v < 2 * 864e5) return ""; } catch {}
@@ -1889,13 +1967,14 @@ async function renduAccueil() {
       <b>${ad} publication${ad > 1 ? "s" : ""} écrite${ad > 1 ? "s" : ""} pour toi pendant ton essai</b>
       <p>Chaque lundi, ta veille continue : de nouveaux Reels viraux, réécrits pour ta niche, avec ton planning. ${esc(S.etat.offre?.nom || "")} : ${prixOffre()}, sans engagement.</p>
       <button class="btn petit prim" type="button" onclick="va('abonnement')">Garder ma veille</button></div>`; })() : "";
-  if (!S.setupFini || gratuitNA) $$("#accueil > .hero:not(#hero-job):not([data-garde])").forEach(h => h.remove());
-  let html = parcours + bilanEssai;
+  if (carteJour || gratuitNA) $$("#accueil > .hero:not(#hero-job):not([data-garde])").forEach(h => h.remove());
+  let html = parcours + bilanEssai, aTourner = false;
   // Reels prévus aujourd'hui (sinon les meilleurs Reels adaptés)
   if (a) {
     const jour = JOURS[(new Date().getDay() + 6) % 7];
     const prevus = (a.planning || []).map(k => a.posts.find(p => p.cle === k)).filter(p => p && p.creneau?.startsWith(jour));
     const liste = (prevus.length ? prevus : a.posts.filter(adapte).sort((x, y) => (y.adaptation.pertinence || 0) - (x.adaptation.pertinence || 0)).slice(0, 4)).filter(p => p.cle !== S.cleDuJour).slice(0, 3);
+    aTourner = liste.length > 0;
     if (liste.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>${prevus.length ? `Aussi au programme aujourd'hui` : "Ensuite, à tourner"}</h2><button class="lien" onclick="va('${prevus.length ? "planning" : "reels"}')">${prevus.length ? "Toute la semaine" : "Tous mes Reels"} →</button></div>
       <div class="du-jour">${liste.map(p => { const publie = (S.pubs || []).some(x => x.inspiration?.cle === p.cle);
         return `<article class="carte-jour">
@@ -1905,27 +1984,36 @@ async function renduAccueil() {
             <div class="actions">${adapte(p) ? `<button class="btn petit prim" data-studio-acc="${esc(p.cle)}">Créer le contenu</button>` : `<button class="btn petit prim" data-adapter="${esc(p.cle)}">Adapter</button>`}<button class="btn petit" data-cle="${esc(p.cle)}">Voir</button></div></div>
         </article>`; }).join("")}</div></section>`;
   }
-  const recents = (st?.projets || []).slice(0, 4);
-  if (recents.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Tes dernières créations</h2><button class="lien" onclick="va('studio')">Ouvrir le studio →</button></div>
-    <div class="crea-recentes">${recents.map(p => { const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
-      const src = img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
-      return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section>`;
-  if (sb) {
-    try {
-      if (sb.vues_7j || sb.inscrits_7j || sb.ventes_7j) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Ta boutique cette semaine</h2><button class="lien" onclick="BQ.onglet='stats';va('boutique')">Statistiques →</button></div>
-        <div class="bt-kpis"><div class="bt-kpi"><b>${sb.vues_7j}</b><span>visites</span></div><div class="bt-kpi"><b>${sb.inscrits_7j}</b><span>nouvelles inscrites</span></div><div class="bt-kpi"><b>${sb.ventes_7j}</b><span>ventes</span></div><div class="bt-kpi"><b>${euros(sb.chiffre_7j).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div></div></section>`;
-    } catch {}
+  // Ce qui cartonne dans sa niche : trois publications de la bibliothèque (gratuit, mis à jour chaque jour)
+  const tend = !aTourner && S.etat.bibliotheque?.active && !S.etat.bibliotheque.a_choisir ? (S.tendances?.posts || []).slice(0, 3) : [];
+  if (tend.length) html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Ce qui cartonne dans ta niche</h2><button class="lien" onclick="S.source='tendances';va('reels')">Tout voir →</button></div>
+    <div class="acc-tendances">${tend.map(p => `<button type="button" class="acc-tend" data-tend="${esc(p.cle)}">
+      <span class="vign">${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}<em>${estCarrousel(p) ? nb(p.likes) + " j'aime" : nb(p.vues) + " vues"}</em></span>
+      <b>${esc(titrePost(p))}</b><small>@${esc(p.compte)} · ${esc(libFormat(p))}</small></button>`).join("")}</div></section>`;
+  // Les chiffres de sa boutique, dès qu'elle est en ligne
+  if (sb && be.publie) {
+    const rien = !sb.vues_7j && !sb.inscrits_7j && !sb.ventes_7j, url = S.etat.boutique ? `${location.origin}/@${S.etat.boutique}` : "";
+    html += `<section class="bloc-accueil"><div class="titre-bloc"><h2>Ta boutique cette semaine</h2><button class="lien" onclick="BQ.onglet='stats';va('boutique')">Statistiques →</button></div>
+      ${rien ? `<div class="acc-vide"><span>Pas encore de visite cette semaine. Mets ton lien dans ta bio Instagram et dans tes stories.</span>${url ? `<button class="btn petit" data-copier="${esc(url)}">Copier mon lien</button>` : ""}</div>`
+        : `<div class="bt-kpis"><div class="bt-kpi"><b>${sb.vues_7j}</b><span>visites</span></div><div class="bt-kpi"><b>${sb.inscrits_7j}</b><span>nouvelles inscrites</span></div><div class="bt-kpi"><b>${sb.ventes_7j}</b><span>ventes</span></div><div class="bt-kpi"><b>${euros(sb.chiffre_7j).replace("Gratuit", "0 €")}</b><span>chiffre d'affaires</span></div></div>`}</section>`;
   }
+  const recents = (st?.projets || []).slice(0, 4);
+  if (recents.length) html += `<details class="plus-accueil"><summary>Tes dernières créations</summary><section class="bloc-accueil"><div class="titre-bloc"><h2>Tes dernières créations</h2><button class="lien" onclick="va('studio')">Ouvrir le studio →</button></div>
+    <div class="crea-recentes">${recents.map(p => { const img = (p.fichiers || []).find(f => f.endsWith(".jpg"));
+      const src = p.type === "stories" ? (p.statut === "pret" ? `/studio/${p.id}/sortie/vignette.jpg` : "") : img && p.statut === "pret" ? `/studio/${p.id}/sortie/${img}` : p.miniature ? `/media/${encodeURIComponent(p.miniature)}` : "";
+      return `<button class="crea" onclick="ouvreProjet('${p.id}')">${src ? `<img src="${src}" alt="" loading="lazy">` : "<span></span>"}<b>${esc(p.titre)}</b><small>${p.type === "reel" ? "Reel" : p.type === "stories" ? "Stories" : "Carrousel"} · ${p.statut === "pret" ? "prêt" : "brouillon"}</small></button>`; }).join("")}</div></section></details>`;
   const ab = S.etat.abonnement;
   if (ab?.gratuit) {
     html += essaiDispo() ? `<p class="note-essai">Formule gratuite : ta boutique est incluse, sans limite de durée. <a href="#" onclick="proposeEssai();return false">Essayer tout Virallink ${ab.essai_jours} jours</a></p>`
       : `<p class="note-essai">Formule gratuite : ta boutique est incluse, sans limite de durée.</p>`;
   }
-  // Tout ce qui suit le parcours est replié : l'écran garde une seule action en vue
-  const coupe = html.indexOf('<section', html.indexOf('</section>'));
-  if (coupe > 0) html = html.slice(0, coupe) + `<details class="plus-accueil"><summary>Voir plus : programme, créations${sb ? ", boutique" : ""}</summary>${html.slice(coupe)}</details>`;
+  S.accueilSuite = html;
   $("#accueil-suite").innerHTML = html;
   $$("[data-studio-acc]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); choisirFormat(b.dataset.studioAcc); });
+  $$("[data-tend]", el).forEach(b => b.onclick = () => { const k = b.dataset.tend; S.source = "tendances"; S.filtreChoisi = false; S.cat = ""; va("reels");
+    if (S.analyse?.id === "tendances") ouvreReel(k); });
+  $("#acc-offre-tard")?.addEventListener("click", () => { try { localStorage.setItem("vv-offre-plus-tard", "1"); } catch {}
+    toast("D'accord : tu l'ajouteras quand tu seras prête, depuis ta boutique"); renduAccueil(); });
   $$("[data-p30fab]", el).forEach(b => b.onclick = () => { S.p30AutoFab = +b.dataset.p30fab; ouvrePlan30(false); });
   $$("[data-p30pub]", el).forEach(b => b.onclick = async () => {
     try { await api(`/api/plan30/${plan.id}/cases/${b.dataset.p30pub}`, {method: "PUT", body: {publie: true}}); toast("Bravo, un de plus ✓"); renduAccueil(); } catch (e) { toast(e.message); } });
@@ -4530,7 +4618,7 @@ const svgRes = k => `<svg viewBox="0 0 24 24">${ICONES_RES[k] || ""}</svg>`;
 async function chargeBoutique(stripe) {
   const [etat, liste, parcours] = await Promise.all([api("/api/boutique" + (stripe ? "?stripe=1" : "")), api("/api/boutiques").catch(() => ({boutiques: []})),
     api("/api/boutique/parcours").catch(() => ({}))]);
-  BQ.etat = etat; BQ.plusieurs = liste.boutiques.length > 1; BQ.parcours = parcours.parcours || null;
+  BQ.etat = etat; BQ.plusieurs = liste.boutiques.length > 1; BQ.parcours = parcours.parcours || null; S.etatPerime = true;
   BQ.page = BQ.etat.page ? structuredClone(BQ.etat.page) : null;
 }
 async function renduBoutique() {
@@ -4582,10 +4670,13 @@ const PRODUITS_EXEMPLE = [{id: "ex1", titre: "Ton guide PDF", sous_titre: "Exemp
   {id: "ex2", titre: "Ta formation vidéo", sous_titre: "Exemple", prix: 4900}];
 const nettoieRes = v => (v || "").trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?(instagram\.com|tiktok\.com)\/@?/i, "").replace(/\/.*$/, "");
 
+// Nouvelle boutique : création rapide (`rapide`). Son compte Instagram suffit (photo, nom, présentation repris de son profil),
+// sinon trois questions (nom, phrase, logo) ; elle choisit un design et la boutique est en ligne. Offres, paiements et
+// présentation détaillée se complètent ensuite (carte « Prochaine étape »). L'ancien parcours complet sert à « Création pas à pas ».
 function etatAssistant() {
   const sug = BQ.etat.suggestion || {}, res = sug.reseaux || BQ.page?.reseaux || {};
   if (!BQ.assist && !BQ.page) BQ.assist = reprendAssist();
-  return BQ.assist ||= {etape: 0, pseudo: sug.pseudo || BQ.etat.pseudo || "", nom: sug.nom || BQ.page?.nom || "", bio: sug.bio || BQ.page?.bio || "", photo: BQ.page?.photo || "",
+  return BQ.assist ||= {etape: 0, rapide: true, pseudo: sug.pseudo || BQ.etat.pseudo || "", nom: sug.nom || BQ.page?.nom || "", bio: sug.bio || BQ.page?.bio || "", photo: BQ.page?.photo || "",
     reseaux: {instagram: res.instagram || "", tiktok: res.tiktok || ""}, objectifs: ["vendre"],
     palettes: null, theme: "sable", palette: null, mep: "colonne",
     rdv: {titre: "Réserve ton appel découverte", url: ""}, liens: [{titre: "", url: ""}, {titre: "", url: ""}], produit: {titre: "", prix: ""}};
@@ -4623,7 +4714,7 @@ function apercuAssistant(tout_de_suite) {
   clearTimeout(BQ.tAssist);
   BQ.tAssist = setTimeout(async () => {
     const A = BQ.assist; if (!A || A.fini) return;
-    const h = await htmlApercu(contenuAssistant(A));
+    const h = await htmlApercu(A.mode === "presentation" ? contenuApercu({bio: A.bio}) : contenuAssistant(A));
     BQ.htmlAssist = h;
     const f = $("#as-ap"); if (f) f.srcdoc = h;
     if ($("#bt-plein")?.classList.contains("ouvert")) $("#bt-ap2").srcdoc = h;
@@ -4693,6 +4784,48 @@ function designProposition(A, p) {
   return base;
 }
 
+const liensBio = A => A.lienBio?.garde && A.lienBio.url ? [{titre: A.lienBio.titre || "Mon site", url: A.lienBio.url}] : [];
+const phraseBio = A => (A.cible || "").trim() && (A.apport || "").trim() ? `J'aide ${dansPhrase(A.cible, "")} à ${dansPhrase(A.apport, "", true)}.` : "";
+const champAdresse = (A, hote) => `<div class="champ"><label for="as-pseudo">Son adresse : le lien à mettre dans ta bio</label>
+    <div class="bt-adresse"><span>${esc(hote)}/@</span><input id="as-pseudo" value="${esc(A.pseudo)}" maxlength="30" autocapitalize="off" spellcheck="false" placeholder="ton-nom"></div>
+    <div class="bt-dispo" id="as-dispo"></div></div>`;
+// Création rapide : Instagram → vérification → design, ou (sans Instagram) nom → phrase → logo → design
+function etapesRapides(A, logo, design) {
+  const hote = location.host;
+  const instagram = {nom: "Ton Instagram", ig: true, q: A.igEtat === "lecture" ? "Je prépare ta boutique…" : A.igEtat === "confirmer" ? "Une dernière chose" : "Quel est ton compte Instagram ?",
+    corps: () => A.igEtat === "lecture" ? `<div class="as-lecture" role="status"><span class="spin"></span><p><b>Je lis ton profil @${esc(A.reseaux.instagram)}</b><span id="as-lecture-txt">Ta photo, ton nom, ta présentation…</span></p></div>
+        <p class="aide" style="text-align:center"><button type="button" class="lien" id="as-ig-sans">Continuer sans attendre</button></p>`
+      : A.igEtat === "confirmer" ? `<div class="as-confirme"><b>Confirme ton adresse e-mail</b>
+          <p>Pour lire ton profil Instagram, on vérifie d'abord ton adresse. Touche le lien reçu à <b>${esc(S.etat.utilisateur.email)}</b> (regarde aussi dans les indésirables), puis reviens ici.</p>
+          <div class="bt-rangee"><button type="button" class="btn prim" id="as-ig-confirme">C'est fait</button><button type="button" class="btn" id="as-ig-renvoi">Renvoyer l'e-mail</button></div></div>
+        <p class="aide" style="text-align:center"><button type="button" class="lien" id="as-ig-sans">Continuer sans attendre : je la remplis moi-même</button></p>`
+      : `<p class="aide as-sous">Virallink reprend ta photo, ton nom et ta présentation. Tu vérifies, tu choisis un design, et ta boutique est en ligne.</p>
+        <div class="champ"><label for="as-igc">Ton compte Instagram</label>
+          <div class="bt-adresse as-adresse-gros"><span>@</span><input id="as-igc" value="${esc(A.reseaux.instagram)}" maxlength="80" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="go" placeholder="ton_compte"></div></div>
+        <p class="aide" style="text-align:center;margin-top:16px"><button type="button" class="lien" id="as-ig-sans">Je n'ai pas de compte Instagram</button></p>`};
+  const verif = {nom: "Ta boutique", verif: true, cree: true, q: "Voilà ta boutique",
+    corps: () => `<p class="aide as-sous">Repris de ton profil Instagram. Corrige ce que tu veux.</p>
+      <div class="as-verif"><label class="as-logo as-logo-mini ${A.photo ? "plein" : ""}" id="as-photo" style="${A.photo ? `background-image:url('${A.photoUrl || vignetteImg(A.photo)}')` : ""}">
+          ${A.photo ? "" : '<span class="e">🖼️</span><small>Ta photo</small>'}<input type="file" accept="image/*" aria-label="Ta photo ou ton logo"></label>
+        <div class="champ"><label for="as-nom">Son nom</label><input id="as-nom" data-a="nom" value="${esc(A.nom)}" maxlength="60" autocomplete="off"></div></div>
+      ${champAdresse(A, hote)}
+      <div class="champ"><label for="as-bio">Ta présentation</label><textarea id="as-bio" data-a="bio" maxlength="280" style="min-height:96px">${esc(A.bio)}</textarea></div>
+      ${A.lienBio?.url ? `<label class="as-lien-bio"><input type="checkbox" id="as-lien-garde" ${A.lienBio.garde ? "checked" : ""}><span>Ajouter le lien de ma bio : <b>${esc(A.lienBio.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "").slice(0, 40))}</b></span></label>` : ""}`,
+    valide: () => A.nom.trim() ? null : "Donne un nom à ta boutique"};
+  const nom = {nom: "Le nom", cree: true, q: "Comment s'appelle ta boutique ?",
+    corps: () => `<div class="champ"><label for="as-nom">Le nom de ta boutique ou de ta marque</label><input id="as-nom" data-a="nom" class="as-gros" value="${esc(A.nom)}" maxlength="60" placeholder="Brille & Vibre" autocomplete="off"></div>
+      ${champAdresse(A, hote)}`,
+    valide: () => A.nom.trim() ? null : "Donne un nom à ta boutique"};
+  const phrase = {nom: "Ta présentation", phrase: true, q: "Tu aides qui, à quoi ?",
+    corps: () => `<p class="aide as-sous">C'est la phrase qu'on lit sous ton nom. Tu pourras la retoucher.</p>
+      <div class="as-phrase"><span>J'aide</span><input id="as-cible" data-a="cible" value="${esc(A.cible || "")}" maxlength="120" placeholder="les femmes actives" aria-label="Qui tu aides" autocomplete="off">
+        <span>à</span><input id="as-apport" data-a="apport" value="${esc(A.apport || "")}" maxlength="140" placeholder="retrouver de l'énergie" aria-label="Ce que tu leur apportes" autocomplete="off"></div>
+      <div class="tn-exemples"><span>💡</span>${[["les mamans débordées", "gagner du temps au quotidien"], ["les débutantes", "lancer leur business en ligne"], ["les femmes de plus de 40 ans", "prendre soin de leur peau"]]
+        .map(([c, a]) => `<button type="button" data-phrase-c="${esc(c)}" data-phrase-a="${esc(a)}">${esc(c)} → ${esc(a)}</button>`).join("")}</div>
+      <p class="aide" style="text-align:center;margin-top:14px"><button type="button" class="lien" id="as-phrase-tard">Plus tard</button></p>`,
+    valide: () => phraseBio(A) ? null : "Complète la phrase, ou touche « Plus tard »"};
+  return [instagram, ...(A.igOk ? [verif] : [nom, phrase, logo]), design];
+}
 function etapesBoutique(A) {
   const hote = location.host, prods = BQ.page?.produits || [], pay = BQ.etat.paiement || {};
   const payants = prods.some(p => p.prix && !p.externe);
@@ -4734,7 +4867,7 @@ function etapesBoutique(A) {
     {nom: "Ton design", q: "Choisis le design de ta boutique", fin: true, propositions: true,
       corps: () => { const L = propositionsDesign(A), n = Math.ceil(L.length / 3) || 1, page = Math.min(A.propPage || 0, n - 1);
         if (A.prop == null || !L[A.prop] || A.propVersion !== 2) { A.prop = page * 3; A.propVersion = 2; A.design = null; }
-        return `<p class="aide" style="margin-top:-6px">${A.photo ? "Virallink a préparé ta boutique avec ton logo et tes produits. Touche celle qui te plaît."
+        return `<p class="aide" style="margin-top:-6px">${A.photo ? `Virallink a préparé ta boutique avec ton logo${(BQ.page?.produits || []).length ? " et tes produits" : ""}. Touche celle qui te plaît.`
             : `Ajoute ton logo pour qu'il apparaisse et que les couleurs s'accordent avec lui : <label class="lien" style="cursor:pointer">ajouter mon logo<input type="file" accept="image/*" id="as-logo-design" hidden></label>`}</p>
           <div class="as-props">${L.slice(page * 3, page * 3 + 3).map((p, i) => { const j = page * 3 + i, actif = A.prop === j;
             return `<button type="button" class="as-prop" data-prop="${j}" aria-pressed="${actif}"><div class="mini"><iframe tabindex="-1" title="${esc(p.nom)}"></iframe></div><span>${actif ? "✓ " : ""}${esc(p.nom)}</span></button>`; }).join("")}</div>
@@ -4744,6 +4877,10 @@ function etapesBoutique(A) {
           ${A.prop != null && Math.floor(A.prop / 3) !== page ? `<p class="aide" style="text-align:center;margin-top:8px">Ta boutique choisie : <b>${esc(L[A.prop]?.nom || "")}</b> · <button type="button" class="lien" id="as-revoir">la revoir</button></p>` : ""}
           ${A.relance ? '<p class="aide" style="margin-top:12px">Tes blocs et ton design actuels seront remplacés. Tes produits, tes inscrites et tes ventes ne bougent pas. Tu pourras annuler juste après.</p>' : ""}`; }},
   ];
+  const par = cle => E.find(e => e[cle]);
+  // Présentation seule (boutique déjà en ligne) : à qui elle s'adresse, ce qu'elle apporte, puis trois propositions
+  if (A.mode === "presentation") return [E.find(e => e.nom === "Tes clientes"), E.find(e => e.nom === "Ce que tu apportes"), {...par("bio"), fin2: true}];
+  if (A.rapide) return etapesRapides(A, E.find(e => e.nom === "Ton logo"), par("fin"));
   return E;
 }
 // Réponse libre glissée dans une phrase (« J'aide … à … ») : sans ponctuation finale, sans « à » en tête, minuscule au début (sauf sigle)
@@ -4875,7 +5012,8 @@ async function ajouteProduitAssist(A) {
 // Création pas à pas en cours : gardée sur le serveur (reprise sur un autre appareil) et dans le navigateur (secours)
 const cleAssist = () => "vv_assist_" + (BQ.etat?.pseudo || "neuf");
 function gardeAssist(A) {
-  const d = {...A, np: A.np ? {...A.np, fichier: null} : null, photoUrl: "", quand: Date.now()};
+  if (A.mode) return;  // présentation seule (boutique déjà en ligne) : rien à reprendre plus tard
+  const d = {...A, np: A.np ? {...A.np, fichier: null} : null, photoUrl: "", igEtat: "", quand: Date.now()};
   BQ.parcours = d;
   try { localStorage.setItem(cleAssist(), JSON.stringify(d)); } catch {}
   clearTimeout(BQ.tParcours);
@@ -4894,15 +5032,21 @@ function renduAssistantBoutique(el) {
   gardeAssist(A);
   const E = etapesBoutique(A); A.etape = Math.min(A.etape, E.length - 1);
   const e = E[A.etape], n = E.length, st = BQ.page?.stripe || {};
-  const texteSuite = e.fin ? "Mettre ma boutique en ligne 🚀" : e.stripe && !st.pret && !A.stripeDemo && ((BQ.etat.paiement || {}).plateforme || (BQ.etat.paiement || {}).demo) ? "Je le ferai plus tard"
+  const texteSuite = e.fin2 ? "Enregistrer ma présentation" : e.fin ? "Mettre ma boutique en ligne 🚀"
+    : e.ig ? (A.igEtat ? "" : "Préparer ma boutique") : e.verif ? "C'est bon, je continue" : A.rapide && e.nom === "Ton logo" && !A.photo ? "Continuer sans logo"
+    : e.stripe && !st.pret && !A.stripeDemo && ((BQ.etat.paiement || {}).plateforme || (BQ.etat.paiement || {}).demo) ? "Je le ferai plus tard"
     : e.produits && !(BQ.page?.produits || []).length ? "" : "Continuer";
+  const retour = A.etape && !(e.produits && A.np) && !(e.ig && A.igEtat), suite = !(e.produits && A.np) && texteSuite;
+  const quitter = A.relance ? "← Revenir à ma boutique sans rien changer" : A.mode ? "← Revenir à ma boutique" : "";
   el.innerHTML = `<div class="bt-assist2"><div class="bt-assist">
-      <div class="tn-tete-as as-tete"><span class="aide">Ta boutique · ${A.etape + 1}/${n}</span><button type="button" class="btn petit as-voir-haut" id="as-voir"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button></div>
-      ${A.relance ? '<button class="btn petit" id="as-quitter" style="margin-bottom:10px">← Revenir à ma boutique sans rien changer</button>' : BQ.plusieurs ? '<button class="btn petit" id="as-mes" style="margin-bottom:10px">← Mes boutiques</button>' : ""}
+      <div class="tn-tete-as as-tete"><span class="aide">${A.mode === "presentation" ? "Ta présentation" : "Ta boutique"}${A.rapide ? "" : ` · ${A.etape + 1}/${n}`}</span>
+        <span class="as-tete-droite"><button type="button" class="btn petit as-voir-haut" id="as-voir"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Aperçu</button>
+        ${quitter ? "" : '<button type="button" class="as-fermer" id="as-fermer" aria-label="Fermer : je continuerai plus tard">✕</button>'}</span></div>
+      ${quitter ? `<button class="btn petit" id="as-quitter" style="margin-bottom:10px">${quitter}</button>` : BQ.plusieurs ? '<button class="btn petit" id="as-mes" style="margin-bottom:10px">← Mes boutiques</button>' : ""}
       <div class="tn-prog"><i style="width:${(A.etape + 1) / n * 100}%"></i></div>
       <section class="bt-sec bt-q"><h3>${esc(e.q || e.nom)}</h3>${e.corps()}</section>
-      <div class="bt-pied">${A.etape && !(e.produits && A.np) ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}
-        ${(e.produits && A.np) || !texteSuite ? "" : `<button class="btn prim" id="as-suite">${texteSuite}</button>`}</div></div>
+      <div class="bt-pied" ${retour || suite ? "" : "hidden"}>${retour ? '<button class="btn" id="as-retour">← Retour</button>' : "<span></span>"}
+        ${suite ? `<button class="btn prim" id="as-suite">${texteSuite}</button>` : ""}</div></div>
       <aside class="bt-droite"><div class="bt-tel"><iframe id="as-ap" title="Aperçu de ta page"></iframe></div><small class="aide">Aperçu en direct</small></aside></div>
     <div class="bt-plein" id="bt-plein" role="dialog" aria-modal="true" aria-label="Aperçu de ta boutique"><div class="barre"><b>Aperçu de ta boutique</b><button class="ferme-x" id="bt-fermer-x" type="button" aria-label="Fermer l'aperçu">✕</button></div><div class="cadre"><iframe id="bt-ap2" title="Aperçu de ta page"></iframe></div><button class="btn prim fermer" id="bt-fermer-ap" type="button">Fermer l'aperçu</button></div>`;
   if (BQ.htmlAssist) $("#as-ap").srcdoc = BQ.htmlAssist;
@@ -4917,10 +5061,34 @@ function renduAssistantBoutique(el) {
   $("#bt-plein").addEventListener("pointerup", ev => { if (ev.target.id === "bt-plein") fermeAp(); });
   $("#as-retour") && ($("#as-retour").onclick = () => aller(A.etape - 1));
   $("#as-mes") && ($("#as-mes").onclick = () => mesBoutiques());
-  $("#as-quitter") && ($("#as-quitter").onclick = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.assistFerme = true; oublieAssist(); renduBoutique(); });
+  $("#as-quitter") && ($("#as-quitter").onclick = () => { BQ.assist = null; BQ.htmlAssist = null; if (!A.mode) { BQ.assistFerme = true; oublieAssist(); } renduBoutique(); });
+  // Téléphone (plein écran) : la croix ramène à l'accueil, le parcours est gardé et reprend au même endroit
+  $("#as-fermer") && ($("#as-fermer").onclick = () => { gardeAssist(A); va("accueil"); });
 
   // Champs simples
-  $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value; apercuAssistant(); gardeAssist(A); });
+  $$("[data-a]").forEach(i => i.oninput = () => { A[i.dataset.a] = i.value;
+    if (e.phrase && (!A.bio || A.bioAuto)) { A.bio = phraseBio(A); A.bioAuto = true; }  // la phrase devient sa présentation
+    apercuAssistant(); gardeAssist(A); });
+  // Création rapide : son compte Instagram, lu une fois (photo, nom, présentation), ou la suite à la main
+  if (e.ig) {
+    const aLaMain = () => { A.igEtat = ""; A.igOk = false; aller(1); };
+    $("#as-ig-sans")?.addEventListener("click", () => { const c = $("#as-igc"); if (c) A.reseaux.instagram = nettoieRes(c.value); aLaMain(); });
+    $("#as-igc")?.addEventListener("input", ev => { A.reseaux.instagram = ev.target.value; });
+    $("#as-igc")?.addEventListener("keydown", ev => { if (ev.key === "Enter") $("#as-suite")?.click(); });
+    if (!MOBILE.matches) $("#as-igc")?.focus();
+    $("#as-ig-renvoi")?.addEventListener("click", ev => renvoieConfirmation(ev.currentTarget));
+    $("#as-ig-confirme")?.addEventListener("click", async ev => { ev.currentTarget.disabled = true;
+      try { await chargeEtat(); } catch {}
+      if (BQ.assist !== A) return;
+      if (S.etat.utilisateur.email_verifie) return litInstagram(A, rendu, aller);
+      ev.currentTarget.disabled = false; toast("Ton adresse n'est pas encore confirmée : touche le lien reçu par e-mail", {duree: 5000}); });
+  }
+  if (e.phrase) {
+    $$("[data-phrase-c]").forEach(b => b.onclick = () => { A.cible = b.dataset.phraseC; A.apport = b.dataset.phraseA; if (!A.bio || A.bioAuto) { A.bio = phraseBio(A); A.bioAuto = true; } rendu(); });
+    $("#as-phrase-tard").onclick = () => aller(A.etape + 1);
+    $("#as-apport").addEventListener("keydown", ev => { if (ev.key === "Enter") $("#as-suite")?.click(); });
+  }
+  $("#as-lien-garde")?.addEventListener("change", ev => { A.lienBio.garde = ev.target.checked; A.liens = liensBio(A); apercuAssistant(); gardeAssist(A); });
   $$("[data-res]").forEach(i => i.oninput = () => { A.reseaux[i.dataset.res] = i.value; apercuAssistant(); gardeAssist(A); });
   $$("[data-cible]").forEach(b => b.onclick = () => { A.cible = b.dataset.cible; $("#as-cible").value = A.cible; gardeAssist(A); });
   $$("[data-apport]").forEach(b => b.onclick = () => { A.apport = b.dataset.apport; $("#as-apport").value = A.apport; gardeAssist(A); });
@@ -4931,7 +5099,7 @@ function renduAssistantBoutique(el) {
   if (e.bio && !A.biosEnCours) proposeBios(A, false);
   // Les anciens parcours gardaient « liens » : plus d'étape liens, donc plus de faux boutons dans l'aperçu
   if (A.objectifs?.includes("liens") && !A.liens?.some(l => (l.url || "").trim())) A.objectifs = A.objectifs.filter(k => k !== "liens");
-  $("#as-nom")?.focus();
+  if (!e.verif) $("#as-nom")?.focus();  // écran de vérification (profil Instagram repris) : rien à saisir d'office
   // Logo : ses couleurs nourrissent les propositions de design
   $("#as-photo input") && ($("#as-photo input").onchange = async ev => {
     const f = ev.target.files[0]; if (!f) return;
@@ -5048,7 +5216,7 @@ function renduAssistantBoutique(el) {
   let verifie = async () => true;
   if (e.cree) {
     // Adresse proposée à partir du nom de la boutique (sauf boutique déjà en ligne, ou adresse retouchée à la main)
-    if (!BQ.etat.pseudo && !A.pseudoTouche && A.nom && slugBoutique(A.nom)) { A.pseudo = slugBoutique(A.nom); $("#as-pseudo").value = A.pseudo; }
+    if (!BQ.etat.pseudo && !A.pseudoTouche && !A.pseudoIg && A.nom && slugBoutique(A.nom)) { A.pseudo = slugBoutique(A.nom); $("#as-pseudo").value = A.pseudo; }
     verifie = async () => {
       const v = $("#as-pseudo").value; if (!v) { $("#as-dispo").textContent = ""; return A.pseudoOk = false; }
       const r = await api("/api/boutique/pseudo?p=" + encodeURIComponent(v) + (A.pseudoTouche ? "" : "&variante=1"));
@@ -5059,13 +5227,21 @@ function renduAssistantBoutique(el) {
       return A.pseudoOk;
     };
     let t; $("#as-pseudo").oninput = () => { A.pseudoTouche = true; clearTimeout(t); t = setTimeout(verifie, 350); };
+    // Nom et adresse sur le même écran (création rapide, sans Instagram) : l'adresse suit le nom tant qu'elle n'a pas été retouchée
+    if (A.rapide && !e.verif) $("#as-nom")?.addEventListener("input", () => { if (BQ.etat.pseudo || A.pseudoTouche) return;
+      A.pseudo = slugBoutique(A.nom); $("#as-pseudo").value = A.pseudo; clearTimeout(t); t = setTimeout(verifie, 350); });
     if (A.pseudo) verifie();
   }
   $("#as-nom")?.addEventListener("keydown", ev => { if (ev.key === "Enter") $("#as-suite")?.click(); });
   if ($("#as-suite")) $("#as-suite").onclick = async () => {
+    if (e.ig) return litInstagram(A, rendu, aller);
     const msg = e.valide?.(); if (typeof msg === "string") return toast(msg);
     const b = $("#as-suite"); b.disabled = true;
     try {
+      if (e.fin2) {  // présentation seule : enregistrée sur la boutique déjà en ligne
+        await api("/api/boutique", {method: "PUT", body: {bio: A.bio, activite: {cible: A.cible || "", apport: A.apport || ""}}});
+        await chargeBoutique(); BQ.assist = null; BQ.htmlAssist = null; renduBoutique(); scrollTo({top: 0}); return toast("Présentation enregistrée ✓");
+      }
       if (e.cree) {
         if (!await verifie()) { b.disabled = false; return toast("Choisis une adresse disponible"); }
         if (!BQ.etat.pseudo || BQ.etat.pseudo !== A.pseudo) {
@@ -5077,7 +5253,8 @@ function renduAssistantBoutique(el) {
       if (e.fin) {
         const prods = BQ.page?.produits || [];
         A.objectifs = prods.length ? ["vendre"] : ["liens"];
-        const corps = {nom: A.nom, bio: A.bio, photo: A.photo, activite: {cible: A.cible || "", apport: A.apport || ""}, reseaux: reseauxAssistant(A), design: {...designAssistant(A), apparition: true},
+        if (A.rapide) A.liens = liensBio(A);  // le lien de sa bio Instagram, si elle le garde
+        const corps = {nom: A.nom, bio: A.bio, photo: A.photo, ...(A.rapide && !A.cible && !A.apport ? {} : {activite: {cible: A.cible || "", apport: A.apport || ""}}), reseaux: reseauxAssistant(A), design: {...designAssistant(A), apparition: true},
           blocs: prods.length ? [{id: idCourt(), type: "produits", titre: "Ma boutique"}] : blocsAssistant(A, false), publie: true};
         await api("/api/boutique", {method: "PUT", body: corps});
         await chargeBoutique();
@@ -5090,6 +5267,45 @@ function renduAssistantBoutique(el) {
       aller(A.etape + 1);
     } catch (er) { toast(er.message); b.disabled = false; }
   };
+}
+// Lecture du profil Instagram (une fois, par la file de tâches). Aucun refus n'est bloquant : compte introuvable, adresse à confirmer,
+// lecture indisponible ou trop longue → la création continue à la main, le nom du compte reste comme lien Instagram de la boutique.
+async function litInstagram(A, rendu, aller) {
+  const champ = $("#as-igc"), compte = nettoieRes(champ ? champ.value : A.reseaux.instagram);
+  if (!compte) return toast("Écris ton nom de compte Instagram, ou touche « Je n'ai pas de compte Instagram »", {duree: 4500});
+  A.reseaux.instagram = compte; A.igEtat = "lecture"; const essai = A.igEssai = (A.igEssai || 0) + 1; rendu();
+  const phrases = ["Ta photo, ton nom, ta présentation…", "Je récupère ta photo de profil…", "Je regarde ses couleurs pour ton design…", "Encore quelques secondes…"];
+  let k = 0; const tic = setInterval(() => { const z = $("#as-lecture-txt"); if (!z) return clearInterval(tic); z.textContent = phrases[k = Math.min(k + 1, phrases.length - 1)]; }, 6000);
+  let r = null, code = 0, aConfirmer = false;
+  try {
+    const rep = await fetch("/api/boutique/instagram", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({compte})});
+    code = rep.status;
+    if (code === 401) { location.href = "/connexion#connexion"; return; }
+    const j = await rep.json().catch(() => ({}));
+    if (rep.ok) r = await Promise.race([attendsTache(j.job, () => {}), new Promise((_, ko) => setTimeout(() => ko(new Error("délai")), 50000))]);
+    else aConfirmer = code === 403 && !!j.verification;
+  } catch {}
+  clearInterval(tic);
+  if (BQ.assist !== A || A.igEtat !== "lecture" || A.igEssai !== essai) return;  // elle a continué sans attendre
+  if (aConfirmer) { A.igEtat = "confirmer"; return rendu(); }
+  A.igEtat = "";
+  if (code === 400) { toast("Ce nom de compte n'est pas valide : vérifie-le", {duree: 4500}); return rendu(); }
+  if (r?.trouve) {
+    Object.assign(A, {igOk: true, nom: r.nom || A.nom, bio: r.bio || "", bioAuto: false, photo: r.photo || A.photo, photoUrl: r.photo ? "" : A.photoUrl,
+      lienBio: r.lien ? {url: r.lien, titre: r.lien_titre, garde: true} : null, prop: null, propPage: 0, design: null});
+    if (r.palettes?.length) A.palettes = r.palettes;
+    A.reseaux.instagram = r.compte; A.liens = liensBio(A);
+    if (r.pseudo && !BQ.etat.pseudo) { A.pseudo = r.pseudo; A.pseudoIg = true; A.pseudoTouche = false; }
+  } else { A.igOk = false; toast("Je n'ai pas pu lire ce profil : on continue à la main, c'est aussi rapide", {duree: 5000}); }
+  aller(1);
+}
+// Présentation seule, sur une boutique déjà en ligne : à qui elle s'adresse → ce qu'elle apporte → trois propositions
+function assistantPresentation() {
+  const p = BQ.page, act = p.activite || {};
+  BQ.assist = {etape: 0, mode: "presentation", pseudo: BQ.etat.pseudo, nom: p.nom || "", bio: p.bio || "", cible: act.cible || "", apport: act.apport || "", photo: p.photo || "",
+    reseaux: {instagram: p.reseaux?.instagram || "", tiktok: p.reseaux?.tiktok || ""}, objectifs: [], palettes: null, theme: "sable", palette: null, mep: "colonne",
+    rdv: {titre: "", url: ""}, liens: [], produit: {titre: "", prix: ""}};
+  BQ.htmlAssist = null; renduBoutique(); scrollTo({top: 0});
 }
 // ---- Plusieurs boutiques : liste, changement, création, suppression
 async function nouvelleBoutique() {
@@ -5154,22 +5370,37 @@ function relanceAssistantBoutique() {
   if (!BQ.assist.objectifs.length) BQ.assist.objectifs = ["vendre"];
   BQ.htmlAssist = null; renduBoutique(); scrollTo({top: 0});
 }
+// Premier contenu : les stories qui annoncent la boutique ou une offre (assistant des stories déjà rempli).
+// Fonction payante : en formule gratuite elle démarre l'essai s'il est en réserve, puis reprend ici.
+function annonceStories(sujet, produit = null) {
+  const ouvre = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.offre = null; S.stOpt = null;
+    S.stw = {etape: ETAPES_STW.indexOf("sujet"), mode: "sequence", objectif: "lancement", sujet, produit, photos: "banque"};
+    S.projetId = null; S.projet = null; S.plan30Vue = false;
+    if (S.vue !== "studio") va("studio"); else renduStoriesAssistant(); window.scrollTo(0, 0); };
+  if (!bloqueGratuit("Virall.ai écrit les stories qui annoncent ta boutique, et Virallink fabrique les vidéos : c'est ton premier contenu. Ta boutique reste gratuite, quoi qu'il arrive.", ouvre)) ouvre();
+}
+const peutAnnoncer = () => !verrouille() || essaiDispo();
+const ETAPES_BIO_IG = `<details class="bt-bio-ig"><summary>Comment mettre ce lien dans ma bio Instagram</summary>
+  <ol class="bt-etapes-ig"><li>Ouvre Instagram, puis <b>Modifier le profil</b>.</li><li>Touche <b>Liens</b> → <b>Ajouter un lien externe</b>.</li><li>Colle ton lien et enregistre. C'est tout !</li></ol></details>`;
 function bravoBoutique(el) {
-  const url = BQ.etat.url, A = BQ.assist || {objectifs: []};
-  const suite = A.objectifs.includes("vendre") ? ["produits", (BQ.page?.produits || []).length ? "Voir mes offres" : "Ajouter ma première offre"] : A.objectifs.includes("marques") ? ["kit", "Compléter mon kit média"] : ["contenu", "Ajouter d'autres blocs"];
+  const url = BQ.etat.url, prods = (BQ.page?.produits || []).length, annonce = peutAnnoncer();
+  // Une seule action : sa première offre ; quand elle en a déjà une, son premier contenu (les stories qui annoncent la boutique)
+  const [quoi, bouton, texte] = !prods ? ["offre", "Ajouter ma première offre", "Il ne lui manque qu'une chose : ce que tu vends, ou ce que tu offres contre un e-mail."]
+    : annonce ? ["annonce", "Annoncer ma boutique en stories", "Fais-le savoir : Virall.ai écrit les stories qui annoncent ta boutique, prêtes à publier."]
+    : ["copier", "Copier mon lien", "Mets ce lien dans ta bio Instagram : tout le monde peut le voir dès maintenant."];
   el.innerHTML = `<div class="bt-assist"><div class="panneau bt-bravo">
-    <div class="gros">🎉</div><h2>Ta boutique est en ligne !</h2>
-    <p class="sous" style="margin:0">Voici ton lien. Mets-le dans ta bio : tout le monde peut le voir dès maintenant.</p>
-    <div class="bt-url"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit prim" data-copier="${esc(url)}">Copier</button></div>
-    <ol class="bt-etapes-ig"><li>Ouvre Instagram, puis <b>Modifier le profil</b>.</li><li>Touche <b>Liens</b> → <b>Ajouter un lien externe</b>.</li><li>Colle ton lien et enregistre. C'est tout !</li></ol>
-    <div class="bt-rangee" style="justify-content:center">
-      <button class="btn prim" data-aller="${suite[0]}">${suite[1]}</button>
-      <button class="btn" data-aller="design">Personnaliser le design</button>
-      <a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Voir ma page ↗</a>
-    </div>${carteEssai("bravo", "Prochaine étape : des visites", "Une boutique vend quand des gens arrivent dessus. Virallink repère les Reels qui explosent dans ta niche et te les réécrit, prêts à tourner.")}</div></div>`;
-  $$("[data-aller]").forEach(b => b.onclick = () => { BQ.assist = null; BQ.htmlAssist = null; BQ.onglet = b.dataset.aller;
-    if (b.dataset.aller === "produits" && !(BQ.page?.produits || []).length) return nouvelleOffre(true);
-    renduBoutique(); });
+    <div class="gros">🎉</div><h2>Ta boutique est en ligne&nbsp;!</h2>
+    <div class="bt-url"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit" data-copier="${esc(url)}">Copier</button></div>
+    <p class="sous bt-bravo-suite">${texte}</p>
+    <button class="btn prim large" id="bravo-go" ${quoi === "copier" ? `data-copier="${esc(url)}"` : ""}>${bouton}</button>
+    <div class="bt-bravo-liens">${quoi !== "annonce" && annonce ? '<button type="button" class="lien" id="bravo-annonce">Annoncer ma boutique en stories</button>' : ""}
+      <button type="button" class="lien" data-aller="design">Changer le design</button><a class="lien" href="${esc(url)}" target="_blank" rel="noopener">Voir ma page ↗</a></div>
+    ${ETAPES_BIO_IG}</div></div>`;
+  const sortir = () => { BQ.assist = null; BQ.htmlAssist = null; };
+  const annoncer = () => annonceStories("J'ouvre ma boutique en ligne");
+  $("#bravo-go").onclick = () => { if (quoi === "offre") { sortir(); nouvelleOffre(true); } else if (quoi === "annonce") annoncer(); };
+  $("#bravo-annonce")?.addEventListener("click", annoncer);
+  $$("[data-aller]", el).forEach(b => b.onclick = () => { sortir(); BQ.onglet = b.dataset.aller; renduBoutique(); });
 }
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-copier]"); if (!b) return;
@@ -5276,6 +5507,7 @@ function etapesBoutiqueRestantes() {
     {fait: !payants || pay.demo || !pay.plateforme || st.pret, titre: st.relie ? "Termine ton inscription Stripe pour encaisser tes ventes" : "Active les paiements pour encaisser tes ventes", bouton: st.relie ? "Continuer sur Stripe" : "Activer les paiements",
       go: async e => { e.target.disabled = true; try { location.href = (await api("/api/boutique/stripe", {method: "POST"})).url; } catch (er) { toast(er.message); e.target.disabled = false; } }},
     {fait: !!p.publie, titre: "Mets ta boutique en ligne", bouton: "Mettre en ligne", go: () => { const c = $("#bt-publie"); c.checked = true; c.onchange({target: c}); majSuite(); }},
+    {fait: !!(p.bio || "").trim(), titre: "Présente-toi en une phrase, sous ton nom", bouton: "Écrire ma présentation", go: () => assistantPresentation()},
   ];
 }
 function majSuite() {
@@ -6253,16 +6485,19 @@ function assistantOffre(z) {
   } else {
     const p = BQ.page.produits.find(y => y.id === O.pid) || {}, url = BQ.etat.url, pay = BQ.etat.paiement || {}, st = BQ.page.stripe || {};
     const stripe = p.prix && !p.externe && pay.plateforme && !pay.demo && !st.pret;
+    const annonce = !stripe && peutAnnoncer();
     corps = `<div class="bt-bravo of-fin"><div class="gros">🎉</div><h3 class="of-q">${stripe ? "Presque en vente !" : "C'est en vente !"}</h3>
       ${stripe ? `<p class="sous">Dernière étape pour encaisser : relie ton compte Stripe. L'argent arrive directement chez toi.</p><button class="btn prim large" id="of-stripe">Activer les paiements</button>`
         : `<p class="sous">« ${esc(p.titre || "")} » est sur ta boutique${O.tunnel ? ", avec sa page de vente" : ""}. Partage ton lien :</p>`}
-      <div class="bt-url"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit ${stripe ? "" : "prim"}" data-copier="${esc(url)}">Copier</button></div>
-      ${O.depuisCreation ? `<ol class="bt-etapes-ig"><li>Ouvre Instagram, puis <b>Modifier le profil</b>.</li><li>Touche <b>Liens</b> → <b>Ajouter un lien externe</b>.</li><li>Colle ton lien et enregistre.</li></ol>` : ""}
+      <div class="bt-url"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url.replace(/^https?:\/\//, ""))}</a><button class="btn petit ${stripe || annonce ? "" : "prim"}" data-copier="${esc(url)}">Copier</button></div>
+      ${annonce ? `<p class="sous bt-bravo-suite">Fais-le savoir : Virall.ai écrit les stories qui annoncent ton offre, prêtes à publier.</p><button class="btn prim large" id="of-annonce">Annoncer mon offre en stories</button>` : ""}
+      ${O.depuisCreation ? ETAPES_BIO_IG : ""}
       ${!aLivrer(p) ? `<p class="bt-stripe info" style="display:block">📎 Pense à ajouter le fichier depuis la fiche du produit : en attendant, il s'affiche « bientôt disponible ».</p>` : ""}
       <div class="bt-rangee" style="justify-content:center"><button class="btn" id="of-autre">+ Une autre offre</button><button class="btn" id="of-fini">Voir mes produits</button></div></div>`;
   }
   z.innerHTML = `<div class="tn-assist of-assist">${tete}<section class="bt-sec">${corps}</section>${pied ? `<div class="bt-pied of-pied">${pied}</div>` : ""}</div>`;
   // Liaisons
+  $("#of-annonce")?.addEventListener("click", () => { const p = BQ.page.produits.find(y => y.id === O.pid) || {}; annonceStories(`Je lance « ${p.titre || "ma nouvelle offre"} »`, p.id || null); });
   $("#of-quitter")?.addEventListener("click", () => {
     if (!O.etape || O.existant) return quitter();
     if (O.etape === 3 && O.choixQuiz) { O.choixQuiz = false; return aller(2); }

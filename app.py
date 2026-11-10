@@ -2499,6 +2499,60 @@ def boutique_palettes():
     return jsonify({"palettes": bq.palettes_photo(bq.dossier(bq_active()) / "images" / page["photo"])})
 
 
+# ---- Boutique préparée depuis le profil Instagram (boutique_instagram.py) : une lecture publique du profil, ~0,2 centime.
+# Règle habituelle (adresse e-mail confirmée, formule active, budget de la formule, file de tâches), plus des plafonds :
+LECTURES_IG_PAR_COMPTE = 3    # par compte, sur 24 h
+LECTURES_IG_PAR_IP = 5        # par adresse IP, sur 24 h (adresse pas encore confirmée seulement)
+LECTURES_IG_PAR_JOUR = 200    # tous comptes confondus, sur 24 h (une cinquantaine de centimes au pire)
+
+
+def _ip_cliente() -> str:
+    """Adresse IP vue par le serveur d'entrée (la dernière de X-Forwarded-For : les précédentes viennent du navigateur)."""
+    xff = [x.strip() for x in (request.headers.get("X-Forwarded-For") or "").split(",") if x.strip()]
+    return (request.headers.get("X-Real-IP") or (xff[-1] if xff else request.remote_addr) or "").strip()
+
+
+def _instagram_avant_confirmation(u: dict) -> bool:
+    """Exception à la règle « adresse confirmée avant toute consommation », coupée par défaut (INSTAGRAM_AVANT_CONFIRMATION=1 pour
+    l'ouvrir) : une seule lecture de profil par compte avant la confirmation, pour préparer la boutique dès l'inscription."""
+    return os.getenv("INSTAGRAM_AVANT_CONFIRMATION") == "1" and ab.lectures_profil(24 * 90, uid=u["id"]) == 0
+
+
+@app.post("/api/boutique/instagram")
+@connecte
+def boutique_depuis_instagram():
+    """Prépare la création de la boutique à partir du profil Instagram public : photo, nom, présentation, lien de la bio.
+    Aucun refus n'est bloquant : le navigateur poursuit alors la création à la main."""
+    import boutique_instagram as bi
+    compte = bi.nettoie_compte((request.get_json(silent=True) or {}).get("compte"))
+    if not compte:
+        return jsonify({"erreur": "Écris ton nom de compte Instagram, par exemple @ton_compte."}), 400
+    u, uid = g.u, g.u["id"]
+    if not en_demo():
+        if not os.getenv("APIFY_TOKEN"):
+            return jsonify({"erreur": "La lecture du profil est indisponible pour le moment.", "indisponible": True}), 503
+        a_confirmer = verification_requise(u)
+        if a_confirmer and not _instagram_avant_confirmation(u):
+            raise AdresseNonConfirmee()
+        if not est_admin(u):
+            msg = ab.peut(u)
+            budget = float(ab.plans().get(ab.plan_effectif(u), {}).get("budget_usd") or 0)
+            if not msg and budget and ab.usage(uid)["cout_usd"] >= budget:
+                msg = "Tu as atteint la limite d'usage de ta formule pour cette période."
+            if msg:
+                return jsonify({"erreur": msg, "quota": True}), 402
+            ip = _ip_cliente()
+            if (ab.lectures_profil(24, uid=uid) >= LECTURES_IG_PAR_COMPTE or ab.lectures_profil(24) >= LECTURES_IG_PAR_JOUR
+                    or (a_confirmer and ip and ab.lectures_profil(24, ip=ip) >= LECTURES_IG_PAR_IP)):
+                return jsonify({"erreur": "Trop de lectures de profil aujourd'hui.", "limite": True}), 429
+    if job_en_cours(uid, studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    if not en_demo():
+        ab.note_lecture_profil(uid, _ip_cliente())
+    return jsonify({"job": lance(uid, "Lecture de ton profil Instagram", bi.prepare, bq_active(), g.esp.lit_config(), os.getenv("APIFY_TOKEN"),
+                                 compte, demo=en_demo(), file_=FILE_STUDIO)})
+
+
 EXT_PRODUITS = {".pdf", ".zip", ".epub", ".mp3", ".mp4", ".mov", ".m4a", ".png", ".jpg", ".jpeg", ".docx", ".xlsx", ".pptx", ".key", ".numbers", ".pages", ".txt", ".csv"}
 
 
@@ -3008,8 +3062,9 @@ def bib_niches():
     miennes = bibliotheque.niches_de(cfg)
     if not choisies and not bibliotheque.niche_connue(cfg):  # rien dans son profil : ce qu'elle a dit en créant sa boutique
         try:
-            act = (bq.lit_page(g.u["id"]) or {}).get("activite") or {}
-            plus = " ".join(str(x) for x in (act.get("cible"), act.get("apport")) if x)
+            page = bq.lit_page(g.u["id"]) or {}
+            act = page.get("activite") or {}
+            plus = " ".join(str(x) for x in (act.get("cible"), act.get("apport"), page.get("nom"), page.get("bio")) if x)
             miennes = bibliotheque.devine_niches(cfg, plus, strict=True)
         except Exception:  # noqa: BLE001
             miennes = []

@@ -39,13 +39,15 @@ def cout_apify_total() -> float:
     return _COUT["total"]
 
 
-def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> list[dict]:
-    """Lance un actor Apify, attend la fin, renvoie les éléments du dataset."""
-    for essai in range(10):
+def apify_run(actor: str, payload: dict, token: str, timeout_min: float = 30, pause: float = 8, essais: int = 10) -> list[dict]:
+    """Lance un actor Apify, attend la fin, renvoie les éléments du dataset.
+    `pause` (secondes entre deux vérifications) et `essais` (lancements retentés si Apify est saturé) se réduisent
+    pour une lecture courte que la cliente attend devant son écran."""
+    for essai in range(essais):
         r = requests.post(f"{APIFY_BASE}/acts/{actor}/runs", params={"token": token}, json=payload, timeout=60)
         texte = r.text[:400].lower()
         # Trop de runs simultanés ou mémoire du compte saturée : on patiente au lieu d'échouer
-        if r.status_code in (402, 429) and any(x in texte for x in ("memory", "concurren", "rate", "too many")) and essai < 9:
+        if r.status_code in (402, 429) and any(x in texte for x in ("memory", "concurren", "rate", "too many")) and essai < essais - 1:
             time.sleep(15)
             continue
         if r.status_code >= 400:
@@ -73,7 +75,7 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: int = 30) -> l
             raise RuntimeError(f"La collecte s'est arrêtée ({s['status']}).")
         if time.time() > limite:
             raise TimeoutError(f"La collecte prend trop de temps (> {timeout_min} min).")
-        time.sleep(8)
+        time.sleep(pause)
 
     items, offset = [], 0
     while True:
@@ -428,20 +430,22 @@ def collecte_posts(liens: list[tuple[str, str]], cfg: dict, token: str) -> list[
 # ------------------------------------------------------------
 #  Profil (bio, nom, lien, abonnés) d'un compte
 # ------------------------------------------------------------
-def profil_reseaux(cfg: dict, token: str, instagram: str = "", tiktok: str = "") -> dict:
-    """Bio et informations publiques du profil. Ne bloque jamais l'analyse en cas d'échec."""
+def profil_reseaux(cfg: dict, token: str, instagram: str = "", tiktok: str = "", **attente) -> dict:
+    """Bio et informations publiques du profil. Ne bloque jamais l'analyse en cas d'échec.
+    `attente` : réglages d'apify_run (timeout_min, pause, essais) pour une lecture attendue devant l'écran."""
     res = {}
     if instagram:
         try:
             items = apify_run(cfg["apify"]["actor_instagram"], {
                 "directUrls": [f"https://www.instagram.com/{instagram.strip('@')}/"], "resultsType": "details", "resultsLimit": 1,
-            }, token)
+            }, token, **attente)
             it = next((x for x in items if x.get("username") or x.get("biography") is not None), {})
             if it:
                 res["instagram"] = {
                     "nom": it.get("fullName") or "", "bio": it.get("biography") or "", "lien": it.get("externalUrl") or "",
                     "abonnes": entier(it.get("followersCount")), "publications": entier(it.get("postsCount")),
                     "categorie": it.get("businessCategoryName") or "",
+                    "photo": it.get("profilePicUrlHD") or it.get("profilePicUrl") or "", "prive": bool(it.get("private")),
                 }
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Bio Instagram indisponible : {e}")

@@ -48,6 +48,7 @@ def init():
         CREATE TABLE IF NOT EXISTS reinit(jeton TEXT PRIMARY KEY, uid INTEGER, expire TEXT);
         CREATE TABLE IF NOT EXISTS push(endpoint TEXT PRIMARY KEY, uid INTEGER NOT NULL, p256dh TEXT, auth TEXT, cree TEXT);
         CREATE TABLE IF NOT EXISTS migrations(nom TEXT PRIMARY KEY, fait TEXT);
+        CREATE TABLE IF NOT EXISTS lectures_profil(uid INTEGER, ip TEXT, quand TEXT);
         """)
         for table, col, typ in (("usage", "cout_usd", "REAL DEFAULT 0"), ("usage", "studio", "INTEGER DEFAULT 0"), ("utilisateurs", "derniere_connexion", "TEXT"),
                                 ("utilisateurs", "cgv_acceptees", "TEXT"), ("utilisateurs", "code_parrain", "TEXT"),
@@ -65,6 +66,27 @@ def init():
                     c.execute("UPDATE utilisateurs SET email_verifie=1")
             except sqlite3.OperationalError:
                 pass  # colonne déjà présente
+
+
+# ------------------------------------------------------------
+#  Lectures de profil Instagram (boutique préparée depuis le profil) : comptées pour plafonner leur coût
+# ------------------------------------------------------------
+def note_lecture_profil(uid: int, ip: str = ""):
+    with _verrou, _db() as c:
+        c.execute("DELETE FROM lectures_profil WHERE quand < ?", ((datetime.now() - timedelta(days=120)).isoformat(timespec="seconds"),))
+        c.execute("INSERT INTO lectures_profil(uid, ip, quand) VALUES(?,?,?)", (uid, ip[:60], datetime.now().isoformat(timespec="seconds")))
+
+
+def lectures_profil(heures: int = 24, uid: int | None = None, ip: str | None = None) -> int:
+    """Nombre de lectures sur les dernières `heures` : toutes, celles d'un compte, ou celles d'une adresse IP."""
+    depuis = (datetime.now() - timedelta(hours=heures)).isoformat(timespec="seconds")
+    q, args = "SELECT COUNT(*) FROM lectures_profil WHERE quand >= ?", [depuis]
+    if uid is not None:
+        q, args = q + " AND uid = ?", args + [uid]
+    if ip:
+        q, args = q + " AND ip = ?", args + [ip[:60]]
+    with _db() as c:
+        return c.execute(q, args).fetchone()[0]
 
 
 # ------------------------------------------------------------
