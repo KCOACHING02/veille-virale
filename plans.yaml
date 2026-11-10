@@ -66,6 +66,7 @@ pro:
   analyses_par_mois: 30
   adaptations_par_mois: 250
   comptes_surveilles: 30
+  comptes_perso: false          # décision de Mohamed (10 nov. 2026) : veille = bibliothèque de la niche pour toutes les formules
   studio_par_mois: 60          # carrousels et Reels montés
   plans_30j_par_mois: 3          # plans de contenu de 30 jours (8 carrousels en tunnel de vente)
   veille_auto: true
@@ -79,6 +80,7 @@ agence:
   analyses_par_mois: 80
   adaptations_par_mois: 600
   comptes_surveilles: 100
+  comptes_perso: false          # décision de Mohamed (10 nov. 2026) : veille = bibliothèque de la niche pour toutes les formules
   studio_par_mois: 200         # carrousels et Reels montés
   plans_30j_par_mois: 20          # plans de contenu de 30 jours (8 carrousels en tunnel de vente) : environ un par compte client géré
   veille_auto: true
