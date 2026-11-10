@@ -3285,6 +3285,16 @@ def bib_media(rel):
     return send_from_directory(f.parent, f.name, max_age=7 * 86400)
 
 
+@app.post("/api/admin/promo")
+@admin_requis
+def admin_promo():
+    """Prépare le compte de l'administrateur pour créer les publications qui font connaître Virallink."""
+    import promo
+    res = promo.prepare(g.esp, g.u["id"])
+    ab.maj(g.u["id"], onboarding=1)  # profil rempli : pas d'assistant de démarrage
+    return jsonify(res)
+
+
 @app.get("/api/admin/google")
 @admin_requis
 def admin_google():

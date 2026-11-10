@@ -7410,6 +7410,11 @@ function assistantMessage(el) {
     if (enCours) BQ.assist = enCours; else BQ.onglet = "produits";
     va("boutique"); toast(BQ.page?.stripe?.pret ? "Stripe est relié : tu peux vendre" : "Inscription Stripe à terminer : tu pourras la reprendre depuis tes produits"); }
   if (q.get("formules")) va("abonnement");  // lien des e-mails de fin d'essai
+  if (["plan", "carrousel", "reel", "stories"].includes(q.get("studio"))) {  // raccourcis de l'administration (« Promouvoir Virallink »)
+    va("studio"); const k = q.get("studio"), t0 = Date.now();
+    const clic = () => { const b = document.querySelector(`[data-tuile="${k}"]`); if (b) b.click(); else if (Date.now() - t0 < 8000) setTimeout(clic, 250); };
+    clic();
+  }
   if (ancre === "#messages" || q.get("ig") || q.get("ig_erreur")) { va("messages");
     if (q.get("ig") === "ok") toast("Instagram est relié 🎉 Crée ta première réponse automatique");
     if (q.get("ig_erreur")) toast(q.get("ig_erreur"), {duree: 7000}); }

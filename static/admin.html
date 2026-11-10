@@ -76,6 +76,7 @@ h2{font:800 22px/1.2 var(--display);font-stretch:85%;margin:32px 0 6px}
   <div class="kpis" id="croissance"></div>
   <div class="config" id="config"></div>
   <div id="lien"></div>
+  <section id="promo"></section>
   <section id="services"></section>
   <section id="bib"></section>
   <h2>Clientes</h2>
@@ -193,6 +194,22 @@ function renduBib() {
   $("#bib-verif").onclick = () => tache("/api/admin/bibliotheque/verifie", "Vérification");
 }
 chargeBib();
+
+// ---- Promouvoir Virallink : le compte admin crée les publications Instagram de Virallink avec le Studio
+function renduPromo(msg) {
+  $("#promo").innerHTML = `<h2>Promouvoir Virallink sur Instagram</h2>
+    <p class="sous">Un clic règle ton compte comme celui d'une cliente qui vend Virallink : profil, voix, couleurs, niches suivies (marketing et business) et infos de vente du plan du mois. Ensuite, le Studio fabrique tes publications.</p>
+    <div class="outils"><button class="btn" id="promo-prep">Préparer mon compte pour Virallink</button></div>
+    ${msg || ""}
+    <div class="outils"><a class="btn" href="/app?studio=plan">🗓️ Plan du mois (8 carrousels)</a><a class="btn" href="/app?studio=carrousel">🖼️ Un carrousel</a>
+      <a class="btn" href="/app?studio=reel">🎬 Un Reel</a><a class="btn" href="/app?studio=stories">✨ Des stories</a><a class="btn" href="/app?tendances=1">🔎 Ce qui cartonne (marketing, business)</a></div>`;
+  $("#promo-prep").onclick = async () => {
+    const r = await fetch("/api/admin/promo", {method: "POST"}); const x = await r.json().catch(() => ({}));
+    if (!r.ok) return toast(x.erreur || "Erreur");
+    renduPromo(`<p class="sous">✓ Ton compte est prêt.${x.histoire_a_ecrire ? " Le plan du mois te demandera ton histoire de fondateur (3-4 phrases vraies) : c'est la seule chose qu'il ne peut pas inventer." : ""}</p>`);
+  };
+}
+renduPromo();
 
 // ---- Services payants : crédit et clés
 const ETATS = {ok: "✓ OK", alerte: "⚠️ À surveiller", ko: "🔴 Bloqué", absent: "— Non configuré", info: "ℹ️ À vérifier soi-même"};
