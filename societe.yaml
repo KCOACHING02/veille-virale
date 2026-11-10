@@ -1,17 +1,14 @@
-# ============================================================
-#  Informations légales affichées dans les CGV, la politique de confidentialité
-#  et les mentions légales. Remplace chaque valeur entre crochets, puis publie.
-#  Tant qu'une valeur commence par « [ », elle apparaît surlignée en jaune sur le site.
-# ============================================================
 nom_produit: "Virallink"
-societe: "Kcoaching"
-forme_juridique: "[forme juridique : SAS, SASU, EURL, entreprise individuelle…]"
-capital: "[capital social, ex. 1 000 €]"
-siege: "[adresse du siège social]"
-immatriculation: "[RCS de … n° SIREN ou SIRET]"
-tva: "[n° de TVA intracommunautaire, ou « TVA non applicable, art. 293 B du CGI »]"
-directeur_publication: "[prénom et nom du représentant légal]"
+# Entrepreneur individuel : prénom et nom du titulaire suivis de « EI » (obligatoire sur les documents commerciaux)
+societe: "[Prénom Nom du titulaire de la micro-entreprise] EI"
+nom_commercial: "Kcoaching"
+forme_juridique: "entrepreneur individuel (micro-entreprise)"
+capital: ""  # pas de capital social pour un entrepreneur individuel
+siege: "[numéro] boulevard Édouard Branly, 02200 Soissons"
+immatriculation: "immatriculé au registre national des entreprises sous le n° SIREN 931 144 752"
+tva: "TVA non applicable, art. 293 B du CGI"
+directeur_publication: "[prénom et nom du titulaire]"
 email_contact: "contact@virallink.fr"
-prix_ttc: true          # true : prix affichés TTC ; false : prix HT (clientèle professionnelle)
-mediateur: "[nom et site du médiateur de la consommation auquel tu adhères]"
-date_maj: "9 novembre 2026"
+prix_ttc: true
+mediateur: "[nom, adresse et site du médiateur de la consommation auquel tu adhères]"
+date_maj: "10 novembre 2026"

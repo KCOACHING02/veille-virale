@@ -21,6 +21,10 @@ def _v(s: dict, cle: str) -> str:
 
 
 def _editeur(s):
+    if not str(s.get("capital") or "").strip():  # entrepreneur individuel (micro-entreprise) : pas de capital social
+        nc = f" (nom commercial : {_v(s, 'nom_commercial')})" if s.get("nom_commercial") else ""
+        return (f"{_v(s, 'societe')}{nc}, {_v(s, 'forme_juridique')}, dont l'adresse professionnelle est "
+                f"{_v(s, 'siege')}, {_v(s, 'immatriculation')} ({_v(s, 'tva')})")
     return (f"{_v(s, 'societe')}, {_v(s, 'forme_juridique')} au capital de {_v(s, 'capital')}, dont le siège est situé "
             f"{_v(s, 'siege')}, immatriculée {_v(s, 'immatriculation')} ({_v(s, 'tva')})")
 
@@ -39,6 +43,8 @@ SOUS_TRAITANTS = [
 def cgv(s: dict) -> str:
     p = _v(s, "nom_produit")
     ttc = "toutes taxes comprises" if s.get("prix_ttc", True) else "hors taxes"
+    if "293 B" in str(s.get("tva", "")):  # franchise en base de TVA (micro-entreprise)
+        ttc = "TVA non applicable (article 293 B du code général des impôts)"
     return f"""
 <h1>Conditions générales de vente et d'utilisation</h1>
 <p class="maj">Dernière mise à jour : {_v(s, 'date_maj')}</p>
