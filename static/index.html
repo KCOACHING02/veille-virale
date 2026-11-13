@@ -5076,8 +5076,14 @@ const vignetteImg = nom => nom ? (BQ.etat.pseudo ? urlImg(nom) : "/api/boutique/
 // Propositions de design : des maquettes soignées et vérifiées (structure fixe : logo à sa taille, cartes produits propres,
 // pas de bannière géante ni de décor gadget), habillées avec les couleurs du logo, puis avec des palettes choisies.
 const MAQUETTES = [
+  // Appli et Marque (boutique_formats.py) proposés tout de suite : ils sortent du simple « lien dans la bio »
   {nom: "Essentiel", d: {entete: "minimal", photo_forme: "rond", photo_taille: 104, photo_contour: false, police_titre: "Fraunces", police_texte: "DM Sans", taille_titre: "m",
     bouton_style: "plein", bouton_forme: "pilule", rayon: 16, produits_vue: "grille", image_forme: "carre", prix_style: "texte", carte_cadre: "ombre"}},
+  {nom: "Appli", d: {entete: "minimal", photo_forme: "rond", photo_taille: 96, photo_contour: false, police_titre: "Plus Jakarta Sans", police_texte: "Plus Jakarta Sans", taille_titre: "m",
+    bouton_style: "plein", bouton_forme: "pilule", rayon: 22, produits_vue: "grille", image_forme: "carre", prix_style: "texte", carte_cadre: "ombre", mise_en_page: "appli"}},
+  {nom: "Marque", d: {entete: "minimal", photo_forme: "arrondi", photo_taille: 96, photo_contour: false, police_titre: "Montserrat", police_texte: "Montserrat", taille_titre: "m",
+    bouton_style: "plein", bouton_forme: "pilule", rayon: 16, produits_vue: "grille", image_forme: "carre", prix_style: "texte", carte_cadre: "ombre", mise_en_page: "marque"}},
+
   {nom: "Boutique", d: {entete: "minimal", photo_forme: "arrondi", photo_taille: 96, photo_contour: false, police_titre: "Playfair Display", police_texte: "Inter", taille_titre: "m",
     bouton_style: "doux", bouton_forme: "arrondi", rayon: 12, produits_vue: "liste", image_forme: "carre", prix_style: "texte", carte_cadre: "contour"}},
   {nom: "Moderne", d: {entete: "minimal", photo_forme: "rond", photo_taille: 92, photo_contour: true, police_titre: "Sora", police_texte: "Manrope", taille_titre: "s",
@@ -6165,11 +6171,15 @@ function lieChamps(z) {
 const SCHEMAS_MEP = {
   colonne: '<circle cx="30" cy="12" r="7"/><rect x="18" y="23" width="24" height="4" rx="2"/><rect x="8" y="33" width="44" height="8" rx="4" opacity=".55"/><rect x="8" y="45" width="44" height="8" rx="4" opacity=".55"/><rect x="8" y="57" width="44" height="8" rx="4" opacity=".55"/>',
   bento: '<rect x="4" y="4" width="52" height="16" rx="5"/><rect x="4" y="24" width="25" height="22" rx="5" opacity=".6"/><rect x="31" y="24" width="25" height="10" rx="4" opacity=".45"/><rect x="31" y="36" width="25" height="10" rx="4" opacity=".75"/><rect x="4" y="50" width="16" height="20" rx="4" opacity=".45"/><rect x="22" y="50" width="34" height="20" rx="5" opacity=".6"/>',
+  appli: '<rect x="4" y="4" width="30" height="5" rx="2"/><circle cx="51" cy="7" r="4"/><rect x="4" y="13" width="52" height="20" rx="6" opacity=".55"/><circle cx="12" cy="42" r="7" opacity=".45"/><circle cx="30" cy="42" r="7" opacity=".45"/><circle cx="48" cy="42" r="7" opacity=".45"/><rect x="4" y="52" width="24" height="12" rx="4" opacity=".7"/><rect x="31" y="52" width="24" height="12" rx="4" opacity=".7"/><rect x="6" y="67" width="48" height="7" rx="3.5"/>',
+  marque: '<rect x="4" y="4" width="26" height="5" rx="2"/><circle cx="51" cy="7" r="4.5"/><rect x="4" y="14" width="15" height="24" rx="3" opacity=".6"/><rect x="22" y="14" width="15" height="24" rx="3" opacity=".6"/><rect x="40" y="14" width="16" height="24" rx="3" opacity=".6"/><rect x="4" y="42" width="44" height="4" rx="2" opacity=".8"/><rect x="4" y="49" width="36" height="4" rx="2" opacity=".8"/><rect x="4" y="57" width="25" height="15" rx="3" opacity=".45"/><rect x="31" y="57" width="25" height="15" rx="3" opacity=".45"/>',
   magazine: '<rect x="4" y="3" width="52" height="2"/><rect x="4" y="9" width="44" height="9" rx="1"/><rect x="4" y="21" width="30" height="3" rx="1" opacity=".55"/><rect x="4" y="28" width="52" height="18" opacity=".45"/><rect x="4" y="51" width="52" height="1"/><rect x="4" y="55" width="36" height="3" rx="1" opacity=".7"/><rect x="4" y="62" width="52" height="1"/><rect x="4" y="66" width="30" height="3" rx="1" opacity=".7"/>',
 };
 const DESC_MEP = {
   colonne: "Colonne : tes liens empilés, centrés. Simple et efficace.",
   bento: "Bento : des tuiles de tailles variées, comme l'écran d'accueil d'une application. Choisis la largeur et la hauteur de chaque bloc dans Contenu.",
+  appli: "Appli : ta boutique comme une application mobile. Grand carrousel de tes offres, raccourcis ronds, rail de produits et onglets en bas de l'écran.",
+  marque: "Marque : comme le site d'une marque. Grandes cartes verticales (vidéos, photos, produits), ta présentation en grand, grille de produits et bulle de contact.",
   magazine: "Magazine : ton nom en très grand, une photo pleine largeur, des liens en liste numérotée comme un sommaire. Très « marque ».",
 };
 const SCHEMAS_ENTETE = {

@@ -294,7 +294,7 @@ VUES_PRODUITS = {"grille": "Grille", "liste": "Liste", "vitrine": "Vitrine", "ca
                  "zigzag": "Zigzag", "mini": "Compacte"}
 TAILLES_TITRE = {"s": 26, "m": 32, "l": 40, "xl": 52}
 # Mise en page : la structure de la page, pas seulement ses couleurs
-MISES_EN_PAGE = {"colonne": "Colonne", "bento": "Bento", "magazine": "Magazine"}
+MISES_EN_PAGE = {"colonne": "Colonne", "bento": "Bento", "magazine": "Magazine", "appli": "Appli", "marque": "Marque"}  # appli, marque : boutique_formats.py
 ESPACEMENTS = {"serre": 8, "normal": 12, "aere": 20, "large": 30}
 LARGEURS_PAGE = {"etroite": 460, "normale": 560, "large": 760, "pleine": 1080}
 TAILLES_TEXTE = {"s": 14, "m": 15.5, "l": 17, "xl": 19}
@@ -417,7 +417,7 @@ THEMES.update({
                police_titre="Cormorant Garamond", police_texte="Inter", bouton_style="double", bouton_forme="carre", rayon=0, photo_forme="anneau",
                survol="aucun", image_forme="fenetre", prix_style="texte", carte_cadre="contour", produits_vue="vitrine"),
 })
-AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial"]
+AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial", "Appli", "Marque"]
 
 # ------------------------------------------------------------
 #  Collection de thèmes : 20 par ambiance. Chaque thème = une palette (fond, fond 2, texte, bouton, accent),
@@ -464,6 +464,13 @@ ALLURES = {
                         image_forme="carre", carte_cadre="decale", produits_vue="bento", prix_style="etiquette", mise_en_page="bento", espacement="normal"),
     "tuiles_verre": dict(entete="minimal", fond_type="anime", photo_forme="rond", bouton_style="verre", bouton_forme="arrondi", rayon=26, survol="incliner",
                          image_forme="carre", carte_cadre="verre", produits_vue="bento", prix_style="bouton", mise_en_page="bento", espacement="normal"),
+    # Boutique façon application mobile, ou façon site de marque (boutique_formats.py)
+    "appli": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="pilule", rayon=22, survol="soulever",
+                  animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte", mise_en_page="appli",
+                  espacement="normal", taille_titre="m"),
+    "marque": dict(entete="minimal", fond_type="uni", photo_forme="arrondi", bouton_style="plein", bouton_forme="pilule", rayon=16, survol="soulever",
+                   animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte", mise_en_page="marque",
+                   espacement="normal", taille_titre="m"),
     "edito": dict(entete="magazine", fond_type="uni", photo_forme="arrondi", bouton_style="plein", bouton_forme="carre", rayon=0, survol="aucun",
                   image_forme="carre", carte_cadre="contour", produits_vue="vitrine", prix_style="surligne", taille_titre="xl",
                   mise_en_page="magazine", espacement="aere", alignement="gauche"),
@@ -612,6 +619,18 @@ for _x in [
     ("edito_galerie", "Galerie", "Éditorial", "#FAFAF7", "#EFEFEA", "#222222", "#222222", "#7A7A74", "Instrument Serif", "DM Mono", "edito"),
     ("edito_neon", "Néon", "Éditorial", "#0B0B0F", "#16161D", "#FFFFFF", "#FFFFFF", "#C6F432", "Monoton", "Space Mono", "edito"),
     ("edito_terre", "Terre", "Éditorial", "#EADBC8", "#DCC7AE", "#4A2A16", "#4A2A16", "#B5541C", "Playfair Display", "Manrope", "edito"),
+    # Appli : comme une application mobile (carrousel, raccourcis ronds, onglets en bas)
+    ("appli_menthe", "Menthe", "Appli", "#F5F5F3", "#ECECE8", "#121614", "#1F7A4D", "#1F7A4D", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli"),
+    ("appli_ciel", "Ciel", "Appli", "#F4F6FB", "#E6ECF7", "#121826", "#2443A8", "#2443A8", "Sora", "Manrope", "appli"),
+    ("appli_rose", "Rose", "Appli", "#FBF5F6", "#F3E6E9", "#1E1418", "#D9467A", "#D9467A", "Plus Jakarta Sans", "Manrope", "appli"),
+    ("appli_peche", "Pêche", "Appli", "#FFF7F2", "#FBE9DE", "#2A1A12", "#E8673C", "#E8673C", "Fredoka", "Nunito", "appli"),
+    ("appli_lilas", "Lilas", "Appli", "#F7F5FC", "#ECE7F8", "#1C1530", "#6D4BD8", "#6D4BD8", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli"),
+    # Marque : comme le site d'une marque (stories, manifeste, grille de produits)
+    ("marque_rose", "Rose et turquoise", "Marque", "#FFFFFF", "#FAF1F3", "#2B2B2B", "#5CD3D3", "#E5559B", "Montserrat", "Montserrat", "marque"),
+    ("marque_sable", "Sable", "Marque", "#FBF8F3", "#F1EADF", "#2A231C", "#2A231C", "#B4693E", "Playfair Display", "Montserrat", "marque"),
+    ("marque_sauge", "Sauge", "Marque", "#F7F8F3", "#E9EDE0", "#1F2A1E", "#1F2A1E", "#6E8B55", "Fraunces", "Manrope", "marque"),
+    ("marque_noir", "Noir et or", "Marque", "#0F0F10", "#1A1A1C", "#F3F0EA", "#F3F0EA", "#E8C07A", "Playfair Display", "Manrope", "marque"),
+    ("marque_lilas", "Lilas", "Marque", "#FFFFFF", "#F4F0FB", "#231A33", "#231A33", "#8E6BD8", "Montserrat", "Montserrat", "marque"),
 ]:
     _theme(*_x)
 
@@ -1445,7 +1464,7 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
         og += f'<meta property="og:url" content="{E(url)}">'
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{E(titre)}</title><meta name="description" content="{E(description)}">{og}<meta name="theme-color" content="{d['fond1'][:7]}">
-{lien}<style>{faces}{_css(d)}{_css_mise_en_page(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
+{lien}<style>{faces}{_css(d)}{_css_mise_en_page(d)}{_css_format(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
 <body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}{SCRIPT_COMPTE if 'data-fin=' in corps else ''}</body></html>"""
 
 
@@ -1465,7 +1484,20 @@ def badge(page: dict | None = None) -> str:
     return '<div class="marque"><a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec Virallink · crée la tienne</a></div>'
 
 
+def _css_format(d: dict) -> str:
+    if d.get("mise_en_page") not in ("appli", "marque"):
+        return ""
+    import boutique_formats
+    return boutique_formats.CSS
+
+
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
+    mp = page["design"].get("mise_en_page")
+    if mp in ("appli", "marque"):  # boutique façon application ou façon site de marque
+        import boutique_formats as bf
+        corps = (bf.rendu_appli if mp == "appli" else bf.rendu_marque)(page, pseudo, apercu)
+        img = f"{url.rsplit('/@', 1)[0]}{_img(pseudo, page['photo'])}" if page.get("photo") and url else ""
+        return document(page, pseudo, corps, page.get("nom") or pseudo, (page.get("bio") or "")[:160], apercu, img, url)
     blocs = "".join(_bloc_enveloppe(b, page, pseudo) for b in page.get("blocs", []) if b.get("visible", True))
     if not blocs.strip() and apercu:
         blocs = '<p class="txt" style="opacity:.6;grid-column:1/-1">Ajoute tes liens et tes produits : ils apparaîtront ici.</p>'
