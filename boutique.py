@@ -294,7 +294,8 @@ VUES_PRODUITS = {"grille": "Grille", "liste": "Liste", "vitrine": "Vitrine", "ca
                  "zigzag": "Zigzag", "mini": "Compacte"}
 TAILLES_TITRE = {"s": 26, "m": 32, "l": 40, "xl": 52}
 # Mise en page : la structure de la page, pas seulement ses couleurs
-MISES_EN_PAGE = {"colonne": "Colonne", "bento": "Bento", "magazine": "Magazine", "appli": "Appli", "marque": "Marque"}  # appli, marque : boutique_formats.py
+MISES_EN_PAGE = {"colonne": "Colonne", "bento": "Bento", "magazine": "Magazine", "appli": "Appli", "appli_stories": "Appli Stories",
+                 "appli_catalogue": "Appli Catalogue", "appli_une": "Appli À la une", "marque": "Marque"}  # appli, marque : boutique_formats.py
 ESPACEMENTS = {"serre": 8, "normal": 12, "aere": 20, "large": 30}
 LARGEURS_PAGE = {"etroite": 460, "normale": 560, "large": 760, "pleine": 1080}
 TAILLES_TEXTE = {"s": 14, "m": 15.5, "l": 17, "xl": 19}
@@ -468,6 +469,15 @@ ALLURES = {
     "appli": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="pilule", rayon=22, survol="soulever",
                   animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte", mise_en_page="appli",
                   espacement="normal", taille_titre="m"),
+    "appli_stories": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="pilule", rayon=22, survol="soulever",
+                          animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte",
+                          mise_en_page="appli_stories", espacement="normal", taille_titre="m"),
+    "appli_catalogue": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="pilule", rayon=20,
+                            survol="soulever", animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte",
+                            mise_en_page="appli_catalogue", espacement="normal", taille_titre="m"),
+    "appli_une": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="pilule", rayon=26, survol="soulever",
+                      animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte", mise_en_page="appli_une",
+                      espacement="normal", taille_titre="m"),
     "marque": dict(entete="minimal", fond_type="uni", photo_forme="arrondi", bouton_style="plein", bouton_forme="pilule", rayon=16, survol="soulever",
                    animation="aucune", image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte", mise_en_page="marque",
                    espacement="normal", taille_titre="m"),
@@ -625,6 +635,15 @@ for _x in [
     ("appli_rose", "Rose", "Appli", "#FBF5F6", "#F3E6E9", "#1E1418", "#D9467A", "#D9467A", "Plus Jakarta Sans", "Manrope", "appli"),
     ("appli_peche", "Pêche", "Appli", "#FFF7F2", "#FBE9DE", "#2A1A12", "#E8673C", "#E8673C", "Fredoka", "Nunito", "appli"),
     ("appli_lilas", "Lilas", "Appli", "#F7F5FC", "#ECE7F8", "#1C1530", "#6D4BD8", "#6D4BD8", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli"),
+    ("stories_corail", "Stories corail", "Appli", "#FAFAFA", "#FFFFFF", "#141414", "#F58529", "#DD2A7B", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli_stories"),
+    ("stories_nude", "Stories nude", "Appli", "#F7F1EC", "#FFFFFF", "#2B211B", "#C9A27E", "#A0674B", "Fraunces", "Manrope", "appli_stories"),
+    ("stories_nuit", "Stories nuit", "Appli", "#0E0E10", "#1A1A1D", "#F5F5F5", "#7B61FF", "#FF5C84", "Sora", "Manrope", "appli_stories"),
+    ("catalogue_blanc", "Catalogue blanc", "Appli", "#F6F6F6", "#FFFFFF", "#111111", "#111111", "#FF4F2E", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli_catalogue"),
+    ("catalogue_menthe", "Catalogue menthe", "Appli", "#F1F6F3", "#FFFFFF", "#10231A", "#10231A", "#1F9D63", "Sora", "Manrope", "appli_catalogue"),
+    ("catalogue_rose", "Catalogue rose", "Appli", "#FFF4F7", "#FFFFFF", "#2A0F1C", "#2A0F1C", "#E33D7F", "Fredoka", "Nunito", "appli_catalogue"),
+    ("une_clair", "À la une clair", "Appli", "#F2F2F7", "#FFFFFF", "#111114", "#0A66FF", "#0A66FF", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli_une"),
+    ("une_sable", "À la une sable", "Appli", "#F5EFE6", "#FFFDF9", "#231A12", "#B5541C", "#B5541C", "Fraunces", "Manrope", "appli_une"),
+    ("une_nuit", "À la une nuit", "Appli", "#000000", "#1C1C1E", "#F5F5F7", "#FF9F0A", "#FF9F0A", "Sora", "Manrope", "appli_une"),
     # Marque : comme le site d'une marque (stories, manifeste, grille de produits)
     ("marque_rose", "Rose et turquoise", "Marque", "#FFFFFF", "#FAF1F3", "#2B2B2B", "#5CD3D3", "#E5559B", "Montserrat", "Montserrat", "marque"),
     ("marque_sable", "Sable", "Marque", "#FBF8F3", "#F1EADF", "#2A231C", "#2A231C", "#B4693E", "Playfair Display", "Montserrat", "marque"),
@@ -1485,7 +1504,7 @@ def badge(page: dict | None = None) -> str:
 
 
 def _css_format(d: dict) -> str:
-    if d.get("mise_en_page") not in ("appli", "marque"):
+    if not str(d.get("mise_en_page") or "").startswith(("appli", "marque")):
         return ""
     import boutique_formats
     return boutique_formats.CSS
@@ -1493,9 +1512,9 @@ def _css_format(d: dict) -> str:
 
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
     mp = page["design"].get("mise_en_page")
-    if mp in ("appli", "marque"):  # boutique façon application ou façon site de marque
-        import boutique_formats as bf
-        corps = (bf.rendu_appli if mp == "appli" else bf.rendu_marque)(page, pseudo, apercu)
+    import boutique_formats as bf
+    if mp in bf.RENDUS:  # boutique façon application (4 modèles) ou façon site de marque
+        corps = bf.RENDUS[mp](page, pseudo, apercu)
         img = f"{url.rsplit('/@', 1)[0]}{_img(pseudo, page['photo'])}" if page.get("photo") and url else ""
         return document(page, pseudo, corps, page.get("nom") or pseudo, (page.get("bio") or "")[:160], apercu, img, url)
     blocs = "".join(_bloc_enveloppe(b, page, pseudo) for b in page.get("blocs", []) if b.get("visible", True))

@@ -113,10 +113,9 @@ document.querySelectorAll("[data-carrousel]").forEach(c => {
 # ------------------------------------------------------------
 #  Appli
 # ------------------------------------------------------------
-def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
+def _haut_appli(page: dict, pseudo: str) -> str:
+    """Barre du haut commune aux modèles Appli : nom (dernier mot en couleur), phrase de présentation, réseau et photo ronde."""
     nom = page.get("nom") or pseudo
-    prods = _produits(page)
-    avec_image = [p for p in prods if p.get("image")]
     photo = page.get("photo")
     avatar = (f'<img class="ap-avatar" src="{bq._img(pseudo, photo)}" alt="">' if photo
               else f'<span class="ap-avatar vide">{E(nom[:1].upper())}</span>')
@@ -131,8 +130,36 @@ def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
     mots = nom.split()
     logo = E(nom) if len(mots) < 2 else f'{E(" ".join(mots[:-1]))} <em>{E(mots[-1])}</em>'
     salut = f'<p class="ap-salut">{E(_phrase(page.get("bio") or "", 70))}</p>' if page.get("bio") else ""
-    haut = (f'<header class="ap-haut" id="haut"><div class="ap-id"><p class="ap-logo">{logo}</p>{salut}</div>'
+    return (f'<header class="ap-haut" id="haut"><div class="ap-id"><p class="ap-logo">{logo}</p>{salut}</div>'
             f'<div class="ap-icones">{boutons}{avatar}</div></header>')
+
+
+def _bas_appli(page: dict, pseudo: str, avec_boutique: bool) -> str:
+    """Autres blocs, carte « Une question ? » et onglets du bas, communs aux modèles Appli."""
+    autres, a_des_liens = _autres_blocs(page, pseudo)
+    autres = f'<div class="blocs ap-blocs" id="liens">{autres}</div>' if autres else ""
+    contact = _contact(page)
+    conseil = (f'<a class="ap-conseil" href="{E(contact[0])}" target="_blank" rel="noopener"><span><b>Une question ?</b>'
+               f'<small>{E(contact[1])}</small></span><i>{ICO_FLECHE}</i></a>') if contact else ""
+    onglets = [("#haut", "Accueil", ICO_MAISON, True)]
+    if avec_boutique:
+        onglets.append(("#boutique", "Boutique", ICO_SAC, False))
+    if a_des_liens:
+        onglets.append(("#liens", "Liens", ICO_LIENS, False))
+    if contact:
+        onglets.append((contact[0], "Contact", ICO_BULLE, False))
+    nav = '<nav class="ap-nav">' + "".join(
+        f'<a href="{E(u)}"{" target=_blank rel=noopener" if u.startswith("http") or u.startswith("mailto") else ""}'
+        f'{" aria-current=page" if actif else ""}>{ico}<span>{E(t)}</span></a>' for u, t, ico, actif in onglets) + "</nav>"
+    return f'{autres}{conseil}</div>{bq.badge(page)}{nav}{SCRIPT_ONGLETS}'
+
+
+def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
+    nom = page.get("nom") or pseudo
+    prods = _produits(page)
+    avec_image = [p for p in prods if p.get("image")]
+    photo = page.get("photo")
+    haut = _haut_appli(page, pseudo)
 
     # Carrousel de mise en avant : les produits avec une image (3 au plus), sinon la couverture
     slides = []
@@ -170,22 +197,7 @@ def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
     rail = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="ap-rail">{"".join(cartes)}</div>' if cartes
             else '<span id="boutique"></span>')
 
-    autres, a_des_liens = _autres_blocs(page, pseudo)
-    autres = f'<div class="blocs ap-blocs" id="liens">{autres}</div>' if autres else ""
-    contact = _contact(page)
-    conseil = (f'<a class="ap-conseil" href="{E(contact[0])}" target="_blank" rel="noopener"><span><b>Une question ?</b>'
-               f'<small>{E(contact[1])}</small></span><i>{ICO_FLECHE}</i></a>') if contact else ""
-    onglets = [("#haut", "Accueil", ICO_MAISON, True), ("#boutique", "Boutique", ICO_SAC, False)]
-    if a_des_liens:
-        onglets.append(("#liens", "Liens", ICO_LIENS, False))
-    if contact:
-        onglets.append((contact[0], "Contact", ICO_BULLE, False))
-    nav = '<nav class="ap-nav">' + "".join(
-        f'<a href="{E(u)}"{" target=_blank rel=noopener" if u.startswith("http") or u.startswith("mailto") else ""}'
-        f'{" aria-current=page" if actif else ""}>{ico}<span>{E(t)}</span></a>'
-        for u, t, ico, actif in onglets if t != "Boutique" or cartes) + "</nav>"
-    return (f'<div class="ap">{haut}{hero}{ronds}{rail}{autres}{conseil}</div>{bq.badge(page)}{nav}'
-            f'{SCRIPT_CARROUSEL}{SCRIPT_ONGLETS}')
+    return f'<div class="ap">{haut}{hero}{ronds}{rail}{_bas_appli(page, pseudo, bool(cartes))}{SCRIPT_CARROUSEL}'
 
 
 SCRIPT_ONGLETS = """
@@ -261,7 +273,6 @@ def rendu_marque(page: dict, pseudo: str, apercu: bool = False) -> str:
 
 CSS = """
 /* ===== Appli ===== */
-body.mp-appli .page{max-width:600px;padding:18px 16px 120px}
 .ap-haut{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:6px 0 18px}
 .ap-logo{font:800 30px/1.05 var(--tf);margin:0;letter-spacing:-.02em}.ap-logo em{font-style:normal;color:var(--a)}
 .ap-salut{margin:6px 0 0;opacity:.7;font-size:.98em}
@@ -317,7 +328,6 @@ body.mp-appli .page{max-width:600px;padding:18px 16px 120px}
   color:color-mix(in srgb,var(--f1) 70%,transparent);font-size:12.5px;font-weight:600}
 .ap-nav a svg{width:24px;height:24px}
 .ap-nav a[aria-current]{background:color-mix(in srgb,var(--a) 28%,var(--f1));color:var(--t)}
-body.mp-appli .marque{margin-bottom:10px}
 /* ===== Marque ===== */
 body.mp-marque .page{max-width:1080px;padding:0 0 90px}
 .mq-haut{position:sticky;top:0;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;
@@ -367,4 +377,216 @@ body.mp-marque .page{max-width:1080px;padding:0 0 90px}
 .mq-haut-btn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--k);color:var(--kt);box-shadow:0 8px 20px -10px rgba(0,0,0,.4)}
 .mq-haut-btn svg{width:22px}
 body.mp-marque .marque{margin-top:30px}
+"""
+
+
+# ------------------------------------------------------------
+#  Autres modèles Appli (même barre du haut, même carte « Une question ? », mêmes onglets en bas)
+# ------------------------------------------------------------
+def _carte_info(p: dict) -> tuple[str, str, str, str]:
+    prix, barre, pastille = _prix(p)
+    return prix, barre, pastille, p.get("sous_titre") or ""
+
+
+def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
+    """Façon Instagram : ronds de stories en haut, carte de profil, puis un fil de publications (une par produit)."""
+    nom = page.get("nom") or pseudo
+    prods = _produits(page)
+    photo = page.get("photo")
+    mini = (f'<img src="{bq._img(pseudo, photo)}" alt="">' if photo else f'<span>{E(nom[:1].upper())}</span>')
+    ronds = [f'<a class="st-rond" href="#profil"><i>{mini}</i><b>À propos</b></a>'] + [
+        f'<a class="st-rond" href="#p-{E(p["id"])}"><i><img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy"></i><b>{E(p.get("titre") or "")}</b></a>'
+        for p in prods if p.get("image")][:10]
+    profil = (f'<section class="st-profil" id="profil"><i class="st-pp">{mini}</i><div><b>{E(nom)}</b>'
+              f'<p>{E(page.get("bio") or "")}</p>'
+              f'<a class="st-suivre" href="#boutique">Voir la boutique</a></div></section>')
+    posts = []
+    for p in prods:
+        prix, barre, pastille, sous = _carte_info(p)
+        img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>')
+        posts.append(f'<article class="st-post" id="p-{E(p["id"])}"><header><i class="st-mini">{mini}</i><b>{E(nom)}</b>'
+                     f'{f"<span class=st-pastille>{E(pastille)}</span>" if pastille else ""}</header>'
+                     f'<a class="st-img" href="{_lien_produit(page, pseudo, p)}">{img}</a>'
+                     f'<div class="st-pied"><div><b>{E(p.get("titre") or "")}</b>{f"<p>{E(sous)}</p>" if sous else ""}</div>'
+                     f'<a class="st-voir" href="{_lien_produit(page, pseudo, p)}"><span>{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span>Voir l\'offre</a></div></article>')
+    fil = f'<section class="st-fil" id="boutique">{"".join(posts)}</section>' if posts else ""
+    return (f'<div class="ap">{_haut_appli(page, pseudo)}<nav class="st-ronds">{"".join(ronds)}</nav>{profil}{fil}'
+            f'{_bas_appli(page, pseudo, bool(posts))}')
+
+
+SCRIPT_CATALOGUE = """
+<script>
+(() => { const q = document.querySelector("[data-cherche]"), puces = [...document.querySelectorAll("[data-filtre]")],
+    cartes = [...document.querySelectorAll("[data-cats]")], vide = document.querySelector("[data-aucun]");
+  if (!cartes.length) return; let filtre = "tout";
+  const maj = () => { const t = (q?.value || "").trim().toLowerCase(); let n = 0;
+    cartes.forEach(c => { const ok = (filtre === "tout" || c.dataset.cats.split(" ").includes(filtre)) && (!t || c.dataset.nom.includes(t));
+      c.hidden = !ok; n += ok; }); if (vide) vide.hidden = n > 0; };
+  q?.addEventListener("input", maj);
+  puces.forEach(p => p.addEventListener("click", () => { filtre = p.dataset.filtre;
+    puces.forEach(x => x.setAttribute("aria-pressed", x === p)); maj(); }));
+})();
+</script>"""
+
+
+def rendu_appli_catalogue(page: dict, pseudo: str, apercu: bool = False) -> str:
+    """Façon appli de shopping : recherche, puces de filtres, bannière de mise en avant, grille de produits sur deux colonnes."""
+    prods = _produits(page)
+    cats_vues: dict[str, str] = {}
+    cartes = []
+    for p in prods:
+        prix, barre, pastille, sous = _carte_info(p)
+        cats = []
+        if prix == "Gratuit":
+            cats.append("gratuit")
+        if barre:
+            cats.append("promo")
+        if p.get("type") == "rdv":
+            cats.append("seance")
+        if p.get("type") == "pack":
+            cats.append("pack")
+        if p.get("externe"):
+            cats.append("partenaire")
+        for c in cats:
+            cats_vues[c] = 1
+        img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>')
+        cartes.append(f'<a class="ca-carte" href="{_lien_produit(page, pseudo, p)}" data-cats="{" ".join(cats)}" data-nom="{E((p.get("titre") or "").lower())}">'
+                      f'<span class="ca-img">{img}{f"<span class=ca-pastille>{E(pastille)}</span>" if pastille else ""}'
+                      f'<i class="ca-plus">{ICO_PLUS}</i></span><b>{E(p.get("titre") or "")}</b>{f"<small>{E(sous)}</small>" if sous else ""}'
+                      f'<span class="ca-prix">{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span></a>')
+    noms = {"gratuit": "Gratuits", "promo": "Promos", "seance": "Séances", "pack": "Packs", "partenaire": "Partenaires"}
+    puces = ('<div class="ca-puces"><button type="button" data-filtre="tout" aria-pressed="true">Tout</button>'
+             + "".join(f'<button type="button" data-filtre="{k}" aria-pressed="false">{v}</button>' for k, v in noms.items() if k in cats_vues)
+             + "</div>") if cats_vues and len(prods) > 3 else ""
+    cherche = ('<label class="ca-cherche"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/>'
+               '<path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+               '<input data-cherche type="search" placeholder="Rechercher un produit" aria-label="Rechercher un produit"></label>') if len(prods) > 4 else ""
+    une = next((p for p in prods if p.get("image")), None)
+    banniere = ""
+    if une:
+        prix, barre, pastille, sous = _carte_info(une)
+        banniere = (f'<a class="ca-banniere" href="{_lien_produit(page, pseudo, une)}"><div><small>{E(pastille or "À découvrir")}</small>'
+                    f'<b>{E(une.get("titre") or "")}</b><em>{E(prix)}</em><span class="ap-cta">Je découvre</span></div>'
+                    f'<img src="{bq._img(pseudo, une["image"])}" alt="" loading="lazy"></a>')
+    grille = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="ca-grille">{"".join(cartes)}</div>'
+              '<p class="ca-aucun" data-aucun hidden>Aucun produit ne correspond.</p>') if cartes else ""
+    return (f'<div class="ap">{_haut_appli(page, pseudo)}{cherche}{puces}{banniere}{grille}'
+            f'{_bas_appli(page, pseudo, bool(cartes))}{SCRIPT_CATALOGUE}')
+
+
+MOIS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre")
+JOURS = ("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+
+
+def rendu_appli_une(page: dict, pseudo: str, apercu: bool = False) -> str:
+    """Façon « Aujourd'hui » de l'App Store : la date, de grandes cartes illustrées, puis la liste compacte de toutes les offres."""
+    from datetime import date
+    nom = page.get("nom") or pseudo
+    prods = _produits(page)
+    photo = page.get("photo")
+    d = date.today()
+    avatar = (f'<img class="ap-avatar" src="{bq._img(pseudo, photo)}" alt="">' if photo
+              else f'<span class="ap-avatar vide">{E(nom[:1].upper())}</span>')
+    haut = (f'<header class="un-haut" id="haut"><div><small>{JOURS[d.weekday()]} {d.day} {MOIS[d.month - 1]}</small>'
+            f'<h1>{E(nom)}</h1></div><a href="#profil" aria-label="À propos">{avatar}</a></header>')
+    icone = (f'<img src="{bq._img(pseudo, photo)}" alt="">' if photo else f'<span>{E(nom[:1].upper())}</span>')
+    grandes = []
+    for p in [p for p in prods if p.get("image")][:4]:
+        prix, barre, pastille, sous = _carte_info(p)
+        grandes.append(f'<a class="un-carte" href="{_lien_produit(page, pseudo, p)}"><span class="un-visuel">'
+                       f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy"><span class="un-txt"><small>{E(pastille or "À la une")}</small>'
+                       f'<b>{E(p.get("titre") or "")}</b>{f"<em>{E(sous)}</em>" if sous else ""}</span></span>'
+                       f'<span class="un-bas"><i class="un-ico">{icone}</i><span><b>{E(nom)}</b><small>{E(prix)}{f" · au lieu de {E(barre)}" if barre else ""}</small></span>'
+                       f'<span class="un-voir">Voir</span></span></a>')
+    lignes = []
+    for p in prods:
+        prix, barre, pastille, sous = _carte_info(p)
+        img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span>{E((p.get("titre") or "?")[:1])}</span>')
+        lignes.append(f'<a class="un-ligne" href="{_lien_produit(page, pseudo, p)}"><i class="un-ico">{img}</i><span><b>{E(p.get("titre") or "")}</b>'
+                      f'<small>{E(sous or prix)}</small></span><span class="un-voir">{E("Gratuit" if prix == "Gratuit" else prix)}</span></a>')
+    liste = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="un-liste">{"".join(lignes)}</div>' if lignes else "")
+    profil = (f'<section class="un-profil" id="profil"><i class="un-ico">{icone}</i><div><b>{E(nom)}</b><p>{E(page.get("bio") or "")}</p></div></section>'
+              if page.get("bio") else '<span id="profil"></span>')
+    return f'<div class="ap">{haut}{"".join(grandes)}{liste}{profil}{_bas_appli(page, pseudo, bool(lignes))}'
+
+
+RENDUS = {"appli": rendu_appli, "appli_stories": rendu_appli_stories, "appli_catalogue": rendu_appli_catalogue,
+          "appli_une": rendu_appli_une, "marque": rendu_marque}
+
+CSS += """
+body[class*="mp-appli"] .page{max-width:600px;padding:18px 16px 120px}
+body[class*="mp-appli"] .marque{margin-bottom:10px}
+/* ===== Appli Stories ===== */
+.st-ronds{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 18px;padding:2px 16px 6px}.st-ronds::-webkit-scrollbar{display:none}
+.st-rond{flex:none;width:76px;display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none}
+.st-rond i{width:72px;height:72px;border-radius:50%;padding:3px;background:conic-gradient(from 200deg,var(--a),var(--b),var(--a));display:grid}
+.st-rond i>*{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid var(--f1);background:var(--k);display:grid;place-items:center;font:700 22px var(--tf)}
+.st-rond b{font-size:12px;font-weight:600;max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-profil{display:flex;gap:16px;align-items:flex-start;padding:18px;border-radius:24px;background:var(--k);color:var(--kt);margin-bottom:22px}
+.st-pp,.st-mini{flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--a);color:var(--ac);font:700 18px var(--tf)}
+.st-pp{width:72px;height:72px}.st-pp img,.st-mini img{width:100%;height:100%;object-fit:cover}
+.st-profil b{font:800 1.2em var(--tf)}.st-profil p{margin:4px 0 12px;opacity:.8;white-space:pre-line}
+.st-suivre{display:inline-block;background:var(--a);color:var(--ac);font-weight:700;padding:10px 20px;border-radius:12px;text-decoration:none}
+.st-fil{display:flex;flex-direction:column;gap:22px}
+.st-post{background:var(--k);color:var(--kt);border-radius:24px;overflow:hidden;box-shadow:0 14px 30px -24px rgba(0,0,0,.5)}
+.st-post header{display:flex;align-items:center;gap:10px;padding:12px 14px}.st-mini{width:34px;height:34px;font-size:14px}
+.st-post header b{flex:1;font-size:.95em}
+.st-pastille{background:var(--a);color:var(--ac);font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px}
+.st-img{display:block;aspect-ratio:1;background:color-mix(in srgb,var(--a) 10%,var(--k))}.st-img img{width:100%;height:100%;object-fit:cover;display:block}
+.st-img .ap-vide{display:block;width:100%;height:100%;border-radius:0}
+.st-pied{display:flex;align-items:center;gap:12px;padding:14px}.st-pied>div{flex:1;min-width:0}
+.st-pied b{font-weight:700}.st-pied p{margin:3px 0 0;opacity:.7;font-size:.92em}
+.st-voir{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--t);color:var(--f1);text-decoration:none;
+  font-weight:700;font-size:13px;padding:10px 16px;border-radius:16px}.st-voir span{font:800 1.15em var(--tf)}.st-voir s{opacity:.6;font-size:.75em}
+/* ===== Appli Catalogue ===== */
+.ca-cherche{display:flex;align-items:center;gap:10px;background:var(--k);color:var(--kt);border-radius:999px;padding:0 18px;margin:0 0 14px;
+  box-shadow:0 8px 22px -18px rgba(0,0,0,.5)}
+.ca-cherche svg{width:20px;height:20px;opacity:.6;flex:none}
+.ca-cherche input{flex:1;border:0;background:none;font:inherit;color:inherit;padding:15px 0;outline:none}
+.ca-puces{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 16px;padding:0 16px}.ca-puces::-webkit-scrollbar{display:none}
+.ca-puces button{flex:none;border:1.5px solid color-mix(in srgb,var(--t) 15%,transparent);background:transparent;color:var(--t);font:600 14px var(--tx);
+  padding:9px 18px;border-radius:999px;cursor:pointer}
+.ca-puces button[aria-pressed=true]{background:var(--t);color:var(--f1);border-color:var(--t)}
+.ca-banniere{display:flex;align-items:center;gap:10px;min-height:170px;padding:22px;border-radius:26px;background:var(--t);color:var(--f1);
+  text-decoration:none;overflow:hidden;position:relative}
+.ca-banniere div{flex:1;position:relative;z-index:1;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ca-banniere small{text-transform:uppercase;letter-spacing:.12em;font-weight:700;font-size:12px;color:color-mix(in srgb,var(--a) 60%,var(--f1))}
+.ca-banniere b{font:800 clamp(22px,6vw,30px)/1.05 var(--tf)}
+.ca-banniere .ap-cta{background:var(--a);color:var(--ac);font-size:13px;padding:11px 18px}
+.ca-banniere em{font:800 1.15em var(--tf);font-style:normal;opacity:.85}
+.ca-banniere img{width:42%;max-height:170px;object-fit:contain;filter:drop-shadow(0 12px 18px rgba(0,0,0,.35))}
+.ca-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}
+.ca-carte{text-decoration:none;display:flex;flex-direction:column;gap:4px}.ca-carte[hidden]{display:none}
+.ca-img{position:relative;aspect-ratio:1;border-radius:20px;overflow:hidden;background:color-mix(in srgb,var(--a) 8%,var(--k));display:grid;place-items:center;margin-bottom:6px}
+.ca-img img{width:86%;height:86%;object-fit:contain}
+.ca-pastille{position:absolute;top:8px;left:8px;background:var(--a);color:var(--ac);font-weight:700;font-size:12px;padding:4px 9px;border-radius:999px}
+.ca-plus{position:absolute;right:8px;bottom:8px;width:36px;height:36px;border-radius:50%;background:var(--t);color:var(--f1);display:grid;place-items:center}
+.ca-plus svg{width:18px}
+.ca-carte b{font-weight:700;line-height:1.25}.ca-carte small{opacity:.65;font-size:.86em;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ca-prix{font:800 1.1em var(--tf)}.ca-prix s{font-size:.75em;opacity:.5;font-weight:500}
+.ca-aucun{text-align:center;opacity:.6;margin:20px 0}
+/* ===== Appli À la une ===== */
+.un-haut{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 0 18px}
+.un-haut small{text-transform:uppercase;letter-spacing:.06em;font-weight:700;font-size:13px;opacity:.55}
+.un-haut h1{font:800 34px/1.05 var(--tf);margin:2px 0 0;letter-spacing:-.02em}
+.un-carte{display:block;margin:0 0 22px;border-radius:26px;overflow:hidden;text-decoration:none;background:var(--k);color:var(--kt);
+  box-shadow:0 22px 40px -26px rgba(0,0,0,.55)}
+.un-visuel{position:relative;display:block;aspect-ratio:4/4.4;background:color-mix(in srgb,var(--a) 22%,var(--k))}
+.un-visuel img{width:100%;height:100%;object-fit:cover;display:block}
+.un-txt{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;padding:22px;color:#fff;
+  background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.62))}
+.un-txt small{text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-size:12px;opacity:.9}
+.un-txt b{font:800 clamp(26px,7.4vw,36px)/1.02 var(--tf);letter-spacing:-.02em}.un-txt em{font-style:normal;opacity:.9}
+.un-bas,.un-ligne{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.un-bas>span:not(.un-voir),.un-ligne>span:not(.un-voir){flex:1;min-width:0;display:flex;flex-direction:column}
+.un-bas b,.un-ligne b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.un-bas small,.un-ligne small{opacity:.65;font-size:.88em}
+.un-ico{flex:none;width:52px;height:52px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:var(--a);color:var(--ac);font:800 20px var(--tf)}
+.un-ico img{width:100%;height:100%;object-fit:cover}
+.un-voir{flex:none;background:color-mix(in srgb,var(--a) 14%,var(--k));color:var(--a);font-weight:800;font-size:14px;padding:8px 18px;border-radius:999px;
+  text-transform:uppercase;letter-spacing:.02em}
+.un-liste{background:var(--k);color:var(--kt);border-radius:24px;overflow:hidden}
+.un-ligne{text-decoration:none;border-top:1px solid color-mix(in srgb,var(--kt) 10%,transparent)}.un-ligne:first-child{border-top:0}
+.un-ligne .un-voir{font-size:13px;padding:7px 14px;text-transform:none}
+.un-profil{display:flex;gap:14px;align-items:flex-start;margin:22px 0 0;padding:18px;border-radius:24px;background:var(--k);color:var(--kt)}
+.un-profil b{font:800 1.1em var(--tf)}.un-profil p{margin:4px 0 0;opacity:.8;white-space:pre-line}
 """
