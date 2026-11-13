@@ -1068,21 +1068,6 @@ body{font-size:%(tt)spx}
 .galerie.g-carrousel::-webkit-scrollbar{display:none}
 .galerie.g-carrousel img{flex:0 0 78%%;aspect-ratio:4/5;scroll-snap-align:center}
 .galerie.g-mosaique{display:block;columns:2;column-gap:6px}.galerie.g-mosaique img{aspect-ratio:auto;margin-bottom:6px;break-inside:avoid}
-.aas{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}.aas::-webkit-scrollbar{display:none}
-.aa{flex:0 0 min(86%%,340px);scroll-snap-align:start;margin:0;padding:10px!important;display:flex;flex-direction:column;gap:8px}
-.aas .aa:only-child{flex-basis:100%%}
-.aa-comp{position:relative;aspect-ratio:4/5;border-radius:calc(var(--rk) * .7);overflow:hidden;user-select:none;touch-action:pan-y}
-.aa-comp img{position:absolute;inset:0;width:100%%;height:100%%;object-fit:cover;display:block}
-.aa-comp .aa-avant{clip-path:inset(0 calc(100%% - var(--p)) 0 0)}
-.aa-l{position:absolute;top:10px;z-index:2;font:700 11px/1 var(--tx);letter-spacing:.14em;text-transform:uppercase;padding:6px 9px;border-radius:999px;
-  background:rgba(0,0,0,.55);color:#fff}.aa-l1{left:10px}.aa-l2{right:10px;background:var(--a);color:var(--ac)}
-.aa-poignee{position:absolute;top:0;bottom:0;left:var(--p);width:3px;margin-left:-1.5px;background:#fff;z-index:2;pointer-events:none;box-shadow:0 0 8px rgba(0,0,0,.35)}
-.aa-poignee::after{content:"⟷";position:absolute;top:50%%;left:50%%;transform:translate(-50%%,-50%%);width:38px;height:38px;border-radius:50%%;background:#fff;color:#111;
-  display:grid;place-items:center;font:700 18px/1 system-ui;box-shadow:0 4px 14px rgba(0,0,0,.3)}
-.aa-comp input{position:absolute;inset:0;width:100%%;height:100%%;margin:0;opacity:0;cursor:ew-resize;z-index:3}
-.aa-seul{width:100%%;border-radius:calc(var(--rk) * .7);display:block}
-.aa figcaption{display:flex;flex-direction:column;gap:2px;padding:0 4px 2px;color:var(--kt)}.aa figcaption b{font-weight:700}.aa figcaption span{opacity:.7;font-size:.92em}
-.aa-mention{font-size:12px;opacity:.6;margin:8px 2px 0}
 .temoins{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}
 .temoins::-webkit-scrollbar{display:none}
 .temoin{flex:0 0 min(86%%,340px);scroll-snap-align:start;display:flex;flex-direction:column;gap:10px}
@@ -1321,26 +1306,6 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
         titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
         disp = b.get("disposition") if b.get("disposition") in DISPOSITIONS_GALERIE else "grille"
         return titre + f'<div class="galerie g-{disp}">' + "".join(f'<img src="{_img(pseudo, i)}" alt="" loading="lazy">' for i in imgs) + "</div>"
-    if t == "avant_apres":
-        # Transformations de clientes : publiées seulement avec leur accord, avec la mention « résultats individuels »
-        items = [x for x in (b.get("items") or []) if x.get("avant") or x.get("apres")]
-        if not items or not b.get("accord"):
-            return ""
-        titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
-        cartes = []
-        for x in items:
-            leg = "".join(f"<{tag}>{E(x[k])}</{tag}>" for k, tag in (("legende", "b"), ("nom", "span")) if x.get(k))
-            leg = f"<figcaption>{leg}</figcaption>" if leg else ""
-            if x.get("avant") and x.get("apres"):
-                cartes.append(f'<figure class="aa carte"><div class="aa-comp" style="--p:50%"><img src="{_img(pseudo, x["apres"])}" alt="Après" loading="lazy">'
-                              f'<img class="aa-avant" src="{_img(pseudo, x["avant"])}" alt="Avant" loading="lazy">'
-                              f'<span class="aa-l aa-l1">Avant</span><span class="aa-l aa-l2">Après</span><i class="aa-poignee" aria-hidden="true"></i>'
-                              f'<input type="range" min="0" max="100" value="50" aria-label="Faire glisser pour comparer avant et après" '
-                              f'oninput="this.parentNode.style.setProperty(\'--p\',this.value+\'%\')"></div>{leg}</figure>')
-            else:  # montage déjà fait (story « avant / après ») : l'image telle quelle
-                cartes.append(f'<figure class="aa carte"><img class="aa-seul" src="{_img(pseudo, x.get("avant") or x["apres"])}" alt="Avant et après" loading="lazy">{leg}</figure>')
-        mention = E(b.get("texte") or "Résultats propres à chaque personne : ils varient de l'une à l'autre.")
-        return f'{titre}<div class="aas">{"".join(cartes)}</div><p class="aa-mention">{mention}</p>'
     if t == "temoignages":
         items = [x for x in (b.get("items") or []) if (x.get("texte") or "").strip()]
         if not items:

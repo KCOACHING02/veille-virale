@@ -1247,11 +1247,6 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px}
 .bt-item>div{display:grid;gap:6px}
 .bt-item input,.bt-item textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
-.bt-aa{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.bt-aa-case{position:relative;overflow:hidden;aspect-ratio:4/5!important;min-height:0}
-.bt-aa-case img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.bt-aa-case span{position:relative;z-index:1;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:2px 8px;font-size:12px}
-.bt-aa-accord{display:flex;gap:8px;align-items:flex-start;margin:10px 0 4px;font-weight:600}
 .bt-galerie{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin:6px 0}
 .bt-galerie span{position:relative}.bt-galerie img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
 .bt-galerie span button{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:12px;cursor:pointer}
@@ -4934,7 +4929,6 @@ const TYPES_BLOCS = {
   image: ["🖼️", "Image", "Une photo pleine largeur, avec légende et lien"],
   galerie: ["🎞️", "Galerie photos", "Grille, carrousel ou mosaïque"],
   temoignages: ["💬", "Témoignages", "Les avis de tes clientes, en cartes"],
-  avant_apres: ["🔁", "Avant / Après", "Les transformations de tes clientes, à comparer d'un geste"],
   faq: ["❓", "Questions fréquentes", "Questions et réponses qui se déplient"],
   compte: ["⏳", "Compte à rebours", "Pour une offre limitée ou un lancement"],
   banniere: ["📣", "Bannière promo", "Un bandeau coloré, fixe ou qui défile, avec code promo"],
@@ -5969,7 +5963,7 @@ function ongletContenu(z) {
 function resumeBloc(b) {
   const prods = BQ.page.produits;
   const nouveaux = {image: b.legende || "Image", galerie: `${(b.images || []).length} photo${(b.images || []).length > 1 ? "s" : ""}`,
-    temoignages: b.titre || "Témoignages", avant_apres: (b.titre || "Avant / Après") + (b.accord ? "" : " (accord à cocher)"), faq: b.titre || "Questions fréquentes", compte: b.titre || "Compte à rebours",
+    temoignages: b.titre || "Témoignages", faq: b.titre || "Questions fréquentes", compte: b.titre || "Compte à rebours",
     banniere: b.texte || "Bannière promo", musique: b.url ? "Lecteur de musique" : "Colle le lien du morceau", separateur: "Séparateur"};
   if (nouveaux[b.type]) return nouveaux[b.type];
   return ({lien: b.titre || prods.find(x => x.id === b.produit)?.titre || b.url || "Nouveau lien", titre: b.texte || "Titre", texte: (b.texte || "Texte").slice(0, 60), video: b.url || "Colle le lien YouTube",
@@ -6058,18 +6052,6 @@ function corpsBlocContenu(b, i) {
       + `<div class="bt-galerie">${(b.images || []).map((n, j) => `<span><img src="${urlImg(n)}" alt=""><button type="button" data-gal-suppr="${i}:${j}" aria-label="Retirer">✕</button></span>`).join("")}
         <label class="bt-depot bt-depot-carre">➕<span>Ajouter</span><input type="file" accept="image/*" multiple data-envoi-galerie="${i}"></label></div>
         <p class="bt-sous-titre">Disposition</p><select class="bt-select" data-b="${i}" data-bk="disposition">${Object.entries(BQ.etat.options.dispositions_galerie || {}).map(([k, l]) => `<option value="${k}" ${(b.disposition || "grille") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
-    case "avant_apres": return champB(i, "titre", "Titre (facultatif)", b.titre, 'maxlength="120"')
-      + `<div class="bt-items">${(b.items || []).map((x, j) => `<div class="bt-item"><div>
-          <div class="bt-aa">${["avant", "apres"].map(k => `<label class="bt-depot bt-depot-carre bt-aa-case">${x[k] ? `<img src="${urlImg(x[k])}" alt="">` : "➕"}<span>${k === "avant" ? "Avant" : "Après"}</span>
-            <input type="file" accept="image/*" data-aa="${i}:${j}:${k}"></label>`).join("")}</div>
-          <input data-b="${i}" data-it="${j}" data-ik="legende" value="${esc(x.legende || "")}" placeholder="Ex. : 1 mois avec BAO" maxlength="120">
-          <input data-b="${i}" data-it="${j}" data-ik="nom" value="${esc(x.nom || "")}" placeholder="Son prénom (facultatif)" maxlength="60"></div>
-          <button type="button" class="icone-btn" data-it-suppr="${i}:${j}" aria-label="Retirer">✕</button></div>`).join("")}</div>
-        <button type="button" class="btn petit" data-it-ajout="${i}">+ Une transformation</button>
-        <p class="aide">Tu as déjà un montage avant / après (une story, par exemple) ? Mets-le seul dans « Avant ». Avec deux photos, on peut les comparer en faisant glisser le doigt.</p>
-        <label class="bt-aa-accord"><input type="checkbox" data-b="${i}" data-bk="accord" data-rerendu="1" ${b.accord ? "checked" : ""}> Mes clientes m'ont donné leur accord pour publier ces photos</label>
-        ${b.accord ? "" : '<p class="aide" style="color:var(--danger,#c0392b)">Le bloc reste masqué sur ta page tant que cette case n\'est pas cochée.</p>'}`
-      + champB(i, "texte", "Petite mention sous les photos", b.texte, 'maxlength="200" placeholder="Résultats propres à chaque personne : ils varient de l\'une à l\'autre."');
     case "temoignages": return champB(i, "titre", "Titre (facultatif)", b.titre, 'maxlength="120"') + listeItems(b, i, [["texte", "Son avis, en quelques mots", true], ["nom", "Son prénom"]], "Un témoignage");
     case "faq": return champB(i, "titre", "Titre (facultatif)", b.titre, 'maxlength="120"') + listeItems(b, i, [["q", "La question"], ["r", "La réponse", true]], "Une question");
     case "compte": return champB(i, "titre", "Titre", b.titre, 'maxlength="120"') + champB(i, "texte", "Texte (facultatif)", b.texte, 'maxlength="300"')
@@ -6103,7 +6085,6 @@ function choisirTypeBloc() {
     if (t === "kit") Object.assign(nb, {titre: "Kit média", texte: "Mes chiffres et collaborations"});
     if (t === "produit") nb.produit = BQ.page.produits[0]?.id || "";
     if (t === "temoignages") Object.assign(nb, {titre: "Elles en parlent", items: [{texte: "", nom: ""}]});
-    if (t === "avant_apres") Object.assign(nb, {titre: "Leurs transformations", items: [{avant: "", apres: "", legende: "", nom: ""}], accord: false});
     if (t === "faq") Object.assign(nb, {titre: "Questions fréquentes", items: [{q: "", r: ""}]});
     if (t === "galerie") Object.assign(nb, {images: [], disposition: "grille"});
     if (t === "compte") { const f = new Date(Date.now() + 3 * 864e5); f.setHours(23, 59, 0, 0);
@@ -6173,12 +6154,7 @@ function lieChamps(z) {
     BQ.apparenceOuverte = b.id; modifieBoutique(true);
   });
   z.querySelectorAll("[data-it-ajout]").forEach(btn => btn.onclick = () => { const b = p.blocs[+btn.dataset.itAjout];
-    b.items = [...(b.items || []), b.type === "faq" ? {q: "", r: ""} : b.type === "avant_apres" ? {avant: "", apres: "", legende: "", nom: ""} : {texte: "", nom: ""}]; modifieBoutique(true); });
-  z.querySelectorAll("input[type=file][data-aa]").forEach(inp => inp.onchange = async () => {
-    const [i, j, k] = inp.dataset.aa.split(":"), f = inp.files[0]; if (!f) return;
-    toast("Envoi de la photo…");
-    try { const r = await envoieImageBoutique(f, "galerie"); p.blocs[+i].items[+j][k] = r.nom; modifieBoutique(true); } catch (e) { toast(e.message); }
-  });
+    b.items = [...(b.items || []), b.type === "faq" ? {q: "", r: ""} : {texte: "", nom: ""}]; modifieBoutique(true); });
   z.querySelectorAll("[data-it-suppr]").forEach(btn => btn.onclick = () => { const [i, j] = btn.dataset.itSuppr.split(":").map(Number);
     p.blocs[i].items.splice(j, 1); modifieBoutique(true); });
   z.querySelectorAll("[data-gal-suppr]").forEach(btn => btn.onclick = () => { const [i, j] = btn.dataset.galSuppr.split(":").map(Number);

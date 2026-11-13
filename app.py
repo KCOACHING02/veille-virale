@@ -2452,7 +2452,7 @@ def boutique_change_pseudo():
 
 
 TYPES_BLOCS = ("lien", "titre", "texte", "video", "produit", "produits", "capture", "kit",
-               "image", "galerie", "temoignages", "avant_apres", "faq", "compte", "banniere", "separateur", "musique")
+               "image", "galerie", "temoignages", "faq", "compte", "banniere", "separateur", "musique")
 
 
 def _bloc_propre(b: dict) -> dict | None:
@@ -2490,11 +2490,6 @@ def _bloc_propre(b: dict) -> dict | None:
         r["items"] = [{"texte": str(x.get("texte") or "").strip()[:500], "nom": str(x.get("nom") or "").strip()[:60],
                        **({"image": x["image"]} if isinstance(x.get("image"), str) and NOM_IMAGE.match(x["image"]) else {})}
                       for x in (b.get("items") or [])[:20] if isinstance(x, dict)]
-    if t == "avant_apres":  # transformations de clientes (accord obligatoire pour être affichées)
-        img = lambda v: v if isinstance(v, str) and NOM_IMAGE.match(v) else ""  # noqa: E731
-        r["items"] = [{"avant": img(x.get("avant")), "apres": img(x.get("apres")), "legende": str(x.get("legende") or "").strip()[:120],
-                       "nom": str(x.get("nom") or "").strip()[:60]} for x in (b.get("items") or [])[:20] if isinstance(x, dict)]
-        r["accord"] = bool(b.get("accord"))
     if t == "faq":
         r["items"] = [{"q": str(x.get("q") or "").strip()[:200], "r": str(x.get("r") or "").strip()[:1500]}
                       for x in (b.get("items") or [])[:30] if isinstance(x, dict)]
