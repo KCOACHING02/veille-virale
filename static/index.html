@@ -7462,8 +7462,18 @@ function bulleDM(message, lien, bouton, publique) {
 function reglagesMeta(w) {
   return `<div class="ma-meta"><p class="aide">À coller dans ton application Meta (développeurs) :</p>
     ${[["Adresse du webhook", w.url], ["Jeton de vérification", w.jeton], ["Adresse de retour OAuth", w.retour], ["Désautorisation", w.desautorisation], ["Suppression des données", w.suppression]]
-      .map(([t, v]) => `<div class="ma-meta-l"><small>${t}</small><code>${esc(v)}</code><button class="btn petit" data-copier="${esc(v)}">Copier</button></div>`).join("")}</div>`;
+      .map(([t, v]) => `<div class="ma-meta-l"><small>${t}</small><code>${esc(v)}</code><button class="btn petit" data-copier="${esc(v)}">Copier</button></div>`).join("")}
+    <p class="aide" style="margin-top:12px">Contrôle app : Meta exige un appel réussi par autorisation (visible chez Meta sous 24 h).</p>
+    <button class="btn" id="ma-appels-test">Faire les appels de test Meta</button><div id="ma-appels-res"></div></div>`;
 }
+document.addEventListener("click", async e => {
+  const b = e.target.closest("#ma-appels-test"); if (!b) return;
+  b.disabled = true; b.textContent = "Appels en cours…";
+  try { const r = await api("/api/messages/appels_test", {method: "POST"});
+    $("#ma-appels-res").innerHTML = r.erreur ? `<p class="aide">⚠️ ${esc(r.erreur)}</p>` : r.resultats.map(x => `<p class="aide">${x.ok ? "✓" : "⚠️"} ${esc(x.autorisation)}${x.detail ? ` : ${esc(x.detail)}` : ""}</p>`).join("");
+  } catch (err) { $("#ma-appels-res").innerHTML = `<p class="aide">⚠️ ${esc(err.message || "Échec")}</p>`; }
+  b.disabled = false; b.textContent = "Refaire les appels de test";
+});
 function etapesMessage(A) {
   const r = A.r, M = MA.etat;
   return [

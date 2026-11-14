@@ -3679,6 +3679,18 @@ def messages_publications():
         return jsonify({"erreur": f"Impossible de lire tes publications : {e}"}), 502
 
 
+@app.post("/api/messages/appels_test")
+@connecte
+def messages_appels_test():
+    """Admin : appels de lecture exigés par le Contrôle app de Meta."""
+    if not est_admin(g.u):
+        return jsonify({"erreur": "Réservé à l'administrateur."}), 403
+    try:
+        return jsonify({"resultats": ma.appels_test(g.u["id"])})
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"erreur": str(e)}), 400
+
+
 @app.post("/api/messages/tester")
 @connecte
 def messages_tester():

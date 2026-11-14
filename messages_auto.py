@@ -182,6 +182,33 @@ def abonne_page(ig_id: str, jeton: str, entreprise: str = "") -> bool:
         return False
 
 
+def appels_test(uid: int) -> list[dict]:
+    """Appels de lecture demandés par le Contrôle app de Meta (un appel réussi par autorisation) :
+    instagram_basic (profil et publications), instagram_manage_comments (commentaires d'une publication),
+    instagram_manage_messages (conversations). Rien n'est écrit ni envoyé."""
+    c = compte(uid)
+    if not c:
+        raise RuntimeError("Relie d'abord un compte Instagram.")
+    res = []
+
+    def appel(autorisation: str, chemin: str, **params) -> dict:
+        d = _get(chemin, c["jeton"], **params)
+        ok = "error" not in d
+        res.append({"autorisation": autorisation, "ok": ok, "detail": "" if ok else _erreur(d, "refusé")})
+        return d
+
+    appel("instagram_basic", c["ig_id"], fields="id,username,profile_picture_url,media_count")
+    medias = appel("instagram_basic", f"{c['ig_id']}/media", fields="id,caption,comments_count", limit=10).get("data", []) or []
+    avec = next((m for m in medias if m.get("comments_count")), medias[0] if medias else None)
+    if avec:
+        appel("instagram_manage_comments", f"{avec['id']}/comments", fields="id,text,username,timestamp", limit=5)
+    else:
+        res.append({"autorisation": "instagram_manage_comments", "ok": False, "detail": "aucune publication sur le compte"})
+    appel("instagram_manage_messages", f"{c['ig_id']}/conversations", platform="instagram", limit=1)
+    print(f"[messages auto] appels de test Meta : {res}")
+    return res
+
+
 def reabonne_tous():
     """Au démarrage : refait les abonnements (compte + page) des comptes déjà reliés, sans reconnexion."""
     if not configure():
