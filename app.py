@@ -3733,6 +3733,7 @@ def instagram_webhook():
         return "", 403
     corps = request.get_data()
     if not ma.signature_valide(corps, request.headers.get("X-Hub-Signature-256", "")):
+        print("[messages auto] webhook refusé : signature invalide (vérifier INSTAGRAM_APP_SECRET)")
         return "", 403
     try:
         charge = json.loads(corps or b"{}")
@@ -3905,6 +3906,8 @@ def main():
     reprend_analyses()
     if not args.sans_planificateur:
         threading.Thread(target=_marque_faceless, daemon=True).start()
+        if not args.demo:
+            threading.Thread(target=ma.reabonne_tous, daemon=True).start()
         threading.Thread(target=planificateur, daemon=True).start()
         threading.Thread(target=planificateur_emails, daemon=True).start()
     print(f"Données : {DATA}")

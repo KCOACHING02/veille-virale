@@ -139,6 +139,7 @@ def termine_connexion(uid: int, code: str, redirection: str) -> dict:
     moi = comptes["data"][0]
     _enregistre(uid, moi["id"], moi.get("username", ""), jeton, int(d.get("expires_in") or 0), moi.get("profile_picture_url", ""), entreprise)
     abonne_webhook(moi["id"], jeton)
+    abonne_page(moi["id"], jeton, entreprise)
     return compte(uid)
 
 
@@ -147,6 +148,53 @@ def abonne_webhook(ig_id: str, jeton: str):
                       headers={"Authorization": f"Bearer {jeton}"}, timeout=30)
     if r.status_code != 200:
         raise RuntimeError(_erreur(r.json(), "Instagram n'a pas activé les notifications de commentaires."))
+
+
+def _page_du_compte(ig_id: str, jeton: str, entreprise: str = "") -> dict | None:
+    """Page Facebook reliée au compte Instagram (avec son jeton de page si Meta le donne)."""
+    sources = ["me/accounts"]
+    if entreprise:
+        sources += [f"{entreprise}/owned_pages", f"{entreprise}/client_pages"]
+    for src in sources:
+        d = _get(src, jeton, fields="id,name,access_token,instagram_business_account", limit=100)
+        for p in d.get("data", []) or []:
+            if str((p.get("instagram_business_account") or {}).get("id") or "") == str(ig_id):
+                if not p.get("access_token"):
+                    p["access_token"] = _get(p["id"], jeton, fields="access_token").get("access_token", "")
+                return p
+    return None
+
+
+def abonne_page(ig_id: str, jeton: str, entreprise: str = "") -> bool:
+    """Avec la connexion Facebook, Meta n'envoie les commentaires Instagram que si la page Facebook reliée
+    est abonnée à l'application (n'importe quel champ de page). Jamais bloquant : on journalise seulement."""
+    try:
+        p = _page_du_compte(ig_id, jeton, entreprise)
+        if not p:
+            print(f"[messages auto] page Facebook du compte {ig_id} introuvable : abonnement de page non fait")
+            return False
+        r = requests.post(f"{GRAPH}/{VERSION}/{p['id']}/subscribed_apps", data={"subscribed_fields": "feed"},
+                          headers={"Authorization": f"Bearer {p.get('access_token') or jeton}"}, timeout=30)
+        print(f"[messages auto] abonnement de la page {p.get('name')} ({p['id']}) : {r.status_code} {r.text[:200]}")
+        return r.status_code == 200
+    except Exception as e:  # noqa: BLE001
+        print(f"[messages auto] abonnement de page impossible : {e}")
+        return False
+
+
+def reabonne_tous():
+    """Au démarrage : refait les abonnements (compte + page) des comptes déjà reliés, sans reconnexion."""
+    if not configure():
+        return
+    _table()
+    with ab._db() as c:
+        lignes = [dict(r) for r in c.execute("SELECT * FROM instagram").fetchall()]
+    for x in lignes:
+        try:
+            abonne_webhook(x["ig_id"], x["jeton"])
+        except Exception as e:  # noqa: BLE001
+            print(f"[messages auto] réabonnement de {x.get('pseudo')} : {e}")
+        abonne_page(x["ig_id"], x["jeton"], x.get("entreprise") or "")
 
 
 def renouvelle_jetons():
@@ -272,6 +320,8 @@ def traite_webhook(charge: dict, peut_envoyer) -> int:
     """Parcourt les commentaires reçus ; renvoie le nombre de messages envoyés.
     peut_envoyer(uid) -> bool : la cliente a-t-elle encore droit à la fonction (formule payante active) ?"""
     n = 0
+    print(f"[messages auto] webhook reçu : objet={charge.get('object')} "
+          f"champs={[ch.get('field') for e in charge.get('entry', []) or [] for ch in e.get('changes', []) or []]}")
     for entree in charge.get("entry", []) or []:
         ig_id = str(entree.get("id") or "")
         for ch in entree.get("changes", []) or []:
@@ -289,6 +339,8 @@ def traite_commentaire(ig_id: str, v: dict, peut_envoyer, demo: bool = False) ->
     c = compte_par_ig(ig_id) if not demo else None
     uid = c["uid"] if c else v.get("_uid")
     if not uid or not peut_envoyer(uid):
+        if not demo:
+            print(f"[messages auto] commentaire ignoré : compte {ig_id} {'non relié' if not uid else 'sans droit à la fonction'}")
         return 0
     auteur = (v.get("from") or {})
     if str(auteur.get("id") or "") == ig_id or (c and auteur.get("username") == c.get("pseudo")):
