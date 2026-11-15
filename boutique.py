@@ -1595,7 +1595,8 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
     if d["entete"] == "photo_fond" and d.get("mise_en_page", "colonne") == "colonne" and (d.get("fond_image") or page.get("photo")):
         fond_img = f'<div class="fond-photo" style="background-image:url(\'{_img(pseudo, d.get("fond_image") or page["photo"])}\')"></div>'
-    classes = (f'e-{d["entete"]} ts-{d.get("titres_style", "simple")} mp-{d.get("mise_en_page", "colonne")} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} '
+    sur_photo = " sur-photo" if fond_img else ""  # photo en fond : textes posés sur un panneau lisible
+    classes = (f'e-{d["entete"]}{sur_photo} ts-{d.get("titres_style", "simple")} mp-{d.get("mise_en_page", "colonne")} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} '
                f'tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
     if page.get("_parrain"):  # la pastille « Créé avec Virallink » porte le lien de parrainage de la créatrice
@@ -1693,6 +1694,12 @@ CSS_BLOCS_PRODUITS = """
 .sans-desc :is(.ptxt small:not(.pnote),.ap-carte small,.ca-carte small,.st-pied p,.mq-prod small,.un-txt em){display:none!important}
 .sans-prix :is(.px,.fi-prix,.ap-prix,.ca-prix,.mq-prix,.st-voir span,.rp-px){display:none!important}
 .pb{display:block}
+/* Photo ou image en fond : les textes posés directement dessus passent sur un panneau aux couleurs des cartes */
+.sur-photo article.fiche{background:var(--k);color:var(--kt);border-radius:var(--rk);padding:16px 16px 20px;box-shadow:0 18px 40px -20px rgba(0,0,0,.5)}
+.sur-photo article.fiche .px s{color:var(--kt)}
+.sur-photo .retour{display:inline-block;background:var(--k);color:var(--kt);padding:7px 14px;border-radius:999px;text-decoration:none;opacity:1}
+.sur-photo:not(.ts-pastille) .sec,.sur-photo .txt{display:table;margin-left:auto;margin-right:auto;background:color-mix(in srgb,var(--k) 88%,transparent);color:var(--kt);padding:8px 16px;border-radius:14px}
+.sur-photo .marque a{background:var(--k);color:var(--kt);padding:6px 12px;border-radius:999px}
 """
 
 
