@@ -1085,8 +1085,13 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 .capture .ok{{font-weight:600;margin:0}}
 .kit-lien{{display:flex;justify-content:space-between;align-items:center;text-decoration:none}}
 .kit-lien b{{font:400 calc(var(--tt) * .55)/1.15 var(--tf)}}
-.marque{{display:flex;justify-content:center;margin-top:34px}}
-.marque a{{font-size:12px;text-decoration:none;opacity:.6;border:1px solid currentColor;border-radius:99px;padding:5px 12px}}
+.marque{{display:flex;justify-content:center;margin:38px 0 8px}}
+.marque a{{display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:2px 8px;font-size:12.5px;line-height:1.35;text-decoration:none;max-width:250px;
+  background:var(--k);color:var(--kt);border-radius:22px;padding:9px 18px;box-shadow:0 8px 22px -12px rgba(0,0,0,.4);transition:transform .15s}}
+.marque a::before{{content:"";width:9px;height:16px;border-radius:4px;background:linear-gradient(160deg,#FF6B8E,#E8456B);transform:skewX(-12deg)}}
+.marque a b{{font-weight:800;margin-left:-4px}}
+.marque a span{{flex-basis:100%;text-align:center;font-weight:700;color:var(--a)}}
+.marque a:hover{{transform:translateY(-1px)}}
 .apparition .blocs>*{{animation:monte .5s both}}
 {''.join(f'.apparition .blocs>*:nth-child({i}){{animation-delay:{i * 0.05:.2f}s}}' for i in range(1, 16))}
 @keyframes monte{{from{{opacity:0;transform:translateY(12px)}}}}
@@ -1630,7 +1635,9 @@ def badge(page: dict | None = None) -> str:
     """Mention en bas de page : affichée en formule gratuite, retirée pour les abonnées."""
     if page is not None and not page.get("_marque", True):
         return ""
-    return '<div class="marque"><a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec Virallink · crée la tienne</a></div>'
+    # le début « <a href="/boutique-gratuite" … >Créé avec » sert à document() pour y glisser le lien de parrainage
+    return ('<div class="marque"><a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec <b>Virallink</b>'
+            '<span>Crée ta boutique gratuitement →</span></a></div>')
 
 
 BOITES = (".carte,.ap-carte,.st-post,.un-carte,.un-liste,.ap-conseil,.st-profil,.un-profil,.ca-banniere")
@@ -1699,7 +1706,6 @@ CSS_BLOCS_PRODUITS = """
 .sur-photo article.fiche .px s{color:var(--kt)}
 .sur-photo .retour{display:inline-block;background:var(--k);color:var(--kt);padding:7px 14px;border-radius:999px;text-decoration:none;opacity:1}
 .sur-photo:not(.ts-pastille) .sec,.sur-photo .txt{display:table;margin-left:auto;margin-right:auto;background:color-mix(in srgb,var(--k) 88%,transparent);color:var(--kt);padding:8px 16px;border-radius:14px}
-.sur-photo .marque a{background:var(--k);color:var(--kt);padding:6px 12px;border-radius:999px}
 """
 
 
