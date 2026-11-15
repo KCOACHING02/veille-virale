@@ -1283,6 +1283,7 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-bloc.cache{opacity:.55}
 .bt-bloc-tete{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px}
 .bt-bloc-tete .ic{width:32px;height:32px;border-radius:9px;background:var(--sunk);display:grid;place-items:center;flex-shrink:0;font-size:16px}
+.bt-section{border-style:dashed;background:var(--bg-2,transparent)}.bt-section .res{cursor:default}
 .bt-bloc-tete .res{flex:1;min-width:0;border:0;background:none;text-align:left;cursor:pointer;padding:4px 6px}
 .bt-bloc-tete .res b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bt-bloc-tete .res small{display:block;color:var(--ink-3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -5946,8 +5947,25 @@ function renduOnglet() {
   window.scrollTo(0, y);
 }
 
+// ---- Sections des formats Appli / Marque, devenues des blocs déplaçables
+const sectionsFormat = () => (BQ.etat.options.sections || {})[BQ.page.design.mise_en_page || "colonne"] || null;
+const blocListe = b => b.type !== "section" || (sectionsFormat() || []).some(([k]) => k === b.section);
+// Première ouverture d'une boutique Appli / Marque : ses sections deviennent des blocs, dans l'ordre exact où la page les montrait.
+function assureSections() {
+  const sec = sectionsFormat(), p = BQ.page;
+  if (!sec || p.blocs.some(b => b.type === "section" && sec.some(([k]) => k === b.section))) return;
+  const cles = sec.map(([k]) => k), i = cles.indexOf("produits");
+  const mk = k => ({id: idCourt(), type: "section", section: k, visible: true});
+  let prods = p.blocs.find(b => b.type === "produits");
+  const reste = p.blocs.filter(b => b !== prods);
+  if (!prods) prods = {id: idCourt(), type: "produits", titre: "", visible: true};
+  p.blocs = [...cles.slice(0, i).map(mk), prods, ...cles.slice(i + 1).filter(k => k !== "contact").map(mk), ...reste,
+    ...(cles.includes("contact") ? [mk("contact")] : [])];
+}
+
 // ---- Onglet Contenu
 function ongletContenu(z) {
+  assureSections();
   const p = BQ.page, res = p.reseaux || {};
   const libres = Object.keys(BQ.etat.options.reseaux).filter(k => !(k in res));
   z.innerHTML = `
@@ -5969,7 +5987,7 @@ function ongletContenu(z) {
       ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
     </section>
     <section class="bt-sec"><h3>Ta page</h3><p class="aide">Les blocs, dans l'ordre où ils s'affichent. Touche un bloc pour le modifier.</p>
-      <div class="bt-blocs">${p.blocs.map((b, i) => blocHTML(b, i)).join("") || '<p class="aide">Ta page est vide : ajoute ton premier bloc.</p>'}</div>
+      <div class="bt-blocs">${p.blocs.map((b, i) => blocListe(b) ? blocHTML(b, i) : "").join("") || '<p class="aide">Ta page est vide : ajoute ton premier bloc.</p>'}</div>
       <button class="btn prim" id="bt-ajout-bloc" style="margin-top:12px;width:100%;justify-content:center">+ Ajouter un bloc</button>
     </section>`;
   lieChamps(z);
@@ -5982,8 +6000,10 @@ function ongletContenu(z) {
     e.stopPropagation();
     const i = +b.dataset.i, a = b.dataset.blocAction, L = p.blocs;
     if (a === "ouvrir") BQ.ouvertBloc = BQ.ouvertBloc === L[i].id ? null : L[i].id;
-    if (a === "haut" && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
-    if (a === "bas" && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+    if (a === "haut" || a === "bas") {  // saute les blocs d'un autre format, absents de la liste
+      let j = i; do j += a === "haut" ? -1 : 1; while (j >= 0 && j < L.length && !blocListe(L[j]));
+      if (j >= 0 && j < L.length) [L[j], L[i]] = [L[i], L[j]];
+    }
     if (a === "voir") L[i].visible = L[i].visible === false;
     if (a === "suppr") { const [retire] = L.splice(i, 1); renduOnglet(); apercu();
       return toastAnnuler("Bloc supprimé", () => { L.splice(i, 0, retire); renduOnglet(); apercu(); }, () => sauveBoutique(true), 5000, {boutique: true}); }
@@ -6001,17 +6021,35 @@ function resumeBloc(b) {
     capture: b.titre || "Reste en contact", kit: b.titre || "Kit média"})[b.type];
 }
 function blocHTML(b, i) {
-  const [ic, nom] = TYPES_BLOCS[b.type] || ["•", b.type], ouvert = BQ.ouvertBloc === b.id, n = BQ.page.blocs.length;
+  if (b.type === "section") return sectionHTML(b, i);
+  const [ic, nom] = TYPES_BLOCS[b.type] || ["•", b.type], ouvert = BQ.ouvertBloc === b.id;
+  const L = BQ.page.blocs, prem = L.findIndex(blocListe), dern = L.length - 1 - [...L].reverse().findIndex(blocListe);
   return `<div class="bt-bloc ${b.visible === false ? "cache" : ""}">
     <div class="bt-bloc-tete"><span class="ic">${ic}</span>
       <button class="res" data-bloc-action="ouvrir" data-i="${i}" aria-expanded="${ouvert}"><b>${esc(resumeBloc(b))}${b.en_avant ? " ✨" : ""}</b><small>${nom}${b.type === "lien" && b.produit && BQ.page.produits.some(x => x.id === b.produit) ? " · 💳 paiement" : b.type === "lien" && b.url ? " · " + esc(b.url) : ""}</small></button>
-      <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === 0 ? "disabled" : ""}>↑</button>
-      <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === n - 1 ? "disabled" : ""}>↓</button>
+      <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === prem ? "disabled" : ""}>↑</button>
+      <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === dern ? "disabled" : ""}>↓</button>
       <button class="icone-btn" data-bloc-action="voir" data-i="${i}" aria-label="${b.visible === false ? "Afficher" : "Masquer"}" title="${b.visible === false ? "Masqué" : "Visible"}">${b.visible === false
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 6.1A10 10 0 0112 6c7 0 11 6 11 6a17 17 0 01-3.2 3.8M6.6 6.6C3.4 8.5 1 12 1 12s4 7 11 7a10 10 0 005.4-1.6"/></svg>'
         : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>'}</button>
       <button class="icone-btn" data-bloc-action="suppr" data-i="${i}" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>${ouvert ? `<div class="bt-bloc-corps">${corpsBloc(b, i)}</div>` : ""}</div>`;
+}
+const ICO_SECTIONS = {ap_hero: "🎠", ap_ronds: "⭕", st_ronds: "⭕", st_profil: "🪪", ca_recherche: "🔎", ca_banniere: "🏷️",
+  un_grandes: "🗞️", un_profil: "🪪", mq_stories: "🎞️", mq_manif: "✒️", contact: "💬"};
+// Une partie du modèle (bannière, ronds, « Une question ? »…) : se déplace et se masque, rien à remplir.
+function sectionHTML(b, i) {
+  const nom = ((sectionsFormat() || []).find(([k]) => k === b.section) || [])[1] || "Partie du modèle";
+  const L = BQ.page.blocs, prem = L.findIndex(blocListe), dern = L.length - 1 - [...L].reverse().findIndex(blocListe);
+  return `<div class="bt-bloc bt-section ${b.visible === false ? "cache" : ""}">
+    <div class="bt-bloc-tete"><span class="ic">${ICO_SECTIONS[b.section] || "▫️"}</span>
+      <span class="res"><b>${esc(nom)}</b><small>Partie du modèle</small></span>
+      <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === prem ? "disabled" : ""}>↑</button>
+      <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === dern ? "disabled" : ""}>↓</button>
+      <button class="icone-btn" data-bloc-action="voir" data-i="${i}" aria-label="${b.visible === false ? "Afficher" : "Masquer"}" title="${b.visible === false ? "Masqué" : "Visible"}">${b.visible === false
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 6.1A10 10 0 0112 6c7 0 11 6 11 6a17 17 0 01-3.2 3.8M6.6 6.6C3.4 8.5 1 12 1 12s4 7 11 7a10 10 0 005.4-1.6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>'}</button>
+    </div></div>`;
 }
 function champB(i, k, label, val, attrs = "") { return `<div class="champ"><label>${label}</label><input data-b="${i}" data-bk="${k}" value="${esc(val || "")}" ${attrs}></div>`; }
 function corpsBloc(b, i) { return corpsBlocContenu(b, i) + apparenceBloc(b, i); }

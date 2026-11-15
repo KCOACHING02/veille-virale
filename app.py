@@ -1862,6 +1862,7 @@ import re as _re  # noqa: E402
 import boutique as bq  # noqa: E402
 import boutique_ventes as bv  # noqa: E402
 import tunnels  # noqa: E402
+import boutique_formats as bf  # noqa: E402
 
 
 def _droits_uid(uid) -> dict | None:
@@ -2298,6 +2299,7 @@ def _options_boutique() -> dict:
             "styles_prix": bq.STYLES_PRIX, "cadres_carte": bq.CADRES_CARTE,
             "mises_en_page": bq.MISES_EN_PAGE, "espacements": bq.ESPACEMENTS, "largeurs_page": bq.LARGEURS_PAGE, "tailles_texte": bq.TAILLES_TEXTE,
             "largeurs_bloc": bq.LARGEURS_BLOC, "separateurs": bq.SEPARATEURS, "dispositions_galerie": bq.DISPOSITIONS_GALERIE,
+            "sections": {k: [[c, l] for c, l in v] for k, v in bf.SECTIONS.items()},
             "reseaux": {k: v[0] for k, v in bq.RESEAUX.items()}, "defaut": bq.DESIGN_DEFAUT}
 
 
@@ -2452,7 +2454,7 @@ def boutique_change_pseudo():
 
 
 TYPES_BLOCS = ("lien", "titre", "texte", "video", "produit", "produits", "capture", "kit",
-               "image", "galerie", "temoignages", "faq", "compte", "banniere", "separateur", "musique")
+               "image", "galerie", "temoignages", "faq", "compte", "banniere", "separateur", "musique", "section")
 
 
 def _bloc_propre(b: dict) -> dict | None:
@@ -2466,6 +2468,10 @@ def _bloc_propre(b: dict) -> dict | None:
             r[k] = b[k].strip()[:lim]
     if t == "lien":
         r["en_avant"] = bool(b.get("en_avant"))
+    if t == "section":  # section propre à un format Appli / Marque (bannière, ronds, « Une question ? »…)
+        if b.get("section") not in bf.LIBELLES_SECTIONS:
+            return None
+        r["section"] = b["section"]
     # Mise en page du bloc : largeur (côte à côte), hauteur (bento) et style propre
     if b.get("largeur") in bq.LARGEURS_BLOC:
         r["largeur"] = b["largeur"]

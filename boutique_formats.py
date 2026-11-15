@@ -28,7 +28,95 @@ ICO_PROFIL = ('<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8
 ICO_LECTURE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>'
 ICO_HAUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'
 
-DEJA_DANS_LA_PAGE = ("produits", "produit")  # rendus par les sections de la mise en page
+DEJA_DANS_LA_PAGE = ("produits", "produit", "section")  # rendus par les sections de la mise en page
+
+# Sections propres à chaque format Appli / Marque. Elles deviennent des blocs « section » que la cliente déplace,
+# masque ou supprime ; « produits » marque la place du (ou des) bloc(s) Produits. Une section du format qui n'a pas
+# encore de bloc se place d'elle-même : avant les produits si elle est listée avant, après sinon.
+SECTIONS = {
+    "appli": [("ap_hero", "Bannière défilante"), ("ap_ronds", "« De quoi as-tu envie ? »"), ("produits", ""), ("contact", "« Une question ? »")],
+    "appli_stories": [("st_ronds", "Ronds de stories"), ("st_profil", "Carte de présentation"), ("produits", ""), ("contact", "« Une question ? »")],
+    "appli_catalogue": [("ca_recherche", "Recherche et filtres"), ("ca_banniere", "Bannière mise en avant"), ("produits", ""), ("contact", "« Une question ? »")],
+    "appli_une": [("un_grandes", "Grandes cartes « À la une »"), ("produits", ""), ("un_profil", "Carte de présentation"), ("contact", "« Une question ? »")],
+    "marque": [("mq_stories", "Grandes cartes verticales"), ("mq_manif", "Manifeste (nom + présentation)"), ("produits", "")],
+}
+LIBELLES_SECTIONS = {k: l for v in SECTIONS.values() for k, l in v if k != "produits"}
+
+
+def _prods_du_bloc(page: dict, b: dict | None) -> list[dict]:
+    prods = _produits(page)
+    if not b:
+        return prods
+    if b.get("type") == "produit":
+        return [p for p in prods if p["id"] == b.get("produit")]
+    ids = b.get("ids") or []
+    return [p for p in prods if p["id"] in ids] if ids else prods
+
+
+def _groupe_appli(inner: str, premier: bool) -> str:
+    return f'<div class="blocs ap-blocs"{' id="liens"' if premier else ""}>{inner}</div>'
+
+
+def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, groupe_html=_groupe_appli) -> str:
+    """Le corps de la page dans l'ordre des blocs de la cliente : sections du format, produits et blocs ordinaires.
+
+    Page qui n'a encore aucun bloc « section » de ce format (boutique d'avant) : rendu d'origine à l'identique
+    (sections, tous les produits, sections d'après, autres blocs, « Une question ? »)."""
+    ordre = [k for k, _ in SECTIONS[mep]]
+    i = ordre.index("produits")
+    blocs = [b for b in page.get("blocs") or [] if b.get("visible", True)]
+    refs = {b.get("section") for b in page.get("blocs") or [] if b.get("type") == "section"} & set(ordre)
+    avant = [k for k in ordre[:i] if k not in refs]
+    apres = [k for k in ordre[i + 1:] if k not in refs and k != "contact"]
+    fin = ["contact"] if "contact" in ordre and "contact" not in refs else []
+
+    # Liste des éléments à rendre : ("section", clé) / ("produits", bloc ou None) / ("bloc", bloc)
+    if not refs:
+        elems = [("produits", None)] + [("bloc", b) for b in blocs if b.get("type") not in DEJA_DANS_LA_PAGE]
+    else:
+        elems = []
+        for b in blocs:
+            t = b.get("type")
+            elems.append(("section", b.get("section")) if t == "section" else ("produits", b) if t in ("produits", "produit") else ("bloc", b))
+        if not any(e[0] == "produits" for e in elems):
+            elems.insert(0, ("produits", None))
+    out = [sections.get(k, "") for k in avant]
+    groupe: list[str] = []
+    etat = {"premier": True, "apres": False, "liens": False}
+
+    def vide():
+        if groupe:
+            out.append(groupe_html("".join(groupe), not etat["liens"]))
+            etat["liens"] = True
+            groupe.clear()
+
+    for genre, x in elems:
+        if genre == "section":
+            vide()
+            out.append(sections.get(x, ""))
+        elif genre == "produits":
+            vide()
+            if x is None:
+                titre, liste = _titre_boutique(page), _produits(page)
+            else:
+                titre = x.get("titre") or ("" if x.get("type") == "produit" else "La boutique")
+                liste = _prods_du_bloc(page, x)
+            out.append(rendu_prods(liste, titre, etat["premier"]))
+            etat["premier"] = False
+            if not etat["apres"]:
+                out.extend(sections.get(k, "") for k in apres)
+                etat["apres"] = True
+        else:
+            groupe.append(bq._bloc_enveloppe(x, page, pseudo))
+    vide()
+    if not etat["apres"]:
+        out.extend(sections.get(k, "") for k in apres)
+    out.extend(sections.get(k, "") for k in fin)
+    return "".join(out)
+
+
+def _ancre(premier: bool) -> str:
+    return ' id="boutique"' if premier else ""
 
 
 def _produits(page: dict) -> list[dict]:
@@ -142,11 +230,8 @@ def _haut_appli(page: dict, pseudo: str) -> str:
 
 def _bas_appli(page: dict, pseudo: str, avec_boutique: bool) -> str:
     """Autres blocs, carte « Une question ? » et onglets du bas, communs aux modèles Appli."""
-    autres, a_des_liens = _autres_blocs(page, pseudo)
-    autres = f'<div class="blocs ap-blocs" id="liens">{autres}</div>' if autres else ""
+    a_des_liens = any(b.get("type") == "lien" and b.get("visible", True) for b in page.get("blocs") or [])
     contact = _contact(page)
-    conseil = (f'<a class="ap-conseil" href="{E(contact[0])}" target="_blank" rel="noopener"><span><b>Une question ?</b>'
-               f'<small>{E(contact[1])}</small></span><i>{ICO_FLECHE}</i></a>') if contact else ""
     onglets = [("#haut", "Accueil", ICO_MAISON, True)]
     if avec_boutique:
         onglets.append(("#boutique", "Boutique", ICO_SAC, False))
@@ -157,7 +242,13 @@ def _bas_appli(page: dict, pseudo: str, avec_boutique: bool) -> str:
     nav = '<nav class="ap-nav">' + "".join(
         f'<a href="{E(u)}"{" target=_blank rel=noopener" if u.startswith("http") or u.startswith("mailto") else ""}'
         f'{" aria-current=page" if actif else ""}>{ico}<span>{E(t)}</span></a>' for u, t, ico, actif in onglets) + "</nav>"
-    return f'{autres}{conseil}</div>{bq.badge(page)}{nav}{SCRIPT_ONGLETS}'
+    return f'</div>{bq.badge(page)}{nav}{SCRIPT_ONGLETS}'
+
+
+def _section_contact(page: dict) -> str:
+    contact = _contact(page)
+    return (f'<a class="ap-conseil" href="{E(contact[0])}" target="_blank" rel="noopener"><span><b>Une question ?</b>'
+            f'<small>{E(contact[1])}</small></span><i>{ICO_FLECHE}</i></a>') if contact else ""
 
 
 def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
@@ -192,18 +283,21 @@ def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
             f'<a class="ap-rond-p r{i % 6}" href="{_lien_produit(page, pseudo, p)}"><span><img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy"></span>'
             f'<b>{E(p.get("titre") or "")}</b></a>' for i, p in enumerate(avec_image[:6])) + "</div>")
 
-    # Rail de produits
-    cartes = []
-    for p in prods:
-        prix, barre, pastille = _prix(p)
-        img = f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>'
-        cartes.append(f'<a class="ap-carte" href="{_lien_produit(page, pseudo, p)}">{f"<span class=ap-pastille>{E(pastille)}</span>" if pastille else ""}'
-                      f'<span class="ap-img">{img}<span class="ap-sac" aria-hidden="true">{ICO_SAC}</span></span>'
-                      f'<b>{E(p.get("titre") or "")}</b><span class="ap-prix">{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span></a>')
-    rail = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="ap-rail">{"".join(cartes)}</div>' if cartes
-            else '<span id="boutique"></span>')
+    # Rail de produits (un par bloc Produits)
+    def rail(liste, titre, premier):
+        cartes = []
+        for p in liste:
+            prix, barre, pastille = _prix(p)
+            img = f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>'
+            cartes.append(f'<a class="ap-carte" href="{_lien_produit(page, pseudo, p)}">{f"<span class=ap-pastille>{E(pastille)}</span>" if pastille else ""}'
+                          f'<span class="ap-img">{img}<span class="ap-sac" aria-hidden="true">{ICO_SAC}</span></span>'
+                          f'<b>{E(p.get("titre") or "")}</b><span class="ap-prix">{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span></a>')
+        if not cartes:
+            return f'<span{_ancre(premier)}></span>'
+        return f'{f"<h2 class=\"ap-t\"{_ancre(premier)}>{E(titre)}</h2>" if titre else ""}<div class="ap-rail"{"" if titre else _ancre(premier)}>{"".join(cartes)}</div>'
 
-    return f'<div class="ap ca-{_cartes(page)}">{haut}{hero}{ronds}{rail}{_bas_appli(page, pseudo, bool(cartes))}{SCRIPT_CARROUSEL}'
+    corps = _assemble(page, pseudo, "appli", {"ap_hero": hero, "ap_ronds": ronds, "contact": _section_contact(page)}, rail)
+    return f'<div class="ap ca-{_cartes(page)}">{haut}{corps}{_bas_appli(page, pseudo, bool(prods))}{SCRIPT_CARROUSEL}'
 
 
 SCRIPT_ONGLETS = """
@@ -226,7 +320,7 @@ def rendu_marque(page: dict, pseudo: str, apercu: bool = False) -> str:
     autres, a_des_liens = _autres_blocs(page, pseudo)
     contact = _contact(page)
     menu_liens = [("#boutique", _titre_boutique(page))] if prods else []
-    if a_des_liens or autres:
+    if autres.strip():
         menu_liens.append(("#plus", "Liens et infos"))
     for cle, (libelle, _) in bq.RESEAUX.items():
         u = bq.lien_reseau(cle, (page.get("reseaux") or {}).get(cle) or "")
@@ -260,8 +354,9 @@ def rendu_marque(page: dict, pseudo: str, apercu: bool = False) -> str:
     manif = (f'<section class="mq-manif">{f"<nav class=mq-reseaux>{reseaux}</nav>" if reseaux else ""}'
              f'<p><em>{E(nom)}</em>{f" · {E(bio)}" if bio else ""}</p></section>')
 
-    grille = []
-    for p in prods:
+    def boutique(liste, titre, premier):
+      grille = []
+      for p in liste:
         prix, barre, pastille = _prix(p)
         img = f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>'
         st = f'<small>{E(p["sous_titre"])}</small>' if p.get("sous_titre") else ""
@@ -269,11 +364,17 @@ def rendu_marque(page: dict, pseudo: str, apercu: bool = False) -> str:
                       f'{f"<span class=mq-pastille>{E(pastille)}</span>" if pastille else ""}<i class="mq-plus">{ICO_PLUS}</i></span>'
                       f'<b>{E(p.get("titre") or "")}</b>{st}'
                       f'<span class="mq-prix">{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span></a>')
-    boutique = (f'<section class="mq-boutique" id="boutique"><h2>{E(_titre_boutique(page))}</h2><div class="mq-grille">{"".join(grille)}</div></section>'
-                if grille else "")
-    plus = f'<section class="mq-plus-sec" id="plus"><div class="blocs">{autres}</div></section>' if autres else ""
+      if not grille:
+          return f'<span{_ancre(premier)}></span>'
+      return (f'<section class="mq-boutique"{_ancre(premier)}>{f"<h2>{E(titre)}</h2>" if titre else ""}'
+              f'<div class="mq-grille">{"".join(grille)}</div></section>')
+
+    def plus(inner, premier):
+        return f'<section class="mq-plus-sec"{' id="plus"' if premier else ""}><div class="blocs">{inner}</div></section>'
+
+    corps = _assemble(page, pseudo, "marque", {"mq_stories": stories, "mq_manif": manif}, boutique, plus)
     bulle = (f'<a class="mq-bulle" href="{E(contact[0])}" target="_blank" rel="noopener" aria-label="{E(contact[1])}">{ICO_BULLE}</a>' if contact else "")
-    return (f'{haut}{stories}{manif}{boutique}{plus}{bq.badge(page)}'
+    return (f'{haut}{corps}{bq.badge(page)}'
             f'<div class="mq-flottants">{bulle}<a class="mq-haut-btn" href="#haut" aria-label="Revenir en haut">{ICO_HAUT}</a></div>')
 
 
@@ -322,7 +423,7 @@ CSS = """
 .ap-sac{position:absolute;right:0;bottom:4px;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--a);color:var(--ac);
   box-shadow:0 10px 22px -10px var(--a)}.ap-sac svg{width:24px;height:24px}
 .ap-carte b{font-size:1.08em;line-height:1.2}.ap-prix{font:800 1.3em var(--tf)}.ap-prix s,.mq-prix s{font-size:.7em;opacity:.5;font-weight:500}
-.ap-blocs{margin-top:28px}
+.ap-blocs{margin:28px 0}.ap-blocs+.ap-conseil,.ap-blocs:last-child{margin-bottom:0}
 .ap-conseil{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 8px;padding:22px 22px;border-radius:28px;
   background:var(--t);color:var(--f1);text-decoration:none}
 .ap-conseil span{display:flex;flex-direction:column;gap:4px}.ap-conseil b{font:800 1.4em/1.1 var(--tf)}.ap-conseil small{opacity:.75;font-size:1em}
@@ -411,8 +512,9 @@ def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
     profil = "" if sans_profil else (f'<section class="st-profil" id="profil"><i class="st-pp">{mini}</i><div><b>{E(nom)}</b>'
               f'<p>{E(page.get("bio") or "")}</p>'
               f'<a class="st-suivre" href="#boutique">Voir la boutique</a></div></section>')
-    posts = []
-    for p in prods:
+    def fil(liste, titre, premier):
+      posts = []
+      for p in liste:
         prix, barre, pastille, sous = _carte_info(p)
         img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>')
         posts.append(f'<article class="st-post" id="p-{E(p["id"])}"><header><i class="st-mini">{mini}</i><b>{E(nom)}</b>'
@@ -420,9 +522,14 @@ def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
                      f'<a class="st-img" href="{_lien_produit(page, pseudo, p)}">{img}</a>'
                      f'<div class="st-pied"><div><b>{E(p.get("titre") or "")}</b>{f"<p>{E(sous)}</p>" if sous else ""}</div>'
                      f'<a class="st-voir" href="{_lien_produit(page, pseudo, p)}"><span>{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span>Voir l\'offre</a></div></article>')
-    fil = f'<section class="st-fil" id="boutique">{"".join(posts)}</section>' if posts else ""
-    return (f'<div class="ap ca-{_cartes(page)}">{_haut_appli(page, pseudo)}<nav class="st-ronds">{"".join(ronds)}</nav>{profil}{fil}'
-            f'{_bas_appli(page, pseudo, bool(posts))}')
+      if not posts:
+          return f'<span{_ancre(premier)}></span>'
+      t = f'<h2 class="ap-t">{E(titre)}</h2>' if titre and not premier else ""
+      return f'{t}<section class="st-fil"{_ancre(premier)}>{"".join(posts)}</section>'
+
+    corps = _assemble(page, pseudo, "appli_stories", {"st_ronds": f'<nav class="st-ronds">{"".join(ronds)}</nav>' if ronds else "",
+                                                     "st_profil": profil, "contact": _section_contact(page)}, fil)
+    return f'<div class="ap ca-{_cartes(page)}">{_haut_appli(page, pseudo)}{corps}{_bas_appli(page, pseudo, bool(prods))}'
 
 
 SCRIPT_CATALOGUE = """
@@ -444,8 +551,8 @@ def rendu_appli_catalogue(page: dict, pseudo: str, apercu: bool = False) -> str:
     """Façon appli de shopping : recherche, puces de filtres, bannière de mise en avant, grille de produits sur deux colonnes."""
     prods = _produits(page)
     cats_vues: dict[str, str] = {}
-    cartes = []
-    for p in prods:
+
+    def infos(p):
         prix, barre, pastille, sous = _carte_info(p)
         cats = []
         if prix == "Gratuit":
@@ -458,13 +565,26 @@ def rendu_appli_catalogue(page: dict, pseudo: str, apercu: bool = False) -> str:
             cats.append("pack")
         if p.get("externe"):
             cats.append("partenaire")
-        for c in cats:
+        return prix, barre, pastille, sous, cats
+
+    for p in prods:
+        for c in infos(p)[4]:
             cats_vues[c] = 1
+
+    def grille(liste, titre, premier):
+      cartes = []
+      for p in liste:
+        prix, barre, pastille, sous, cats = infos(p)
         img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else '<i class="ap-vide"></i>')
         cartes.append(f'<a class="ca-carte" href="{_lien_produit(page, pseudo, p)}" data-cats="{" ".join(cats)}" data-nom="{E((p.get("titre") or "").lower())}">'
                       f'<span class="ca-img">{img}{f"<span class=ca-pastille>{E(pastille)}</span>" if pastille else ""}'
                       f'<i class="ca-plus">{ICO_PLUS}</i></span><b>{E(p.get("titre") or "")}</b>{f"<small>{E(sous)}</small>" if sous else ""}'
                       f'<span class="ca-prix">{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span></a>')
+      if not cartes:
+          return f'<span{_ancre(premier)}></span>'
+      return (f'{f"<h2 class=\"ap-t\"{_ancre(premier)}>{E(titre)}</h2>" if titre else ""}<div class="ca-grille"{"" if titre else _ancre(premier)}>{"".join(cartes)}</div>'
+              + ('<p class="ca-aucun" data-aucun hidden>Aucun produit ne correspond.</p>' if premier else ""))
+
     noms = {"gratuit": "Gratuits", "promo": "Promos", "seance": "Séances", "pack": "Packs", "partenaire": "Partenaires"}
     puces = ('<div class="ca-puces"><button type="button" data-filtre="tout" aria-pressed="true">Tout</button>'
              + "".join(f'<button type="button" data-filtre="{k}" aria-pressed="false">{v}</button>' for k, v in noms.items() if k in cats_vues)
@@ -479,10 +599,10 @@ def rendu_appli_catalogue(page: dict, pseudo: str, apercu: bool = False) -> str:
         banniere = (f'<a class="ca-banniere" href="{_lien_produit(page, pseudo, une)}"><div><small>{E(pastille or "À découvrir")}</small>'
                     f'<b>{E(une.get("titre") or "")}</b><em>{E(prix)}</em><span class="ap-cta">Je découvre</span></div>'
                     f'<img src="{bq._img(pseudo, une["image"])}" alt="" loading="lazy"></a>')
-    grille = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="ca-grille">{"".join(cartes)}</div>'
-              '<p class="ca-aucun" data-aucun hidden>Aucun produit ne correspond.</p>') if cartes else ""
-    return (f'<div class="ap">{_haut_appli(page, pseudo)}{cherche}{puces}{banniere}{grille}'
-            f'{_bas_appli(page, pseudo, bool(cartes))}{SCRIPT_CATALOGUE}')
+    corps = _assemble(page, pseudo, "appli_catalogue", {"ca_recherche": cherche + puces, "ca_banniere": banniere,
+                                                       "contact": _section_contact(page)}, grille)
+    return (f'<div class="ap">{_haut_appli(page, pseudo)}{corps}'
+            f'{_bas_appli(page, pseudo, bool(prods))}{SCRIPT_CATALOGUE}')
 
 
 MOIS = ("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre")
@@ -509,16 +629,20 @@ def rendu_appli_une(page: dict, pseudo: str, apercu: bool = False) -> str:
                        f'<b>{E(p.get("titre") or "")}</b>{f"<em>{E(sous)}</em>" if sous else ""}</span></span>'
                        f'<span class="un-bas"><i class="un-ico">{icone}</i><span><b>{E(nom)}</b><small>{E(prix)}{f" · au lieu de {E(barre)}" if barre else ""}</small></span>'
                        f'<span class="un-voir">Voir</span></span></a>')
-    lignes = []
-    for p in prods:
-        prix, barre, pastille, sous = _carte_info(p)
-        img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span>{E((p.get("titre") or "?")[:1])}</span>')
-        lignes.append(f'<a class="un-ligne" href="{_lien_produit(page, pseudo, p)}"><i class="un-ico">{img}</i><span><b>{E(p.get("titre") or "")}</b>'
-                      f'<small>{E(sous or prix)}</small></span><span class="un-voir">{E("Gratuit" if prix == "Gratuit" else prix)}</span></a>')
-    liste = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="un-liste">{"".join(lignes)}</div>' if lignes else "")
+    def liste(prods_bloc, titre, premier):
+        lignes = []
+        for p in prods_bloc:
+            prix, barre, pastille, sous = _carte_info(p)
+            img = (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span>{E((p.get("titre") or "?")[:1])}</span>')
+            lignes.append(f'<a class="un-ligne" href="{_lien_produit(page, pseudo, p)}"><i class="un-ico">{img}</i><span><b>{E(p.get("titre") or "")}</b>'
+                          f'<small>{E(sous or prix)}</small></span><span class="un-voir">{E("Gratuit" if prix == "Gratuit" else prix)}</span></a>')
+        if not lignes:
+            return f'<span{_ancre(premier)}></span>'
+        return f'{f"<h2 class=\"ap-t\"{_ancre(premier)}>{E(titre)}</h2>" if titre else ""}<div class="un-liste"{"" if titre else _ancre(premier)}>{"".join(lignes)}</div>'
     profil = '<span id="profil"></span>' if (page.get("design") or {}).get("profil_appli") == "masquer" else (f'<section class="un-profil" id="profil"><i class="un-ico">{icone}</i><div><b>{E(nom)}</b><p>{E(page.get("bio") or "")}</p></div></section>'
               if page.get("bio") else '<span id="profil"></span>')
-    return f'<div class="ap ca-{_cartes(page)}">{haut}{"".join(grandes)}{liste}{profil}{_bas_appli(page, pseudo, bool(lignes))}'
+    corps = _assemble(page, pseudo, "appli_une", {"un_grandes": "".join(grandes), "un_profil": profil, "contact": _section_contact(page)}, liste)
+    return f'<div class="ap ca-{_cartes(page)}">{haut}{corps}{_bas_appli(page, pseudo, bool(prods))}'
 
 
 CSS_CARTES = """
@@ -640,6 +764,6 @@ body[class*="mp-appli"] .marque{margin-bottom:10px}
 .un-liste{background:var(--k);color:var(--kt);border-radius:24px;overflow:hidden}
 .un-ligne{text-decoration:none;border-top:1px solid color-mix(in srgb,var(--kt) 10%,transparent)}.un-ligne:first-child{border-top:0}
 .un-ligne .un-voir{font-size:13px;padding:7px 14px;text-transform:none}
-.un-profil{display:flex;gap:14px;align-items:flex-start;margin:22px 0 0;padding:18px;border-radius:24px;background:var(--k);color:var(--kt)}
+.un-profil{display:flex;gap:14px;align-items:flex-start;margin:22px 0;padding:18px;border-radius:24px;background:var(--k);color:var(--kt)}
 .un-profil b{font:800 1.1em var(--tf)}.un-profil p{margin:4px 0 0;opacity:.8;white-space:pre-line}
 """
