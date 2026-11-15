@@ -4011,7 +4011,7 @@ function renduProjet() {
           <hr class="st-sep">
           ${p.type === "reel" && p.source?.son ? blocSon({son: p.source.son}) : ""}
           ${p.type === "reel" ? `<div class="champ"><label for="st-hook">Hook affiché pendant les 3 premières secondes</label><input class="st-input" id="st-hook" value="${esc(p.hook)}"></div>
-            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres automatiques (${p.voix_off ? "ce que dit la voix off" : "ce que tu dis dans la vidéo"})</label>` : ""}
+            ${avecVideo ? `<label class="coche"><input type="checkbox" id="st-sous" ${p.sous_titres ? "checked" : ""}> Ajouter les sous-titres (${p.voix_off ? "ce que dit la voix off" : (p.plans || []).length ? "ton script écrit à l'écran" : "ce que tu dis dans la vidéo, sinon ton script écrit à l'écran"})</label>` : ""}
             <div class="champ"><label for="st-script">Ton script, à dire face caméra ou en voix off</label><textarea id="st-script" rows="6">${esc(p.script || "")}</textarea></div>
             ${blocVoixOff(p)}` : ""}
           ${slidesVisibles ? (ecrit ? `<p class="encours"><span class="spin"></span>Virall.ai écrit tes slides…</p>` : `

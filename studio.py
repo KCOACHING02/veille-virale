@@ -757,6 +757,25 @@ def prepare_plans(esp: Espace, sid: str, demo: bool = False, avec_ia: bool = Tru
     return {"id": sid}
 
 
+def sous_titres_ecrits(morceaux: list[tuple[str, float, float]], mots_max: int = 6) -> list[tuple[float, float, str]]:
+    """Sous-titres sans voix : chaque phrase (texte, début, durée) découpée en groupes de quelques mots, au prorata de leur longueur."""
+    blocs = []
+    for texte, debut, duree in morceaux:
+        mots = re.sub(r"[«»“”\"]", "", texte or "").split()
+        if not mots or duree <= 0:
+            continue
+        groupes = [mots[i:i + mots_max] for i in range(0, len(mots), mots_max)]
+        if len(groupes) > 1 and len(groupes[-1]) < 3:  # pas de dernier groupe d'un ou deux mots
+            dernier = groupes.pop()
+            groupes[-1] += dernier
+        t = debut
+        for g in groupes:
+            dg = duree * len(g) / len(mots)
+            blocs.append((round(t, 2), round(t + dg - 0.05, 2), " ".join(g)))
+            t += dg
+    return blocs
+
+
 def monte_plans(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
     """Les plans bout à bout, chacun le temps de sa phrase, puis le montage habituel (voix, hook, sous-titres, couverture)."""
     plans = [x for x in p["plans"] if (d / "sources" / x["video"]).exists()]
@@ -768,8 +787,11 @@ def monte_plans(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]
     morceaux = d / "morceaux"
     shutil.rmtree(morceaux, ignore_errors=True)
     morceaux.mkdir()
+    ecrits, t0 = [], 0.0  # sans voix off : le texte de chaque phrase s'affiche pendant son plan
     for i, x in enumerate(plans):
         di = max(1.2, total * poids[i] / sum(poids))
+        ecrits.append((x["texte"], t0, di))
+        t0 += di
         _ffmpeg([*LEGER, "-stream_loop", "-1", "-t", f"{di:.2f}", "-i", str(d / "sources" / x["video"]), "-an",
                  "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,format=yuv420p",
                  "-c:v", "libx264", "-threads", _FILS, "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p", str(morceaux / f"{i:02d}.mp4")], d)
@@ -777,7 +799,8 @@ def monte_plans(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]
     _ffmpeg(["-f", "concat", "-safe", "0", "-i", "liste.txt", "-c", "copy", str(d / "sources" / "plans_assembles.mp4")], morceaux)
     shutil.rmtree(morceaux, ignore_errors=True)
     try:
-        return monte_reel({**p, "video": "plans_assembles.mp4", "couv_temps": p.get("couv_temps") or 0.6}, d, sortie, demo)
+        return monte_reel({**p, "video": "plans_assembles.mp4", "couv_temps": p.get("couv_temps") or 0.6,
+                           "_blocs_ecrits": None if voix_off else sous_titres_ecrits(ecrits)}, d, sortie, demo)
     finally:
         (d / "sources" / "plans_assembles.mp4").unlink(missing_ok=True)
 
@@ -1583,14 +1606,30 @@ def monte_reel(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
     duree = min(((_duree(voix_off) or 0) + 0.6) if voix_off else (_duree(src) or 0), DUREE_MAX_REEL)
     log("Je recadre ta vidéo au format Reel…")
     blocs = []
-    if p.get("sous_titres", True):
+    if p.get("sous_titres", True) and p.get("_blocs_ecrits") and not voix_off:  # plans de la banque sans voix : le script écrit à l'écran
+        blocs = p["_blocs_ecrits"]
+        log(f"  {len(blocs)} sous-titres écrits d'après ton script")
+    elif p.get("sous_titres", True):
         log("J'écoute la voix off pour écrire les sous-titres…" if voix_off else "J'écoute ta vidéo pour écrire les sous-titres…")
         try:
             blocs = sous_titres(voix_off or src, d)
-            log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée : pas de sous-titres")
+            log(f"  {len(blocs)} sous-titres" if blocs else "  Aucune parole détectée")
         except Exception as e:  # noqa: BLE001
             log(f"  ⚠️  Sous-titres impossibles ({str(e)[:120]}) : le Reel est monté sans")
         libere_memoire()  # le modèle de transcription laisse la place au montage
+        if not blocs and not voix_off:  # vidéo sans parole (banque, musique) : le script s'affiche en sous-titres
+            import voix as _voix
+            phrases = decoupe_phrases((p.get("texte_voix") or "").strip() or _voix.texte_du_script(p.get("script") or ""), 20)
+            if phrases and duree:
+                lecture = sum(max(1.6, len(x.split()) / MOTS_PAR_SECONDE) for x in phrases)
+                k = min(1.0, max(duree - 0.3, 1) / lecture)
+                t, morceaux = 0.0, []
+                for x in phrases:
+                    dx = max(1.6, len(x.split()) / MOTS_PAR_SECONDE) * k
+                    morceaux.append((x, t, dx))
+                    t += dx
+                blocs = sous_titres_ecrits(morceaux)
+                log(f"  {len(blocs)} sous-titres écrits d'après ton script")
     fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", typo_projet(p), _couleurs_texte(p))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
