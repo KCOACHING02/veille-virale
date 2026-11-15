@@ -34,7 +34,7 @@ OUTIL_ADAPTATION = {
             "hooks_adaptes": {"type": "array", "items": {"type": "string"}, "description": "Variantes du hook adaptées à la niche de la marque (même mécanique), proposées en complément du hook viral repris."},
             "texte_ecran_adapte": {"type": "string", "description": "Le texte à afficher à l'écran pendant le hook (court, lisible sans le son)."},
             "script_reel": {"type": "string", "description": "Script adapté : [0-3 s] hook dit + texte écran / [corps] 3-5 phrases / [fin] CTA oral. 20 à 45 secondes."},
-            "cta_conversation": {"type": "string", "description": "CTA qui déclenche une conversation : commenter le mot-clé (DM automatique) ou répondre à une question personnelle."},
+            "cta_conversation": {"type": "string", "description": "CTA qui déclenche une conversation et colle au sujet de CETTE publication (voir la règle des CTA) : question personnelle, mot-clé tiré du sujet, ou enregistrer/partager."},
             "sequence_dm": {
                 "type": "array",
                 "description": "Séquence de messages privés pour transformer le commentaire en conversation puis en client.",
@@ -191,6 +191,33 @@ OUTIL_CARROUSEL = {
 # ------------------------------------------------------------
 #  Messages d'erreur compréhensibles
 # ------------------------------------------------------------
+MENTION = re.compile(r"(?<![\w.])@[A-Za-z0-9_](?:[A-Za-z0-9_.]{0,29}[A-Za-z0-9_])?")
+
+
+def sans_mentions(t: str) -> str:
+    """Aucun @ d'un autre compte dans ce que publie la cliente (pas de publicité pour un autre créateur) : « @x me donne… » → « Ce compte me donne… »."""
+    if not isinstance(t, str) or "@" not in t:
+        return t
+    def remplace(m):
+        debut = m.start() == 0 or re.search(r"(^|[.!?…\n]\s*)$", t[:m.start()]) is not None
+        return "Ce compte" if debut else "ce compte"
+    t = MENTION.sub(remplace, t.replace("{pseudo}", "\x00"))
+    t = re.sub(r"\b([Cc])e compte((?:\s*,\s*ce compte)*\s+et\s+ce compte)", lambda m: m.group(1) + "es comptes", t)
+    t = re.sub(r"(ce compte)(\s*,?\s*ce compte)+", r"\1", t, flags=re.I).replace("\x00", "{pseudo}")
+    return "\n".join(re.sub(r"[ \t]{2,}", " ", l).rstrip() for l in t.split("\n"))
+
+
+def nettoie_mentions(v):
+    """sans_mentions appliqué à tous les textes d'une réponse (listes et objets compris)."""
+    if isinstance(v, str):
+        return sans_mentions(v)
+    if isinstance(v, list):
+        return [nettoie_mentions(x) for x in v]
+    if isinstance(v, dict):
+        return {k: (x if k in ("original", "hook_original", "texte_ecran", "url", "compte") else nettoie_mentions(x)) for k, x in v.items()}
+    return v
+
+
 def _sans_auteur(res: dict, compte: str) -> dict:
     """La légende reprise ne garde ni le @ ni le # du compte d'origine : la cliente publie sous son nom, pas sous celui d'un autre."""
     if res.get("erreur") or not compte:
@@ -200,7 +227,7 @@ def _sans_auteur(res: dict, compte: str) -> dict:
         if isinstance(res.get(k), str):
             t = re.sub(rf"(?i)[#@]{nom}\b[^\s#@]*", "", res[k])
             res[k] = "\n".join(re.sub(r"[ \t]{2,}", " ", l).strip() for l in t.split("\n")).strip()
-    return res
+    return nettoie_mentions(res)
 
 
 def explique_erreur(e) -> str:
@@ -344,9 +371,10 @@ Tu analyses des Reels qui ont surperformé chez d'autres comptes, puis tu les tr
 - Langue de sortie : {n['langue']}
 
 Objectif business : {o['reels_par_jour']} Reels par jour, au moins {o['conversations_par_jour']} conversations privées par jour.
-Chaque Reel se termine par un CTA qui fait commenter le mot-clé « {o['mot_cle_cta']} » (DM automatique) ou répondre à une question personnelle. Les vues ne suffisent pas : on veut des conversations avec le client idéal, puis des clients.
+{consigne_cta(self.cfg)} Les vues ne suffisent pas : on veut des conversations avec le client idéal, puis des clients.
 
 Règles :
+0. AUCUNE PUBLICITÉ POUR UN AUTRE : ne garde jamais le @, le nom ou la marque d'un autre créateur ou d'une autre entreprise dans ce que la marque publiera (hooks, textes, script, légende, CTA). Remplace-les par un équivalent neutre (« ce compte », « une créatrice », « certaines marques »).
 1. REPRISE FIDÈLE : le hook viral et la légende sont repris tels quels (champs hook_viral et legende_reprise). S'ils ne sont pas en {n['langue']}, traduis-les fidèlement, sans les réécrire ni les « améliorer ». Les variantes de hooks, le script, le CTA et la séquence DM sont, eux, adaptés à la marque.
 2. Le vrai hook est dans les 3 premières secondes : utilise la transcription et les images pour l'identifier. Si tu n'as que la légende, dis-le dans l'analyse.
 3. Hooks : moins de 12 mots, compréhensibles sans le son, pas d'emoji en début.
@@ -476,7 +504,7 @@ Règles :
 - Slide 1 : {"une accroche construite exactement comme le hook viral (même mécanique, même longueur, même force) mais sur le SUJET DE CE CARROUSEL, rien d'autre." if tunnel else "le hook viral repris tel quel (ou traduit fidèlement), rien d'autre."} Elle doit donner envie de faire glisser.
 - Slides suivantes : {"une seule idée par slide, phrases courtes, concrètes, dans le ton de la marque. Chaque slide donne envie de passer à la suivante." if tunnel or not slides_src else "pour chaque slide, la version adaptée de la même slide du modèle, reprise fidèlement (mêmes chiffres, mêmes mots forts, même construction) : le titre porte la phrase principale (10 mots max), la suite va dans texte. Ne réécris pas, ne résume pas."}
 - Champ recherche : des mots-clés qui décrivent une image illustrant le texte de CETTE slide (pas une ambiance générale).
-- Dernière slide : {"l'appel à l'action indiqué dans le plan." if tunnel else f"le CTA qui fait commenter le mot-clé « {self.cfg['objectifs']['mot_cle_cta']} »."}
+- Dernière slide : {"l'appel à l'action indiqué dans le plan." if tunnel else "un appel à l'action qui colle au sujet de CE carrousel (voir la règle des CTA)."}
 - Rien qui sonne publicité ou texte d'IA, pas de liste de bénéfices creux, pas d'emoji dans les titres.
 
 STYLE D'ÉCRITURE DEMANDÉ : {style or "sa voix habituelle, exactement comme sur son compte"}
@@ -807,6 +835,25 @@ OUTIL_SEQUENCE = {
         "required": ["emails"],
     },
 }
+
+
+MOTS_CLES_PAR_DEFAUT = {"GUIDE", "START", ""}  # valeur de départ des nouveaux comptes : ce n'est pas un choix de la cliente
+
+
+def mot_cle_perso(cfg: dict) -> str:
+    """Mot-clé choisi par la cliente elle-même (pas celui mis par défaut à la création du compte)."""
+    m = str(((cfg.get("objectifs") or {}).get("mot_cle_cta")) or "").strip().upper()
+    return "" if m in MOTS_CLES_PAR_DEFAUT else m
+
+
+def consigne_cta(cfg: dict) -> str:
+    """Règle des appels à l'action : variés et liés au sujet de chaque publication, jamais le même mot-clé partout."""
+    m = mot_cle_perso(cfg)
+    return ("CTA : chaque publication se termine par un appel à l'action qui colle à SON sujet et à l'offre réelle de la marque, et qui change "
+            "d'une publication à l'autre : une question personnelle à laquelle répondre en commentaire, un mot-clé court tiré du sujet "
+            "(ex. « BIO », « PRIX », « STORIES »…, jamais deux fois le même d'affilée), ou enregistrer / partager / envoyer à une amie. "
+            "Ne promets jamais un guide, un fichier ou un cadeau que la marque n'a pas dans son offre. "
+            + (f"La marque a choisi son mot-clé « {m} » (message automatique) : utilise-le au plus une publication sur trois, seulement quand il colle au sujet." if m else ""))
 
 
 def _ia_simple(cfg: dict) -> "IA":
@@ -1156,6 +1203,7 @@ Mesure les positions et les tailles sur l'image, au pourcent près. Relève les 
 Un même style se répète souvent d'une slide à l'autre : garde les mêmes valeurs quand c'est le cas.
 Les textes adaptés reprennent fidèlement le modèle (mêmes chiffres, mêmes promesses, même construction, même longueur) ; seuls les mots d'un autre métier changent pour la niche de la marque.
 Le nom, le @ et la photo du créateur d'origine deviennent ceux de la marque ({{nom}}, {{pseudo}}, élément avatar ou entete).
+Aucun @ ni nom d'un AUTRE créateur ou d'une autre marque dans les textes adaptés : remplace-les par un équivalent neutre (« ce compte », « une créatrice »).
 Remplis l'outil enregistrer_reproduction."""})
     return _ia_simple(cfg)._appel(_outil_reproduction(), contenu, max_tokens=12000,
                                   systeme=_systeme_marque(cfg, voix, "Tu es directeur artistique : tu relèves la mise en page exacte de carrousels Instagram pour les reproduire à l'identique."))

@@ -289,7 +289,8 @@ def prerempli(ad: dict, cfg: dict) -> list[dict]:
     phrases = [p for p in phrases if "comment" not in p.lower()[:12]][:5]  # le CTA a sa propre slide
     slides = [{"titre": hook, "texte": "", "photo": ad.get("idee_visuelle") or ""}]
     slides += [{"titre": _coupe(p, 70), "texte": "", "photo": ""} for p in phrases]
-    cta = ad.get("cta_conversation") or f"Commente {cfg['objectifs']['mot_cle_cta']}"
+    import ia as _ia
+    cta = ad.get("cta_conversation") or (f"Commente {_ia.mot_cle_perso(cfg)}" if _ia.mot_cle_perso(cfg) else "Enregistre ce post pour plus tard")
     slides.append({"titre": _coupe(cta, 60), "texte": "", "photo": ""})
     return slides
 
@@ -323,7 +324,8 @@ def _source(post: dict) -> dict:
 
 def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, style: str = "ma_voix") -> dict:
     """Nouveau projet à partir d'un Reel adapté (les textes des slides sont écrits ensuite par Claude)."""
-    ad = post.get("adaptation") or {}
+    import ia as _ia
+    ad = _ia.nettoie_mentions(post.get("adaptation") or {})  # adaptations anciennes : aucun @ d'un autre compte
     hook = ad.get("hook_viral") or (ad.get("hooks_adaptes") or [""])[0]
     hashtags = " ".join("#" + h for h in (cfg["decouverte"].get("hashtags_instagram") or [])[:5])
     legende = ad.get("legende_adaptee") or ad.get("legende_reprise") or ""
@@ -352,7 +354,8 @@ def cree(esp: Espace, cfg: dict, post: dict, typ: str, analyse_id: str | None, s
 
 def cree_vierge(esp: Espace, cfg: dict) -> dict:
     """Carrousel vide, écrit par l'utilisatrice elle-même (aucun appel à Claude) : disponible en formule gratuite."""
-    cta = f"Commente {cfg['objectifs'].get('mot_cle_cta') or 'INFO'}"
+    import ia as _ia
+    cta = f"Commente {_ia.mot_cle_perso(cfg)}" if _ia.mot_cle_perso(cfg) else "Enregistre ce post pour plus tard"
     sid = datetime.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     projet = {
         "id": sid, "cree": datetime.now().isoformat(timespec="minutes"), "type": "carrousel", "titre": "Nouveau carrousel",

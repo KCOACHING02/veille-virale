@@ -13,7 +13,7 @@ objectifs:
   reels_par_jour: 2
   jours_planifies: 7
   conversations_par_jour: 15
-  mot_cle_cta: GUIDE
+  mot_cle_cta: ""   # vide = appels à l'action variés, liés au sujet de chaque publication
 comptes:
   instagram: []
   tiktok: []

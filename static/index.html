@@ -2822,7 +2822,7 @@ function renduPlanning() {
       "Chaque jour, ouvre le contenu prévu (matin, puis soir). Les meilleurs sont déjà écrits pour toi ; ceux marqués « à adapter » le sont en un clic.",
       "Clique <b>Créer le contenu</b> pour le fabriquer, puis publie-le sur Instagram.",
       "Clique <b>J'ai publié</b> : le contenu passe en vert ici et ses résultats sont suivis."]) +
-    `<p style="color:var(--ink-2);margin:0 0 16px">Objectif : ${a.objectifs.conversations_par_jour} conversations par jour avec le mot-clé « ${esc(a.objectifs.mot_cle_cta)} ». ${a.fichiers ? `<a href="/rapports/${a.fichiers.xlsx}">Télécharger l'Excel de suivi</a>` : ""}</p>
+    `<p style="color:var(--ink-2);margin:0 0 16px">Objectif : ${a.objectifs.conversations_par_jour} conversations par jour${a.objectifs.mot_cle_cta ? ` avec le mot-clé « ${esc(a.objectifs.mot_cle_cta)} »` : ""}. ${a.fichiers ? `<a href="/rapports/${a.fichiers.xlsx}">Télécharger l'Excel de suivi</a>` : ""}</p>
   <div class="semaine">${JOURS.map(j => `<div class="jour"><h2>${j}</h2>${ps.filter(p => p.creneau.startsWith(j)).map(p => `
     <button class="creneau" data-cle="${esc(p.cle)}" ${(S.pubs || []).some(x => x.inspiration?.cle === p.cle) ? 'style="outline:2px solid var(--ok)"' : ""}>
       ${p.miniature ? `<img src="/media/${encodeURIComponent(p.miniature)}" alt="" loading="lazy">` : ""}
@@ -4640,7 +4640,7 @@ const PAGES = {
     <div class="f"><label for="w-desc">Ce que tu fais, pour qui</label><textarea id="w-desc" style="min-height:80px" placeholder="Ex. J'aide les femmes actives à dégonfler et à retrouver de l'énergie, sans régime strict.">${v(n.description, pr.description_niche || btDesc)}</textarea></div>
     <div class="f"><label for="w-cible">Ton client idéal</label><input id="w-cible" value="${v(n.cible, pr.cible || bt.cible)}" placeholder="Ex. Femme de 35 ans, maman, cadre, fatiguée des régimes"></div>
     <div class="duo"><div class="f"><label for="w-offre">Ce que tu proposes</label><input id="w-offre" value="${v(n.offre, pr.offre)}" placeholder="Ex. Ebook gratuit, puis accompagnement"><span class="aide">Les messages privés y mèneront.</span></div>
-    <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">« Commente ${esc(o.mot_cle_cta)} et je t'envoie… »</span></div></div>
+    <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">Laisse vide : Virall.ai change d'appel à l'action à chaque publication, selon son sujet.</span></div></div>
     <details class="plus"><summary>Nom de marque et langue</summary>
       <div class="duo" style="margin-top:12px"><div class="f"><label for="w-nom">Nom de ta marque</label><input id="w-nom" value="${v(n.nom, pr.nom_marque)}"></div>
       <div class="f"><label for="w-langue">Langue de tes contenus</label><select id="w-langue">${["français", "anglais", "espagnol", "arabe", "darija", "allemand", "italien", "portugais"].map(l => `<option ${n.langue === l ? "selected" : ""}>${l}</option>`).join("")}</select></div></div></details>
@@ -4685,7 +4685,7 @@ const PAGES = {
     <p class="intro">Le planning et les appels à l'action sont construits autour de ces chiffres.</p>
     <div class="f"><span class="lab">Combien de Reels veux-tu publier par jour ?</span>${choix("w-rpj", [[1, "1 par jour", "7 par semaine"], [2, "2 par jour", "14 par semaine, recommandé"], [3, "3 par jour", "21 par semaine"]], o.reels_par_jour)}</div>
     <div class="duo"><div class="f"><label for="w-conv">Conversations privées visées par jour</label><input id="w-conv" type="number" min="1" value="${o.conversations_par_jour}"></div>
-    <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">Il déclenche ton message automatique.</span></div></div>
+    <div class="f"><label for="w-mot">Mot-clé à faire commenter</label><input id="w-mot" value="${esc(o.mot_cle_cta)}" maxlength="20"><span class="aide">Facultatif. Laisse vide : un appel à l'action différent, lié au sujet, à chaque publication.</span></div></div>
     <div class="phrase" id="w-phrase"></div>`; },
   criteres: () => { const a = W.p.analyse; return `<h2 id="a-titre">Ce qu'on appelle un Reel viral</h2>
     <p class="intro">Seuls les Reels qui remplissent ces critères sont gardés comme modèles. Plus c'est exigeant, plus il faut surveiller de gros comptes. Les changements s'appliquent à ta prochaine veille.</p>
@@ -4729,7 +4729,7 @@ const PAGES = {
     <div class="recap">
       ${ligne("Ton activité", esc(n.nom || n.description || "–"), "activite")}
       ${ligne("Ton client idéal", esc(n.cible || "–"), "client")}
-      ${ligne("Ton rythme", `${o.reels_par_jour} Reel${o.reels_par_jour > 1 ? "s" : ""} par jour, ${o.conversations_par_jour} conversations visées, mot-clé « ${esc(o.mot_cle_cta)} »`, "objectifs")}
+      ${ligne("Ton rythme", `${o.reels_par_jour} Reel${o.reels_par_jour > 1 ? "s" : ""} par jour, ${o.conversations_par_jour} conversations visées${o.mot_cle_cta ? `, mot-clé « ${esc(o.mot_cle_cta)} »` : ", appels à l'action variés"}`, "objectifs")}
       ${ligne("Critères de sélection", `${texteSeuil(a)}, ≥ ${(a.taux_engagement_min * 100).toLocaleString("fr-FR")} % d'engagement, ${a.mois} derniers mois`, "criteres")}
       ${ligne("Comptes à copier", nbC ? `${nbC} compte${nbC > 1 ? "s" : ""}` : "<b>Aucun : ajoute au moins un compte</b>", "modeles")}
     </div>
@@ -4862,7 +4862,7 @@ async function renduParametres() {
     ${r("Ton compte", [p.mon_compte.instagram && "@" + esc(p.mon_compte.instagram), p.mon_compte.tiktok && "TikTok @" + esc(p.mon_compte.tiktok)].filter(Boolean).join(", ") || "Non renseigné", "compte")}
     ${r("Ton activité", esc(n.nom || n.description || "Non renseignée"), "activite")}
     ${r("Ton client idéal", esc(n.cible || "Non renseigné"), "client")}
-    ${r("Tes objectifs", `${o.reels_par_jour} Reel(s) par jour, ${o.conversations_par_jour} conversations, mot-clé « ${esc(o.mot_cle_cta)} »`, "objectifs")}
+    ${r("Tes objectifs", `${o.reels_par_jour} Reel(s) par jour, ${o.conversations_par_jour} conversations${o.mot_cle_cta ? `, mot-clé « ${esc(o.mot_cle_cta)} »` : ", appels à l'action variés"}`, "objectifs")}
     ${r("Ce qu'on appelle « viral »", texteCriteres(a), "criteres")}
     ${avecNiche() ? `<button type="button" class="ligne-rg" onclick="choixNiche()"><span class="t"><b>Ta niche</b><small>${esc((S.etat.bibliotheque.niches || []).join(" + "))}</small></span><span class="go" aria-hidden="true">›</span></button>`
       : r("Comptes à copier", `${nbC} compte(s), ${(p.hashtags.instagram || []).length + (p.hashtags.tiktok || []).length} hashtags`, "modeles")}

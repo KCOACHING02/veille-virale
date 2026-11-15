@@ -109,8 +109,9 @@ def propre(fiche: dict) -> dict:
             t = e.get("type")
             base = {"type": t, "boite": _boite(e.get("boite"))}
             if t == "texte":
+                import ia as _ia
                 base.update(role=e.get("role") if e.get("role") in ROLES else "corps", original=_txt(e.get("original")),
-                            adapte=_txt(e.get("adapte") or e.get("original")), police=e.get("police") if e.get("police") in POLICES_REPRO else "sans_gras",
+                            adapte=_ia.sans_mentions(_txt(e.get("adapte") or e.get("original"))), police=e.get("police") if e.get("police") in POLICES_REPRO else "sans_gras",
                             couleur=_coul(e.get("couleur")), taille=max(1.2, min(16.0, float(e.get("taille") or 5))),
                             align=e.get("align") if e.get("align") in ("gauche", "centre", "droite") else "gauche",
                             valign=e.get("valign") if e.get("valign") in ("haut", "centre", "bas") else "haut",
