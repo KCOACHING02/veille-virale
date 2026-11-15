@@ -6273,7 +6273,7 @@ function ongletDesign(z) {
   const clip = f => o.formes_decoupees.includes(f) ? " bf-clip" : "";
   const exBtn = (style, forme) => `<span class="bt-btn-ex lb bs-${style} bf-${forme}${clip(forme)}">Mon lien</span>`;
   const optP = (k, v, vis, lab) => `<button class="bt-opt" data-dset="${k}" data-v="${v}" aria-pressed="${String(d[k]) === String(v)}"><span class="vis" style="${vars};background:${d.fond_type === "degrade" || d.fond_type === "anime" ? `linear-gradient(160deg,${c7("fond1")},${c7("fond2")})` : c7("fond1")}">${vis}</span>${lab}</button>`;
-  const puces = (k, dict) => `<div class="bt-puces">${Object.entries(dict).map(([v, l]) => `<button data-dset="${k}" data-v="${v}" aria-pressed="${(d[k] ?? BQ.etat.options.defaut[k]) === v}">${l}</button>`).join("")}</div>`;
+  const puces = (k, dict) => `<div class="bt-puces">${Object.entries(dict).map(([v, l]) => `<button data-dset="${k}" data-v="${v}" aria-pressed="${String(d[k] ?? BQ.etat.options.defaut[k]) === v}">${l}</button>`).join("")}</div>`;
   const prodImg = BQ.page.produits.find(p => p.image)?.image;
   const imgP = prodImg ? `background:url('${urlImg(prodImg)}') center/cover` : `background:${c7("accent")}`;
   const PRIX_EX = {texte: `color:${c7("accent")};font-weight:700`, pastille: `background:${c7("accent")};color:#fff;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;transform:rotate(12deg);font-weight:700`,
@@ -6292,7 +6292,9 @@ function ongletDesign(z) {
       ${["appli_stories", "appli_une"].includes(d.mise_en_page) ? `<p class="bt-sous-titre">Carte de présentation (ta photo + « Voir la boutique »)</p>${puces("profil_appli", {afficher: "Afficher", masquer: "Masquer"})}` : ""}
       <p class="bt-sous-titre">Espace entre les blocs</p>${puces("espacement", {serre: "Serré", normal: "Normal", aere: "Aéré", large: "Très aéré"})}
       <p class="bt-sous-titre">Taille du texte</p>${puces("taille_texte", {s: "Petite", m: "Normale", l: "Grande", xl: "Très grande"})}
-      ${d.entete === "photo_fond" ? `<p class="bt-sous-titre">Image en plein fond</p><label class="bt-depot">${d.fond_image ? `<img src="${urlImg(d.fond_image)}" alt="">` : "🖼️"}<span>${d.fond_image ? "Changer l'image de fond" : "Importe ton image de fond (sinon ta photo de profil est utilisée)"}</span><input type="file" accept="image/*" data-envoi="fond_image"></label>` : ""}
+      ${d.entete === "photo_fond" || /^(appli|marque)/.test(d.mise_en_page || "") ? `<p class="bt-sous-titre">Image en plein fond</p><label class="bt-depot">${d.fond_image && (d.fond_type === "image" || d.entete === "photo_fond") ? `<img src="${urlImg(d.fond_image)}" alt="">` : "🖼️"}<span>${d.fond_image && (d.fond_type === "image" || d.entete === "photo_fond") ? "Changer l'image de fond" : d.entete === "photo_fond" ? "Importe ton image de fond (sinon ta photo de profil est utilisée)" : "Importe une image à mettre derrière ta boutique"}</span><input type="file" accept="image/*" data-envoi="fond_image"></label>
+        ${d.fond_type === "image" && d.fond_image ? `<p class="bt-sous-titre">Voile sur l'image (pour lire les textes)</p>${puces("fond_voile", {0: "Aucun", 20: "Léger", 40: "Moyen", 60: "Fort"})}
+          <button type="button" class="btn petit" data-dset="fond_type" data-v="uni" style="margin-top:8px">Retirer l'image de fond</button>` : ""}` : ""}
       <p class="bt-sous-titre">Style des titres de section</p>${puces("titres_style", {simple: "Simple", pastille: "Pastille", majuscules: "Majuscules"})}
       <p class="bt-sous-titre">Largeur de la page sur ordinateur</p>${puces("largeur_page", {etroite: "Étroite", normale: "Normale", large: "Large", pleine: "Très large"})}
       <p class="aide" style="margin:10px 0 0">Astuce : dans <b>Contenu</b>, ouvre un bloc et choisis sa <b>largeur</b> pour en mettre deux ou trois côte à côte.</p>
