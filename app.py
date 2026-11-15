@@ -1433,6 +1433,22 @@ def _apres_studio(uid: int, sid: str):
     return fin
 
 
+@app.route("/api/studio/<sid>/sous_titres", methods=["GET", "PUT"])
+@connecte
+def studio_sous_titres(sid):
+    """Sous-titres du dernier montage du Reel, à corriger (fautes, noms propres) avant de le refaire."""
+    p = _projet(sid)
+    d = studio.dossier(g.esp, sid)
+    if request.method == "PUT":
+        try:
+            st = studio.corrige_sous_titres(g.esp, sid, (request.get_json(force=True) or {}).get("textes") or [])
+        except ValueError as e:
+            return jsonify({"erreur": str(e)}), 400
+    else:
+        st = studio.lit_sous_titres(d)
+    return jsonify({"blocs": st.get("blocs") or [], "corrige": bool(st.get("corrige")), "type": p.get("type")})
+
+
 @app.post("/api/studio/<sid>/generer")
 @connecte
 def studio_generer(sid):

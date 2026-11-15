@@ -1288,6 +1288,10 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-inser span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1;background:var(--surface,#fff);color:var(--ink-3);border:1px solid var(--line);opacity:.55;transition:opacity .15s,transform .15s}
 .bt-inser:hover span,.bt-inser:focus-visible span{opacity:1;transform:scale(1.12);color:var(--accent,#E8456B);border-color:currentColor}
 @media (max-width:480px){.bt-bloc-tete{gap:2px;padding-left:8px}.bt-bloc-tete .ic{display:none}.bt-bloc-tete .icone-btn{width:30px}}
+.st-corr{display:grid;gap:8px;max-height:56vh;overflow:auto;margin:6px 0 14px;padding-right:4px}
+.st-corr label{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:10px}
+.st-corr small{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.st-corr input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:inherit;font:inherit}
 .bt-titres{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.bt-titres summary{cursor:pointer;font-weight:600}
 .bt-poignee{flex:none;width:22px;height:34px;display:grid;place-items:center;color:var(--ink-3);cursor:grab;touch-action:none;margin-left:-6px}
 .bt-poignee svg{width:16px;height:16px}.bt-bloc.glisse{opacity:.9;box-shadow:0 12px 30px -10px rgba(0,0,0,.35);position:relative;z-index:3;transform:scale(1.01)}
@@ -3968,6 +3972,7 @@ function renduProjet() {
         ? `<video src="${sortie(f)}?v=${encodeURIComponent(p.genere_le || "")}" controls playsinline preload="metadata"></video>`
         : `<a href="${sortie(f)}?telecharger=1" title="Télécharger ${esc(f)}"><img src="${sortie(f)}?v=${encodeURIComponent(p.genere_le || "")}" alt="${esc(f)}" loading="lazy"></a>`).join("")}</div>
       <button class="btn prim large" id="st-pellicule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>${partageNatif() ? "Enregistrer dans mes photos" : "Télécharger " + (p.type === "carrousel" ? "les slides" : "la vidéo")}</button>
+      ${p.type === "reel" && p.sous_titres !== false ? `<button class="btn large" id="st-corriger-st">✏️ Corriger les sous-titres</button>` : ""}
       <button class="btn large" id="st-copier-legende">Copier la légende</button>
       <a class="btn large" href="${sortie(p.zip)}?telecharger=1">Tout télécharger (.zip)</a>
       <p class="aide">Le package contient ${p.type === "carrousel" ? "les slides dans l'ordre" : "le Reel et sa couverture"}, la légende, ${p.type === "reel" ? "le script, " : ""}le message automatique et la séquence de messages privés, avec les étapes pour publier.</p>
@@ -4098,6 +4103,7 @@ function renduProjet() {
   ["dragleave", "drop"].forEach(ev => depot.addEventListener(ev, e => { e.preventDefault(); depot.classList.remove("survol"); }));
   depot.addEventListener("drop", e => envoieFichiers([...e.dataTransfer.files]));
   $$("#st-generer", el).forEach(b => b.onclick = genereProjet);
+  $("#st-corriger-st", el)?.addEventListener("click", corrigeSousTitres);
   if ($("#st-apercu")) brancheApercu();
   if ($("#st-couv")) brancheCouverture(p);
   if ($("[data-choix]")) chargePropositions(p);
@@ -4229,6 +4235,23 @@ function envoieFichiers(fichiers, slideI) {
   x.onerror = () => { fin(); toast("L'envoi a été coupé : vérifie ta connexion et réessaie (le Wi-Fi est plus sûr pour une vidéo)."); };
   x.ontimeout = x.onerror;
   x.open("POST", `/api/studio/${S.projet.id}/fichiers${slideI != null ? "?slide=" + slideI : ""}`); x.send(fd);
+}
+// Les sous-titres du dernier montage, à corriger un par un (mêmes moments d'affichage), puis le Reel est refait
+async function corrigeSousTitres() {
+  let st; try { st = await api(`/api/studio/${S.projet.id}/sous_titres`); } catch (e) { return toast(e.message); }
+  if (!st.blocs.length) return toast("Ce Reel n'a pas de sous-titres : coche « Ajouter les sous-titres » puis crée-le à nouveau.");
+  const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  $("#feuille").innerHTML = `<h2 id="m-titre">Corrige tes sous-titres</h2>
+    <p class="sous">Change ce qui est mal écrit. Ils gardent le même moment d'affichage.</p>
+    <div class="st-corr">${st.blocs.map((b, i) => `<label><small>${mmss(b[0])}</small><input data-st-i="${i}" value="${esc(b[2])}" maxlength="200"></label>`).join("")}</div>
+    <div class="pied-modale"><button class="btn" data-fermer>Annuler</button><button class="btn prim" id="st-corr-ok">Enregistrer et refaire mon Reel</button></div>`;
+  $("#modale").classList.add("ouvert");
+  $("#st-corr-ok").onclick = async () => {
+    const textes = $$("[data-st-i]").map(x => x.value);
+    try { await api(`/api/studio/${S.projet.id}/sous_titres`, {method: "PUT", body: {textes}}); }
+    catch (e) { return toast(e.message); }
+    fermeModale(); toast("Corrections enregistrées : je refais ton Reel"); genereProjet();
+  };
 }
 async function genereProjet() {
   await sauveProjet(true);

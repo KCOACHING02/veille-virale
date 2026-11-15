@@ -1600,13 +1600,52 @@ def voix_du_projet(p: dict, d: Path, demo: bool = False) -> Path | None:
     return dest
 
 
+def _sig_sous_titres(p: dict, d: Path, voix_off) -> str:
+    """Empreinte de ce qui est dit : si elle change (autre vidéo, autre voix, autre script), les corrections ne s'appliquent plus."""
+    import hashlib
+    parts = [str(p.get("video") or ""), str(p.get("voix_off") or ""), str(p.get("texte_voix") or ""), str(p.get("script") or "")]
+    parts += [str(x.get("video")) + "|" + str(x.get("texte")) for x in p.get("plans") or []]
+    src = d / "sources" / str(p.get("video") or "-")
+    if src.exists() and not p.get("plans"):
+        parts.append(f"{src.stat().st_size}")
+    return hashlib.sha1("§".join(parts).encode("utf-8")).hexdigest()[:16]
+
+
+def lit_sous_titres(d: Path) -> dict:
+    f = d / "sous_titres.json"
+    try:
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def corrige_sous_titres(esp: Espace, sid: str, textes: list) -> dict:
+    """Textes corrigés par la cliente, mêmes moments d'affichage ; servent au prochain montage tant que la vidéo et la voix ne changent pas."""
+    d = dossier(esp, sid)
+    st = lit_sous_titres(d)
+    blocs = st.get("blocs") or []
+    if not blocs:
+        raise ValueError("Crée d'abord ton Reel : les sous-titres apparaîtront ici.")
+    for i, t in enumerate(textes[:len(blocs)]):
+        if isinstance(t, str):
+            blocs[i][2] = re.sub(r"\s+", " ", t).strip()[:200]
+    st.update(blocs=[b for b in blocs if b[2]], corrige=True)
+    (d / "sous_titres.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    return st
+
+
 def monte_reel(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
     src = d / "sources" / p["video"]
     voix_off = voix_du_projet(p, d, demo)
     duree = min(((_duree(voix_off) or 0) + 0.6) if voix_off else (_duree(src) or 0), DUREE_MAX_REEL)
     log("Je recadre ta vidéo au format Reel…")
     blocs = []
-    if p.get("sous_titres", True) and p.get("_blocs_ecrits") and not voix_off:  # plans de la banque sans voix : le script écrit à l'écran
+    sig = _sig_sous_titres(p, d, voix_off)
+    deja = lit_sous_titres(d)
+    if p.get("sous_titres", True) and deja.get("corrige") and deja.get("sig") == sig and deja.get("blocs"):
+        blocs = [tuple(b) for b in deja["blocs"]]  # sous-titres corrigés par la cliente
+        log(f"  {len(blocs)} sous-titres (avec tes corrections)")
+    elif p.get("sous_titres", True) and p.get("_blocs_ecrits") and not voix_off:  # plans de la banque sans voix : le script écrit à l'écran
         blocs = p["_blocs_ecrits"]
         log(f"  {len(blocs)} sous-titres écrits d'après ton script")
     elif p.get("sous_titres", True):
@@ -1630,6 +1669,8 @@ def monte_reel(p: dict, d: Path, sortie: Path, demo: bool = False) -> list[str]:
                     t += dx
                 blocs = sous_titres_ecrits(morceaux)
                 log(f"  {len(blocs)} sous-titres écrits d'après ton script")
+    if not (deja.get("corrige") and deja.get("sig") == sig):  # gardés pour pouvoir les corriger ensuite
+        (d / "sous_titres.json").write_text(json.dumps({"sig": sig, "blocs": [list(b) for b in blocs], "corrige": False}, ensure_ascii=False), encoding="utf-8")
     fichier_ass(propre(p.get("hook") or ""), min(3.5, duree or 3.5), blocs, d / "sous.ass", typo_projet(p), _couleurs_texte(p))
     w, h = _dimensions(src)
     ass = f"ass=sous.ass:fontsdir={POLICES}"
