@@ -5134,7 +5134,7 @@ function designChoisi(A) {
   if (!A.amb || !themesAssist(A.amb).length) A.amb = AMBIANCES_ASSIST.find(a => themesAssist(a).length) || "Classique";
   if (!A.themeId || !tous.some(t => t.id === A.themeId)) A.themeId = themesAssist(A.amb)[0]?.id;
   const t = tous.find(x => x.id === A.themeId);
-  if (A.coul === undefined) A.coul = null;  // couleurs du modèle, celles du logo sont proposées en premier (★)
+  if (A.coul === undefined || A.designV !== 3) { A.coul = null; A.designV = 3; }  // ancien parcours enregistré : on repart des couleurs du modèle  // couleurs du modèle, celles du logo sont proposées en premier (★)
   return t ? designTheme(A, t, A.coul) : {...BQ.etat.options.defaut};
 }
 function designProposition(A, p) {
@@ -5559,7 +5559,7 @@ function renduAssistantBoutique(el) {
     const tous = BQ.etat.options.themes || [];
     $$("[data-th]").forEach(async b => { const t = tous.find(x => x.id === b.dataset.th); if (!t) return;
       const mini = b.querySelector(".mini"), fr = b.querySelector("iframe"); fr.style.transform = `scale(${mini.clientWidth / 390})`;
-      const h = await htmlApercu({...contenuAssistant(A), design: designTheme(A, t, A.coul)}); const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
+      const h = await htmlApercu({...contenuAssistant(A), design: designTheme(A, t, null)}); const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
       b.onclick = () => { A.themeId = t.id; A.design = designChoisi(A); gardeAssist(A); rendu(); }; });
     $$("[data-amb]").forEach(b => b.onclick = () => { A.amb = b.dataset.amb; A.themeId = themesAssist(A.amb)[0]?.id; A.themesVus = 9; A.design = designChoisi(A); gardeAssist(A); rendu(); });
     $("#as-plus-themes")?.addEventListener("click", () => { A.themesVus = (A.themesVus || 9) + 9; rendu(); });
