@@ -431,9 +431,9 @@ AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "
 ALLURES = {
     # Créatrice : façon Stan Store (fiches produit avec grand bouton) ou photo en plein fond avec titres en pastille
     "fiche_sombre": dict(entete="minimal", fond_type="uni", photo_forme="rond", photo_taille=150, bouton_style="plein", bouton_forme="arrondi", rayon=12,
-                         survol="soulever", image_forme="carre", carte_cadre="contour", produits_vue="fiche", prix_style="texte", titres_style="majuscules"),
+                         survol="soulever", image_forme="carre", carte_cadre="contour", produits_vue="fiche", prix_style="texte", titres_style="majuscules", mise_en_page="colonne"),
     "fiche_photo": dict(entete="photo_fond", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="arrondi", rayon=12,
-                        survol="soulever", image_forme="carre", carte_cadre="ombre", produits_vue="fiche", prix_style="texte", titres_style="pastille"),
+                        survol="soulever", image_forme="carre", carte_cadre="ombre", produits_vue="fiche", prix_style="texte", titres_style="pastille", mise_en_page="colonne"),
     "doux": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="arrondi", rayon=16, survol="soulever",
                  image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte"),
     "pilule": dict(entete="minimal", fond_type="degrade", photo_forme="rond", photo_contour=True, bouton_style="doux", bouton_forme="pilule", rayon=999,
