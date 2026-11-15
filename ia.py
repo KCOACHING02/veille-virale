@@ -1081,3 +1081,81 @@ def plans_reel(cfg: dict, phrases: list[str]) -> list[dict]:
                                  systeme="Tu choisis des plans vidéo pour illustrer des Reels.")
     plans = res.get("plans") or []
     return [plans[i] if i < len(plans) else {"recherche": "", "secours": ""} for i in range(len(phrases))]
+
+
+# ------------------------------------------------------------
+#  Reproduction fidèle d'un carrousel viral (reproduction.py)
+# ------------------------------------------------------------
+def _outil_reproduction() -> dict:
+    import reproduction as R
+    boite = {"type": "array", "items": {"type": "number"}, "minItems": 4, "maxItems": 4,
+             "description": "[x, y, largeur, hauteur] en % de la slide (x et largeur en % de la largeur, y et hauteur en % de la hauteur), origine en haut à gauche. Mesure précisément sur l'image."}
+    couleur = {"type": "string", "description": "Couleur hexadécimale relevée sur l'image, ex. #F3EBDD."}
+    return {
+        "name": "enregistrer_reproduction",
+        "description": "Plan exact de chaque slide du carrousel modèle, pour le redessiner à l'identique avec les textes adaptés à la marque.",
+        "input_schema": {"type": "object", "properties": {
+            "format": {"type": "string", "enum": list(R.FORMATS), "description": "Proportions des slides (4:5 = 1080×1350, le plus courant)."},
+            "slides": {"type": "array", "description": "Une entrée par slide jointe, dans l'ordre, exactement autant que d'images.", "items": {"type": "object", "properties": {
+                "fond": {"type": "object", "properties": {
+                    "type": {"type": "string", "enum": list(R.TYPES_FOND), "description": "uni, dégradé, ou photo plein cadre."},
+                    "couleurs": {"type": "array", "items": couleur, "description": "1 couleur (uni) ou 2-3 (dégradé de haut en bas). Pour une photo : sa couleur dominante."},
+                    "voile": {"type": "integer", "description": "Assombrissement de la photo de fond en % (0 si aucun)."},
+                    "description": {"type": "string", "description": "Photo de fond : ce qu'elle montre (sujet, cadrage, ambiance, lumière)."},
+                    "recherche": {"type": "string", "description": "Photo de fond : 3 à 6 mots-clés EN ANGLAIS pour trouver la même scène dans une banque d'images (sujet, cadrage, ambiance). Vide sinon."}},
+                    "required": ["type", "couleurs"]},
+                "elements": {"type": "array", "description": "Tout ce qui est posé sur le fond, de l'arrière vers l'avant.", "items": {"type": "object", "properties": {
+                    "type": {"type": "string", "enum": ["texte", "forme", "image", "entete", "avatar", "fleche"],
+                             "description": "texte ; forme (rectangle, pastille, bandeau, cercle, ligne de couleur) ; image (photo posée dans un cadre) ; entete (photo ronde + nom + @ façon tweet ou publication) ; avatar (photo de profil ronde seule) ; fleche (flèche ou « swipe »)."},
+                    "boite": boite,
+                    "role": {"type": "string", "enum": list(R.ROLES)},
+                    "original": {"type": "string", "description": "Texte lu sur la slide, recopié tel quel."},
+                    "adapte": {"type": "string", "description": "Texte pour la marque : traduction FIDÈLE de l'original (mêmes chiffres, délais, mots forts, construction, longueur à ±15 %), seul le vocabulaire d'un autre métier change. Garde les retours à la ligne (\\n) du modèle. Le @ ou le nom du créateur d'origine → {pseudo} ou {nom}. Numéros de page (« 3/7 ») recopiés."},
+                    "police": {"type": "string", "enum": list(R.POLICES_REPRO), "description": "Police la plus proche : " + " ; ".join(f"{k} = {v[1]}" for k, v in R.POLICES_REPRO.items())},
+                    "couleur": couleur,
+                    "taille": {"type": "number", "description": "Hauteur des lettres capitales d'une ligne, en % de la hauteur de la slide (titre courant : 4 à 8 ; texte : 2 à 3,5)."},
+                    "align": {"type": "string", "enum": ["gauche", "centre", "droite"]},
+                    "valign": {"type": "string", "enum": ["haut", "centre", "bas"], "description": "Où le texte est calé dans sa boîte."},
+                    "majuscules": {"type": "boolean"},
+                    "interligne": {"type": "number", "description": "Interligne (1.0 serré, 1.2 normal, 1.5 aéré)."},
+                    "surlignage": {"type": "string", "description": "Couleur hex du bandeau derrière chaque ligne, si le texte est posé sur un surlignage. Vide sinon."},
+                    "accent": {"type": "string", "description": "Mot ou expression du texte ADAPTÉ mis en valeur comme dans le modèle, recopié exactement. Vide sinon."},
+                    "accent_style": {"type": "string", "enum": ["couleur", "surligne", "souligne", "police"]},
+                    "accent_couleur": couleur,
+                    "accent_police": {"type": "string", "enum": list(R.POLICES_REPRO)},
+                    "forme": {"type": "string", "enum": list(R.FORMES), "description": "Pour forme et image."},
+                    "opacite": {"type": "integer", "description": "Forme : opacité en %."},
+                    "contour": couleur,
+                    "description": {"type": "string", "description": "Image : ce que montre la photo (sujet, cadrage, ambiance)."},
+                    "recherche": {"type": "string", "description": "Image : 3 à 6 mots-clés EN ANGLAIS pour trouver la même scène dans une banque d'images."},
+                    "certifie": {"type": "boolean", "description": "Entête : badge certifié bleu."},
+                    "couleur2": couleur,
+                    "texte": {"type": "string", "description": "Flèche : texte qui l'accompagne (« Swipe »), vide sinon."}},
+                    "required": ["type", "boite"]}}},
+                "required": ["fond", "elements"]}}},
+            "required": ["format", "slides"]},
+    }
+
+
+def plan_reproduction(cfg: dict, voix: str, images: list, legende: str = "", compte: str = "") -> dict:
+    """Virall.ai relève le plan exact de chaque slide du carrousel modèle et adapte ses textes à la marque."""
+    contenu = []
+    for chemin in images[:10]:
+        try:
+            contenu.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
+                                                        "data": base64.b64encode(Path(chemin).read_bytes()).decode()}})
+        except OSError:
+            pass
+    if not contenu:
+        return {"erreur": "Les slides de ce carrousel ne sont pas disponibles."}
+    contenu.append({"type": "text", "text": f"""Voici les {len(contenu)} slides d'un carrousel Instagram viral de @{compte}, dans l'ordre.
+Légende d'origine : \"\"\"{(legende or '')[:1500]}\"\"\"
+
+Relève pour CHAQUE slide son plan exact, pour qu'on la redessine à l'identique : fond, chaque bloc de texte (place, taille, couleur, police la plus proche, alignement, majuscules, mot mis en valeur, surlignage), formes de couleur, photos posées, en-tête façon tweet, photo de profil, flèche « swipe », numéro de page.
+Mesure les positions et les tailles sur l'image, au pourcent près. Relève les couleurs exactes en hexadécimal.
+Un même style se répète souvent d'une slide à l'autre : garde les mêmes valeurs quand c'est le cas.
+Les textes adaptés reprennent fidèlement le modèle (mêmes chiffres, mêmes promesses, même construction, même longueur) ; seuls les mots d'un autre métier changent pour la niche de la marque.
+Le nom, le @ et la photo du créateur d'origine deviennent ceux de la marque ({{nom}}, {{pseudo}}, élément avatar ou entete).
+Remplis l'outil enregistrer_reproduction."""})
+    return _ia_simple(cfg)._appel(_outil_reproduction(), contenu, max_tokens=12000,
+                                  systeme=_systeme_marque(cfg, voix, "Tu es directeur artistique : tu relèves la mise en page exacte de carrousels Instagram pour les reproduire à l'identique."))

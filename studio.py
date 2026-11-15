@@ -1763,7 +1763,11 @@ def genere(esp: Espace, sid: str, demo: bool = False, filigrane: bool = False) -
         p["couleurs"] = couleurs_marque(esp.lit_config())
     sauve(esp, p)
     try:
-        if p["type"] == "carrousel":
+        if p["type"] == "carrousel" and p.get("reproduction"):  # carrousel viral reproduit à l'identique (reproduction.py)
+            import reproduction
+            log("Je dessine tes slides d'après le modèle…")
+            fichiers = reproduction.dessine(esp, p, d, sortie, filigrane)
+        elif p["type"] == "carrousel":
             if not p["slides"]:
                 raise ValueError("Ajoute au moins une slide.")
             n = len(p["slides"])

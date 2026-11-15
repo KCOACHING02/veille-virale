@@ -1288,6 +1288,19 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-inser span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1;background:var(--surface,#fff);color:var(--ink-3);border:1px solid var(--line);opacity:.55;transition:opacity .15s,transform .15s}
 .bt-inser:hover span,.bt-inser:focus-visible span{opacity:1;transform:scale(1.12);color:var(--accent,#E8456B);border-color:currentColor}
 @media (max-width:480px){.bt-bloc-tete{gap:2px;padding-left:8px}.bt-bloc-tete .ic{display:none}.bt-bloc-tete .icone-btn{width:30px}}
+.rp-attente{padding:22px}.rp-attente b{font-size:18px}
+.rp-actions{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 6px}.rp-actions .btn{width:auto;flex:0 1 auto}
+.rp-liste{display:grid;gap:22px;margin:14px 0 90px}
+.rp-slide{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.rp-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rp-duo figure{margin:0}.rp-duo img{width:100%;border-radius:10px;display:block;aspect-ratio:4/5;object-fit:cover;background:var(--sunk)}
+.rp-duo figcaption{font-size:12px;color:var(--ink-3);margin-top:4px;text-align:center}
+.rp-champs{display:grid;gap:10px}.rp-champs label small{display:block;color:var(--ink-3);font-size:12px;margin-bottom:3px}
+.rp-champs textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--bg,transparent);color:inherit;font:inherit;resize:vertical}
+.rp-photo{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rp-photo span{font-size:13px;color:var(--ink-3);margin-right:auto}
+.rp-bas{position:sticky;bottom:12px;display:flex;justify-content:center;z-index:5}
+.pulse{animation:eclair 1.4s ease 2}
+@media (max-width:760px){.rp-slide{grid-template-columns:1fr}}
 .st-corr{display:grid;gap:8px;max-height:56vh;overflow:auto;margin:6px 0 14px;padding-right:4px}
 .st-corr label{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:10px}
 .st-corr small{color:var(--ink-3);font-variant-numeric:tabular-nums}
@@ -3106,7 +3119,7 @@ async function choisirFormat(cle, videoBanque = false) {
   $("#feuille").innerHTML = `<h2 id="m-titre" style="font-size:26px;font-stretch:85%">Que veux-tu créer ?</h2>
 <div style="height:14px"></div>
     <div class="formats">
-      ${(() => { const bc = `<button type="button" data-format="carrousel" aria-pressed="${estCar}" class="${estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span>${estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Carrousel</b><span>${estCar && nbSl ? `Les ${nbSl} mêmes slides, réécrites pour toi, avec tes photos.` : "Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350."}</span></button>`;
+      ${(() => { const bc = `<button type="button" data-format="carrousel" aria-pressed="${estCar}" class="${estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M3 7v10M21 7v10"/></svg></span>${estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Carrousel</b><span>${estCar && opts.reproduction ? `Le même carrousel, à l'identique : même mise en page, mêmes couleurs, tes textes et ton nom.` : estCar && nbSl ? `Les ${nbSl} mêmes slides, réécrites pour toi, avec tes photos.` : "Tes photos avec les textes posés dessus, ou des slides sur fond uni. Format 1080 × 1350."}</span></button>`;
         const br = `<button type="button" data-format="reel" aria-pressed="${!estCar}" class="${!estCar ? "reco" : ""}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 9l5 3-5 3z"/></svg></span>${!estCar ? '<em class="badge-reco">Comme le modèle</em>' : ""}<b>Reel</b><span>Ta vidéo recadrée, avec le hook et les sous-titres incrustés. Sans vidéo : un diaporama de tes photos.</span></button>`;
         return estCar ? bc + br : br + bc; })()}
     </div>
@@ -3127,7 +3140,11 @@ async function choisirFormat(cle, videoBanque = false) {
   $("#f-creer").onclick = async () => {
     const b = $("#f-creer"); b.disabled = true; b.innerHTML = '<span class="spin" style="border-color:#fff;border-right-color:transparent"></span>Création…';
     try {
-      const r = await api("/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: format, style}});
+      const repro = estCar && format === "carrousel" && opts.reproduction;  // carrousel viral : reproduit à l'identique
+      const r = await api(repro ? "/api/reproduire" : "/api/studio", {method: "POST", body: {analyse_id: S.analyse.id, cle, type: format, style}});
+      if (repro) { fermeModale(); fermeTiroir(); S.projetId = r.projet.id; S.projet = r.projet;
+        S.tacheStudio = {id: r.job, sid: r.projet.id, titre: "Reproduction du carrousel", phrase: "Je relève la mise en page de chaque slide…"};
+        va("studio"); suisTacheStudio(r.job); return; }
       fermeModale(); fermeTiroir();
       S.projetId = r.projet.id; S.projet = r.projet;
       S.tacheStudio = r.job ? (r.projet.copie_du_modele && r.projet.type === "carrousel"
@@ -3952,10 +3969,78 @@ function brancheTypo(p, el) {
   $$("[data-casse]", el).forEach(b => b.onclick = () => enregistre({casse: b.dataset.casse}, true));
   $("#st-typo-reset").onclick = () => enregistre({titre: 100, texte: 100, casse: "auto"}, true);
 }
+// Carrousel viral reproduit à l'identique : le modèle et ta version côte à côte, textes et photos retouchables slide par slide
+const ROLES_REPRO = {titre: "Titre", sous_titre: "Sous-titre", corps: "Texte", liste: "Liste", numero: "Numéro", signature: "Signature", bouton: "Bouton", citation: "Citation", etiquette: "Étiquette"};
+function renduReproduction() {
+  const p = S.projet, el = $("#studio");
+  const tache = S.tacheStudio && S.tacheStudio.sid === p.id ? S.tacheStudio : null;
+  const enCours = !!tache || p.statut === "en_cours" || (p.reproduction_en_cours && p.statut !== "erreur");
+  if (enCours && !tache) {
+    clearTimeout(S.rechargeProjet);
+    S.rechargeProjet = setTimeout(async () => { if (S.projetId === p.id && S.vue === "studio") { S.projet = await api("/api/studio/" + p.id); renduProjet(); } }, 3000);
+  }
+  const v = encodeURIComponent(p.genere_le || "");
+  const sortie = n => `/studio/${p.id}/sortie/${encodeURIComponent(n)}`;
+  const fiche = p.reproduction || {slides: []};
+  const pret = p.statut === "pret" && !enCours;
+  const pr = progStudio(tache) || {pct: 8, texte: ""};
+  el.innerHTML = `
+    <div class="st-tete"><button class="btn petit" id="st-retour">← Mes créations</button><span class="aide">Reproduit de @${esc(p.compte || "")}</span></div>
+    <h2 class="st-titre">${esc(p.titre)}</h2>
+    ${enCours ? `<div class="carte rp-attente"><b>Virall.ai reproduit ce carrousel pour toi</b>
+        <p class="aide" id="rp-phrase">${esc(tache?.phrase || "Je relève la mise en page de chaque slide…")}</p>
+        <div class="st-barre" id="st-barre"><i style="width:${pr.pct}%"></i></div><p class="aide" id="st-reste">${esc(pr.texte)}</p>
+        <p class="aide">Mêmes slides, même mise en page, mêmes couleurs, avec tes textes, ton nom et des photos qui montrent la même chose.</p></div>` : ""}
+    ${p.statut === "erreur" && !enCours ? `<div class="carte" style="border-color:var(--danger,#d33)"><b>La reproduction n'a pas abouti</b><p class="aide">${esc(p.erreur || "")}</p></div>` : ""}
+    ${pret ? `<div class="rp-actions">
+        <button class="btn prim large" id="rp-telecharger">${partageNatif() ? "Enregistrer dans mes photos" : "Télécharger les slides"}</button>
+        <button class="btn large" id="st-copier-legende">Copier la légende</button>
+        <a class="btn large" href="${sortie(p.zip)}?telecharger=1">Tout télécharger (.zip)</a></div>
+      <p class="aide">Touche un texte pour le changer, ou « Autre photo » / « Ma photo » sous une slide. Puis « Appliquer mes changements ».</p>
+      <div class="rp-liste">${fiche.slides.map((s, i) => {
+        const textes = s.elements.map((e, k) => [e, k]).filter(([e]) => e.type === "texte");
+        const photos = [...(s.fond.type === "photo" ? [["fond", "Photo de fond"]] : []), ...s.elements.map((e, k) => [e, k]).filter(([e]) => e.type === "image").map(([, k]) => [String(k), "Photo"])];
+        const modele = (p.modele_slides || [])[i];
+        return `<section class="rp-slide"><div class="rp-duo">
+            ${modele ? `<figure><img src="/studio/${p.id}/modele/${encodeURIComponent(modele)}" alt="Slide ${i + 1} du modèle" loading="lazy"><figcaption>Modèle</figcaption></figure>` : ""}
+            <figure><img src="${sortie(`slide_${String(i + 1).padStart(2, "0")}.jpg`)}?v=${v}" alt="Ta slide ${i + 1}" loading="lazy"><figcaption>Ta version · ${i + 1}/${fiche.slides.length}</figcaption></figure></div>
+          <div class="rp-champs">${textes.map(([e, k]) => `<label><small>${ROLES_REPRO[e.role] || "Texte"}</small>
+              <textarea data-rp="${i}:${k}" rows="${Math.min(6, Math.max(1, Math.ceil(e.adapte.length / 42)))}">${esc(e.adapte)}</textarea></label>`).join("")}
+            ${photos.map(([cle, lib]) => `<div class="rp-photo"><span>${lib}</span><button class="btn petit" data-rp-autre="${i}:${cle}">Autre photo</button>
+              <label class="btn petit">Ma photo<input type="file" accept="image/*" data-rp-ma="${i}:${cle}" hidden></label></div>`).join("")}</div></section>`; }).join("")}</div>
+      <div class="rp-bas"><button class="btn prim large" id="rp-appliquer">Appliquer mes changements</button></div>` : ""}`;
+  $("#st-retour").onclick = () => { S.projetId = null; S.projet = null; renduStudio(); };
+  if (!pret) return;
+  const modifs = {};
+  $$("[data-rp]", el).forEach(t => t.oninput = () => { const [i, k] = t.dataset.rp.split(":"); (modifs[i] ||= {})[k] = t.value; $("#rp-appliquer").classList.add("pulse"); });
+  const photo = async (cle, fichier) => {
+    const [i, c] = cle.split(":"), fd = new FormData();
+    if (fichier) fd.append("fichier", fichier);
+    try {
+      const x = await fetch(`/api/studio/${p.id}/reproduction/photo?slide=${i}&cle=${encodeURIComponent(c)}`, {method: "POST", body: fd});
+      const j = await x.json(); if (!x.ok) throw new Error(j.erreur || "Impossible de changer la photo");
+      toast("Photo changée : je redessine la slide"); await applique();
+    } catch (e) { toast(e.message); }
+  };
+  $$("[data-rp-autre]", el).forEach(b => b.onclick = () => photo(b.dataset.rpAutre));
+  $$("[data-rp-ma]", el).forEach(inp => inp.onchange = () => inp.files[0] && photo(inp.dataset.rpMa, inp.files[0]));
+  const applique = async () => {
+    const slides = fiche.slides.map((_, i) => modifs[i] || {});
+    try { await api(`/api/studio/${p.id}/reproduction`, {method: "PUT", body: {slides}}); } catch (e) { return toast(e.message); }
+    try {
+      const r = await api(`/api/studio/${p.id}/generer`, {method: "POST"});
+      S.tacheStudio = {id: r.job, sid: p.id, titre: "Création", phrase: "Je redessine tes slides…"}; S.projet = await api("/api/studio/" + p.id); renduProjet(); suisTacheStudio(r.job);
+    } catch (e) { toast(e.message); }
+  };
+  $("#rp-appliquer").onclick = applique;
+  $("#st-copier-legende").onclick = () => { navigator.clipboard?.writeText(p.legende || ""); toast("Légende copiée"); };
+  $("#rp-telecharger").onclick = () => { (p.fichiers || []).forEach((f, k) => setTimeout(() => { const a = document.createElement("a"); a.href = sortie(f) + "?telecharger=1"; a.download = f; a.click(); }, k * 350)); };
+}
 function renduProjet() {
   const p = S.projet, el = $("#studio");
   if (!p) return;
   if (p.type === "stories") return renduStoriesProjet();
+  if (p.reproduction || p.reproduction_en_cours) return renduReproduction();
   const tache = S.tacheStudio && S.tacheStudio.sid === p.id ? S.tacheStudio : null;
   const ecrit = !!tache && /slides/i.test(tache.titre || "");
   const enCours = !!tache || p.statut === "en_cours";
@@ -4265,7 +4350,7 @@ function progStudio(t) {
   if (!t) return null;
   t.debut ||= Date.now();
   const titre = t.titre || "", reel = S.projet?.type === "reel" && S.projet?.video;
-  const tau = /slides|écriture/i.test(titre) ? 12 : /images/i.test(titre) ? 9 : /préparation/i.test(titre) ? 30 : reel ? 35 : 8;
+  const tau = /reproduction/i.test(titre) ? 45 : /slides|écriture/i.test(titre) ? 12 : /images/i.test(titre) ? 9 : /préparation/i.test(titre) ? 30 : reel ? 35 : 8;
   const ecoule = (Date.now() - t.debut) / 1000, pct = Math.min(96, Math.round(100 * (1 - Math.exp(-ecoule / tau))));
   const reste = Math.max(0, Math.round(tau * 3 - ecoule));
   return {pct, texte: pct >= 90 || reste < 5 ? "Presque fini…" : reste < 60 ? `Encore ${Math.max(5, Math.round(reste / 5) * 5)} s environ` : `Encore ${Math.round(reste / 60)} min environ`};

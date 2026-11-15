@@ -1275,7 +1275,8 @@ def _options_studio():
                         for k, m in studio.SS.MODELES.items()],
             "voix_connue": studio.voix_connue(g.esp), "banque": _banque_dispo(),
             "voix_off": voix.options() if voix.dispo(en_demo()) else [], "voix_exemples": voix.dispo(),
-            "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv()}
+            "marque": studio.couleurs_marque(g.esp.lit_config()), "couvertures": _options_studio_couv(),
+            "reproduction": _reproduction_ouverte(g.u)}
 
 
 import voix  # noqa: E402
@@ -1327,6 +1328,103 @@ def studio_cree():
         jid = lance(g.u["id"], "Écriture des slides", studio.ecrit_textes, g.esp, cfg, p["id"], demo=en_demo(), file_=FILE_STUDIO)
     p.pop("adaptation", None)
     return jsonify({"projet": p, "job": jid})
+
+
+def _reproduction_ouverte(u) -> bool:
+    """Reproduction fidèle : réservée aux administrateurs tant qu'elle n'est pas validée (REPRODUCTION=1 l'ouvre à toutes)."""
+    return en_demo() or os.environ.get("REPRODUCTION") == "1" or est_admin(u)
+
+
+@app.post("/api/reproduire")
+@connecte
+def reproduire():
+    """Carrousel viral des Tendances reproduit à l'identique pour la marque (reproduction.py) : 1 création du Studio."""
+    if not _reproduction_ouverte(g.u):
+        return jsonify({"erreur": "Bientôt disponible."}), 403
+    c = request.get_json(force=True)
+    msg = refus(g.u, studio=1)
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    msg = reserve(g.u, "ia")
+    if msg:
+        return bloque(msg)
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre création : réessaie dans un instant."}), 409
+    try:
+        post = next(p for p in moteur.charge(g.esp, c["analyse_id"])["posts"] if p["cle"] == c["cle"])
+    except (FileNotFoundError, StopIteration, KeyError):
+        return jsonify({"erreur": "Publication introuvable."}), 404
+    cfg = g.esp.lit_config()
+    p = studio.cree(g.esp, cfg, post, "carrousel", c["analyse_id"])
+    p["reproduction_en_cours"] = True
+    studio.sauve(g.esp, p)
+    import reproduction
+    uid = g.u["id"]
+    jid = lance(uid, "Reproduction du carrousel", reproduction.prepare, g.esp, cfg, post, p["id"], demo=en_demo(), file_=FILE_STUDIO,
+                apres=_apres_studio(uid, p["id"]))
+    p.pop("adaptation", None)
+    return jsonify({"projet": p, "job": jid})
+
+
+@app.put("/api/studio/<sid>/reproduction")
+@connecte
+def reproduction_textes(sid):
+    """Textes retouchés d'un carrousel reproduit : {slides: [{"<index de l'élément>": "texte"}]}."""
+    p = _projet(sid)
+    fiche = p.get("reproduction")
+    if not fiche:
+        abort(404)
+    for i, modifs in enumerate((request.get_json(force=True) or {}).get("slides") or []):
+        if i >= len(fiche["slides"]) or not isinstance(modifs, dict):
+            continue
+        els = fiche["slides"][i]["elements"]
+        for k, t in modifs.items():
+            if str(k).isdigit() and int(k) < len(els) and els[int(k)]["type"] == "texte" and isinstance(t, str):
+                els[int(k)]["adapte"] = t.strip()[:600]
+    studio.sauve(g.esp, p)
+    return jsonify({"ok": True})
+
+
+@app.post("/api/studio/<sid>/reproduction/photo")
+@connecte
+def reproduction_photo(sid):
+    """Photo d'un cadre (ou du fond) d'une slide reproduite : la sienne (fichier envoyé) ou une autre de la banque."""
+    import banque
+    p = _projet(sid)
+    fiche = p.get("reproduction")
+    i, cle = request.args.get("slide", type=int), request.args.get("cle", "")
+    if not fiche or i is None or not 0 <= i < len(fiche["slides"]):
+        abort(404)
+    s = fiche["slides"][i]
+    e = s["fond"] if cle == "fond" else (s["elements"][int(cle)] if cle.isdigit() and int(cle) < len(s["elements"]) else None)
+    if not e:
+        abort(404)
+    d = studio.dossier(g.esp, sid) / "sources"
+    d.mkdir(parents=True, exist_ok=True)
+    f = request.files.get("fichier")
+    if f:
+        from PIL import Image, ImageOps
+        try:
+            im = ImageOps.exif_transpose(Image.open(f.stream)).convert("RGB")
+        except Exception:  # noqa: BLE001
+            return jsonify({"erreur": "Ce fichier n'est pas une image lisible (JPG, PNG ou HEIC converti)."}), 400
+        im.thumbnail((2160, 2160))
+        nom = f"perso_{i}_{cle}_{uuid.uuid4().hex[:6]}.jpg"
+        im.save(d / nom, "JPEG", quality=90)
+    else:  # photo suivante de la banque pour la même scène
+        req = e.get("recherche") or e.get("description") or ""
+        if not req:
+            return jsonify({"erreur": "Pas de description pour chercher une autre photo : mets la tienne."}), 400
+        deja = set(e.get("vues") or []) | {e.get("image") or ""}
+        res = [r for r in banque.photos(req, n=24) if f"repro_{i}_{cle}_{r['id']}.jpg" not in deja]
+        if not res:
+            return jsonify({"erreur": "Plus d'autre photo pour cette scène : mets la tienne."}), 400
+        nom = f"repro_{i}_{cle}_{res[0]['id']}.jpg"
+        banque.telecharge(res[0], d / nom)
+    e["vues"] = list((set(e.get("vues") or []) | {e.get("image") or "", nom}) - {""})[-30:]
+    e["image"] = nom
+    studio.sauve(g.esp, p)
+    return jsonify({"image": nom})
 
 
 @app.get("/api/studio/<sid>")
@@ -1861,7 +1959,7 @@ def studio_couverture(sid):
 @app.get("/studio/<sid>/<dossier_>/<nom>")
 @connecte
 def studio_fichier(sid, dossier_, nom):
-    if dossier_ not in ("sources", "sortie"):
+    if dossier_ not in ("sources", "sortie", "modele"):
         abort(404)
     try:
         d = studio.dossier(g.esp, sid) / dossier_
