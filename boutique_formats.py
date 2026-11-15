@@ -523,21 +523,21 @@ def rendu_appli_une(page: dict, pseudo: str, apercu: bool = False) -> str:
 
 CSS_CARTES = """
 /* Taille des cartes produits (réglage du design) — préfixe .ap pour passer devant les règles de base */
-.ap .st-pied p,.ap .un-txt em{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.ap .st-pied p,.ap .un-txt em{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
 .ap .st-pied b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .ap .st-voir{white-space:nowrap}
 /* Moyenne */
-.ap.ca-moyenne .st-img{aspect-ratio:4/3}.ap.ca-moyenne .st-pied p{-webkit-line-clamp:2}
+.ap.ca-moyenne .st-img{aspect-ratio:4/3}.ap.ca-moyenne .st-pied p{-webkit-line-clamp:4}
 .ap.ca-moyenne .un-visuel{aspect-ratio:4/3}.ap.ca-moyenne .ap-slide{min-height:240px}
 .ap.ca-moyenne .ap-carte{flex-basis:min(48%,200px)}
 /* Compacte : une ligne par produit */
 .ap.ca-compacte .st-fil{gap:12px}
-.ap.ca-compacte .st-post{display:grid;grid-template-columns:108px minmax(0,1fr);align-items:stretch;border-radius:20px;padding:8px;gap:12px}
+.ap.ca-compacte .st-post{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:stretch;border-radius:20px;padding:8px;gap:12px}
 .ap.ca-compacte .st-post header{display:none}
-.ap.ca-compacte .st-img{aspect-ratio:1;width:108px;height:108px;border-radius:14px;overflow:hidden}
+.ap.ca-compacte .st-img{aspect-ratio:1;width:96px;height:96px;align-self:center;border-radius:14px;overflow:hidden}
 .ap.ca-compacte .st-pied{flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:2px 4px 2px 0}
 .ap.ca-compacte .st-pied>div{width:100%}.ap.ca-compacte .st-pied b{font-size:1em;line-height:1.25}
-.ap.ca-compacte .st-pied p{-webkit-line-clamp:1;font-size:.86em}
+.ap.ca-compacte .st-pied p{-webkit-line-clamp:4;font-size:.86em;line-height:1.35}
 .ap.ca-compacte .st-voir{flex-direction:row;align-items:center;gap:8px;padding:7px 14px;font-size:12.5px;border-radius:999px}
 .ap.ca-compacte .st-voir span{font-size:1.05em}
 .ap.ca-compacte .un-carte,.ap.ca-compacte .ap-hero{display:none}
@@ -553,7 +553,7 @@ CSS_CARTES = """
 .ap.ca-deux .st-post header{display:none}
 .ap.ca-deux .st-img{aspect-ratio:1}
 .ap.ca-deux .st-pied{flex:1;flex-direction:column;align-items:stretch;justify-content:space-between;padding:10px 12px 12px;gap:10px}
-.ap.ca-deux .st-pied b{font-size:.95em;line-height:1.25}.ap.ca-deux .st-pied p{display:none}
+.ap.ca-deux .st-pied b{font-size:.95em;line-height:1.25}.ap.ca-deux .st-pied p{-webkit-line-clamp:3;font-size:.82em;line-height:1.35}
 .ap.ca-deux .st-voir{flex-direction:row;justify-content:space-between;align-items:center;gap:6px;padding:8px 12px;font-size:12px;border-radius:999px}
 .ap.ca-deux .st-voir span{font-size:1.1em}
 .ap.ca-deux .un-carte{display:inline-block;width:calc(50% - 6px);vertical-align:top;margin:0 0 12px}.ap.ca-deux .un-carte:nth-of-type(odd){margin-right:12px}
