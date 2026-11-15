@@ -1871,7 +1871,10 @@ def _droits_uid(uid) -> dict | None:
 
 
 # La boutique dépend de la formule de sa propriétaire : mention « Créé avec » et commission sur les ventes
-bq.AVEC_MARQUE = lambda uid: bool(((_droits_uid(uid) or {}).get("options") or {}).get("mention_boutique", True))
+# Boutiques qui gardent la mention « Créé avec Virallink » même avec une formule payante (décision de Mohamed, 15 novembre 2026)
+MENTION_FORCEE = {x.strip().lower() for x in os.environ.get("BOUTIQUES_AVEC_MENTION", "brilleetvibre-shop").split(",") if x.strip()}
+bq.AVEC_MARQUE = lambda uid: (bool(((_droits_uid(uid) or {}).get("options") or {}).get("mention_boutique", True))
+                              or (bq.pseudo_de(uid) or "").lower() in MENTION_FORCEE)
 bq.TAUX_COMMISSION = lambda uid: (_droits_uid(uid) or {}).get("commission_boutique")
 
 bq.init()
