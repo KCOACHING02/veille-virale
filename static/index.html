@@ -1283,6 +1283,12 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-bloc.cache{opacity:.55}
 .bt-bloc-tete{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px}
 .bt-bloc-tete .ic{width:32px;height:32px;border-radius:9px;background:var(--sunk);display:grid;place-items:center;flex-shrink:0;font-size:16px}
+.bt-inser{display:flex;align-items:center;justify-content:center;width:100%;height:18px;margin:-4px 0;padding:0;border:0;background:none;cursor:pointer;position:relative;z-index:1}
+.bt-inser:first-child{display:none}
+.bt-inser span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1;background:var(--surface,#fff);color:var(--ink-3);border:1px solid var(--line);opacity:.55;transition:opacity .15s,transform .15s}
+.bt-inser:hover span,.bt-inser:focus-visible span{opacity:1;transform:scale(1.12);color:var(--accent,#E8456B);border-color:currentColor}
+@media (max-width:480px){.bt-bloc-tete{gap:2px;padding-left:8px}.bt-bloc-tete .ic{display:none}.bt-bloc-tete .icone-btn{width:30px}}
+.bt-titres{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.bt-titres summary{cursor:pointer;font-weight:600}
 .bt-poignee{flex:none;width:22px;height:34px;display:grid;place-items:center;color:var(--ink-3);cursor:grab;touch-action:none;margin-left:-6px}
 .bt-poignee svg{width:16px;height:16px}.bt-bloc.glisse{opacity:.9;box-shadow:0 12px 30px -10px rgba(0,0,0,.35);position:relative;z-index:3;transform:scale(1.01)}
 .bt-bloc.glisse .bt-poignee{cursor:grabbing}
@@ -5992,15 +5998,16 @@ function ongletContenu(z) {
       <div class="bt-reseaux">${Object.entries(res).map(([k, v]) => `<div class="bt-res">${svgRes(k)}<input data-r="${k}" value="${esc(v)}" placeholder="${esc(AIDE_RES[k] || "")}" aria-label="${esc(BQ.etat.options.reseaux[k])}"><button class="icone-btn" data-retire-res="${k}" aria-label="Retirer ${esc(BQ.etat.options.reseaux[k])}">✕</button></div>`).join("") || '<p class="aide" style="margin:0">Aucun réseau pour l\'instant.</p>'}</div>
       ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
     </section>
-    <section class="bt-sec"><h3>Ta page</h3><p class="aide">Les blocs, dans l'ordre où ils s'affichent. Glisse ⠿ pour les déplacer, ou touche un élément dans l'aperçu pour le modifier.</p>
-      <div class="bt-blocs">${p.blocs.map((b, i) => blocListe(b) ? blocHTML(b, i) : "").join("") || '<p class="aide">Ta page est vide : ajoute ton premier bloc.</p>'}</div>
+    <section class="bt-sec"><h3>Ta page</h3><p class="aide">Les blocs, dans l'ordre où ils s'affichent. Glisse ⠿ pour les déplacer, touche + entre deux blocs pour en ajouter un à cet endroit, ou touche un élément dans l'aperçu pour le modifier.</p>
+      <div class="bt-blocs">${p.blocs.map((b, i) => blocListe(b) ? `<button type="button" class="bt-inser" data-inser="${i}" aria-label="Ajouter un bloc ici"><span>+</span></button>` + blocHTML(b, i) : "").join("") || '<p class="aide">Ta page est vide : ajoute ton premier bloc.</p>'}</div>
       <button class="btn prim" id="bt-ajout-bloc" style="margin-top:12px;width:100%;justify-content:center">+ Ajouter un bloc</button>
     </section>`;
   lieChamps(z);
   z.querySelectorAll("[data-ajout-res]").forEach(b => b.onclick = () => { p.reseaux = {...res, [b.dataset.ajoutRes]: ""}; renduOnglet(); z.querySelector(`[data-r="${b.dataset.ajoutRes}"]`)?.focus(); });
   z.querySelectorAll("[data-retire-res]").forEach(b => b.onclick = () => { delete p.reseaux[b.dataset.retireRes]; modifieBoutique(true); });
   z.querySelectorAll("[data-retire]").forEach(b => b.onclick = () => { p[b.dataset.retire] = ""; modifieBoutique(true); });
-  $("#bt-ajout-bloc").onclick = choisirTypeBloc;
+  $("#bt-ajout-bloc").onclick = () => choisirTypeBloc();
+  z.querySelectorAll("[data-inser]").forEach(b => b.onclick = () => choisirTypeBloc(+b.dataset.inser));
   lieGlisser(z);
   $("#bt-exemple").onchange = async e => { p.exemple = e.target.checked; await api("/api/boutique", {method: "PUT", body: {exemple: p.exemple}}); toast(p.exemple ? "Merci ! Ta boutique peut servir d'exemple" : "Ta boutique n'apparaîtra plus en exemple"); };
   z.querySelectorAll("[data-bloc-action]").forEach(b => b.onclick = e => {
@@ -6151,7 +6158,20 @@ function reglagesProduits(b, i) {
     <p class="bt-sous-titre">Afficher</p>
     <label class="bt-interr"><span>La description</span><input type="checkbox" data-bpr-masque="desc" data-i="${i}" ${masque.includes("desc") ? "" : "checked"}></label>
     <label class="bt-interr"><span>Le prix</span><input type="checkbox" data-bpr-masque="prix" data-i="${i}" ${masque.includes("prix") ? "" : "checked"}></label>
+    ${titresEntreProduits(b, i)}
     ${["fiche", "fil"].includes(b.vue) ? champB(i, "bouton", "Texte du bouton (sinon celui de chaque produit)", b.bouton, 'maxlength="60" placeholder="Je le veux"') : ""}`;
+}
+// Un titre avant n'importe quel produit du bloc : la liste est coupée à cet endroit, dans tous les formats
+function titresEntreProduits(b, i) {
+  if (b.type !== "produits") return "";
+  const vis = BQ.page.produits.filter(p => p.visible !== false), ids = b.ids || [];
+  const liste = (ids.length ? vis.filter(p => ids.includes(p.id)) : vis).slice(1);
+  if (!liste.length) return "";
+  const t = b.titres || {};
+  return `<details class="bt-titres" ${Object.keys(t).length ? "open" : ""}><summary>🔠 Ajouter un titre entre tes produits</summary>
+    <p class="aide" style="margin:6px 0 10px">Le titre s'affiche juste avant le produit choisi. Laisse vide pour ne rien mettre.</p>
+    ${liste.map(p => `<div class="champ"><label>Avant « ${esc(p.titre || "Sans titre")} »</label><input data-bpr-titre="${p.id}" data-i="${i}" value="${esc(t[p.id] || "")}" maxlength="120" placeholder="Pas de titre"></div>`).join("")}
+  </details>`;
 }
 function corpsBlocContenu(b, i) {
   const prods = BQ.page.produits;
@@ -6204,7 +6224,7 @@ function corpsBlocContenu(b, i) {
   }
   return "";
 }
-function choisirTypeBloc() {
+function choisirTypeBloc(pos) {  // pos : place du nouveau bloc dans la liste (sinon à la fin)
   $("#feuille").innerHTML = `<h2 id="m-titre">Ajouter un bloc</h2><p class="sous">Que veux-tu montrer sur ta page ?</p>
     <div class="bt-types">${Object.entries(TYPES_BLOCS).map(([k, [ic, nom, d]]) => `<button class="bt-type" data-type-bloc="${k}"><span class="ic">${ic}</span><b>${nom}</b><small>${d}</small></button>`).join("")}</div>
     <div class="pied-modale" style="margin-top:16px"><button class="btn" data-fermer>Annuler</button></div>`;
@@ -6227,9 +6247,10 @@ function choisirTypeBloc() {
       Object.assign(nb, {titre: "Offre limitée", texte: "", fin: new Date(f - f.getTimezoneOffset() * 6e4).toISOString().slice(0, 16), bouton: "J'en profite"}); }
     if (t === "banniere") Object.assign(nb, {texte: "", defilement: true});
     if (t === "separateur") nb.forme = "ligne";
-    BQ.page.blocs.push(nb); BQ.ouvertBloc = nb.id;
+    if (Number.isInteger(pos)) BQ.page.blocs.splice(pos, 0, nb); else BQ.page.blocs.push(nb);
+    BQ.ouvertBloc = nb.id;
     fermeModale(); modifieBoutique(true);
-    setTimeout(() => $(`.bt-bloc:last-child input, .bt-bloc:last-child textarea`)?.focus(), 80);
+    setTimeout(() => { const el = $(`.bt-bloc[data-id="${nb.id}"]`); el?.scrollIntoView({block: "center"}); el?.querySelector("input, textarea")?.focus(); }, 80);
   });
 }
 
@@ -6300,6 +6321,11 @@ function lieChamps(z) {
     if (c.checked) L.push(id);
     if (!L.length) { c.checked = true; return toast("Garde au moins un produit"); }
     b.ids = p.produits.map(x => x.id).filter(x => L.includes(x)); modifieBoutique(true);
+  });
+  z.querySelectorAll("[data-bpr-titre]").forEach(c => c.oninput = () => {
+    const b = p.blocs[+c.dataset.i], t = {...(b.titres || {})}, v = c.value.trim();
+    if (v) t[c.dataset.bprTitre] = c.value; else delete t[c.dataset.bprTitre];
+    b.titres = t; apercu(); sauveBoutique();
   });
   z.querySelectorAll("[data-bpr-masque]").forEach(c => c.onchange = () => {
     const b = p.blocs[+c.dataset.i], m = c.dataset.bprMasque;

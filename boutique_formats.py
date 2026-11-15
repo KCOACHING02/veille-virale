@@ -115,12 +115,16 @@ def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, gr
             else:
                 titre = x.get("titre") or ("" if x.get("type") == "produit" else "La boutique")
                 liste = _prods_du_bloc(page, x)
-            if x and x.get("vue") and liste:  # présentation choisie pour ce bloc : la même dans tous les formats
-                h = generique(titre, bq.produits_html(liste, x, page, pseudo), etat["premier"])
-            elif x and any(x.get(k) for k in REGLAGES_PRODUITS):  # présentation du modèle, images et éléments réglés
-                h = f'<div class="pb {bq.classes_produits(x, "", False)}">{rendu_prods(liste, titre, etat["premier"])}</div>'
-            else:
-                h = rendu_prods(liste, titre, etat["premier"])
+            parts = []
+            for n, (t, seg) in enumerate(bq.segments(liste, x, titre) if x else [(titre, liste)]):
+                prem = etat["premier"] and n == 0
+                if x and x.get("vue") and seg:  # présentation choisie pour ce bloc : la même dans tous les formats
+                    parts.append(generique(t, bq.produits_html(seg, x, page, pseudo), prem))
+                elif x and any(x.get(k) for k in REGLAGES_PRODUITS):  # présentation du modèle, images et éléments réglés
+                    parts.append(f'<div class="pb {bq.classes_produits(x, "", False)}">{rendu_prods(seg, t, prem)}</div>')
+                else:
+                    parts.append(rendu_prods(seg, t, prem))
+            h = "".join(parts)
             if x and bq.repere(page, x):  # aperçu : une enveloppe pour pouvoir toucher tout le bloc (titre compris)
                 h = f'<div class="pb"{bq.repere(page, x)}>{h}</div>'
             out.append(h)

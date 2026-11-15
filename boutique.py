@@ -1352,6 +1352,18 @@ def classes_produits(b: dict | None, vue: str, avec_vue: bool = True) -> str:
     return " ".join(c)
 
 
+def segments(liste: list[dict], b: dict | None, titre: str) -> list[tuple[str, list[dict]]]:
+    """Les produits d'un bloc coupés par les titres posés entre eux (`b["titres"]` : id du produit → titre affiché avant lui)."""
+    t = (b or {}).get("titres") or {}
+    segs: list[tuple[str, list[dict]]] = [(titre, [])]
+    for p in liste:
+        tt = (t.get(p["id"]) or "").strip()
+        if tt and segs[-1][1]:
+            segs.append((tt, []))
+        segs[-1][1].append(p)
+    return segs
+
+
 def produits_html(liste: list[dict], b: dict | None, page: dict, pseudo: str, ancre: str = "") -> str:
     """Les produits d'un bloc dans la présentation choisie pour lui (ou celle du design)."""
     d = page["design"]
@@ -1402,8 +1414,8 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
         liste = [prods[i] for i in (b.get("ids") or [p["id"] for p in page["produits"]]) if i in prods]
         if not liste:
             return ""
-        titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
-        return titre + produits_html(liste, b, page, pseudo)
+        return "".join((f'<h2 class="sec">{E(t)}</h2>' if t else "") + produits_html(seg, b, page, pseudo)
+                       for t, seg in segments(liste, b, b.get("titre") or ""))
     if t == "capture":
         txt = f'<p>{E(b["texte"])}</p>' if b.get("texte") else ""
         btn = E(b.get("bouton") or "Je m’inscris")

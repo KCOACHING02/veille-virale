@@ -2518,6 +2518,8 @@ def _bloc_propre(b: dict) -> dict | None:
             r["ratio"] = b["ratio"]
         if b.get("remplir") in bq.REMPLISSAGES:
             r["remplir"] = b["remplir"]
+        if isinstance(b.get("titres"), dict):  # titres posés entre les produits : id du produit → titre
+            r["titres"] = {str(k)[:12]: str(v).strip()[:120] for k, v in list(b["titres"].items())[:50] if isinstance(v, str) and v.strip()}
         if isinstance(b.get("masque"), list):
             r["masque"] = [m for m in bq.MASQUES_PRODUIT if m in b["masque"]]
     return r
