@@ -1862,6 +1862,7 @@ def nettoie_images(uid: int, page: dict):
     """Supprime les images qui ne sont plus utilisées (après 1 h, pour ne pas effacer un envoi en cours d'édition)."""
     utilisees = {page.get("photo"), page.get("couverture"), page["design"].get("fond_image")}
     utilisees |= {p.get("image") for p in page.get("produits", [])} | {b.get("image") for b in page.get("blocs", [])}
+    utilisees |= {x for t in page.get("tunnels", []) or [] for x in (t.get("images") or [])}
     for f in (dossier(uid) / "images").iterdir():
         if f.name not in utilisees and time.time() - f.stat().st_mtime > 3600:
             f.unlink(missing_ok=True)

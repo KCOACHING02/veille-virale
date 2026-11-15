@@ -1461,6 +1461,8 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .as-prod .vig{width:48px;height:48px;border-radius:10px;background:var(--sunk) center/cover;display:grid;place-items:center;flex:none;font-size:22px}
 .as-prod .t{flex:1;min-width:0;display:flex;flex-direction:column}.as-prod .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.as-prod .t small{color:var(--ink-3)}
 .as-props{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 12px}
+.tn-import-ed h3{margin:0 0 4px}.tn-imp-pages{display:flex;gap:8px;overflow-x:auto;margin:8px 0}.tn-imp-pages img{height:140px;border-radius:8px;box-shadow:0 2px 8px #0002}
+.tn-import-ed label.btn{cursor:pointer}
 .as-titre-choix{font-weight:700;margin:14px 0 4px}.as-titre-choix small{font-weight:400;margin-left:6px}
 .as-styles .mini{aspect-ratio:9/14}
 .as-couleurs{display:flex;flex-wrap:wrap;gap:8px;max-height:176px;overflow-y:auto;padding:4px 2px}
@@ -6628,6 +6630,16 @@ function editeTunnel(z, t) {
     <section class="bt-sec"><div class="champ"><label for="tn-titre">Nom du tunnel (pour toi)</label><input id="tn-titre" data-tp="titre" value="${esc(t.titre)}" maxlength="80"></div>
       <div class="bt-url" style="margin-top:4px"><a href="${esc(urlTunnel(t))}" target="_blank" rel="noopener">${esc(urlTunnel(t).replace(/^https?:\/\//, ""))}</a><button class="btn petit prim" data-copier="${esc(urlTunnel(t))}">Copier</button></div>
       ${BQ.page.publie ? "" : '<p class="aide" style="margin:8px 0 0">⚠️ Ta boutique est en brouillon : publie-la pour que ce lien fonctionne.</p>'}</section>`;
+  if (!quiz) html += `<section class="bt-sec tn-import-ed"><h3>📥 Ta page est déjà prête ?</h3>
+      ${(t.images || []).length ? `<p class="aide">Ta page importée s'affiche telle quelle (${t.images.length} page${t.images.length > 1 ? "s" : ""}), suivie de l'offre ci-dessous.</p>
+        <div class="tn-imp-pages">${t.images.map(x => `<img src="${esc(urlImg(x))}" alt="">`).join("")}</div>
+        <div class="bt-rangee"><label class="btn petit">Remplacer<input type="file" id="tn-imp-design" accept=".pdf,image/*" multiple hidden></label>
+          <button class="btn petit" id="tn-imp-retire">Revenir à la page Virallink</button></div>`
+      : `<p class="aide">Importe-la au lieu de tout réécrire. Depuis Canva : <b>Partager → Télécharger → PDF standard</b>.</p>
+        <div class="bt-rangee"><label class="btn prim">🎨 Garder mon design<input type="file" id="tn-imp-design" accept=".pdf,image/*" multiple hidden></label>
+          <label class="btn">📝 Reprendre le texte<input type="file" id="tn-imp-texte" accept=".pdf,.docx,.txt,image/*" multiple hidden></label></div>
+        <p class="aide" style="margin:6px 0 0"><b>Garder mon design</b> : tes pages Canva ou PDF telles quelles, avec le bouton de paiement en dessous. <b>Reprendre le texte</b> : Virall.ai range ton texte (PDF, Word…) dans les rubriques ci-dessous, tu le retouches.</p>`}
+      <div id="tn-imp-log" class="aide"></div></section>`;
   html += sec("1. L'accroche", "Le haut de la page : ce qui donne envie de continuer.",
     ch("accroche.surtitre", "Petit texte au-dessus", {max: 60}) + `<div class="duo">${ch("accroche.titre", "Titre")}${ch("accroche.titre_accent", "Suite du titre, mise en valeur")}</div>`
     + ch("accroche.texte", "Sous-titre", {long: true}) + ch("accroche.bouton", "Texte du bouton", {max: 40})
@@ -6678,6 +6690,28 @@ function editeTunnel(z, t) {
   };
   const zs = $("#tn-zone-style"), rStyle = () => { zs.innerHTML = choixStyleTunnel(t); lieStyleTunnel(zs, t, rStyle); };
   zs.closest("details").addEventListener("toggle", function f() { if (this.open) { lieStyleTunnel(zs, t, rStyle); this.removeEventListener("toggle", f); } });
+  const importe = async (fichiers, mode) => {
+    if (!fichiers.length) return;
+    const fd = new FormData(); [...fichiers].forEach(f => fd.append("fichiers", f)); fd.append("mode", mode);
+    const log = $("#tn-imp-log"); log.innerHTML = spin(" Envoi…");
+    try {
+      const r = await fetch("/api/boutique/tunnel_import", {method: "POST", body: fd}), j = await r.json().catch(() => ({}));
+      if (!r.ok) { if (r.status === 402 && typeof limiteAtteinte === "function") limiteAtteinte(j); throw new Error(j.erreur || "Import impossible"); }
+      const c = await attendsTache(j.job, m => { const l = $("#tn-imp-log"); if (l) l.innerHTML = spin(" " + esc(m)); });
+      if (mode === "design") t.images = c.images;
+      else { t.images = [];
+        t.accroche = {...t.accroche, ...Object.fromEntries(Object.entries(c.accroche).filter(([, v]) => v))};
+        for (const k of ["probleme", "benefices", "contenu", "temoignages", "faq"]) if (c[k].items.length) t[k] = {...t[k], items: c[k].items};
+        if (c.a_propos.texte) t.a_propos = {...t.a_propos, texte: c.a_propos.texte};
+        t.offre = {...t.offre, ...Object.fromEntries(Object.entries(c.offre).filter(([, v]) => v))}; }
+      await sauveBoutique(true); renduOnglet(); apercu(true);
+      toast(mode === "design" ? "Ta page est importée ✓" : "Ton texte est repris : relis chaque rubrique ✓");
+    } catch (e) { const l = $("#tn-imp-log"); if (l) l.textContent = ""; toast(e.message); }
+  };
+  $("#tn-imp-design")?.addEventListener("change", e => importe(e.target.files, "design"));
+  $("#tn-imp-texte")?.addEventListener("change", e => importe(e.target.files, "texte"));
+  $("#tn-imp-retire")?.addEventListener("click", async () => { const av = t.images; t.images = []; await sauveBoutique(true); renduOnglet(); apercu(true);
+    toastAnnuler("Page importée retirée", async () => { t.images = av; await sauveBoutique(true); renduOnglet(); apercu(true); }, () => {}, 6000); });
   $("#tn-retour").onclick = () => { BQ.tunnelId = null; BQ.vueAp = "page"; BQ.onglet = "produits"; renduEditeur($("#boutique")); };
   if ($("#tn-publie")) $("#tn-publie").onchange = e => { t.publie = e.target.checked; e.target.nextElementSibling.textContent = t.publie ? "En ligne" : "Masqué";
     if (t.publie && metTunnelSurPage(t, true)) toast("Un bouton vers ce tunnel est ajouté en haut de ta boutique"); sauveBoutique(true); apercu(true); };

@@ -357,3 +357,89 @@ def _url() -> str:
     if os.getenv("RAILWAY_PUBLIC_DOMAIN"):
         return "https://" + os.environ["RAILWAY_PUBLIC_DOMAIN"]
     return "http://localhost:8000"
+
+
+# ------------------------------------------------------------
+#  Import d'une page de vente déjà prête (PDF, Canva, Word, images)
+# ------------------------------------------------------------
+FORMATS_IMPORT = (".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg", ".webp")
+MAX_PAGES_IMPORT = 20
+
+
+def _lit_import(fichiers: list[Path]) -> tuple[list[bytes], str]:
+    """Pages en JPEG (PDF et images) et texte extrait (PDF, Word, texte)."""
+    import io
+    import zipfile
+    from PIL import Image, ImageOps
+    pages, textes = [], []
+    for f in fichiers:
+        ext = f.suffix.lower()
+        if ext == ".pdf":
+            import pypdfium2
+            with _PDFIUM:
+                doc = pypdfium2.PdfDocument(str(f))
+                try:
+                    for n in range(min(len(doc), MAX_PAGES_IMPORT - len(pages))):
+                        page = doc[n]
+                        tp = page.get_textpage()
+                        textes.append(tp.get_text_range() or "")
+                        tp.close()
+                        im = page.render(scale=2).to_pil().convert("RGB")
+                        im.thumbnail((1400, 1400 * 6))
+                        b = io.BytesIO(); im.save(b, "JPEG", quality=86); pages.append(b.getvalue())
+                        page.close()
+                finally:
+                    doc.close()
+        elif ext == ".docx":
+            with zipfile.ZipFile(f) as z:
+                xml = z.read("word/document.xml").decode("utf-8", "ignore")
+            for para in re.findall(r"<w:p[ >].*?</w:p>", xml, re.S):
+                t = "".join(re.findall(r"<w:t[^>]*>([^<]*)</w:t>", para))
+                if t.strip():
+                    textes.append(t)
+        elif ext == ".txt":
+            textes.append(f.read_text(encoding="utf-8", errors="ignore"))
+        elif len(pages) < MAX_PAGES_IMPORT:
+            im = ImageOps.exif_transpose(Image.open(f)).convert("RGB")
+            im.thumbnail((1400, 1400 * 6))
+            b = io.BytesIO(); im.save(b, "JPEG", quality=86); pages.append(b.getvalue())
+    return pages, "\n".join(x.strip() for x in textes if x and x.strip())
+
+
+def importe_page(esp: Espace, cfg: dict, bid, fichiers: list[Path], mode: str, demo: bool = False) -> dict:
+    """mode « design » : les pages telles quelles (images), mode « texte » : le texte rangé dans les rubriques du tunnel."""
+    import io
+    log("Je lis ta page…")
+    pages, texte = _lit_import(fichiers)
+    try:
+        if mode == "design":
+            if not pages:
+                raise RuntimeError("Pour garder ton design, envoie un PDF ou des images (dans Canva : Partager → Télécharger → PDF standard).")
+            log(f"J'ajoute tes {len(pages)} page{'s' if len(pages) > 1 else ''}…")
+            return {"images": [bq.enregistre_image(bid, io.BytesIO(b), 1400) for b in pages]}
+        if not texte.strip() and not pages:
+            raise RuntimeError("Je n'ai trouvé aucun texte dans ce fichier.")
+        log("Je range ton texte dans ta page de vente…")
+        if demo:
+            r = {"titre": "[démo] Ton titre repris", "chapo": (texte[:200] or "[démo] Texte repris de ton document."), "probleme": ["[démo] Un blocage repris"],
+                 "benefices": [{"titre": "[démo] Bénéfice repris", "texte": "Tel qu'écrit dans ton document."}], "contenu": ["[démo] Module 1"],
+                 "temoignages": [], "faq": [], "offre_titre": "[démo] Rejoins-moi", "bouton": "Je m'inscris"}
+        else:
+            from ia import lit_page_vente
+            r = lit_page_vente(cfg, texte, [] if len(texte) > 400 else pages)
+            if r.get("erreur"):
+                raise RuntimeError(r["erreur"])
+    finally:
+        for f in fichiers:
+            f.unlink(missing_ok=True)
+    s = lambda x, n: str(x or "").strip()[:n]  # noqa: E731
+    return {"accroche": {"surtitre": s(r.get("surtitre"), 60), "titre": s(r.get("titre"), 120), "titre_accent": s(r.get("titre_accent"), 120),
+                         "texte": s(r.get("chapo"), 400), "bouton": s(r.get("bouton"), 40)},
+            "probleme": {"items": [s(x, 200) for x in _liste(r.get("probleme"))[:12] if x]},
+            "benefices": {"items": [{"titre": s(x.get("titre"), 80), "texte": s(x.get("texte"), 300)} for x in _liste(r.get("benefices"))[:8] if isinstance(x, dict)]},
+            "contenu": {"items": [s(x, 200) for x in _liste(r.get("contenu"))[:12] if x]},
+            "temoignages": {"items": [{"texte": s(x.get("texte"), 500), "nom": s(x.get("nom"), 60)} for x in _liste(r.get("temoignages"))[:10]
+                                      if isinstance(x, dict) and s(x.get("texte"), 500)]},
+            "a_propos": {"texte": s(r.get("a_propos"), 1500)},
+            "faq": {"items": [{"q": s(x.get("q"), 200), "r": s(x.get("r"), 800)} for x in _liste(r.get("faq"))[:12] if isinstance(x, dict)]},
+            "offre": {"titre": s(r.get("offre_titre"), 120), "texte": s(r.get("offre_texte"), 400), "bouton": s(r.get("bouton"), 40), "garantie": s(r.get("garantie"), 120)}}

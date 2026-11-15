@@ -10,6 +10,7 @@ Rangés dans page["tunnels"] (boutique). Page publique : /@pseudo/t/<id>. Le bou
 
 from __future__ import annotations
 
+import re
 import copy
 import json
 import secrets
@@ -237,6 +238,8 @@ def propre(t: dict, produits: set[str]) -> dict | None:
         fq = sec("faq")
         r["faq"] = {"titre": _s(fq.get("titre"), 100), "items": [{"q": _s(i.get("q"), 200), "r": _s(i.get("r"), 800)}
                                                                  for i in _liste(fq.get("items"), 12) if isinstance(i, dict) and _s(i.get("q"), 200)]}
+        # Page déjà prête importée (PDF, Canva, images) : ses pages s'affichent telles quelles, suivies de l'offre
+        r["images"] = [x for x in _liste(t.get("images"), 20) if isinstance(x, str) and re.fullmatch(r"[0-9a-f]{12}\.(?:jpg|png)", x)]
     return r
 
 
@@ -268,6 +271,9 @@ CSS = """
 .tn-avis{display:grid;gap:12px}.tn-avis blockquote{margin:0}.tn-avis cite{display:block;margin-top:8px;font-style:normal;font-weight:700;font-size:14px}
 .tn-faq details{border-bottom:1px solid color-mix(in srgb,var(--t) 15%,transparent);padding:12px 0}.tn-faq summary{font-weight:700;cursor:pointer}
 .tn-offre{text-align:center}.tn-offre .prix{font:800 40px/1 var(--tf);margin:10px 0}.tn-offre .prix s{font-size:20px;opacity:.55;margin-right:8px}
+.tn-import>img{display:block;width:calc(100% + 32px);max-width:none;margin:0 -16px;height:auto}
+.tn .tn-cta-fixe{position:fixed;left:16px;right:16px;bottom:14px;z-index:20;max-width:608px;margin:0 auto;width:auto}
+.tn-import{padding-bottom:70px}
 .tn-offre .garantie{font-size:13.5px;opacity:.8;margin-top:10px}
 .tn-offre img{width:100%;border-radius:calc(var(--rk) - 6px);margin-bottom:14px;aspect-ratio:16/10;object-fit:cover}
 /* Variantes de style */
@@ -376,6 +382,16 @@ def rendu(page: dict, pseudo: str, t: dict, apercu: bool = False) -> str:
 
 
 def rendu_vente(page: dict, pseudo: str, t: dict) -> str:
+    if t.get("images"):  # page importée (Canva, PDF…) : ses pages telles quelles, puis l'offre et la FAQ
+        h = ['<div class="tn tn-import">' + "".join(f'<img src="{bq._img(pseudo, x)}" alt="" loading="{"eager" if n < 2 else "lazy"}">'
+                                                     for n, x in enumerate(t["images"]))]
+        h.append(f'<section class="tn-sec" id="offre">{_offre(page, pseudo, t)}</section>')
+        fq = t.get("faq") or {}
+        if fq.get("items"):
+            h.append(f'<section class="tn-sec tn-faq"><h2>{E(fq.get("titre") or "")}</h2>'
+                     + "".join(f"<details><summary>{E(i['q'])}</summary><p>{E(i['r'])}</p></details>" for i in fq["items"]) + "</section>")
+        h.append(f'<a class="bouton cta tn-cta-fixe" href="#offre">{E(t["offre"].get("bouton") or "Je découvre")}</a></div>')
+        return "".join(h)
     ac = t["accroche"]
     h = [f'<div class="tn"><header class="tn-tete">{_sur(ac)}'
          f'<h1>{_titre(ac)}</h1><p class="chapo">{E(ac.get("texte") or "")}</p>'

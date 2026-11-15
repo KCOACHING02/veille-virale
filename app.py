@@ -2999,6 +2999,38 @@ def boutique_page_vente():
                                  apres=None if en_demo() else (lambda _: ab.compte_usage(uid, adaptations=1)))})
 
 
+@app.post("/api/boutique/tunnel_import")
+@connecte
+def boutique_tunnel_import():
+    """Page de vente déjà prête (PDF, export Canva, Word, images) : mode « design » (pages telles quelles) ou « texte » (rangé par Virall.ai)."""
+    import boutique_ia
+    mode = request.form.get("mode", "design")
+    msg = reserve(g.u, "tunnels") or (mode == "texte" and (reserve(g.u, "ia") or refus(g.u, adaptations=1)))
+    if msg:
+        return jsonify({"erreur": msg, "quota": True}), 402
+    if job_en_cours(g.u["id"], studio_=True):
+        return jsonify({"erreur": "Le studio termine une autre tâche : réessaie dans un instant."}), 409
+    dossier = bq.dossier(bq_active()) / "imports"
+    dossier.mkdir(parents=True, exist_ok=True)
+    fichiers = []
+    for f in request.files.getlist("fichiers")[:20]:
+        ext = Path(f.filename or "").suffix.lower()
+        if ext not in boutique_ia.FORMATS_IMPORT:
+            return jsonify({"erreur": "Formats acceptés : PDF, Word (.docx), texte, PNG, JPG."}), 400
+        chemin = dossier / (uuid.uuid4().hex[:12] + ext)
+        f.save(chemin)
+        if chemin.stat().st_size > 40 * 1024 * 1024:
+            chemin.unlink(missing_ok=True)
+            return jsonify({"erreur": "Fichier trop lourd (40 Mo au maximum)."}), 400
+        fichiers.append(chemin)
+    if not fichiers:
+        return jsonify({"erreur": "Aucun fichier reçu."}), 400
+    uid = g.u["id"]
+    apres = None if (en_demo() or mode != "texte") else (lambda _: ab.compte_usage(uid, adaptations=1))
+    return jsonify({"job": lance(uid, "Import de ta page", boutique_ia.importe_page, g.esp, g.esp.lit_config(), bq_active(), fichiers,
+                                 "texte" if mode == "texte" else "design", demo=en_demo(), file_=FILE_STUDIO, apres=apres)})
+
+
 @app.post("/api/boutique/produits/<pid>/guide")
 @connecte
 def boutique_guide(pid):

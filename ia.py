@@ -869,6 +869,47 @@ OUTIL_PAGE_VENTE = {
 }
 
 
+OUTIL_IMPORT_PAGE = {
+    "name": "reprendre_page_vente",
+    "description": "Reprend le texte d'une page de vente existante (document ou maquette Canva) et le range dans les rubriques d'une page de vente.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "surtitre": {"type": "string", "description": "Petit texte au-dessus du titre, s'il existe. Vide sinon."},
+            "titre": {"type": "string", "description": "Début du grand titre de la page, recopié."},
+            "titre_accent": {"type": "string", "description": "Fin du grand titre (la partie mise en valeur), s'il y a lieu de couper. Vide sinon."},
+            "chapo": {"type": "string", "description": "Le sous-titre ou la phrase d'introduction sous le titre."},
+            "probleme": {"type": "array", "items": {"type": "string"}, "description": "Les douleurs, blocages ou « tu te reconnais ? » du document."},
+            "benefices": {"type": "array", "items": {"type": "object", "properties": {"titre": {"type": "string"}, "texte": {"type": "string"}},
+                                                    "required": ["titre", "texte"]}, "description": "Les bénéfices ou transformations promis."},
+            "contenu": {"type": "array", "items": {"type": "string"}, "description": "Ce que contient l'offre : modules, bonus, séances, fichiers…"},
+            "temoignages": {"type": "array", "items": {"type": "object", "properties": {"texte": {"type": "string"}, "nom": {"type": "string"}},
+                                                      "required": ["texte", "nom"]}, "description": "Uniquement les témoignages présents dans le document, recopiés mot pour mot avec le prénom indiqué. Jamais inventés."},
+            "a_propos": {"type": "string", "description": "La partie « qui suis-je » / présentation de la créatrice, s'il y en a une."},
+            "faq": {"type": "array", "items": {"type": "object", "properties": {"q": {"type": "string"}, "r": {"type": "string"}}, "required": ["q", "r"]},
+                    "description": "Les questions-réponses du document."},
+            "offre_titre": {"type": "string", "description": "Titre du bloc d'achat."},
+            "offre_texte": {"type": "string", "description": "Texte du bloc d'achat (ce qui se passe après l'achat, modalités)."},
+            "garantie": {"type": "string", "description": "La garantie (ex. satisfaite ou remboursée), si elle est écrite. Vide sinon."},
+            "bouton": {"type": "string", "description": "Texte du bouton d'achat du document, sinon un verbe d'action court."}},
+        "required": ["titre", "chapo", "probleme", "benefices", "contenu", "temoignages", "faq", "offre_titre", "bouton"],
+    },
+}
+
+
+def lit_page_vente(cfg: dict, texte: str, images: list[bytes]) -> dict:
+    """Range une page de vente déjà écrite (texte extrait et/ou images des pages, ex. export Canva) dans les rubriques du tunnel."""
+    contenu = []
+    for data in images[:8]:
+        contenu.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(data).decode()}})
+    consigne = ("Voici une page de vente déjà écrite par la créatrice" + (" (images de ses pages ci-dessus)" if images else "") + ".\n"
+                + (f"Texte extrait du document :\n{texte[:20000]}\n\n" if texte.strip() else "")
+                + "Range ce contenu dans les rubriques de l'outil reprendre_page_vente. Recopie ses phrases telles quelles, dans sa langue : "
+                  "ne réécris pas, n'invente rien (ni témoignage, ni chiffre, ni garantie). Une rubrique absente du document reste vide.")
+    contenu.append({"type": "text", "text": consigne})
+    return _ia_simple(cfg)._appel(OUTIL_IMPORT_PAGE, contenu, max_tokens=4000, systeme="Tu ranges fidèlement le texte d'une page de vente existante.")
+
+
 def ecrit_page_vente(cfg: dict, voix: str, produit: dict, contexte: str) -> dict:
     prix = produit.get("prix") or 0
     texte = (f"Écris la page de vente du produit « {produit.get('titre')} » ({'gratuit' if not prix else f'{prix / 100:.0f} €'}).\n"
