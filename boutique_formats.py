@@ -395,8 +395,10 @@ def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
     photo = page.get("photo")
     mini = (f'<img src="{bq._img(pseudo, photo)}" alt="">' if photo else f'<span>{E(nom[:1].upper())}</span>')
     ronds = [f'<a class="st-rond" href="#profil"><i>{mini}</i><b>À propos</b></a>'] + [
-        f'<a class="st-rond" href="#p-{E(p["id"])}"><i><img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy"></i><b>{E(p.get("titre") or "")}</b></a>'
-        for p in prods if p.get("image")][:10]
+        f'<a class="st-rond" href="#p-{E(p["id"])}"><i>'
+        + (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span>{E((p.get("titre") or "?")[:1].upper())}</span>')
+        + f'</i><b>{E(p.get("titre") or "")}</b></a>'
+        for p in prods][:10]
     profil = (f'<section class="st-profil" id="profil"><i class="st-pp">{mini}</i><div><b>{E(nom)}</b>'
               f'<p>{E(page.get("bio") or "")}</p>'
               f'<a class="st-suivre" href="#boutique">Voir la boutique</a></div></section>')
