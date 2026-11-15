@@ -877,6 +877,28 @@ def _polices_css(d: dict, extra: list | None = None) -> tuple[str, str]:
     return "\n".join(faces), lien
 
 
+def _ecart(c1: str, c2: str) -> float:
+    """Distance entre deux couleurs (0 = identiques, ~441 = noir et blanc)."""
+    try:
+        a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
+        b = [int(c2[i:i + 2], 16) for i in (1, 3, 5)]
+    except (ValueError, IndexError):
+        return 441
+    return sum((x - y) ** 2 for x, y in zip(a, b)) ** .5
+
+
+def bouton_carte(d: dict) -> tuple[str, str]:
+    """Fond et texte des boutons posés dans une carte produit : la couleur des boutons, sauf si elle se confond avec la carte."""
+    carte = d.get("carte_fond_couleur") if d.get("carte_fond") == "couleur" and d.get("carte_fond_couleur") else (
+        d["fond1"] if d.get("carte_fond") == "transparent" else d["bloc_fond"])
+    if _ecart(d["bouton_fond"], carte) >= 25:
+        return d["bouton_fond"], d["bouton_texte"]
+    for c in (d["accent"], d["texte"], d["bloc_texte"]):
+        if _ecart(c, carte) >= 120:
+            return c, ("#1A1A1A" if _clair(c[:7]) else "#FFFFFF")
+    return d["bloc_texte"], d["bloc_fond"]
+
+
 def _clair(hexa: str) -> bool:
     r, g_, b = (int(hexa[i:i + 2], 16) for i in (1, 3, 5))
     return (r * 299 + g_ * 587 + b * 114) / 1000 > 150
@@ -928,6 +950,7 @@ def _css(d: dict) -> str:
     tx = POLICES[d["police_texte"]][0]
     capitales = d["police_titre"] in ("Bebas Neue", "Anton")
     sur_accent = "#1A1A1A" if _clair(d["accent"][:7]) else "#FFFFFF"
+    fb, fbt = bouton_carte(d)
     cadre = {
         "ombre": "box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -18px rgba(0,0,0,.35)",
         "contour": "border:1.5px solid color-mix(in srgb,var(--kt) 24%,transparent)",
@@ -938,7 +961,7 @@ def _css(d: dict) -> str:
     }[d["carte_cadre"]]
     return CSS_COMMUN + f"""
 :root{{--ac:{sur_accent};--f1:{d['fond1']};--f2:{d['fond2']};--t:{d['texte']};--b:{d['bouton_fond']};--bt:{d['bouton_texte']};--bo:{d['bouton_ombre']};
---k:{d['bloc_fond']};--kt:{d['bloc_texte']};--a:{d['accent']};--r:{r};--rk:{min(rayon, 26)}px;--ph:{d['photo_taille']}px;
+--k:{d['bloc_fond']};--kt:{d['bloc_texte']};--fb:{fb};--fbt:{fbt};--a:{d['accent']};--r:{r};--rk:{min(rayon, 26)}px;--ph:{d['photo_taille']}px;
 --fleur:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-6 -6 112 112'%3E%3Cpath d='M50 0C62 0 66 14 75 18s25-2 29 10-8 20-8 22 12 10 8 22-20 6-29 18-13 18-25 18-16-14-25-18-25 2-29-10 8-20 8-22-12-10-8-22 20-6 29-18S38 0 50 0z'/%3E%3C/svg%3E");--tf:'{tf}',Georgia,serif;--tx:'{tx}',system-ui,-apple-system,'Segoe UI',sans-serif;--tt:{taille}px}}
 *{{box-sizing:border-box}}html{{-webkit-text-size-adjust:100%}}
 body{{margin:0;min-height:100vh;color:var(--t);font:15.5px/1.5 var(--tx);{fond};-webkit-font-smoothing:antialiased}}
@@ -1006,7 +1029,7 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 .fiche .ptxt b{{display:block;text-transform:uppercase;font-weight:800;font-size:1.02em;line-height:1.2;letter-spacing:.01em}}
 .fiche .ptxt small{{display:block;margin-top:5px;opacity:.72;font-size:.92em;line-height:1.4}}
 .fi-prix{{display:block;margin-top:8px;font-weight:800;font-size:1.1em}}.fi-prix s{{opacity:.5;font-weight:600;margin-left:8px}}
-.fi-bouton{{display:flex;justify-content:center;align-items:center;gap:8px;padding:15px 18px;border-radius:min(var(--r),14px);background:var(--b);color:var(--bt);font-weight:800;text-transform:uppercase;letter-spacing:.02em;font-size:.95em}}
+.fi-bouton{{display:flex;justify-content:center;align-items:center;gap:8px;padding:15px 18px;border-radius:min(var(--r),14px);background:var(--fb);color:var(--fbt);font-weight:800;text-transform:uppercase;letter-spacing:.02em;font-size:.95em}}
 .fi-bouton i{{font-style:normal}}
 .prod.ligne{{display:flex;align-items:center;gap:16px;padding:12px 16px!important}}.ligne .pimg img,.ligne .pas-img{{width:64px!important;height:64px!important;border-radius:10px!important;object-fit:cover;clip-path:none!important;-webkit-mask:none!important}}
 .ligne .ptxt b{{text-transform:uppercase;font-weight:800;font-size:1.05em}}
