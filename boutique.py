@@ -856,7 +856,12 @@ FORMES_CSS = {
     "arche": "border-radius:999px 999px 18px 18px;aspect-ratio:3/4!important;height:auto!important",
     "fleur": "-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat;border-radius:0",
     "goutte": "border-radius:62% 38% 55% 45% / 48% 60% 40% 52%",
-    "hexagone": "", "losange": "", "coeur": "", "polaroid": "", "anneau": "",
+    "hexagone": "clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%);border-radius:0",
+    "losange": "clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);border-radius:0",
+    "coeur": ("-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92'%3E%3Cpath d='M50 92C20 70 0 52 0 28 0 12 12 0 27 0c10 0 18 5 23 13C55 5 63 0 73 0c15 0 27 12 27 28 0 24-20 42-50 64z'/%3E%3C/svg%3E\") center/100% 100% no-repeat;"
+              "mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 92'%3E%3Cpath d='M50 92C20 70 0 52 0 28 0 12 12 0 27 0c10 0 18 5 23 13C55 5 63 0 73 0c15 0 27 12 27 28 0 24-20 42-50 64z'/%3E%3C/svg%3E\") center/100% 100% no-repeat;border-radius:0"),
+    "polaroid": "border-radius:3px;border:6px solid #fff;border-bottom-width:20px;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.22);transform:rotate(-3deg)",
+    "anneau": "border-radius:50%;border:4px solid var(--f1);box-shadow:0 0 0 3px var(--a)",
     "etoile": "clip-path:polygon(50% 0,61% 13%,78% 7%,80% 24%,96% 30%,88% 45%,100% 58%,84% 66%,86% 84%,69% 84%,60% 100%,50% 88%,40% 100%,31% 84%,14% 84%,16% 66%,0 58%,12% 45%,4% 30%,20% 24%,22% 7%,39% 13%);border-radius:0",
 }
 
@@ -914,6 +919,8 @@ a{{color:inherit}}
 .tete{{text-align:center;margin-bottom:22px}}
 .photo{{width:var(--ph);height:var(--ph);object-fit:cover;display:block;margin:0 auto 14px;{FORMES_CSS[d['photo_forme']]};
   {'outline:3px solid var(--a);outline-offset:4px;' if d['photo_contour'] and d['photo_forme'] in ('rond', 'arrondi', 'goutte', 'arche') else ''}{'filter:drop-shadow(0 0 0 var(--a)) drop-shadow(3px 3px 0 var(--a));' if d['photo_contour'] and d['photo_forme'] in ('fleur', 'etoile') else ''}}}
+html body .ap-avatar,html body .st-pp{{{FORMES_CSS[d['photo_forme']]};{'outline:2px solid var(--a);outline-offset:3px;' if d['photo_contour'] and d['photo_forme'] in ('rond', 'arrondi', 'goutte', 'arche') else ''}overflow:hidden}}
+html body .ap-avatar{{width:calc(var(--ph) * .43);height:calc(var(--ph) * .43)}}html body .st-pp{{width:calc(var(--ph) * .64);height:calc(var(--ph) * .64)}}
 .photo.vide{{background:var(--a);display:grid;place-items:center;color:var(--f1);font:700 calc(var(--ph)*.38)/1 var(--tf)}}
 h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'text-transform:uppercase;letter-spacing:.02em;' if capitales else ''}{'font-weight:700;' if POLICES[d['police_titre']][2] in ('moderne', 'futuriste') else ''}overflow-wrap:break-word;text-wrap:balance}}
 .bio{{margin:0 auto 14px;max-width:42ch;opacity:.85;white-space:pre-line;font-size:15px}}
