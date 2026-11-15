@@ -286,6 +286,7 @@ SURVOLS = {"soulever": "Soulever", "grossir": "Grossir", "incliner": "Basculer 3
 TAILLES_BOUTON = {"compact": "Compact", "normal": "Normal", "grand": "Généreux"}
 ALIGNEMENTS = {"centre": "Centré", "gauche": "À gauche"}
 DECORS = {"aucun": "Aucun", "etincelles": "Étincelles", "bulles": "Bulles floues", "confettis": "Confettis", "coeurs": "Cœurs", "formes": "Formes géométriques"}
+CARTES_APPLI = {"grande": "Grande", "moyenne": "Moyenne", "compacte": "Compacte (en ligne)", "grille": "Petite (2 par ligne)"}
 FORMES_IMAGE = {"carre": "Arrondi", "arche": "Arche", "rond": "Rond", "galet": "Galet", "biseau": "Biseauté", "fenetre": "Fenêtre", "polaroid": "Polaroïd", "fleur": "Fleur"}
 STYLES_PRIX = {"texte": "Texte", "pastille": "Pastille", "etiquette": "Étiquette", "bouton": "Bouton", "surligne": "Surligné"}
 CADRES_CARTE = {"ombre": "Ombre", "contour": "Contour", "decale": "Décalé", "verre": "Verre", "flottant": "Flottant", "sans": "Sans cadre"}
@@ -310,7 +311,7 @@ DESIGN_DEFAUT = {
     "texte": "#2A211C", "bouton_fond": "#DDBEA4", "bouton_texte": "#2A211C", "bouton_ombre": "#C9A588",
     "bloc_fond": "#FFFFFF", "bloc_texte": "#2A211C", "accent": "#B4693E",
     "police_titre": "Libre Baskerville", "police_texte": "Poppins", "taille_titre": "l",
-    "bouton_style": "plein", "rayon": 16, "animation": "pulse", "apparition": True, "produits_vue": "grille",
+    "bouton_style": "plein", "rayon": 16, "animation": "pulse", "apparition": True, "produits_vue": "grille", "cartes_appli": "grande",
     "bouton_forme": "arrondi", "survol": "soulever", "bouton_taille": "normal", "alignement": "centre", "decor": "aucun",
     "image_forme": "carre", "prix_style": "texte", "carte_cadre": "ombre",
     "mise_en_page": "colonne", "espacement": "normal", "largeur_page": "normale", "taille_texte": "m",
@@ -680,7 +681,7 @@ def design_propre(d: dict) -> dict:
                      "bouton_taille": TAILLES_BOUTON, "alignement": ALIGNEMENTS, "decor": DECORS, "image_forme": FORMES_IMAGE,
                      "prix_style": STYLES_PRIX, "carte_cadre": CADRES_CARTE, "taille_titre": TAILLES_TITRE, "theme": {**THEMES, "perso": 1},
                      "police_titre": POLICES, "police_texte": POLICES, "mise_en_page": MISES_EN_PAGE, "espacement": ESPACEMENTS,
-                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE}.get(k)
+                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE, "cartes_appli": CARTES_APPLI}.get(k)
             if choix is not None and v in choix:
                 r[k] = v
             elif k == "fond_image" and isinstance(v, str) and re.fullmatch(r"[0-9a-f]{12}\.(jpg|png|webp)", v or "x"):

@@ -5770,7 +5770,7 @@ document.addEventListener("click", e => {
 // ---- Thèmes et palettes
 function themeApplique(design, id) {
   const t = BQ.etat.options.themes.find(x => x.id === id); if (!t) return design;
-  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte"];
+  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli"];
   const base = Object.fromEntries(Object.entries(BQ.etat.options.defaut).filter(([k]) => !garde.includes(k)));
   return {...design, ...base, fond2: t.design.fond2 || t.design.fond1, photo_contour: false, ...t.design, theme: id};
 }
@@ -6270,7 +6270,7 @@ function ongletDesign(z) {
   const clip = f => o.formes_decoupees.includes(f) ? " bf-clip" : "";
   const exBtn = (style, forme) => `<span class="bt-btn-ex lb bs-${style} bf-${forme}${clip(forme)}">Mon lien</span>`;
   const optP = (k, v, vis, lab) => `<button class="bt-opt" data-dset="${k}" data-v="${v}" aria-pressed="${String(d[k]) === String(v)}"><span class="vis" style="${vars};background:${d.fond_type === "degrade" || d.fond_type === "anime" ? `linear-gradient(160deg,${c7("fond1")},${c7("fond2")})` : c7("fond1")}">${vis}</span>${lab}</button>`;
-  const puces = (k, dict) => `<div class="bt-puces">${Object.entries(dict).map(([v, l]) => `<button data-dset="${k}" data-v="${v}" aria-pressed="${d[k] === v}">${l}</button>`).join("")}</div>`;
+  const puces = (k, dict) => `<div class="bt-puces">${Object.entries(dict).map(([v, l]) => `<button data-dset="${k}" data-v="${v}" aria-pressed="${(d[k] ?? BQ.etat.options.defaut[k]) === v}">${l}</button>`).join("")}</div>`;
   const prodImg = BQ.page.produits.find(p => p.image)?.image;
   const imgP = prodImg ? `background:url('${urlImg(prodImg)}') center/cover` : `background:${c7("accent")}`;
   const PRIX_EX = {texte: `color:${c7("accent")};font-weight:700`, pastille: `background:${c7("accent")};color:#fff;border-radius:50%;width:40px;height:40px;display:grid;place-items:center;transform:rotate(12deg);font-weight:700`,
@@ -6285,6 +6285,7 @@ function ongletDesign(z) {
     <section class="bt-sec" id="bt-s-mp"><h3>Mise en page</h3><p class="aide">La structure de ta page, bien plus qu'une liste de liens. Les couleurs et les formes se règlent en dessous.</p>
       <div class="bt-choix larges">${Object.keys(o.mises_en_page || {}).map(k => opt("mise_en_page", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${c7("accent")}">${SCHEMAS_MEP[k]}</svg>`, o.mises_en_page[k])).join("")}</div>
       <p class="aide" style="margin:8px 0 0">${DESC_MEP[d.mise_en_page] || ""}</p>
+      ${/^appli/.test(d.mise_en_page || "") ? `<p class="bt-sous-titre">Taille des cartes produits</p>${puces("cartes_appli", {grande: "Grande", moyenne: "Moyenne", compacte: "Compacte", grille: "2 par ligne"})}` : ""}
       <p class="bt-sous-titre">Espace entre les blocs</p>${puces("espacement", {serre: "Serré", normal: "Normal", aere: "Aéré", large: "Très aéré"})}
       <p class="bt-sous-titre">Taille du texte</p>${puces("taille_texte", {s: "Petite", m: "Normale", l: "Grande", xl: "Très grande"})}
       <p class="bt-sous-titre">Largeur de la page sur ordinateur</p>${puces("largeur_page", {etroite: "Étroite", normale: "Normale", large: "Large", pleine: "Très large"})}
@@ -6364,7 +6365,7 @@ function ongletDesign(z) {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
     if (typeof def === "number") v = +v;
     d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor",
-      "mise_en_page", "espacement", "largeur_page", "taille_texte"].includes(k)) d.theme = "perso";
+      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli"].includes(k)) d.theme = "perso";
     if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
     modifieBoutique(true);
   });

@@ -113,6 +113,12 @@ document.querySelectorAll("[data-carrousel]").forEach(c => {
 # ------------------------------------------------------------
 #  Appli
 # ------------------------------------------------------------
+def _cartes(page: dict) -> str:
+    """Taille des cartes produits des modèles Appli (réglage « cartes_appli » du design)."""
+    c = (page.get("design") or {}).get("cartes_appli") or "grande"
+    return "deux" if c == "grille" else c  # « deux » : évite les règles existantes qui visent les classes contenant « grille »
+
+
 def _haut_appli(page: dict, pseudo: str) -> str:
     """Barre du haut commune aux modèles Appli : nom (dernier mot en couleur), phrase de présentation, réseau et photo ronde."""
     nom = page.get("nom") or pseudo
@@ -197,7 +203,7 @@ def rendu_appli(page: dict, pseudo: str, apercu: bool = False) -> str:
     rail = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="ap-rail">{"".join(cartes)}</div>' if cartes
             else '<span id="boutique"></span>')
 
-    return f'<div class="ap">{haut}{hero}{ronds}{rail}{_bas_appli(page, pseudo, bool(cartes))}{SCRIPT_CARROUSEL}'
+    return f'<div class="ap ca-{_cartes(page)}">{haut}{hero}{ronds}{rail}{_bas_appli(page, pseudo, bool(cartes))}{SCRIPT_CARROUSEL}'
 
 
 SCRIPT_ONGLETS = """
@@ -412,7 +418,7 @@ def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
                      f'<div class="st-pied"><div><b>{E(p.get("titre") or "")}</b>{f"<p>{E(sous)}</p>" if sous else ""}</div>'
                      f'<a class="st-voir" href="{_lien_produit(page, pseudo, p)}"><span>{E(prix)}{f" <s>{E(barre)}</s>" if barre else ""}</span>Voir l\'offre</a></div></article>')
     fil = f'<section class="st-fil" id="boutique">{"".join(posts)}</section>' if posts else ""
-    return (f'<div class="ap">{_haut_appli(page, pseudo)}<nav class="st-ronds">{"".join(ronds)}</nav>{profil}{fil}'
+    return (f'<div class="ap ca-{_cartes(page)}">{_haut_appli(page, pseudo)}<nav class="st-ronds">{"".join(ronds)}</nav>{profil}{fil}'
             f'{_bas_appli(page, pseudo, bool(posts))}')
 
 
@@ -509,8 +515,28 @@ def rendu_appli_une(page: dict, pseudo: str, apercu: bool = False) -> str:
     liste = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="un-liste">{"".join(lignes)}</div>' if lignes else "")
     profil = (f'<section class="un-profil" id="profil"><i class="un-ico">{icone}</i><div><b>{E(nom)}</b><p>{E(page.get("bio") or "")}</p></div></section>'
               if page.get("bio") else '<span id="profil"></span>')
-    return f'<div class="ap">{haut}{"".join(grandes)}{liste}{profil}{_bas_appli(page, pseudo, bool(lignes))}'
+    return f'<div class="ap ca-{_cartes(page)}">{haut}{"".join(grandes)}{liste}{profil}{_bas_appli(page, pseudo, bool(lignes))}'
 
+
+CSS_CARTES = """
+/* Taille des cartes produits (réglage du design) */
+.ca-moyenne .st-img{aspect-ratio:16/10}.ca-moyenne .un-visuel{aspect-ratio:16/10}.ca-moyenne .ap-slide{min-height:230px}
+.ca-compacte .st-fil{gap:10px}.ca-compacte .st-post{display:grid;grid-template-columns:96px 1fr;align-items:center;border-radius:18px}
+.ca-compacte .st-post header{display:none}.ca-compacte .st-img{aspect-ratio:1;height:96px}
+.ca-compacte .st-pied{padding:10px 12px;flex-wrap:wrap;gap:8px}.ca-compacte .st-voir{padding:7px 12px;font-size:12px}
+.ca-compacte .un-carte{display:none}.ca-compacte .ap-hero{display:none}
+.ca-compacte .ap-rail{flex-direction:column;overflow:visible;margin:0;padding:0;gap:10px}
+.ca-compacte .ap-carte{flex:none;display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:4px 12px;text-align:left;padding:10px;border-radius:18px}
+.ca-compacte .ap-carte .ap-img{grid-row:span 2;width:72px;height:72px;margin:0;aspect-ratio:1}.ca-compacte .ap-sac{display:none}
+.ca-compacte .ap-carte .ap-prix{grid-column:3;grid-row:1 / span 2;font-size:1.05em}.ca-compacte .ap-pastille{position:static;grid-column:2;justify-self:start;font-size:11px;padding:3px 8px}
+.ca-deux .st-fil{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ca-deux .st-post header{display:none}
+.ca-deux .st-pied{flex-direction:column;align-items:stretch;padding:10px;gap:8px}.ca-deux .st-pied p{display:none}
+.ca-deux .st-voir{flex-direction:row;justify-content:center;gap:6px;padding:8px 10px;font-size:12px}
+.ca-deux .un-carte{display:inline-block;width:calc(50% - 6px);vertical-align:top;margin:0 0 12px}.ca-deux .un-carte:nth-of-type(odd){margin-right:12px}
+.ca-deux .un-visuel{aspect-ratio:1}.ca-deux .un-txt em{display:none}.ca-deux .un-bas small{display:none}
+.ca-deux .ap-hero{display:none}.ca-deux .ap-rail{display:grid;grid-template-columns:1fr 1fr;overflow:visible;margin:0}.ca-deux .ap-carte{flex:none}
+"""
+CSS += CSS_CARTES
 
 RENDUS = {"appli": rendu_appli, "appli_stories": rendu_appli_stories, "appli_catalogue": rendu_appli_catalogue,
           "appli_une": rendu_appli_une, "marque": rendu_marque}
