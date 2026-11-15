@@ -6292,6 +6292,7 @@ function ongletDesign(z) {
       ${["appli_stories", "appli_une"].includes(d.mise_en_page) ? `<p class="bt-sous-titre">Carte de présentation (ta photo + « Voir la boutique »)</p>${puces("profil_appli", {afficher: "Afficher", masquer: "Masquer"})}` : ""}
       <p class="bt-sous-titre">Espace entre les blocs</p>${puces("espacement", {serre: "Serré", normal: "Normal", aere: "Aéré", large: "Très aéré"})}
       <p class="bt-sous-titre">Taille du texte</p>${puces("taille_texte", {s: "Petite", m: "Normale", l: "Grande", xl: "Très grande"})}
+      ${d.entete === "photo_fond" ? `<p class="bt-sous-titre">Image en plein fond</p><label class="bt-depot">${d.fond_image ? `<img src="${urlImg(d.fond_image)}" alt="">` : "🖼️"}<span>${d.fond_image ? "Changer l'image de fond" : "Importe ton image de fond (sinon ta photo de profil est utilisée)"}</span><input type="file" accept="image/*" data-envoi="fond_image"></label>` : ""}
       <p class="bt-sous-titre">Style des titres de section</p>${puces("titres_style", {simple: "Simple", pastille: "Pastille", majuscules: "Majuscules"})}
       <p class="bt-sous-titre">Largeur de la page sur ordinateur</p>${puces("largeur_page", {etroite: "Étroite", normale: "Normale", large: "Large", pleine: "Très large"})}
       <p class="aide" style="margin:10px 0 0">Astuce : dans <b>Contenu</b>, ouvre un bloc et choisis sa <b>largeur</b> pour en mettre deux ou trois côte à côte.</p>

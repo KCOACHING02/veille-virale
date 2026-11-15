@@ -1515,8 +1515,8 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     d = page["design"]
     faces, lien = _polices_css(d, [(b.get("style") or {}).get("police") for b in page.get("blocs", [])])
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
-    if d["entete"] == "photo_fond" and page.get("photo") and d.get("mise_en_page", "colonne") == "colonne":
-        fond_img = f'<div class="fond-photo" style="background-image:url(\'{_img(pseudo, page["photo"])}\')"></div>'
+    if d["entete"] == "photo_fond" and d.get("mise_en_page", "colonne") == "colonne" and (d.get("fond_image") or page.get("photo")):
+        fond_img = f'<div class="fond-photo" style="background-image:url(\'{_img(pseudo, d.get("fond_image") or page["photo"])}\')"></div>'
     classes = (f'e-{d["entete"]} ts-{d.get("titres_style", "simple")} mp-{d.get("mise_en_page", "colonne")} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} '
                f'tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
