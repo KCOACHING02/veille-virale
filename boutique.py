@@ -269,7 +269,7 @@ LOCALES = {
     "Caveat": [("Caveat-Bold.ttf", 700)], "Pacifico": [("Pacifico-Regular.ttf", 400)],
 }
 
-ENTETES = {"minimal": "Minimal", "banniere": "Bannière", "portrait": "Portrait", "arche": "Arche", "cote": "Côte à côte", "magazine": "Magazine"}
+ENTETES = {"minimal": "Minimal", "banniere": "Bannière", "portrait": "Portrait", "arche": "Arche", "cote": "Côte à côte", "magazine": "Magazine", "photo_fond": "Photo en fond"}
 FORMES = {"rond": "Rond", "arrondi": "Arrondi", "arche": "Arche", "fleur": "Fleur", "goutte": "Galet", "etoile": "Étoile",
           "hexagone": "Hexagone", "losange": "Losange", "coeur": "Cœur", "polaroid": "Polaroïd", "anneau": "Anneaux"}
 FONDS = {"uni": "Uni", "degrade": "Dégradé", "image": "Image", "motif": "Motif", "anime": "Animé"}
@@ -286,6 +286,7 @@ SURVOLS = {"soulever": "Soulever", "grossir": "Grossir", "incliner": "Basculer 3
 TAILLES_BOUTON = {"compact": "Compact", "normal": "Normal", "grand": "Généreux"}
 ALIGNEMENTS = {"centre": "Centré", "gauche": "À gauche"}
 DECORS = {"aucun": "Aucun", "etincelles": "Étincelles", "bulles": "Bulles floues", "confettis": "Confettis", "coeurs": "Cœurs", "formes": "Formes géométriques"}
+TITRES_STYLE = {"simple": "Simple", "pastille": "Pastille", "majuscules": "Majuscules"}
 PROFIL_APPLI = {"afficher": "Afficher", "masquer": "Masquer"}
 CARTES_APPLI = {"grande": "Grande", "moyenne": "Moyenne", "compacte": "Compacte (en ligne)", "grille": "Petite (2 par ligne)"}
 FORMES_IMAGE = {"carre": "Arrondi", "arche": "Arche", "rond": "Rond", "galet": "Galet", "biseau": "Biseauté", "fenetre": "Fenêtre", "polaroid": "Polaroïd", "fleur": "Fleur"}
@@ -293,7 +294,7 @@ STYLES_PRIX = {"texte": "Texte", "pastille": "Pastille", "etiquette": "Étiquett
 CADRES_CARTE = {"ombre": "Ombre", "contour": "Contour", "decale": "Décalé", "verre": "Verre", "flottant": "Flottant", "sans": "Sans cadre"}
 ANIMATIONS = {"aucune": "Aucune", "pulse": "Pulsation", "secousse": "Secousse", "brillance": "Reflet"}
 VUES_PRODUITS = {"grille": "Grille", "liste": "Liste", "vitrine": "Vitrine", "carrousel": "Carrousel", "bento": "Bento", "polaroid": "Polaroïds",
-                 "zigzag": "Zigzag", "mini": "Compacte"}
+                 "zigzag": "Zigzag", "mini": "Compacte", "fiche": "Fiche + bouton", "ligne": "Ligne simple"}
 TAILLES_TITRE = {"s": 26, "m": 32, "l": 40, "xl": 52}
 # Mise en page : la structure de la page, pas seulement ses couleurs
 MISES_EN_PAGE = {"colonne": "Colonne", "bento": "Bento", "magazine": "Magazine", "appli": "Appli", "appli_stories": "Appli Stories",
@@ -312,7 +313,7 @@ DESIGN_DEFAUT = {
     "texte": "#2A211C", "bouton_fond": "#DDBEA4", "bouton_texte": "#2A211C", "bouton_ombre": "#C9A588",
     "bloc_fond": "#FFFFFF", "bloc_texte": "#2A211C", "accent": "#B4693E",
     "police_titre": "Libre Baskerville", "police_texte": "Poppins", "taille_titre": "l",
-    "bouton_style": "plein", "rayon": 16, "animation": "pulse", "apparition": True, "produits_vue": "grille", "cartes_appli": "grande", "profil_appli": "afficher",
+    "bouton_style": "plein", "rayon": 16, "animation": "pulse", "apparition": True, "produits_vue": "grille", "cartes_appli": "grande", "profil_appli": "afficher", "titres_style": "simple",
     "bouton_forme": "arrondi", "survol": "soulever", "bouton_taille": "normal", "alignement": "centre", "decor": "aucun",
     "image_forme": "carre", "prix_style": "texte", "carte_cadre": "ombre",
     "mise_en_page": "colonne", "espacement": "normal", "largeur_page": "normale", "taille_texte": "m",
@@ -420,7 +421,7 @@ THEMES.update({
                police_titre="Cormorant Garamond", police_texte="Inter", bouton_style="double", bouton_forme="carre", rayon=0, photo_forme="anneau",
                survol="aucun", image_forme="fenetre", prix_style="texte", carte_cadre="contour", produits_vue="vitrine"),
 })
-AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial", "Appli", "Marque"]
+AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial", "Appli", "Marque", "Créatrice"]
 
 # ------------------------------------------------------------
 #  Collection de thèmes : 20 par ambiance. Chaque thème = une palette (fond, fond 2, texte, bouton, accent),
@@ -428,6 +429,11 @@ AMBIANCES = ["Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "
 #  pour garder un bon contraste.
 # ------------------------------------------------------------
 ALLURES = {
+    # Créatrice : façon Stan Store (fiches produit avec grand bouton) ou photo en plein fond avec titres en pastille
+    "fiche_sombre": dict(entete="minimal", fond_type="uni", photo_forme="rond", photo_taille=150, bouton_style="plein", bouton_forme="arrondi", rayon=12,
+                         survol="soulever", image_forme="carre", carte_cadre="contour", produits_vue="fiche", prix_style="texte", titres_style="majuscules"),
+    "fiche_photo": dict(entete="photo_fond", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="arrondi", rayon=12,
+                        survol="soulever", image_forme="carre", carte_cadre="ombre", produits_vue="fiche", prix_style="texte", titres_style="pastille"),
     "doux": dict(entete="minimal", fond_type="uni", photo_forme="rond", bouton_style="plein", bouton_forme="arrondi", rayon=16, survol="soulever",
                  image_forme="carre", carte_cadre="ombre", produits_vue="grille", prix_style="texte"),
     "pilule": dict(entete="minimal", fond_type="degrade", photo_forme="rond", photo_contour=True, bouton_style="doux", bouton_forme="pilule", rayon=999,
@@ -646,6 +652,13 @@ for _x in [
     ("une_clair", "À la une clair", "Appli", "#F2F2F7", "#FFFFFF", "#111114", "#0A66FF", "#0A66FF", "Plus Jakarta Sans", "Plus Jakarta Sans", "appli_une"),
     ("une_sable", "À la une sable", "Appli", "#F5EFE6", "#FFFDF9", "#231A12", "#B5541C", "#B5541C", "Fraunces", "Manrope", "appli_une"),
     ("une_nuit", "À la une nuit", "Appli", "#000000", "#1C1C1E", "#F5F5F7", "#FF9F0A", "#FF9F0A", "Sora", "Manrope", "appli_une"),
+    # Créatrice : façon Stan Store
+    ("stan_noir", "Noir minimal", "Créatrice", "#000000", "#0A0A0A", "#FFFFFF", "#FFFFFF", "#FFFFFF", "Inter", "Inter", "fiche_sombre"),
+    ("stan_nuit", "Bleu nuit", "Créatrice", "#0E1424", "#141B2E", "#F2F4FA", "#F2F4FA", "#8FB3FF", "Inter", "Inter", "fiche_sombre"),
+    ("stan_creme", "Crème", "Créatrice", "#F6F1EA", "#EFE7DC", "#1F1A15", "#1F1A15", "#B4693E", "Inter", "Inter", "fiche_sombre"),
+    ("stan_photo", "Photo et pastel", "Créatrice", "#EAF1FB", "#DCE7F7", "#14161C", "#D5E1FB", "#3B5BDB", "Inter", "Inter", "fiche_photo"),
+    ("stan_photo_rose", "Photo et rose", "Créatrice", "#FBEFF2", "#F6DDE4", "#1E1418", "#F7D3DE", "#C2185B", "Inter", "Inter", "fiche_photo"),
+    ("stan_photo_sable", "Photo et sable", "Créatrice", "#F5EEE4", "#EBDFCC", "#211A12", "#EAD9BF", "#9C6B30", "Inter", "Inter", "fiche_photo"),
     # Marque : comme le site d'une marque (stories, manifeste, grille de produits)
     ("marque_rose", "Rose et turquoise", "Marque", "#FFFFFF", "#FAF1F3", "#2B2B2B", "#5CD3D3", "#E5559B", "Montserrat", "Montserrat", "marque"),
     ("marque_sable", "Sable", "Marque", "#FBF8F3", "#F1EADF", "#2A231C", "#2A231C", "#B4693E", "Playfair Display", "Montserrat", "marque"),
@@ -682,7 +695,7 @@ def design_propre(d: dict) -> dict:
                      "bouton_taille": TAILLES_BOUTON, "alignement": ALIGNEMENTS, "decor": DECORS, "image_forme": FORMES_IMAGE,
                      "prix_style": STYLES_PRIX, "carte_cadre": CADRES_CARTE, "taille_titre": TAILLES_TITRE, "theme": {**THEMES, "perso": 1},
                      "police_titre": POLICES, "police_texte": POLICES, "mise_en_page": MISES_EN_PAGE, "espacement": ESPACEMENTS,
-                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE, "cartes_appli": CARTES_APPLI, "profil_appli": PROFIL_APPLI}.get(k)
+                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE, "cartes_appli": CARTES_APPLI, "profil_appli": PROFIL_APPLI, "titres_style": TITRES_STYLE}.get(k)
             if choix is not None and v in choix:
                 r[k] = v
             elif k == "fond_image" and isinstance(v, str) and re.fullmatch(r"[0-9a-f]{12}\.(jpg|png|webp)", v or "x"):
@@ -963,6 +976,23 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 @keyframes secousse{{0%,86%,100%{{transform:rotate(0)}}88%{{transform:rotate(-2deg)}}92%{{transform:rotate(2deg)}}96%{{transform:rotate(-1deg)}}}}
 @keyframes reflet{{60%,100%{{transform:translateX(120%)}}}}
 .carte{{background:var(--k);color:var(--kt);border-radius:var(--rk);padding:16px;{cadre}}}
+.ts-pastille .sec{{display:table;margin:26px auto 4px;background:var(--k);color:var(--kt);font:800 15px/1.2 var(--tx);text-transform:uppercase;letter-spacing:.02em;padding:12px 22px;border-radius:999px;box-shadow:0 6px 18px -8px rgba(0,0,0,.35)}}
+.ts-majuscules .sec{{font:800 22px/1.2 var(--tx);text-transform:uppercase;letter-spacing:.03em}}
+.fond-photo{{position:fixed;inset:0;z-index:-2;background-size:cover;background-position:center top}}
+.fond-photo::after{{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.35) 45%,rgba(0,0,0,.6) 100%)}}
+.tete-photo{{min-height:52vh;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.45)}}
+.tete-photo h1,.tete-photo .bio{{color:#fff}}.tete-photo .reseaux a{{color:#fff}}
+.e-photo_fond .fond{{display:none}}
+.v-fiche,.v-ligne{{display:flex!important;flex-direction:column;gap:14px}}
+.prod.fiche{{display:flex;flex-direction:column;align-items:stretch;gap:16px;padding:18px!important}}
+.fi-haut{{display:flex;gap:16px;align-items:flex-start}}.fiche .pimg img,.fiche .pas-img{{width:84px!important;height:84px!important;aspect-ratio:1;object-fit:cover;border-radius:12px!important;clip-path:none!important;-webkit-mask:none!important}}
+.fiche .ptxt b{{display:block;text-transform:uppercase;font-weight:800;font-size:1.02em;line-height:1.2;letter-spacing:.01em}}
+.fiche .ptxt small{{display:block;margin-top:5px;opacity:.72;font-size:.92em;line-height:1.4}}
+.fi-prix{{display:block;margin-top:8px;font-weight:800;font-size:1.1em}}.fi-prix s{{opacity:.5;font-weight:600;margin-left:8px}}
+.fi-bouton{{display:flex;justify-content:center;align-items:center;gap:8px;padding:15px 18px;border-radius:min(var(--r),14px);background:var(--b);color:var(--bt);font-weight:800;text-transform:uppercase;letter-spacing:.02em;font-size:.95em}}
+.fi-bouton i{{font-style:normal}}
+.prod.ligne{{display:flex;align-items:center;gap:16px;padding:12px 16px!important}}.ligne .pimg img,.ligne .pas-img{{width:64px!important;height:64px!important;border-radius:10px!important;object-fit:cover;clip-path:none!important;-webkit-mask:none!important}}
+.ligne .ptxt b{{text-transform:uppercase;font-weight:800;font-size:1.05em}}
 .sec{{font:400 calc(var(--tt) * .62)/1.15 var(--tf);margin:14px 0 0;text-align:center;{'text-transform:uppercase;' if capitales else ''}}}
 .txt{{text-align:center;white-space:pre-line;opacity:.9;margin:0}}
 .video{{aspect-ratio:16/9;width:100%;border:0;border-radius:var(--rk);display:block}}
@@ -1207,6 +1237,8 @@ def _tete(page: dict, pseudo: str) -> str:
     couv = f'<img class="couv" src="{_img(pseudo, couv_nom)}" alt="">' if couv_nom else ""
     e = d["entete"]
     mp = d.get("mise_en_page", "colonne")
+    if e == "photo_fond" and mp == "colonne":
+        return f'<header class="tete tete-photo"><h1>{nom}</h1>{bio}{reseaux}</header>'
     if mp == "bento":
         return f'<header class="tete">{img_photo}<div><h1>{nom}</h1>{bio}</div>{reseaux}</header>'
     if mp == "magazine":
@@ -1259,6 +1291,14 @@ def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None =
     dans_image, sous_titre = (px, "") if style_prix == "pastille" else ("", px)
     tn = tunnel_du_produit(page or {}, p["id"])
     href = f'/@{pseudo}/t/{tn["id"]}' if tn else f'/@{pseudo}/p/{p["id"]}'
+    if vue == "fiche":  # façon Stan : image à gauche, titre, texte, prix barré, grand bouton dans la carte
+        prix = f'<span class="fi-prix">{E(prix_txt(pe["prix"], p.get("devise", "eur")))}{barre}</span>'
+        return (f'<a class="prod carte fiche" href="{href}"><span class="fi-haut"><span class="pimg">{img}</span>'
+                f'<span class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{prix}</span></span>'
+                f'<span class="fi-bouton">{E(p.get("bouton") or ("Je le télécharge" if not pe["prix"] else "Je le veux"))} <i>→</i></span></a>')
+    if vue == "ligne":  # une ligne : petite image + titre, comme un lien
+        return (f'<a class="prod carte ligne" href="{href}"><span class="pimg">{img}</span>'
+                f'<span class="ptxt"><b>{E(p.get("titre") or "")}</b></span></a>')
     return (f'<a class="prod carte" href="{href}"><span class="pimg">{img}{dans_image}</span>'
             f'<div class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{sous_titre}</div></a>')
 
@@ -1475,7 +1515,9 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     d = page["design"]
     faces, lien = _polices_css(d, [(b.get("style") or {}).get("police") for b in page.get("blocs", [])])
     fond_img = f'<div class="fond-img" style="background-image:url(\'{_img(pseudo, d["fond_image"])}\')"></div>' if d["fond_type"] == "image" and d.get("fond_image") else ""
-    classes = (f'e-{d["entete"]} mp-{d.get("mise_en_page", "colonne")} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} '
+    if d["entete"] == "photo_fond" and page.get("photo") and d.get("mise_en_page", "colonne") == "colonne":
+        fond_img = f'<div class="fond-photo" style="background-image:url(\'{_img(pseudo, page["photo"])}\')"></div>'
+    classes = (f'e-{d["entete"]} ts-{d.get("titres_style", "simple")} mp-{d.get("mise_en_page", "colonne")} anim-{d["animation"]}{" apparition" if d.get("apparition") else ""} '
                f'tb-{d["bouton_taille"]} al-{d["alignement"]}')
     cb = classes_bouton(d)
     if page.get("_parrain"):  # la pastille « Créé avec Virallink » porte le lien de parrainage de la créatrice

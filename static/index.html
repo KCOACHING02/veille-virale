@@ -5124,7 +5124,7 @@ function couleursProposees(A) {
   return C;
 }
 // Design choisi en deux gestes : un thème de l'éditeur (par ambiance, comme en mode avancé) puis, si on veut, d'autres couleurs
-const AMBIANCES_ASSIST = ["Appli", "Marque", "Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial"];
+const AMBIANCES_ASSIST = ["Appli", "Créatrice", "Marque", "Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial"];
 const themesAssist = amb => (BQ.etat.options.themes || []).filter(t => t.ambiance === amb);
 function designTheme(A, t, coul) {
   const C = couleursProposees(A), d = {...BQ.etat.options.defaut, ...t.design, theme: t.id, apparition: false};
@@ -6224,6 +6224,7 @@ const SCHEMAS_ENTETE = {
   portrait: '<path d="M0 0h60v38c-20 8-40 8-60 0z" opacity=".55"/><rect x="16" y="42" width="28" height="5" rx="2"/><rect x="12" y="53" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="64" width="36" height="7" rx="3" opacity=".5"/>',
   arche: '<path d="M18 34V18a12 12 0 0124 0v16z"/><rect x="16" y="40" width="28" height="5" rx="2"/><rect x="12" y="52" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="63" width="36" height="7" rx="3" opacity=".5"/>',
   cote: '<circle cx="16" cy="16" r="9"/><rect x="29" y="11" width="24" height="5" rx="2"/><rect x="29" y="19" width="16" height="3" rx="1.5" opacity=".6"/><rect x="8" y="34" width="44" height="7" rx="3" opacity=".5"/><rect x="8" y="45" width="44" height="7" rx="3" opacity=".5"/><rect x="8" y="56" width="44" height="7" rx="3" opacity=".5"/>',
+  photo_fond: '<rect x="0" y="0" width="60" height="76" opacity=".35"/><rect x="14" y="34" width="32" height="6" rx="2"/><rect x="10" y="46" width="40" height="4" rx="2" opacity=".7"/><rect x="8" y="58" width="44" height="12" rx="3" opacity=".9"/>',
   magazine: '<rect x="0" y="0" width="60" height="44" opacity=".55"/><rect x="8" y="32" width="40" height="7" rx="2" fill="#fff"/><rect x="12" y="52" width="36" height="7" rx="3" opacity=".5"/><rect x="12" y="63" width="36" height="7" rx="3" opacity=".5"/>',
 };
 const SCHEMAS_VUES = {
@@ -6234,6 +6235,8 @@ const SCHEMAS_VUES = {
   bento: '<rect x="6" y="6" width="48" height="26" rx="3"/><rect x="6" y="36" width="22" height="22" rx="3" opacity=".7"/><rect x="32" y="36" width="22" height="22" rx="3" opacity=".7"/>',
   polaroid: '<g transform="rotate(-6 17 26)"><rect x="6" y="12" width="22" height="28" fill="#fff" stroke="#ccc"/><rect x="9" y="15" width="16" height="16"/></g><g transform="rotate(6 43 40)"><rect x="32" y="26" width="22" height="28" fill="#fff" stroke="#ccc"/><rect x="35" y="29" width="16" height="16"/></g>',
   zigzag: '<rect x="6" y="6" width="22" height="18" rx="2"/><rect x="32" y="12" width="22" height="4" rx="2" opacity=".5"/><rect x="32" y="30" width="22" height="18" rx="2"/><rect x="6" y="36" width="22" height="4" rx="2" opacity=".5"/><rect x="6" y="54" width="22" height="16" rx="2"/><rect x="32" y="60" width="22" height="4" rx="2" opacity=".5"/>',
+  fiche: '<rect x="4" y="6" width="52" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/><rect x="9" y="11" width="12" height="12" rx="2"/><rect x="25" y="12" width="26" height="4" rx="1"/><rect x="25" y="19" width="18" height="3" rx="1" opacity=".6"/><rect x="9" y="27" width="42" height="6" rx="2"/><rect x="4" y="42" width="52" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/><rect x="9" y="47" width="12" height="12" rx="2"/><rect x="25" y="48" width="26" height="4" rx="1"/><rect x="9" y="63" width="42" height="6" rx="2"/>',
+  ligne: '<rect x="4" y="8" width="52" height="16" rx="4" opacity=".35"/><rect x="7" y="10" width="12" height="12" rx="2"/><rect x="23" y="14" width="26" height="4" rx="1"/><rect x="4" y="30" width="52" height="16" rx="4" opacity=".35"/><rect x="7" y="32" width="12" height="12" rx="2"/><rect x="23" y="36" width="26" height="4" rx="1"/><rect x="4" y="52" width="52" height="16" rx="4" opacity=".35"/><rect x="7" y="54" width="12" height="12" rx="2"/><rect x="23" y="58" width="26" height="4" rx="1"/>',
   mini: '<rect x="6" y="10" width="48" height="10" rx="5" opacity=".7"/><rect x="6" y="25" width="48" height="10" rx="5" opacity=".7"/><rect x="6" y="40" width="48" height="10" rx="5" opacity=".7"/><rect x="6" y="55" width="48" height="10" rx="5" opacity=".7"/>',
 };
 const FORMES_CSS_ED = {hexagone: "", losange: "", coeur: "", polaroid: "border-width:4px;border-bottom-width:12px", anneau: "box-shadow:0 0 0 3px #fff,0 0 0 5px var(--a)",rond: "border-radius:50%", arrondi: "border-radius:28%", arche: "border-radius:99px 99px 8px 8px;height:52px;width:40px", fleur: "-webkit-mask:var(--fleur) center/100% 100% no-repeat;mask:var(--fleur) center/100% 100% no-repeat",
@@ -6289,6 +6292,7 @@ function ongletDesign(z) {
       ${["appli_stories", "appli_une"].includes(d.mise_en_page) ? `<p class="bt-sous-titre">Carte de présentation (ta photo + « Voir la boutique »)</p>${puces("profil_appli", {afficher: "Afficher", masquer: "Masquer"})}` : ""}
       <p class="bt-sous-titre">Espace entre les blocs</p>${puces("espacement", {serre: "Serré", normal: "Normal", aere: "Aéré", large: "Très aéré"})}
       <p class="bt-sous-titre">Taille du texte</p>${puces("taille_texte", {s: "Petite", m: "Normale", l: "Grande", xl: "Très grande"})}
+      <p class="bt-sous-titre">Style des titres de section</p>${puces("titres_style", {simple: "Simple", pastille: "Pastille", majuscules: "Majuscules"})}
       <p class="bt-sous-titre">Largeur de la page sur ordinateur</p>${puces("largeur_page", {etroite: "Étroite", normale: "Normale", large: "Large", pleine: "Très large"})}
       <p class="aide" style="margin:10px 0 0">Astuce : dans <b>Contenu</b>, ouvre un bloc et choisis sa <b>largeur</b> pour en mettre deux ou trois côte à côte.</p>
     </section>
@@ -6366,7 +6370,7 @@ function ongletDesign(z) {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
     if (typeof def === "number") v = +v;
     d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor",
-      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli"].includes(k)) d.theme = "perso";
+      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli", "titres_style"].includes(k)) d.theme = "perso";
     if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
     modifieBoutique(true);
   });
