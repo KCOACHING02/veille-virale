@@ -57,7 +57,15 @@ def _groupe_appli(inner: str, premier: bool) -> str:
     return f'<div class="blocs ap-blocs"{' id="liens"' if premier else ""}>{inner}</div>'
 
 
-def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, groupe_html=_groupe_appli) -> str:
+def _generique_appli(titre: str, html: str, premier: bool) -> str:
+    return f'{f"<h2 class=\"ap-t\"{_ancre(premier)}>{E(titre)}</h2>" if titre else ""}<div class="pb"{"" if titre else _ancre(premier)}>{html}</div>'
+
+
+REGLAGES_PRODUITS = ("vue", "ratio", "remplir", "masque")
+
+
+def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, groupe_html=_groupe_appli,
+              generique=_generique_appli) -> str:
     """Le corps de la page dans l'ordre des blocs de la cliente : sections du format, produits et blocs ordinaires.
 
     Page qui n'a encore aucun bloc « section » de ce format (boutique d'avant) : rendu d'origine à l'identique
@@ -101,7 +109,12 @@ def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, gr
             else:
                 titre = x.get("titre") or ("" if x.get("type") == "produit" else "La boutique")
                 liste = _prods_du_bloc(page, x)
-            out.append(rendu_prods(liste, titre, etat["premier"]))
+            if x and x.get("vue") and liste:  # présentation choisie pour ce bloc : la même dans tous les formats
+                out.append(generique(titre, bq.produits_html(liste, x, page, pseudo), etat["premier"]))
+            elif x and any(x.get(k) for k in REGLAGES_PRODUITS):  # présentation du modèle, images et éléments réglés
+                out.append(f'<div class="pb {bq.classes_produits(x, "", False)}">{rendu_prods(liste, titre, etat["premier"])}</div>')
+            else:
+                out.append(rendu_prods(liste, titre, etat["premier"]))
             etat["premier"] = False
             if not etat["apres"]:
                 out.extend(sections.get(k, "") for k in apres)
@@ -372,7 +385,10 @@ def rendu_marque(page: dict, pseudo: str, apercu: bool = False) -> str:
     def plus(inner, premier):
         return f'<section class="mq-plus-sec"{' id="plus"' if premier else ""}><div class="blocs">{inner}</div></section>'
 
-    corps = _assemble(page, pseudo, "marque", {"mq_stories": stories, "mq_manif": manif}, boutique, plus)
+    def generique(titre, html, premier):
+        return f'<section class="mq-boutique"{_ancre(premier)}>{f"<h2>{E(titre)}</h2>" if titre else ""}{html}</section>'
+
+    corps = _assemble(page, pseudo, "marque", {"mq_stories": stories, "mq_manif": manif}, boutique, plus, generique)
     bulle = (f'<a class="mq-bulle" href="{E(contact[0])}" target="_blank" rel="noopener" aria-label="{E(contact[1])}">{ICO_BULLE}</a>' if contact else "")
     return (f'{haut}{corps}{bq.badge(page)}'
             f'<div class="mq-flottants">{bulle}<a class="mq-haut-btn" href="#haut" aria-label="Revenir en haut">{ICO_HAUT}</a></div>')

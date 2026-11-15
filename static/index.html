@@ -5771,7 +5771,8 @@ document.addEventListener("click", e => {
 // ---- Thèmes et palettes
 function themeApplique(design, id) {
   const t = BQ.etat.options.themes.find(x => x.id === id); if (!t) return design;
-  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli"];
+  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli",
+    "carte_contour", "carte_contour_couleur", "carte_ombre", "carte_arrondi", "carte_fond", "carte_fond_couleur"];
   const base = Object.fromEntries(Object.entries(BQ.etat.options.defaut).filter(([k]) => !garde.includes(k)));
   return {...design, ...base, fond2: t.design.fond2 || t.design.fond1, photo_contour: false, ...t.design, theme: id};
 }
@@ -6085,6 +6086,24 @@ function listeItems(b, i, champs, ajout) {
       <button type="button" class="icone-btn" data-it-suppr="${i}:${j}" aria-label="Retirer">✕</button></div>`).join("")}</div>
     <button type="button" class="btn petit" data-it-ajout="${i}">+ ${ajout}</button>`;
 }
+// Réglages d'un bloc Produits, valables dans tous les formats : lesquels, présentation, images, ce qu'on montre
+function reglagesProduits(b, i) {
+  const o = BQ.etat.options, prods = BQ.page.produits.filter(p => p.visible !== false), ids = b.ids || [];
+  const puce = (k, v, l, actif) => `<button type="button" data-bpr="${k}" data-v="${v}" data-i="${i}" aria-pressed="${actif}">${esc(l)}</button>`;
+  const masque = b.masque || [];
+  return `${b.type === "produits" ? `<p class="bt-sous-titre">Quels produits ?</p>
+      <div class="bt-puces">${puce("tous", "", "Tous", !ids.length)}${puce("tous", "choix", "Je choisis", !!ids.length)}</div>
+      ${ids.length ? `<div class="bt-coches">${prods.map(p => `<label class="bt-interr"><span>${esc(p.titre || "Sans titre")}</span><input type="checkbox" data-bpr-id="${p.id}" data-i="${i}" ${ids.includes(p.id) ? "checked" : ""}></label>`).join("")}</div>` : ""}` : ""}
+    <p class="bt-sous-titre">Présentation</p>
+    <div class="bt-puces">${Object.entries(o.presentations_bloc).map(([v, l]) => puce("vue", v, l, (b.vue || "") === v)).join("")}</div>
+    <p class="bt-sous-titre">Images</p>
+    <div class="bt-puces">${Object.entries(o.ratios_image).map(([v, l]) => puce("ratio", v, l, (b.ratio || "") === v)).join("")}</div>
+    <div class="bt-puces" style="margin-top:6px">${Object.entries(o.remplissages).map(([v, l]) => puce("remplir", v, l, (b.remplir || "couvrir") === v)).join("")}</div>
+    <p class="bt-sous-titre">Afficher</p>
+    <label class="bt-interr"><span>La description</span><input type="checkbox" data-bpr-masque="desc" data-i="${i}" ${masque.includes("desc") ? "" : "checked"}></label>
+    <label class="bt-interr"><span>Le prix</span><input type="checkbox" data-bpr-masque="prix" data-i="${i}" ${masque.includes("prix") ? "" : "checked"}></label>
+    ${["fiche", "fil"].includes(b.vue) ? champB(i, "bouton", "Texte du bouton (sinon celui de chaque produit)", b.bouton, 'maxlength="60" placeholder="Je le veux"') : ""}`;
+}
 function corpsBlocContenu(b, i) {
   const prods = BQ.page.produits;
   const optsProd = (sel, gratuits) => `<option value="">${gratuits ? "Aucun cadeau" : "Choisis…"}</option>` + prods.filter(p => !gratuits || !p.prix).map(p => `<option value="${p.id}" ${p.id === sel ? "selected" : ""}>${esc(p.titre || "Sans titre")}</option>`).join("");
@@ -6107,8 +6126,8 @@ function corpsBlocContenu(b, i) {
     case "titre": return champB(i, "texte", "Titre", b.texte, 'maxlength="120"');
     case "texte": return `<div class="champ"><label>Texte</label><textarea data-b="${i}" data-bk="texte" maxlength="1200">${esc(b.texte || "")}</textarea></div>`;
     case "video": return champB(i, "url", "Lien de la vidéo YouTube", b.url, 'placeholder="https://youtu.be/…" inputmode="url"');
-    case "produit": return `<div class="champ"><label>Produit mis en avant</label><select data-b="${i}" data-bk="produit">${optsProd(b.produit)}</select></div>` + (prods.length ? "" : '<p class="aide">Crée d\'abord un produit dans l\'onglet Produits.</p>');
-    case "produits": return champB(i, "titre", "Titre au-dessus des produits (facultatif)", b.titre, 'maxlength="120"') + '<p class="aide" style="margin:8px 0 0">Tous tes produits visibles s\'affichent ici. L\'affichage (grille, liste, vitrine) se choisit dans Design.</p>';
+    case "produit": return `<div class="champ"><label>Produit mis en avant</label><select data-b="${i}" data-bk="produit">${optsProd(b.produit)}</select></div>` + (prods.length ? reglagesProduits(b, i) : '<p class="aide">Crée d\'abord un produit dans l\'onglet Produits.</p>');
+    case "produits": return champB(i, "titre", "Titre au-dessus des produits (facultatif)", b.titre, 'maxlength="120"') + reglagesProduits(b, i);
     case "capture": return champB(i, "titre", "Titre", b.titre) + `<div class="champ"><label>Texte</label><textarea data-b="${i}" data-bk="texte" maxlength="400" style="min-height:64px">${esc(b.texte || "")}</textarea></div>`
       + champB(i, "bouton", "Texte du bouton", b.bouton, 'maxlength="60" placeholder="Je m\'inscris"')
       + `<div class="champ"><label>Cadeau envoyé à l'inscription (produit gratuit)</label><select data-b="${i}" data-bk="produit">${optsProd(b.produit, true)}</select><span class="aide">Ton guide gratuit est livré tout de suite et par e-mail.</span></div>`
@@ -6220,6 +6239,23 @@ function lieChamps(z) {
     else if (k === "reinit") delete b.style;
     else { b.style = {...(b.style || {})}; if (v) b.style[k] = v; else delete b.style[k]; }
     BQ.apparenceOuverte = b.id; modifieBoutique(true);
+  });
+  z.querySelectorAll("[data-bpr]").forEach(btn => btn.onclick = () => {
+    const b = p.blocs[+btn.dataset.i], k = btn.dataset.bpr, v = btn.dataset.v;
+    if (k === "tous") { if (v) b.ids = p.produits.filter(x => x.visible !== false).map(x => x.id); else delete b.ids; }
+    else if (v) b[k] = v; else delete b[k];
+    modifieBoutique(true);
+  });
+  z.querySelectorAll("[data-bpr-id]").forEach(c => c.onchange = () => {
+    const b = p.blocs[+c.dataset.i], id = c.dataset.bprId, L = (b.ids || []).filter(x => x !== id);
+    if (c.checked) L.push(id);
+    if (!L.length) { c.checked = true; return toast("Garde au moins un produit"); }
+    b.ids = p.produits.map(x => x.id).filter(x => L.includes(x)); modifieBoutique(true);
+  });
+  z.querySelectorAll("[data-bpr-masque]").forEach(c => c.onchange = () => {
+    const b = p.blocs[+c.dataset.i], m = c.dataset.bprMasque;
+    b.masque = (b.masque || []).filter(x => x !== m); if (!c.checked) b.masque.push(m);
+    modifieBoutique(true);
   });
   z.querySelectorAll("[data-it-ajout]").forEach(btn => btn.onclick = () => { const b = p.blocs[+btn.dataset.itAjout];
     b.items = [...(b.items || []), b.type === "faq" ? {q: "", r: ""} : {texte: "", nom: ""}]; modifieBoutique(true); });
@@ -6385,6 +6421,14 @@ function ongletDesign(z) {
       <p class="bt-sous-titre">Animation du lien mis en avant</p>${puces("animation", o.animations)}
       <label class="bt-interr" style="margin-top:8px"><span>Apparition en douceur des blocs</span><input type="checkbox" data-d="apparition" ${d.apparition ? "checked" : ""}></label></div>
     </section>
+    <section class="bt-sec" id="bt-s-ca"><h3>Cartes</h3><p class="aide">Produits, témoignages, questions et formulaire : le même style partout, quel que soit le modèle.</p>
+      <p class="bt-sous-titre" style="margin-top:0">Contour</p>${puces("carte_contour", o.carte_contours)}
+      ${["fin", "epais"].includes(d.carte_contour) ? `<div class="bt-couleurs" style="margin-top:8px"><label class="bt-couleur">Couleur du contour<input type="color" data-d="carte_contour_couleur" value="${(d.carte_contour_couleur || d.bloc_texte).slice(0, 7)}"></label></div>` : ""}
+      <p class="bt-sous-titre">Ombre</p>${puces("carte_ombre", o.carte_ombres)}
+      <p class="bt-sous-titre">Coins</p>${puces("carte_arrondi", o.carte_arrondis)}
+      <p class="bt-sous-titre">Fond</p>${puces("carte_fond", o.carte_fonds)}
+      ${d.carte_fond === "couleur" ? `<div class="bt-couleurs" style="margin-top:8px"><label class="bt-couleur">Couleur du fond<input type="color" data-d="carte_fond_couleur" value="${(d.carte_fond_couleur || d.bloc_fond).slice(0, 7)}"></label></div>` : ""}
+    </section>
     <section class="bt-sec avance" id="bt-s-pr"><h3>Produits</h3><p class="aide">La présentation de ta boutique.</p>
       <p class="bt-sous-titre" style="margin-top:0">Disposition</p>
       <div class="bt-choix">${Object.entries(o.vues_produits).map(([k, l]) => opt("produits_vue", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${c7("accent")}">${SCHEMAS_VUES[k]}</svg>`, l)).join("")}</div>
@@ -6411,7 +6455,9 @@ function ongletDesign(z) {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
     if (typeof def === "number") v = +v;
     d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor",
-      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli", "titres_style"].includes(k)) d.theme = "perso";
+      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli", "titres_style",
+      "carte_contour", "carte_ombre", "carte_arrondi", "carte_fond"].includes(k)) d.theme = "perso";
+    if (k === "carte_fond" && v === "couleur" && !d.carte_fond_couleur) d.carte_fond_couleur = d.bloc_fond.slice(0, 7);
     if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
     modifieBoutique(true);
   });

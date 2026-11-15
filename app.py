@@ -2300,6 +2300,8 @@ def _options_boutique() -> dict:
             "mises_en_page": bq.MISES_EN_PAGE, "espacements": bq.ESPACEMENTS, "largeurs_page": bq.LARGEURS_PAGE, "tailles_texte": bq.TAILLES_TEXTE,
             "largeurs_bloc": bq.LARGEURS_BLOC, "separateurs": bq.SEPARATEURS, "dispositions_galerie": bq.DISPOSITIONS_GALERIE,
             "sections": {k: [[c, l] for c, l in v] for k, v in bf.SECTIONS.items()},
+            "presentations_bloc": bq.PRESENTATIONS_BLOC, "ratios_image": bq.RATIOS_IMAGE, "remplissages": bq.REMPLISSAGES,
+            "carte_contours": bq.CARTE_CONTOURS, "carte_ombres": bq.CARTE_OMBRES, "carte_arrondis": bq.CARTE_ARRONDIS, "carte_fonds": bq.CARTE_FONDS,
             "reseaux": {k: v[0] for k, v in bq.RESEAUX.items()}, "defaut": bq.DESIGN_DEFAUT}
 
 
@@ -2509,6 +2511,15 @@ def _bloc_propre(b: dict) -> dict | None:
         r["image"] = b["image"]
     if isinstance(b.get("ids"), list):
         r["ids"] = [str(i)[:12] for i in b["ids"]][:50]
+    if t in ("produits", "produit"):  # présentation propre au bloc (tous formats)
+        if b.get("vue") in bq.PRESENTATIONS_BLOC and b["vue"]:
+            r["vue"] = b["vue"]
+        if b.get("ratio") in bq.RATIOS_IMAGE and b["ratio"]:
+            r["ratio"] = b["ratio"]
+        if b.get("remplir") in bq.REMPLISSAGES:
+            r["remplir"] = b["remplir"]
+        if isinstance(b.get("masque"), list):
+            r["masque"] = [m for m in bq.MASQUES_PRODUIT if m in b["masque"]]
     return r
 
 

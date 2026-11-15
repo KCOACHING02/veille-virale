@@ -288,6 +288,18 @@ ALIGNEMENTS = {"centre": "Centré", "gauche": "À gauche"}
 DECORS = {"aucun": "Aucun", "etincelles": "Étincelles", "bulles": "Bulles floues", "confettis": "Confettis", "coeurs": "Cœurs", "formes": "Formes géométriques"}
 TITRES_STYLE = {"simple": "Simple", "pastille": "Pastille", "majuscules": "Majuscules"}
 PROFIL_APPLI = {"afficher": "Afficher", "masquer": "Masquer"}
+# Style des cartes commun à tous les formats (produits, témoignages, FAQ, formulaire, cartes des formats Appli/Marque) ;
+# "" = comme le modèle choisi.
+CARTE_CONTOURS = {"": "Comme le modèle", "sans": "Sans", "fin": "Fin", "epais": "Épais"}
+CARTE_OMBRES = {"": "Comme le modèle", "sans": "Sans", "douce": "Douce", "forte": "Forte"}
+CARTE_ARRONDIS = {"": "Comme le modèle", "carre": "Carré", "doux": "Léger", "rond": "Arrondi", "tres": "Très arrondi"}
+CARTE_FONDS = {"": "Comme le modèle", "transparent": "Transparent", "couleur": "Ma couleur"}
+# Réglages propres à un bloc Produits
+PRESENTATIONS_BLOC = {"": "Comme le modèle", "vitrine": "Grande carte", "grille": "Grille de 2", "grille3": "Grille de 3", "liste": "Liste",
+                      "mini": "Liste compacte", "carrousel": "Défilement", "fil": "Fil façon Instagram", "ronds": "Ronds", "fiche": "Fiche + bouton"}
+RATIOS_IMAGE = {"": "Comme le modèle", "carre": "Carré", "portrait": "Portrait", "paysage": "Paysage", "story": "Story"}
+REMPLISSAGES = {"couvrir": "Remplir le cadre", "contenir": "Image entière"}
+MASQUES_PRODUIT = ("desc", "prix")
 CARTES_APPLI = {"grande": "Grande", "moyenne": "Moyenne", "compacte": "Compacte (en ligne)", "grille": "Petite (2 par ligne)"}
 FORMES_IMAGE = {"carre": "Arrondi", "arche": "Arche", "rond": "Rond", "galet": "Galet", "biseau": "Biseauté", "fenetre": "Fenêtre", "polaroid": "Polaroïd", "fleur": "Fleur"}
 STYLES_PRIX = {"texte": "Texte", "pastille": "Pastille", "etiquette": "Étiquette", "bouton": "Bouton", "surligne": "Surligné"}
@@ -317,6 +329,7 @@ DESIGN_DEFAUT = {
     "bouton_forme": "arrondi", "survol": "soulever", "bouton_taille": "normal", "alignement": "centre", "decor": "aucun",
     "image_forme": "carre", "prix_style": "texte", "carte_cadre": "ombre",
     "mise_en_page": "colonne", "espacement": "normal", "largeur_page": "normale", "taille_texte": "m",
+    "carte_contour": "", "carte_contour_couleur": "", "carte_ombre": "", "carte_arrondi": "", "carte_fond": "", "carte_fond_couleur": "",
 }
 
 # Thèmes prêts à l'emploi, regroupés par ambiance (comme les « looks » de Beacons, en plus poussé)
@@ -686,7 +699,8 @@ def design_propre(d: dict) -> dict:
                 r[k] = max(0, min(999, int(v)))
             except (TypeError, ValueError):
                 pass
-        elif k in ("fond1", "fond2", "texte", "bouton_fond", "bouton_texte", "bouton_ombre", "bloc_fond", "bloc_texte", "accent"):
+        elif k in ("fond1", "fond2", "texte", "bouton_fond", "bouton_texte", "bouton_ombre", "bloc_fond", "bloc_texte", "accent",
+                   "carte_contour_couleur", "carte_fond_couleur"):
             if isinstance(v, str) and COULEUR.match(v):
                 r[k] = v
         else:
@@ -695,7 +709,8 @@ def design_propre(d: dict) -> dict:
                      "bouton_taille": TAILLES_BOUTON, "alignement": ALIGNEMENTS, "decor": DECORS, "image_forme": FORMES_IMAGE,
                      "prix_style": STYLES_PRIX, "carte_cadre": CADRES_CARTE, "taille_titre": TAILLES_TITRE, "theme": {**THEMES, "perso": 1},
                      "police_titre": POLICES, "police_texte": POLICES, "mise_en_page": MISES_EN_PAGE, "espacement": ESPACEMENTS,
-                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE, "cartes_appli": CARTES_APPLI, "profil_appli": PROFIL_APPLI, "titres_style": TITRES_STYLE}.get(k)
+                     "largeur_page": LARGEURS_PAGE, "taille_texte": TAILLES_TEXTE, "cartes_appli": CARTES_APPLI, "profil_appli": PROFIL_APPLI, "titres_style": TITRES_STYLE,
+                     "carte_contour": CARTE_CONTOURS, "carte_ombre": CARTE_OMBRES, "carte_arrondi": CARTE_ARRONDIS, "carte_fond": CARTE_FONDS}.get(k)
             if choix is not None and v in choix:
                 r[k] = v
             elif k == "fond_image" and isinstance(v, str) and re.fullmatch(r"[0-9a-f]{12}\.(jpg|png|webp)", v or "x"):
@@ -710,7 +725,9 @@ def design_propre(d: dict) -> dict:
 
 def applique_theme(design: dict, theme: str) -> dict:
     base = {k: v for k, v in DESIGN_DEFAUT.items() if k not in ("photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue",
-                                                                  "mise_en_page", "espacement", "largeur_page", "taille_texte")}
+                                                                  "mise_en_page", "espacement", "largeur_page", "taille_texte",
+                                                                  "carte_contour", "carte_contour_couleur", "carte_ombre", "carte_arrondi",
+                                                                  "carte_fond", "carte_fond_couleur")}
     t = THEMES.get(theme)
     if not t:
         return design
@@ -1272,7 +1289,7 @@ def tunnel_du_produit(page: dict, pid: str) -> dict | None:
     return next((t for t in vus if tunnel_en_ligne(t, page)), None) or (vus[0] if vus and page.get("_proprio_vue") else None)
 
 
-def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None = None, page: dict | None = None) -> str:
+def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None = None, page: dict | None = None, bouton: str = "") -> str:
     from boutique_ventes import prix_effectif
     pe = prix_effectif(p)
     forme = f'pi-{d.get("image_forme", "carre")}'
@@ -1295,12 +1312,52 @@ def _carte_produit(p: dict, pseudo: str, d: dict, vue: str, notes: dict | None =
         prix = f'<span class="fi-prix">{E(prix_txt(pe["prix"], p.get("devise", "eur")))}{barre}</span>'
         return (f'<a class="prod carte fiche" href="{href}"><span class="fi-haut"><span class="pimg">{img}</span>'
                 f'<span class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{prix}</span></span>'
-                f'<span class="fi-bouton">{E(p.get("bouton") or ("Je le télécharge" if not pe["prix"] else "Je le veux"))} <i>→</i></span></a>')
+                f'<span class="fi-bouton">{E(bouton or p.get("bouton") or ("Je le télécharge" if not pe["prix"] else "Je le veux"))} <i>→</i></span></a>')
+    if vue == "ronds":  # un rond façon stories, le titre dessous
+        return (f'<a class="prod rond-p" href="{href}"><span class="rp-img">{img}</span><b>{E(p.get("titre") or "")}</b>'
+                f'<span class="rp-px">{px}</span></a>')
+    if vue == "fil":  # une publication façon Instagram : en-tête, grande image, titre, texte, prix et bouton
+        nom = (page or {}).get("nom") or pseudo
+        ph = (page or {}).get("photo")
+        av = f'<img src="{_img(pseudo, ph)}" alt="">' if ph else f'<span>{E(nom[:1].upper())}</span>'
+        return (f'<article class="prod carte fp"><header><i class="fp-av">{av}</i><b>{E(nom)}</b></header>'
+                f'<a class="pimg" href="{href}">{img}</a><div class="fp-pied"><div class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}</div>'
+                f'<a class="fp-voir" href="{href}"><span class="px">{E(prix_txt(pe["prix"], p.get("devise", "eur")))}{barre}</span>'
+                f'{E(bouton or p.get("bouton") or "Voir l’offre")}</a></div></article>')
     if vue == "ligne":  # une ligne : petite image + titre, comme un lien
         return (f'<a class="prod carte ligne" href="{href}"><span class="pimg">{img}</span>'
                 f'<span class="ptxt"><b>{E(p.get("titre") or "")}</b></span></a>')
     return (f'<a class="prod carte" href="{href}"><span class="pimg">{img}{dans_image}</span>'
             f'<div class="ptxt"><b>{E(p.get("titre") or "")}</b>{st}{sous_titre}</div></a>')
+
+
+def _vue_bloc(b: dict | None, d: dict) -> str:
+    v = (b or {}).get("vue") or d["produits_vue"]
+    return "grille" if v == "grille3" else v
+
+
+def classes_produits(b: dict | None, vue: str, avec_vue: bool = True) -> str:
+    """Classes d'un bloc Produits : présentation, forme des images, remplissage, éléments masqués."""
+    b = b or {}
+    c = [f"produits v-{vue}"] if avec_vue else []
+    if b.get("vue") == "grille3":
+        c.append("g3")
+    if b.get("ratio") in RATIOS_IMAGE and b.get("ratio"):
+        c.append(f"r-{b['ratio']}")
+    if b.get("remplir") == "contenir":
+        c.append("f-contenir")
+    elif b.get("remplir") == "couvrir":
+        c.append("f-couvrir")
+    c += [f"sans-{m}" for m in (b.get("masque") or []) if m in MASQUES_PRODUIT]
+    return " ".join(c)
+
+
+def produits_html(liste: list[dict], b: dict | None, page: dict, pseudo: str, ancre: str = "") -> str:
+    """Les produits d'un bloc dans la présentation choisie pour lui (ou celle du design)."""
+    d = page["design"]
+    v = _vue_bloc(b, d)
+    cartes = "".join(_carte_produit(p, pseudo, d, v, page.get("_avis"), page, (b or {}).get("bouton") or "") for p in liste)
+    return f'<div class="{classes_produits(b, v)}"{ancre}>{cartes}</div>'
 
 
 def _bloc(b: dict, page: dict, pseudo: str) -> str:
@@ -1340,14 +1397,13 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
                 f'allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe>') if vid else ""
     if t == "produit":
         p = prods.get(b.get("produit"))
-        return f'<div class="produits v-vitrine">{_carte_produit(p, pseudo, d, "vitrine", page.get("_avis"), page)}</div>' if p else ""
+        return f'<div class="{classes_produits(b, "vitrine")}">{_carte_produit(p, pseudo, d, b.get("vue") or "vitrine", page.get("_avis"), page, b.get("bouton") or "")}</div>' if p else ""
     if t == "produits":
         liste = [prods[i] for i in (b.get("ids") or [p["id"] for p in page["produits"]]) if i in prods]
         if not liste:
             return ""
         titre = f'<h2 class="sec">{E(b["titre"])}</h2>' if b.get("titre") else ""
-        v = d["produits_vue"]
-        return f'{titre}<div class="produits v-{v}">{"".join(_carte_produit(p, pseudo, d, v, page.get("_avis"), page) for p in liste)}</div>'
+        return titre + produits_html(liste, b, page, pseudo)
     if t == "capture":
         txt = f'<p>{E(b["texte"])}</p>' if b.get("texte") else ""
         btn = E(b.get("bouton") or "Je m’inscris")
@@ -1534,7 +1590,7 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
         og += f'<meta property="og:url" content="{E(url)}">'
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{E(titre)}</title><meta name="description" content="{E(description)}">{og}<meta name="theme-color" content="{d['fond1'][:7]}">
-{lien}<style>{faces}{_css(d)}{_css_mise_en_page(d)}{_css_format(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
+{lien}<style>{faces}{_css(d)}{_css_mise_en_page(d)}{_css_format(d)}{CSS_BLOCS_PRODUITS}{css_cartes(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
 <body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}{SCRIPT_COMPTE if 'data-fin=' in corps else ''}</body></html>"""
 
 
@@ -1552,6 +1608,70 @@ def badge(page: dict | None = None) -> str:
     if page is not None and not page.get("_marque", True):
         return ""
     return '<div class="marque"><a href="/boutique-gratuite" target="_blank" rel="noopener">Créé avec Virallink · crée la tienne</a></div>'
+
+
+BOITES = (".carte,.ap-carte,.st-post,.un-carte,.un-liste,.ap-conseil,.st-profil,.un-profil,.ca-banniere")
+CADRES_IMAGE = ".ca-img,.mq-img"  # formats où la carte est le cadre de l'image
+
+
+def css_cartes(d: dict) -> str:
+    """Style des cartes choisi par la créatrice, appliqué à tous les formats (vide = celui du modèle)."""
+    r = []
+    tout = f"{BOITES},{CADRES_IMAGE}"
+    ar = {"carre": "0", "doux": "10px", "rond": "22px", "tres": "34px"}.get(d.get("carte_arrondi") or "")
+    if ar:
+        r.append(f"{tout}{{border-radius:{ar}!important}}")
+    coul = d.get("carte_contour_couleur") or "color-mix(in srgb,var(--kt) 28%,transparent)"
+    ep = {"sans": "0", "fin": "1.5px", "epais": "3px"}.get(d.get("carte_contour") or "")
+    if ep:
+        r.append(f"{tout}{{border:{ep} solid {coul}!important}}" if ep != "0" else f"{tout}{{border:0!important}}")
+        r.append(".un-liste .un-ligne{border-color:transparent!important}" if ep != "0" else "")
+    om = {"sans": "none", "douce": "0 8px 24px -10px rgba(0,0,0,.22)", "forte": "0 22px 44px -16px rgba(0,0,0,.45)"}.get(d.get("carte_ombre") or "")
+    if om:
+        r.append(f"{tout}{{box-shadow:{om}!important}}")
+    if d.get("carte_fond") == "transparent":
+        r.append(f"{BOITES}{{background:transparent!important;color:var(--t)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}")
+    elif d.get("carte_fond") == "couleur" and d.get("carte_fond_couleur"):
+        c = d["carte_fond_couleur"]
+        texte = "#1F1A17" if _clair(c[:7]) else "#FFFFFF"  # texte lisible quelle que soit la couleur choisie
+        r.append(f"{BOITES}{{background:{c}!important;color:{texte}!important}}")
+    return "".join(r)
+
+
+CSS_BLOCS_PRODUITS = """
+.produits.g3{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px}.produits.g3 .prod{padding:6px 6px 10px!important}
+.produits.g3 .ptxt b{font-size:.86em}.produits.g3 small{display:none}
+.v-ronds{display:flex!important;gap:14px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:4px 18px 10px}.v-ronds::-webkit-scrollbar{display:none}
+.rond-p{flex:0 0 86px;display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;text-align:center;color:inherit}
+.rp-img{width:80px;height:80px;border-radius:50%;padding:3px;background:conic-gradient(from 210deg,var(--a),var(--b),var(--a));display:block}
+.rp-img img,.rp-img .pas-img{width:100%!important;height:100%!important;border-radius:50%!important;object-fit:cover;border:3px solid var(--f1);display:block;clip-path:none!important;-webkit-mask:none!important;mask:none!important}
+.rond-p b{font-size:12.5px;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.rp-px .px{font-size:12px;margin:0;opacity:.8}.rp-px .px s{display:none}
+.v-fil{display:flex!important;flex-direction:column;gap:18px}
+.fp{display:block!important;padding:0!important;overflow:hidden}
+.fp header{display:flex;align-items:center;gap:10px;padding:12px 14px}.fp header b{font-size:14px}
+.fp-av{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--a);color:var(--ac);font-style:normal;font-weight:700;flex:none}
+.fp-av img{width:100%;height:100%;object-fit:cover}
+.fp .pimg{display:block}.fp .pimg img,.fp .pimg .pas-img{width:100%!important;height:auto!important;aspect-ratio:4/5;object-fit:cover;border-radius:0!important;clip-path:none!important;display:block}
+.fp-pied{display:flex;align-items:center;gap:12px;padding:12px 14px 14px}.fp-pied .ptxt{flex:1;min-width:0;padding:0!important}
+.fp-pied small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.fp-voir{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 14px;border-radius:14px;background:var(--t);color:var(--f1);text-decoration:none;font-weight:700;font-size:13px}
+.fp-voir .px{margin:0;color:inherit;font-size:12px;opacity:.85}.fp-voir .px s{display:none}
+/* Forme et remplissage des images d'un bloc (tous formats) */
+.r-carre :is(.pimg img,.pimg .pas-img,.ap-img,.ca-img,.st-img,.mq-img,.un-visuel){aspect-ratio:1!important;height:auto!important}
+.r-portrait :is(.pimg img,.pimg .pas-img,.ap-img,.ca-img,.st-img,.mq-img,.un-visuel){aspect-ratio:4/5!important;height:auto!important}
+.r-paysage :is(.pimg img,.pimg .pas-img,.ap-img,.ca-img,.st-img,.mq-img,.un-visuel){aspect-ratio:16/10!important;height:auto!important}
+.r-story :is(.pimg img,.pimg .pas-img,.ap-img,.ca-img,.st-img,.mq-img,.un-visuel){aspect-ratio:9/16!important;height:auto!important}
+:is(.r-carre,.r-portrait,.r-paysage,.r-story) :is(.ap-img,.ca-img,.st-img,.mq-img,.un-visuel) img{width:100%!important;height:100%!important;object-fit:cover}
+:is(.r-carre,.r-portrait,.r-paysage,.r-story) :is(.ap-img,.ca-img,.st-img,.mq-img){overflow:hidden;width:100%!important}
+.f-couvrir :is(.pimg img,.ap-img img,.ca-img img,.st-img img,.mq-img img,.un-visuel img){object-fit:cover!important;width:100%!important;height:100%!important}
+.f-contenir :is(.pimg img,.ap-img img,.ca-img img,.st-img img,.mq-img img,.un-visuel img){object-fit:contain!important;background:color-mix(in srgb,var(--a) 6%,var(--k))}
+.f-contenir :is(.ap-img,.ca-img) img{width:100%!important;height:100%!important}
+/* Éléments masqués d'un bloc */
+.sans-desc :is(.ptxt small:not(.pnote),.ap-carte small,.ca-carte small,.st-pied p,.mq-prod small,.un-txt em){display:none!important}
+.sans-prix :is(.px,.fi-prix,.ap-prix,.ca-prix,.mq-prix,.st-voir span,.rp-px){display:none!important}
+.pb{display:block}
+"""
 
 
 def _css_format(d: dict) -> str:
