@@ -405,7 +405,10 @@ def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
         + (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span>{E((p.get("titre") or "?")[:1].upper())}</span>')
         + f'</i><b>{E(p.get("titre") or "")}</b></a>'
         for p in prods][:10]
-    profil = (f'<section class="st-profil" id="profil"><i class="st-pp">{mini}</i><div><b>{E(nom)}</b>'
+    sans_profil = (page.get("design") or {}).get("profil_appli") == "masquer"
+    if sans_profil:
+        ronds = ronds[1:]
+    profil = "" if sans_profil else (f'<section class="st-profil" id="profil"><i class="st-pp">{mini}</i><div><b>{E(nom)}</b>'
               f'<p>{E(page.get("bio") or "")}</p>'
               f'<a class="st-suivre" href="#boutique">Voir la boutique</a></div></section>')
     posts = []
@@ -513,28 +516,50 @@ def rendu_appli_une(page: dict, pseudo: str, apercu: bool = False) -> str:
         lignes.append(f'<a class="un-ligne" href="{_lien_produit(page, pseudo, p)}"><i class="un-ico">{img}</i><span><b>{E(p.get("titre") or "")}</b>'
                       f'<small>{E(sous or prix)}</small></span><span class="un-voir">{E("Gratuit" if prix == "Gratuit" else prix)}</span></a>')
     liste = (f'<h2 class="ap-t" id="boutique">{E(_titre_boutique(page))}</h2><div class="un-liste">{"".join(lignes)}</div>' if lignes else "")
-    profil = (f'<section class="un-profil" id="profil"><i class="un-ico">{icone}</i><div><b>{E(nom)}</b><p>{E(page.get("bio") or "")}</p></div></section>'
+    profil = '<span id="profil"></span>' if (page.get("design") or {}).get("profil_appli") == "masquer" else (f'<section class="un-profil" id="profil"><i class="un-ico">{icone}</i><div><b>{E(nom)}</b><p>{E(page.get("bio") or "")}</p></div></section>'
               if page.get("bio") else '<span id="profil"></span>')
     return f'<div class="ap ca-{_cartes(page)}">{haut}{"".join(grandes)}{liste}{profil}{_bas_appli(page, pseudo, bool(lignes))}'
 
 
 CSS_CARTES = """
-/* Taille des cartes produits (réglage du design) */
-.ca-moyenne .st-img{aspect-ratio:16/10}.ca-moyenne .un-visuel{aspect-ratio:16/10}.ca-moyenne .ap-slide{min-height:230px}
-.ca-compacte .st-fil{gap:10px}.ca-compacte .st-post{display:grid;grid-template-columns:96px 1fr;align-items:center;border-radius:18px}
-.ca-compacte .st-post header{display:none}.ca-compacte .st-img{aspect-ratio:1;height:96px}
-.ca-compacte .st-pied{padding:10px 12px;flex-wrap:wrap;gap:8px}.ca-compacte .st-voir{padding:7px 12px;font-size:12px}
-.ca-compacte .un-carte{display:none}.ca-compacte .ap-hero{display:none}
-.ca-compacte .ap-rail{flex-direction:column;overflow:visible;margin:0;padding:0;gap:10px}
-.ca-compacte .ap-carte{flex:none;display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:4px 12px;text-align:left;padding:10px;border-radius:18px}
-.ca-compacte .ap-carte .ap-img{grid-row:span 2;width:72px;height:72px;margin:0;aspect-ratio:1}.ca-compacte .ap-sac{display:none}
-.ca-compacte .ap-carte .ap-prix{grid-column:3;grid-row:1 / span 2;font-size:1.05em}.ca-compacte .ap-pastille{position:static;grid-column:2;justify-self:start;font-size:11px;padding:3px 8px}
-.ca-deux .st-fil{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ca-deux .st-post header{display:none}
-.ca-deux .st-pied{flex-direction:column;align-items:stretch;padding:10px;gap:8px}.ca-deux .st-pied p{display:none}
-.ca-deux .st-voir{flex-direction:row;justify-content:center;gap:6px;padding:8px 10px;font-size:12px}
-.ca-deux .un-carte{display:inline-block;width:calc(50% - 6px);vertical-align:top;margin:0 0 12px}.ca-deux .un-carte:nth-of-type(odd){margin-right:12px}
-.ca-deux .un-visuel{aspect-ratio:1}.ca-deux .un-txt em{display:none}.ca-deux .un-bas small{display:none}
-.ca-deux .ap-hero{display:none}.ca-deux .ap-rail{display:grid;grid-template-columns:1fr 1fr;overflow:visible;margin:0}.ca-deux .ap-carte{flex:none}
+/* Taille des cartes produits (réglage du design) — préfixe .ap pour passer devant les règles de base */
+.ap .st-pied p,.ap .un-txt em{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.ap .st-pied b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.ap .st-voir{white-space:nowrap}
+/* Moyenne */
+.ap.ca-moyenne .st-img{aspect-ratio:4/3}.ap.ca-moyenne .st-pied p{-webkit-line-clamp:2}
+.ap.ca-moyenne .un-visuel{aspect-ratio:4/3}.ap.ca-moyenne .ap-slide{min-height:240px}
+.ap.ca-moyenne .ap-carte{flex-basis:min(48%,200px)}
+/* Compacte : une ligne par produit */
+.ap.ca-compacte .st-fil{gap:12px}
+.ap.ca-compacte .st-post{display:grid;grid-template-columns:108px minmax(0,1fr);align-items:stretch;border-radius:20px;padding:8px;gap:12px}
+.ap.ca-compacte .st-post header{display:none}
+.ap.ca-compacte .st-img{aspect-ratio:1;width:108px;height:108px;border-radius:14px;overflow:hidden}
+.ap.ca-compacte .st-pied{flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:2px 4px 2px 0}
+.ap.ca-compacte .st-pied>div{width:100%}.ap.ca-compacte .st-pied b{font-size:1em;line-height:1.25}
+.ap.ca-compacte .st-pied p{-webkit-line-clamp:1;font-size:.86em}
+.ap.ca-compacte .st-voir{flex-direction:row;align-items:center;gap:8px;padding:7px 14px;font-size:12.5px;border-radius:999px}
+.ap.ca-compacte .st-voir span{font-size:1.05em}
+.ap.ca-compacte .un-carte,.ap.ca-compacte .ap-hero{display:none}
+.ap.ca-compacte .ap-rail{flex-direction:column;overflow:visible;margin:0;padding:0;gap:10px}
+.ap.ca-compacte .ap-carte{flex:none;display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:2px 14px;text-align:left;padding:8px 14px 8px 8px;border-radius:20px}
+.ap.ca-compacte .ap-carte .ap-img{grid-row:1 / span 2;width:76px;height:76px;margin:0;aspect-ratio:1;border-radius:14px}
+.ap.ca-compacte .ap-sac{display:none}.ap.ca-compacte .ap-carte b{align-self:end;font-size:1em}
+.ap.ca-compacte .ap-carte .ap-prix{grid-column:2;align-self:start;font-size:1em}
+.ap.ca-compacte .ap-pastille{position:static;grid-column:3;grid-row:1 / span 2;font-size:11px;padding:4px 9px}
+/* 2 par ligne */
+.ap.ca-deux .st-fil{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ap.ca-deux .st-post{border-radius:20px;display:flex;flex-direction:column}
+.ap.ca-deux .st-post header{display:none}
+.ap.ca-deux .st-img{aspect-ratio:1}
+.ap.ca-deux .st-pied{flex:1;flex-direction:column;align-items:stretch;justify-content:space-between;padding:10px 12px 12px;gap:10px}
+.ap.ca-deux .st-pied b{font-size:.95em;line-height:1.25}.ap.ca-deux .st-pied p{display:none}
+.ap.ca-deux .st-voir{flex-direction:row;justify-content:space-between;align-items:center;gap:6px;padding:8px 12px;font-size:12px;border-radius:999px}
+.ap.ca-deux .st-voir span{font-size:1.1em}
+.ap.ca-deux .un-carte{display:inline-block;width:calc(50% - 6px);vertical-align:top;margin:0 0 12px}.ap.ca-deux .un-carte:nth-of-type(odd){margin-right:12px}
+.ap.ca-deux .un-visuel{aspect-ratio:1}.ap.ca-deux .un-txt em,.ap.ca-deux .un-bas small{display:none}
+.ap.ca-deux .ap-hero{display:none}.ap.ca-deux .ap-rail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;margin:0;padding:0}
+.ap.ca-deux .ap-carte{flex:none}
 """
 CSS += CSS_CARTES
 

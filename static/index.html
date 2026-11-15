@@ -5770,7 +5770,7 @@ document.addEventListener("click", e => {
 // ---- Thèmes et palettes
 function themeApplique(design, id) {
   const t = BQ.etat.options.themes.find(x => x.id === id); if (!t) return design;
-  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli"];
+  const garde = ["photo_taille", "fond_image", "fond_voile", "animation", "apparition", "produits_vue", "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli"];
   const base = Object.fromEntries(Object.entries(BQ.etat.options.defaut).filter(([k]) => !garde.includes(k)));
   return {...design, ...base, fond2: t.design.fond2 || t.design.fond1, photo_contour: false, ...t.design, theme: id};
 }
@@ -6286,6 +6286,7 @@ function ongletDesign(z) {
       <div class="bt-choix larges">${Object.keys(o.mises_en_page || {}).map(k => opt("mise_en_page", k, `<svg width="60" height="76" viewBox="0 0 60 76" fill="${c7("accent")}">${SCHEMAS_MEP[k]}</svg>`, o.mises_en_page[k])).join("")}</div>
       <p class="aide" style="margin:8px 0 0">${DESC_MEP[d.mise_en_page] || ""}</p>
       ${/^appli/.test(d.mise_en_page || "") ? `<p class="bt-sous-titre">Taille des cartes produits</p>${puces("cartes_appli", {grande: "Grande", moyenne: "Moyenne", compacte: "Compacte", grille: "2 par ligne"})}` : ""}
+      ${["appli_stories", "appli_une"].includes(d.mise_en_page) ? `<p class="bt-sous-titre">Carte de présentation (ta photo + « Voir la boutique »)</p>${puces("profil_appli", {afficher: "Afficher", masquer: "Masquer"})}` : ""}
       <p class="bt-sous-titre">Espace entre les blocs</p>${puces("espacement", {serre: "Serré", normal: "Normal", aere: "Aéré", large: "Très aéré"})}
       <p class="bt-sous-titre">Taille du texte</p>${puces("taille_texte", {s: "Petite", m: "Normale", l: "Grande", xl: "Très grande"})}
       <p class="bt-sous-titre">Largeur de la page sur ordinateur</p>${puces("largeur_page", {etroite: "Étroite", normale: "Normale", large: "Large", pleine: "Très large"})}
@@ -6365,7 +6366,7 @@ function ongletDesign(z) {
     const k = b.dataset.dset, def = o.defaut[k]; let v = b.dataset.v;
     if (typeof def === "number") v = +v;
     d[k] = v; if (!["photo_taille", "rayon", "animation", "produits_vue", "taille_titre", "survol", "bouton_taille", "alignement", "decor",
-      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli"].includes(k)) d.theme = "perso";
+      "mise_en_page", "espacement", "largeur_page", "taille_texte", "cartes_appli", "profil_appli"].includes(k)) d.theme = "perso";
     if (k === "fond_type" && v === "image" && !d.fond_image) toast("Choisis maintenant ton image de fond");
     modifieBoutique(true);
   });
