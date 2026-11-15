@@ -1601,13 +1601,21 @@ def voix_du_projet(p: dict, d: Path, demo: bool = False) -> Path | None:
 
 
 def _sig_sous_titres(p: dict, d: Path, voix_off) -> str:
-    """Empreinte de ce qui est dit : si elle change (autre vidéo, autre voix, autre script), les corrections ne s'appliquent plus."""
+    """Empreinte de ce qui est dit : si elle change (autre vidéo, autre voix, autre texte lu), les corrections ne s'appliquent plus.
+    Espaces et retours à la ligne ignorés : un simple enregistrement du projet ne doit pas faire perdre les corrections."""
     import hashlib
-    parts = [str(p.get("video") or ""), str(p.get("voix_off") or ""), str(p.get("texte_voix") or ""), str(p.get("script") or "")]
-    parts += [str(x.get("video")) + "|" + str(x.get("texte")) for x in p.get("plans") or []]
-    src = d / "sources" / str(p.get("video") or "-")
-    if src.exists() and not p.get("plans"):
-        parts.append(f"{src.stat().st_size}")
+    import voix as _voix
+    net = lambda t: re.sub(r"\s+", " ", str(t or "")).strip()  # noqa: E731
+    parts = []
+    if p.get("plans"):
+        parts += [str(x.get("video")) + "|" + net(x.get("texte")) for x in p["plans"]]
+    else:
+        src = d / "sources" / str(p.get("video") or "-")
+        parts.append(f"{p.get('video')}|{src.stat().st_size if src.exists() else 0}")
+    if voix_off:
+        parts.append(f"voix|{p.get('voix_off')}|{net(p.get('texte_voix') or _voix.texte_du_script(p.get('script') or ''))}")
+    elif not p.get("plans"):
+        parts.append(net(p.get("texte_voix") or _voix.texte_du_script(p.get("script") or "")))
     return hashlib.sha1("§".join(parts).encode("utf-8")).hexdigest()[:16]
 
 
