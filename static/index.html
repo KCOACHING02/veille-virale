@@ -5112,9 +5112,12 @@ function couleursProposees(A) {
 function propositionsDesign(A) {
   const C = couleursProposees(A), M = MAQUETTES.length, L = [];
   for (let tour = 0; tour < M; tour++) C.forEach((c, k) => { const m = (k + tour) % M; L.push({nom: `${MAQUETTES[m].nom} · ${c.nom}`, maq: m, c: c.c}); });
+  // Puis tous les thèmes de l'éditeur (mode avancé), pour retrouver ici les mêmes designs
+  for (const t of BQ.etat.options.themes || []) L.push({nom: `${t.ambiance} · ${t.nom}`, theme: t});
   return L;
 }
 function designProposition(A, p) {
+  if (p.theme) return {...BQ.etat.options.defaut, ...p.theme.design, theme: p.theme.id, apparition: false};
   const base = {...BQ.etat.options.defaut, ...COMMUN_MAQUETTE, ...MAQUETTES[p.maq].d, ...p.c, theme: "perso", apparition: false};
   if (base.fond_type === "degrade" && !p.c.fond2) base.fond2 = base.fond1;
   return base;
