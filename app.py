@@ -3634,8 +3634,12 @@ def _liens_messages(uid: int) -> list[dict]:
 
 def _ig_ouvert(u) -> bool:
     """Connexion Instagram réelle : réservée aux admins (testeurs de l'app Meta) tant que Meta n'a pas validé
-    l'app (App Review) ; INSTAGRAM_OUVERT=1 dans Railway l'ouvre à toutes les abonnées."""
-    return ma.configure() and (est_admin(u) or os.getenv("INSTAGRAM_OUVERT") == "1")
+    l'app (App Review) ; INSTAGRAM_OUVERT=1 dans Railway l'ouvre à toutes les abonnées.
+    INSTAGRAM_TESTEURS (adresses séparées par des virgules) l'ouvre aussi à des comptes précis, comme celui
+    donné aux examinateurs de Meta."""
+    testeurs = {x.strip().lower() for x in os.getenv("INSTAGRAM_TESTEURS", "").split(",") if x.strip()}
+    return ma.configure() and (est_admin(u) or os.getenv("INSTAGRAM_OUVERT") == "1"
+                               or (u.get("email") or "").lower() in testeurs)
 
 
 def _peut_messages(uid: int) -> bool:
