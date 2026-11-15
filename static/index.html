@@ -1283,6 +1283,11 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .bt-bloc.cache{opacity:.55}
 .bt-bloc-tete{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 12px}
 .bt-bloc-tete .ic{width:32px;height:32px;border-radius:9px;background:var(--sunk);display:grid;place-items:center;flex-shrink:0;font-size:16px}
+.bt-poignee{flex:none;width:22px;height:34px;display:grid;place-items:center;color:var(--ink-3);cursor:grab;touch-action:none;margin-left:-6px}
+.bt-poignee svg{width:16px;height:16px}.bt-bloc.glisse{opacity:.9;box-shadow:0 12px 30px -10px rgba(0,0,0,.35);position:relative;z-index:3;transform:scale(1.01)}
+.bt-bloc.glisse .bt-poignee{cursor:grabbing}
+@keyframes eclair{0%{box-shadow:0 0 0 0 var(--accent,#E8456B)}40%{box-shadow:0 0 0 4px var(--accent,#E8456B)}100%{box-shadow:0 0 0 0 transparent}}
+.eclair{animation:eclair 1.4s ease}
 .bt-section{border-style:dashed;background:var(--bg-2,transparent)}.bt-section .res{cursor:default}
 .bt-bloc-tete .res{flex:1;min-width:0;border:0;background:none;text-align:left;cursor:pointer;padding:4px 6px}
 .bt-bloc-tete .res b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -5987,7 +5992,7 @@ function ongletContenu(z) {
       <div class="bt-reseaux">${Object.entries(res).map(([k, v]) => `<div class="bt-res">${svgRes(k)}<input data-r="${k}" value="${esc(v)}" placeholder="${esc(AIDE_RES[k] || "")}" aria-label="${esc(BQ.etat.options.reseaux[k])}"><button class="icone-btn" data-retire-res="${k}" aria-label="Retirer ${esc(BQ.etat.options.reseaux[k])}">✕</button></div>`).join("") || '<p class="aide" style="margin:0">Aucun réseau pour l\'instant.</p>'}</div>
       ${libres.length ? `<div class="bt-ajout-res">${libres.map(k => `<button data-ajout-res="${k}">${svgRes(k)}${esc(BQ.etat.options.reseaux[k])}</button>`).join("")}</div>` : ""}
     </section>
-    <section class="bt-sec"><h3>Ta page</h3><p class="aide">Les blocs, dans l'ordre où ils s'affichent. Touche un bloc pour le modifier.</p>
+    <section class="bt-sec"><h3>Ta page</h3><p class="aide">Les blocs, dans l'ordre où ils s'affichent. Glisse ⠿ pour les déplacer, ou touche un élément dans l'aperçu pour le modifier.</p>
       <div class="bt-blocs">${p.blocs.map((b, i) => blocListe(b) ? blocHTML(b, i) : "").join("") || '<p class="aide">Ta page est vide : ajoute ton premier bloc.</p>'}</div>
       <button class="btn prim" id="bt-ajout-bloc" style="margin-top:12px;width:100%;justify-content:center">+ Ajouter un bloc</button>
     </section>`;
@@ -5996,6 +6001,7 @@ function ongletContenu(z) {
   z.querySelectorAll("[data-retire-res]").forEach(b => b.onclick = () => { delete p.reseaux[b.dataset.retireRes]; modifieBoutique(true); });
   z.querySelectorAll("[data-retire]").forEach(b => b.onclick = () => { p[b.dataset.retire] = ""; modifieBoutique(true); });
   $("#bt-ajout-bloc").onclick = choisirTypeBloc;
+  lieGlisser(z);
   $("#bt-exemple").onchange = async e => { p.exemple = e.target.checked; await api("/api/boutique", {method: "PUT", body: {exemple: p.exemple}}); toast(p.exemple ? "Merci ! Ta boutique peut servir d'exemple" : "Ta boutique n'apparaîtra plus en exemple"); };
   z.querySelectorAll("[data-bloc-action]").forEach(b => b.onclick = e => {
     e.stopPropagation();
@@ -6025,8 +6031,8 @@ function blocHTML(b, i) {
   if (b.type === "section") return sectionHTML(b, i);
   const [ic, nom] = TYPES_BLOCS[b.type] || ["•", b.type], ouvert = BQ.ouvertBloc === b.id;
   const L = BQ.page.blocs, prem = L.findIndex(blocListe), dern = L.length - 1 - [...L].reverse().findIndex(blocListe);
-  return `<div class="bt-bloc ${b.visible === false ? "cache" : ""}">
-    <div class="bt-bloc-tete"><span class="ic">${ic}</span>
+  return `<div class="bt-bloc ${b.visible === false ? "cache" : ""}" data-id="${esc(b.id)}">
+    <div class="bt-bloc-tete">${POIGNEE(i)}<span class="ic">${ic}</span>
       <button class="res" data-bloc-action="ouvrir" data-i="${i}" aria-expanded="${ouvert}"><b>${esc(resumeBloc(b))}${b.en_avant ? " ✨" : ""}</b><small>${nom}${b.type === "lien" && b.produit && BQ.page.produits.some(x => x.id === b.produit) ? " · 💳 paiement" : b.type === "lien" && b.url ? " · " + esc(b.url) : ""}</small></button>
       <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === prem ? "disabled" : ""}>↑</button>
       <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === dern ? "disabled" : ""}>↓</button>
@@ -6036,14 +6042,57 @@ function blocHTML(b, i) {
       <button class="icone-btn" data-bloc-action="suppr" data-i="${i}" aria-label="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>${ouvert ? `<div class="bt-bloc-corps">${corpsBloc(b, i)}</div>` : ""}</div>`;
 }
+const POIGNEE = i => `<span class="bt-poignee" data-poignee="${i}" title="Glisse pour déplacer" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>`;
+// Glisser-déposer des blocs dans la liste (souris et doigt) ; les blocs d'un autre format, absents de la liste, gardent leur place
+function lieGlisser(z) {
+  z.querySelectorAll("[data-poignee]").forEach(h => h.onpointerdown = e => {
+    e.preventDefault();
+    const el = h.closest(".bt-bloc"), box = el.parentElement;
+    el.classList.add("glisse"); let defile = 0;  // écoute sur window : déplacer l'élément dans le DOM ferait perdre la capture
+    const bouge = ev => {
+      const autres = [...box.children].filter(x => x !== el && x.dataset.id);
+      const apres = autres.find(x => ev.clientY < x.getBoundingClientRect().top + x.offsetHeight / 2);
+      if ((apres || null) !== el.nextElementSibling) box.insertBefore(el, apres || null);
+      defile = ev.clientY < 90 ? -14 : ev.clientY > innerHeight - 110 ? 14 : 0;
+    };
+    const tic = setInterval(() => { if (defile) scrollBy(0, defile); }, 16);
+    const fin = () => {
+      clearInterval(tic); removeEventListener("pointermove", bouge); removeEventListener("pointerup", fin); removeEventListener("pointercancel", fin);
+      el.classList.remove("glisse");
+      const L = BQ.page.blocs, ordre = [...box.children].map(x => x.dataset.id).filter(Boolean);
+      const places = L.map((b, i) => blocListe(b) ? i : -1).filter(i => i >= 0), parId = Object.fromEntries(L.map(b => [b.id, b]));
+      const avant = L.map(b => b.id).join();
+      places.forEach((pos, n) => { L[pos] = parId[ordre[n]]; });
+      if (L.map(b => b.id).join() !== avant) modifieBoutique(true); else renduOnglet();
+    };
+    addEventListener("pointermove", bouge); addEventListener("pointerup", fin); addEventListener("pointercancel", fin);
+  });
+}
+// Toucher un élément dans l'aperçu : il s'ouvre dans l'éditeur
+function ouvreDepuisApercu(id) {
+  if (!BQ.page || !$("#bt-panneau")) return;
+  const plein = $("#bt-plein")?.classList.contains("ouvert");
+  if (plein) $("#bt-fermer-ap")?.click();  // ferme l'aperçu plein écran (téléphone) ; le retour d'historique replace la page, d'où le délai plus bas
+  if (BQ.onglet !== "contenu") { BQ.onglet = "contenu"; $$("[data-onglet]").forEach(x => x.setAttribute("aria-pressed", x.dataset.onglet === "contenu")); }
+  const b = BQ.page.blocs.find(x => x.id === id);
+  if (b && b.type !== "section") BQ.ouvertBloc = id;
+  renduOnglet();
+  const cible = id === "profil" ? $(".bt-profil")?.closest(".bt-sec") : $(`.bt-bloc[data-id="${CSS.escape(id)}"]`);
+  if (!cible) return;
+  setTimeout(() => {
+    cible.scrollIntoView({behavior: "smooth", block: "start"});
+    cible.classList.remove("eclair"); void cible.offsetWidth; cible.classList.add("eclair");
+  }, plein ? 350 : 0);
+}
+window.addEventListener("message", e => { if (e.data?.vv === "bloc" && typeof e.data.id === "string") ouvreDepuisApercu(e.data.id); });
 const ICO_SECTIONS = {ap_hero: "🎠", ap_ronds: "⭕", st_ronds: "⭕", st_profil: "🪪", ca_recherche: "🔎", ca_banniere: "🏷️",
   un_grandes: "🗞️", un_profil: "🪪", mq_stories: "🎞️", mq_manif: "✒️", contact: "💬"};
 // Une partie du modèle (bannière, ronds, « Une question ? »…) : se déplace et se masque, rien à remplir.
 function sectionHTML(b, i) {
   const nom = ((sectionsFormat() || []).find(([k]) => k === b.section) || [])[1] || "Partie du modèle";
   const L = BQ.page.blocs, prem = L.findIndex(blocListe), dern = L.length - 1 - [...L].reverse().findIndex(blocListe);
-  return `<div class="bt-bloc bt-section ${b.visible === false ? "cache" : ""}">
-    <div class="bt-bloc-tete"><span class="ic">${ICO_SECTIONS[b.section] || "▫️"}</span>
+  return `<div class="bt-bloc bt-section ${b.visible === false ? "cache" : ""}" data-id="${esc(b.id)}">
+    <div class="bt-bloc-tete">${POIGNEE(i)}<span class="ic">${ICO_SECTIONS[b.section] || "▫️"}</span>
       <span class="res"><b>${esc(nom)}</b><small>Partie du modèle</small></span>
       <button class="icone-btn" data-bloc-action="haut" data-i="${i}" aria-label="Monter" ${i === prem ? "disabled" : ""}>↑</button>
       <button class="icone-btn" data-bloc-action="bas" data-i="${i}" aria-label="Descendre" ${i === dern ? "disabled" : ""}>↓</button>

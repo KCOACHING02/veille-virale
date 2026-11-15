@@ -11,6 +11,8 @@ Les autres blocs (texte, capture d'e-mails, témoignages, FAQ, liens…) gardent
 
 from __future__ import annotations
 
+import re
+
 import boutique as bq
 from boutique import E
 
@@ -78,6 +80,10 @@ def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, gr
     apres = [k for k in ordre[i + 1:] if k not in refs and k != "contact"]
     fin = ["contact"] if "contact" in ordre and "contact" not in refs else []
 
+    def marque(html: str, b: dict | None) -> str:  # aperçu : l'élément s'ouvre dans l'éditeur quand on le touche
+        r = bq.repere(page, b)
+        return re.sub(r"^(\s*<[a-zA-Z0-9]+)", lambda m: m.group(1) + r, html, count=1) if r and html else html
+
     # Liste des éléments à rendre : ("section", clé) / ("produits", bloc ou None) / ("bloc", bloc)
     if not refs:
         elems = [("produits", None)] + [("bloc", b) for b in blocs if b.get("type") not in DEJA_DANS_LA_PAGE]
@@ -85,7 +91,7 @@ def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, gr
         elems = []
         for b in blocs:
             t = b.get("type")
-            elems.append(("section", b.get("section")) if t == "section" else ("produits", b) if t in ("produits", "produit") else ("bloc", b))
+            elems.append(("section", b) if t == "section" else ("produits", b) if t in ("produits", "produit") else ("bloc", b))
         if not any(e[0] == "produits" for e in elems):
             elems.insert(0, ("produits", None))
     out = [sections.get(k, "") for k in avant]
@@ -101,7 +107,7 @@ def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, gr
     for genre, x in elems:
         if genre == "section":
             vide()
-            out.append(sections.get(x, ""))
+            out.append(marque(sections.get(x.get("section"), ""), x))
         elif genre == "produits":
             vide()
             if x is None:
@@ -110,11 +116,14 @@ def _assemble(page: dict, pseudo: str, mep: str, sections: dict, rendu_prods, gr
                 titre = x.get("titre") or ("" if x.get("type") == "produit" else "La boutique")
                 liste = _prods_du_bloc(page, x)
             if x and x.get("vue") and liste:  # présentation choisie pour ce bloc : la même dans tous les formats
-                out.append(generique(titre, bq.produits_html(liste, x, page, pseudo), etat["premier"]))
+                h = generique(titre, bq.produits_html(liste, x, page, pseudo), etat["premier"])
             elif x and any(x.get(k) for k in REGLAGES_PRODUITS):  # présentation du modèle, images et éléments réglés
-                out.append(f'<div class="pb {bq.classes_produits(x, "", False)}">{rendu_prods(liste, titre, etat["premier"])}</div>')
+                h = f'<div class="pb {bq.classes_produits(x, "", False)}">{rendu_prods(liste, titre, etat["premier"])}</div>'
             else:
-                out.append(rendu_prods(liste, titre, etat["premier"]))
+                h = rendu_prods(liste, titre, etat["premier"])
+            if x and bq.repere(page, x):  # aperçu : une enveloppe pour pouvoir toucher tout le bloc (titre compris)
+                h = f'<div class="pb"{bq.repere(page, x)}>{h}</div>'
+            out.append(h)
             etat["premier"] = False
             if not etat["apres"]:
                 out.extend(sections.get(k, "") for k in apres)

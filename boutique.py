@@ -1503,6 +1503,11 @@ LARGEUR_DEFAUT = {  # largeur d'un bloc quand la créatrice n'en a pas choisi, s
 }
 
 
+def repere(page: dict, b: dict | None) -> str:
+    """Dans l'aperçu de l'éditeur seulement : l'identifiant du bloc, pour l'ouvrir en touchant la page."""
+    return f' data-bloc="{E(str(b["id"]))}"' if page.get("_apercu") and b and b.get("id") else ""
+
+
 def _bloc_enveloppe(b: dict, page: dict, pseudo: str) -> str:
     """Chaque bloc dans sa case : largeur (côte à côte), hauteur (bento), couleurs, police, taille et alignement propres."""
     contenu = _bloc(b, page, pseudo)
@@ -1534,7 +1539,7 @@ def _bloc_enveloppe(b: dict, page: dict, pseudo: str) -> str:
         fam = POLICES[st["police"]][0]
         v.append(f"--tf:'{fam}',Georgia,serif;--tx:'{fam}',system-ui,sans-serif;font-family:'{fam}',system-ui,sans-serif")
     style = f' style="{";".join(v)}"' if v else ""
-    return f'<div class="{" ".join(cls)}"{style}>{contenu}</div>'
+    return f'<div class="{" ".join(cls)}"{style}{repere(page, b)}>{contenu}</div>'
 
 
 SCRIPT_COMPTE = """
@@ -1561,8 +1566,13 @@ document.querySelectorAll("[data-capture]").forEach(f => f.addEventListener("sub
 }));
 </script>"""
 SCRIPT_APERCU = """
+<style>[data-bloc],.tete,.ap-haut,.un-haut,.mq-haut{cursor:pointer}
+@media (hover:hover){[data-bloc]:hover{outline:2px dashed color-mix(in srgb,var(--t) 45%,transparent);outline-offset:4px;border-radius:10px}}</style>
 <script>
-document.addEventListener("click", e => { const a = e.target.closest("a"); if (a) { e.preventDefault(); } });
+document.addEventListener("click", e => { const a = e.target.closest("a"); if (a) { e.preventDefault(); }
+  // Toucher un élément de l'aperçu l'ouvre dans l'éditeur
+  const b = e.target.closest("[data-bloc]"), t = !b && e.target.closest(".tete,.ap-haut,.un-haut,.mq-haut");
+  if ((b || t) && parent !== window) parent.postMessage({vv: "bloc", id: b ? b.dataset.bloc : "profil"}, "*"); });
 document.addEventListener("submit", e => e.preventDefault());
 </script>"""
 
@@ -1683,6 +1693,8 @@ def _css_format(d: dict) -> str:
 
 def rendu_page(page: dict, pseudo: str, apercu: bool = False, url: str = "") -> str:
     mp = page["design"].get("mise_en_page")
+    if apercu:
+        page = {**page, "_apercu": True}
     import boutique_formats as bf
     if mp in bf.RENDUS:  # boutique façon application (4 modèles) ou façon site de marque
         corps = bf.RENDUS[mp](page, pseudo, apercu)
