@@ -43,11 +43,31 @@ def _adresse_publique(url: str) -> None:
             raise LienInvalide("Ce lien n'est pas accessible.")
 
 
+# Si le site refuse un navigateur (protection anti-robots, ex. Beacons, Shopify), on se présente comme l'aperçu de lien
+# d'un réseau social : ces sites laissent passer ces lecteurs pour afficher la vignette du lien (titre, image, prix).
+APERCUS_RESEAUX = ("facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+                   "Mozilla/5.0 (compatible; Twitterbot/1.0)", "WhatsApp/2.23.20.0")
+
+
 def _telecharge(url: str, limite: int, accepte: tuple[str, ...]) -> tuple[bytes, str, str]:
+    derniere = None
+    for ua in (None, *APERCUS_RESEAUX):
+        try:
+            return _telecharge_avec(url, limite, accepte, ua)
+        except LienInvalide as e:
+            derniere = e
+            if "code 4" not in str(e) and "code 5" not in str(e):
+                raise
+    raise derniere
+
+
+def _telecharge_avec(url: str, limite: int, accepte: tuple[str, ...], ua: str | None) -> tuple[bytes, str, str]:
     """Suit les redirections une par une en revérifiant chaque adresse ; renvoie (contenu, type, url finale)."""
     for _ in range(6):
         _adresse_publique(url)
-        entetes = {**ENTETES, "Accept": "image/jpeg,image/png,image/webp,image/*;q=0.5"} if accepte == ("image/",) else ENTETES
+        entetes = {**ENTETES, "Accept": "image/jpeg,image/png,image/webp,image/*;q=0.5"} if accepte == ("image/",) else dict(ENTETES)
+        if ua:
+            entetes["User-Agent"] = ua
         r = requests.get(url, headers=entetes, timeout=12, stream=True, allow_redirects=False)
         if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("Location"):
             url = urljoin(url, r.headers["Location"])
@@ -55,7 +75,7 @@ def _telecharge(url: str, limite: int, accepte: tuple[str, ...]) -> tuple[bytes,
             continue
         if r.status_code >= 400:
             r.close()
-            raise LienInvalide(f"Le site a refusé la lecture de la page (code {r.status_code}). Remplis les informations à la main.")
+            raise LienInvalide(f"Ce site bloque la lecture automatique de ses pages (code {r.status_code}). Remplis le nom, l'image et le prix à la main : ton lien d'affiliation reste bien enregistré.")
         typ = r.headers.get("Content-Type", "").split(";")[0].strip().lower()
         if accepte and not any(typ.startswith(a) for a in accepte):
             r.close()
