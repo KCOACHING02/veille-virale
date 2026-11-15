@@ -1467,6 +1467,8 @@ html.sans-defilement .rail,html.sans-defilement .bt-flottant,html.sans-defilemen
 .as-coul{width:40px;height:40px;border-radius:50%;border:2px solid var(--line,#0002);padding:0;cursor:pointer;background:linear-gradient(135deg,var(--f) 0 50%,var(--f2) 50% 100%);position:relative;flex:none}
 .as-coul i{position:absolute;right:-1px;bottom:-1px;width:16px;height:16px;border-radius:50%;background:var(--b);border:2px solid var(--surface,#fff)}
 .as-coul[aria-pressed="true"]{outline:3px solid var(--glow,#e8657f);outline-offset:2px}
+.as-coul-theme{background:var(--sunk);font-weight:700;font-size:13px;color:var(--ink)}
+.as-ambiances{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px}.as-ambiances .puce{flex:none}
 .as-coul.logo::after{content:"★";position:absolute;top:-6px;left:-4px;font-size:12px;color:var(--glow,#e8657f)}
 .as-prop{display:flex;flex-direction:column;gap:6px;align-items:stretch;background:none;border:2px solid transparent;border-radius:16px;padding:6px;cursor:pointer;font:inherit;font-size:13px;color:var(--ink);text-align:center}
 .as-prop[aria-pressed=true]{border-color:var(--ink)}
@@ -5119,12 +5121,21 @@ function couleursProposees(A) {
     C.push({nom: t.nom.toLowerCase(), c}); }
   return C;
 }
-// Design choisi en deux gestes : un style (maquette) puis des couleurs
+// Design choisi en deux gestes : un thème de l'éditeur (par ambiance, comme en mode avancé) puis, si on veut, d'autres couleurs
+const AMBIANCES_ASSIST = ["Appli", "Marque", "Classique", "Vibrant", "Cosy", "Audacieux", "Créatif", "Bento", "Éditorial"];
+const themesAssist = amb => (BQ.etat.options.themes || []).filter(t => t.ambiance === amb);
+function designTheme(A, t, coul) {
+  const C = couleursProposees(A), d = {...BQ.etat.options.defaut, ...t.design, theme: t.id, apparition: false};
+  if (coul != null && C[coul]) { Object.assign(d, C[coul].c, {theme: "perso"}); if (d.fond_type === "degrade" && !C[coul].c.fond2) d.fond2 = d.fond1; }
+  return d;
+}
 function designChoisi(A) {
-  const C = couleursProposees(A);
-  if (A.maq == null || !MAQUETTES[A.maq]) A.maq = 0;
-  if (A.coul == null || !C[A.coul]) A.coul = 0;
-  return designProposition(A, {maq: A.maq, c: C[A.coul].c});
+  const tous = BQ.etat.options.themes || [];
+  if (!A.amb || !themesAssist(A.amb).length) A.amb = AMBIANCES_ASSIST.find(a => themesAssist(a).length) || "Classique";
+  if (!A.themeId || !tous.some(t => t.id === A.themeId)) A.themeId = themesAssist(A.amb)[0]?.id;
+  const t = tous.find(x => x.id === A.themeId);
+  if (A.coul === undefined) A.coul = null;  // couleurs du modèle, celles du logo sont proposées en premier (★)
+  return t ? designTheme(A, t, A.coul) : {...BQ.etat.options.defaut};
 }
 function designProposition(A, p) {
   const base = {...BQ.etat.options.defaut, ...COMMUN_MAQUETTE, ...MAQUETTES[p.maq].d, ...p.c, theme: "perso", apparition: false};
@@ -5213,14 +5224,17 @@ function etapesBoutique(A) {
       corps: () => `<div class="champ"><label for="as-ig">Ton Instagram</label><div class="bt-adresse"><span>@</span><input id="as-ig" data-res="instagram" value="${esc(A.reseaux.instagram)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>
         <div class="champ"><label for="as-tt">Ton TikTok</label><div class="bt-adresse"><span>@</span><input id="as-tt" data-res="tiktok" value="${esc(A.reseaux.tiktok)}" autocapitalize="off" spellcheck="false" placeholder="ton_compte"></div></div>`},
     {nom: "Ton design", q: "Choisis le design de ta boutique", fin: true, propositions: true,
-      corps: () => { const C = couleursProposees(A); designChoisi(A);
-        return `<p class="aide" style="margin-top:-6px">${A.photo ? "Choisis un style, puis tes couleurs. L'aperçu montre ta vraie boutique."
+      corps: () => { const C = couleursProposees(A); designChoisi(A); const T = themesAssist(A.amb), voir = A.themesVus || 9;
+        return `<p class="aide" style="margin-top:-6px">${A.photo ? "Choisis un modèle, puis garde ses couleurs ou prends les tiennes. L'aperçu montre ta vraie boutique."
             : `Ajoute ton logo pour qu'il apparaisse et que des couleurs s'accordent avec lui : <label class="lien" style="cursor:pointer">ajouter mon logo<input type="file" accept="image/*" id="as-logo-design" hidden></label>`}</p>
-          <p class="as-titre-choix">1. Ton style</p>
-          <div class="as-props as-styles">${MAQUETTES.map((m, k) => `<button type="button" class="as-prop" data-maq="${k}" aria-pressed="${A.maq === k}"><div class="mini"><iframe tabindex="-1" title="${esc(m.nom)}"></iframe></div><span>${A.maq === k ? "✓ " : ""}${esc(m.nom)}</span></button>`).join("")}</div>
-          <p class="as-titre-choix">2. Tes couleurs <small class="aide">${esc(C[A.coul]?.nom || "")}</small></p>
-          <div class="as-couleurs">${C.map((x, k) => `<button type="button" class="as-coul${x.logo ? " logo" : ""}" data-coul="${k}" aria-pressed="${A.coul === k}" title="${esc(x.nom)}" aria-label="${esc(x.nom)}"
-              style="--f:${esc(x.c.fond1 || "#fff")};--f2:${esc(x.c.fond2 || x.c.fond1 || "#fff")};--b:${esc(x.c.bouton_fond || x.c.accent || "#000")};--t:${esc(x.c.texte || "#000")}"><i></i></button>`).join("")}</div>
+          <p class="as-titre-choix">1. Ton modèle</p>
+          <div class="as-ambiances">${AMBIANCES_ASSIST.filter(a => themesAssist(a).length).map(a => `<button type="button" class="puce" data-amb="${esc(a)}" aria-pressed="${A.amb === a}">${esc(a)}</button>`).join("")}</div>
+          <div class="as-props as-styles">${T.slice(0, voir).map(t => `<button type="button" class="as-prop" data-th="${esc(t.id)}" aria-pressed="${A.themeId === t.id}"><div class="mini"><iframe tabindex="-1" title="${esc(t.nom)}"></iframe></div><span>${A.themeId === t.id ? "✓ " : ""}${esc(t.nom)}</span></button>`).join("")}</div>
+          ${T.length > voir ? `<p style="text-align:center"><button type="button" class="btn petit" id="as-plus-themes">Voir ${T.length - voir} autres</button></p>` : ""}
+          <p class="as-titre-choix">2. Tes couleurs <small class="aide">${A.coul == null ? "celles du modèle" : esc(C[A.coul]?.nom || "")}</small></p>
+          <div class="as-couleurs"><button type="button" class="as-coul as-coul-theme" data-coul="-1" aria-pressed="${A.coul == null}" title="Couleurs du modèle" aria-label="Couleurs du modèle">Aa</button>
+            ${C.map((x, k) => `<button type="button" class="as-coul${x.logo ? " logo" : ""}" data-coul="${k}" aria-pressed="${A.coul === k}" title="${esc(x.nom)}" aria-label="${esc(x.nom)}"
+              style="--f:${esc(x.c.fond1 || "#fff")};--f2:${esc(x.c.fond2 || x.c.fond1 || "#fff")};--b:${esc(x.c.bouton_fond || x.c.accent || "#000")}"><i></i></button>`).join("")}</div>
           ${A.relance ? '<p class="aide" style="margin-top:12px">Tes blocs et ton design actuels seront remplacés. Tes produits, tes inscrites et tes ventes ne bougent pas. Tu pourras annuler juste après.</p>' : ""}`; }},
   ];
   const par = cle => E.find(e => e[cle]);
@@ -5450,7 +5464,7 @@ function renduAssistantBoutique(el) {
   $("#as-photo input") && ($("#as-photo input").onchange = async ev => {
     const f = ev.target.files[0]; if (!f) return;
     $("#as-photo").innerHTML = '<span class="spin"></span>';
-    try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); A.coul = 0; A.design = null;
+    try { const r = await envoieImageBoutique(f, "photo"); A.photo = r.nom; A.palettes = r.palettes; A.photoUrl = URL.createObjectURL(f); A.coul = null; A.design = null;
       if (BQ.etat.pseudo) { await api("/api/boutique", {method: "PUT", body: {photo: r.nom}}); if (BQ.page) BQ.page.photo = r.nom; } }
     catch (er) { toast(er.message); }
     rendu();
@@ -5541,15 +5555,17 @@ function renduAssistantBoutique(el) {
     A.design = designChoisi(A);
     // Logo repris d'une boutique existante : on retrouve ses couleurs pour les premières propositions
     if (A.photo && !A.palettes && !A.palettesDemandees) { A.palettesDemandees = true;
-      api("/api/boutique/palettes").then(r => { if (r.palettes?.length) { A.palettes = r.palettes; A.coul = 0; A.design = null; rendu(); } }).catch(() => {}); }
-    const C = couleursProposees(A);
-    $$("[data-maq]").forEach(async b => { const k = +b.dataset.maq;
+      api("/api/boutique/palettes").then(r => { if (r.palettes?.length) { A.palettes = r.palettes; A.design = null; rendu(); } }).catch(() => {}); }
+    const tous = BQ.etat.options.themes || [];
+    $$("[data-th]").forEach(async b => { const t = tous.find(x => x.id === b.dataset.th); if (!t) return;
       const mini = b.querySelector(".mini"), fr = b.querySelector("iframe"); fr.style.transform = `scale(${mini.clientWidth / 390})`;
-      const h = await htmlApercu({...contenuAssistant(A), design: designProposition(A, {maq: k, c: C[A.coul].c})}); const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
-      b.onclick = () => { A.maq = k; A.design = designChoisi(A); gardeAssist(A); rendu(); }; });
-    $$("[data-coul]").forEach(b => b.onclick = () => { A.coul = +b.dataset.coul; A.design = designChoisi(A); gardeAssist(A); rendu(); });
+      const h = await htmlApercu({...contenuAssistant(A), design: designTheme(A, t, A.coul)}); const f = b.querySelector("iframe"); if (f) f.srcdoc = h;
+      b.onclick = () => { A.themeId = t.id; A.design = designChoisi(A); gardeAssist(A); rendu(); }; });
+    $$("[data-amb]").forEach(b => b.onclick = () => { A.amb = b.dataset.amb; A.themeId = themesAssist(A.amb)[0]?.id; A.themesVus = 9; A.design = designChoisi(A); gardeAssist(A); rendu(); });
+    $("#as-plus-themes")?.addEventListener("click", () => { A.themesVus = (A.themesVus || 9) + 9; rendu(); });
+    $$("[data-coul]").forEach(b => b.onclick = () => { const k = +b.dataset.coul; A.coul = k < 0 ? null : k; A.design = designChoisi(A); gardeAssist(A); rendu(); });
     $("#as-logo-design")?.addEventListener("change", async ev => { const f = ev.target.files[0]; if (!f) return;
-      try { const r = await envoieImageBoutique(f, "photo"); Object.assign(A, {photo: r.nom, palettes: r.palettes, coul: 0, design: null});
+      try { const r = await envoieImageBoutique(f, "photo"); Object.assign(A, {photo: r.nom, palettes: r.palettes, coul: null, design: null});
         if (BQ.etat.pseudo) { await api("/api/boutique", {method: "PUT", body: {photo: r.nom}}); if (BQ.page) BQ.page.photo = r.nom; }
         toast("Logo ajouté ✓ Voici les propositions à ses couleurs"); rendu(); } catch (er) { toast(er.message); } });
     apercuAssistant(true);
@@ -5634,7 +5650,7 @@ async function litInstagram(A, rendu, aller) {
   if (code === 400) { toast("Ce nom de compte n'est pas valide : vérifie-le", {duree: 4500}); return rendu(); }
   if (r?.trouve) {
     Object.assign(A, {igOk: true, nom: r.nom || A.nom, bio: r.bio || "", bioAuto: false, photo: r.photo || A.photo, photoUrl: r.photo ? "" : A.photoUrl,
-      lienBio: r.lien ? {url: r.lien, titre: r.lien_titre, garde: true} : null, coul: 0, design: null});
+      lienBio: r.lien ? {url: r.lien, titre: r.lien_titre, garde: true} : null, coul: null, design: null});
     if (r.palettes?.length) A.palettes = r.palettes;
     A.reseaux.instagram = r.compte; A.liens = liensBio(A);
     if (r.pseudo && !BQ.etat.pseudo) { A.pseudo = r.pseudo; A.pseudoIg = true; A.pseudoTouche = false; }
