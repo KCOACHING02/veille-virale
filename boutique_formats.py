@@ -401,7 +401,7 @@ def rendu_appli_stories(page: dict, pseudo: str, apercu: bool = False) -> str:
     photo = page.get("photo")
     mini = (f'<img src="{bq._img(pseudo, photo)}" alt="">' if photo else f'<span>{E(nom[:1].upper())}</span>')
     ronds = [f'<a class="st-rond" href="#profil"><i>{mini}</i><b>À propos</b></a>'] + [
-        f'<a class="st-rond" href="#p-{E(p["id"])}"><i>'
+        f'<a class="st-rond" href="{_lien_produit(page, pseudo, p)}"><i>'
         + (f'<img src="{bq._img(pseudo, p["image"])}" alt="" loading="lazy">' if p.get("image") else f'<span>{E((p.get("titre") or "?")[:1].upper())}</span>')
         + f'</i><b>{E(p.get("titre") or "")}</b></a>'
         for p in prods][:10]
@@ -571,7 +571,7 @@ body[class*="mp-appli"] .page{max-width:600px;padding:18px 16px 120px}
 body[class*="mp-appli"] .marque{margin-bottom:10px}
 /* ===== Appli Stories ===== */
 .st-ronds{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 18px;padding:2px 16px 6px}.st-ronds::-webkit-scrollbar{display:none}
-.st-rond{flex:none;width:76px;display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none}
+.st-rond{flex:none;width:76px;display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:inherit;cursor:pointer;position:relative;z-index:1}
 .st-rond i{width:72px;height:72px;border-radius:50%;padding:3px;background:conic-gradient(from 200deg,var(--a),var(--b),var(--a));display:grid}
 .st-rond i>*{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid var(--f1);background:var(--k);display:grid;place-items:center;font:700 22px var(--tf)}
 .st-rond b{font-size:12px;font-weight:600;max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
