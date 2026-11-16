@@ -41,7 +41,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, Response, abort, g, has_request_context, jsonify, redirect, request, send_file, send_from_directory, session
+from flask import Flask, Response, abort, g, has_request_context, jsonify, make_response, redirect, request, send_file, send_from_directory, session
 
 import abonnements as ab
 import emails
@@ -563,6 +563,10 @@ def accueil():
     if ab.get(session.get("uid", 0)):
         return _page("index.html")
     rep = _page("accueil.html")
+    if os.getenv("META_VERIFICATION_DOMAINE"):  # vérification de virallink.fr dans le portefeuille Meta (balise dans <head>)
+        balise = f'<meta name="facebook-domain-verification" content="{html.escape(os.environ["META_VERIFICATION_DOMAINE"].strip())}">'
+        rep = make_response(rep.get_data(as_text=True).replace("<head>", "<head>" + balise, 1))
+        rep.headers["Cache-Control"] = "no-cache"
     code = (request.args.get("parrain") or "").strip().lower()
     if code and _re.fullmatch(r"[a-z0-9]{3,20}", code):
         rep.set_cookie("vv_parrain", code, max_age=60 * 86400, samesite="Lax", secure=request.is_secure)
@@ -2097,6 +2101,15 @@ def boutique_image(pseudo, nom):
     return send_from_directory(bq.dossier(uid) / "images", nom, max_age=30 * 86400)
 
 
+@app.post("/@<pseudo>/l/<bid>")
+def boutique_clic_compte(pseudo, bid):
+    """Clic sur un lien externe : la page mène directement au site, le navigateur prévient ici pour la statistique."""
+    uid, page = _vitrine(pseudo)
+    if any(x.get("id") == bid and x.get("type") == "lien" for x in page["blocs"]) and session.get("uid") != bq.proprio(uid):
+        bq.compte(uid, "clics", bid)
+    return "", 204
+
+
 @app.get("/@<pseudo>/l/<bid>")
 def boutique_clic(pseudo, bid):
     uid, page = _vitrine(pseudo)
@@ -2148,15 +2161,17 @@ def boutique_produit(pseudo, pid):
     return _avec_cookie(rep, pseudo)
 
 
-@app.get("/@<pseudo>/p/<pid>/ouvrir")
+@app.route("/@<pseudo>/p/<pid>/ouvrir", methods=["GET", "POST"])
 def boutique_produit_lien(pseudo, pid):
+    """GET : ancien lien (redirection). POST : clic compté, la page mène déjà directement au site."""
     uid, page = _vitrine(pseudo)
     p = _produit(page, pid)
     u = bq.url_sure(p.get("lien"))
     if not u or (p.get("prix") and not p.get("externe")):
         abort(404)
-    bq.compte(uid, "clics", "p-" + pid)
-    return redirect(u, 302)
+    if session.get("uid") != bq.proprio(uid):
+        bq.compte(uid, "clics", "p-" + pid)
+    return ("", 204) if request.method == "POST" else redirect(u, 302)
 
 
 def _email_valide(e: str) -> bool:

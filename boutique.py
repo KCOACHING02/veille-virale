@@ -31,6 +31,7 @@ import abonnements as ab
 from espace import DATA
 
 E = html.escape
+CONTACT = os.getenv("EMAIL_CONTACT", "contact@virallink.fr")  # adresse des signalements (pied des boutiques)
 CSS_COMMUN = (Path(__file__).resolve().parent / "static" / "boutique.css").read_text(encoding="utf-8")
 VERROUS: dict[int, threading.Lock] = {}
 _v = threading.Lock()
@@ -1108,6 +1109,9 @@ h1{{font:400 var(--tt)/1.08 var(--tf);margin:0 0 8px;letter-spacing:-.01em;{'tex
 .capture .ok{{font-weight:600;margin:0}}
 .kit-lien{{display:flex;justify-content:space-between;align-items:center;text-decoration:none}}
 .kit-lien b{{font:400 calc(var(--tt) * .55)/1.15 var(--tf)}}
+.pied-legal{{margin:18px auto 6px;max-width:340px;text-align:center;font-size:11px;line-height:1.6;opacity:.6}}
+.pied-legal a{{color:inherit}}
+.sur-photo .pied-legal{{background:var(--k);color:var(--kt);border-radius:10px;padding:6px 10px;opacity:.85}}
 .marque{{display:flex;justify-content:center;margin:38px 0 8px}}
 .marque a{{display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:2px 8px;font-size:12.5px;line-height:1.35;text-decoration:none;max-width:250px;
   background:var(--k);color:var(--kt);border-radius:22px;padding:9px 18px;box-shadow:0 8px 22px -12px rgba(0,0,0,.4);transition:transform .15s}}
@@ -1425,7 +1429,9 @@ def _bloc(b: dict, page: dict, pseudo: str) -> str:
         u = url_sure(b.get("url"))
         if not u:
             return ""
-        return (f'<a class="{cls}" href="/@{pseudo}/l/{b["id"]}" data-url="{E(u)}" target="_blank" rel="noopener">'
+        # lien direct vers le site (pas de redirection par Virallink, que les robots d'Instagram prennent pour un masquage) ;
+        # le clic est compté à part (data-clic, SCRIPT_PUBLIC)
+        return (f'<a class="{cls}" href="{E(u)}" data-clic="/@{pseudo}/l/{b["id"]}" target="_blank" rel="noopener">'
                 f'{vig}<span>{E(b.get("titre") or u)}</span><i class="fl">↗</i><i class="reflet"></i></a>')
     if t == "titre":
         return f'<h2 class="sec">{E(b.get("texte") or "")}</h2>'
@@ -1595,6 +1601,8 @@ SCRIPT_COMPTE = """
 
 SCRIPT_PUBLIC = """
 <script>
+document.addEventListener("click", e => { const a = e.target.closest("a[data-clic]");
+  if (a && navigator.sendBeacon) navigator.sendBeacon(a.dataset.clic); });
 document.querySelectorAll("[data-capture]").forEach(f => f.addEventListener("submit", async e => {
   e.preventDefault(); const b = f.querySelector("button"); b.disabled = true;
   try {
@@ -1634,7 +1642,11 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     if d.get("decor", "aucun") != "aucun":
         decor = f'<div class="decor d-{d["decor"]}" aria-hidden="true">' + "".join(
             f'<i style="left:{x}%;top:{y}%;--s:{t};animation-delay:-{r}s"></i>' for x, y, t, r in POSITIONS_DECOR) + "</div>"
-    og = f'<meta property="og:title" content="{E(titre)}"><meta property="og:description" content="{E(description)}"><meta property="og:type" content="website">'
+    if os.getenv("META_VERIFICATION_DOMAINE"):  # vérification de virallink.fr dans le portefeuille Meta
+        og_verif = f'<meta name="facebook-domain-verification" content="{E(os.environ["META_VERIFICATION_DOMAINE"].strip())}">'
+    else:
+        og_verif = ""
+    og = og_verif + f'<meta property="og:title" content="{E(titre)}"><meta property="og:description" content="{E(description)}"><meta property="og:type" content="website">'
     if image_og:
         og += f'<meta property="og:image" content="{E(image_og)}"><meta name="twitter:card" content="summary_large_image">'
     if url:
@@ -1642,7 +1654,14 @@ def document(page: dict, pseudo: str, corps: str, titre: str, description: str =
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{E(titre)}</title><meta name="description" content="{E(description)}">{og}<meta name="theme-color" content="{d['fond1'][:7]}">
 {lien}<style>{faces}{_css(d)}{_css_mise_en_page(d)}{_css_format(d)}{CSS_BLOCS_PRODUITS}{css_cartes(d)}</style>{'<meta name="robots" content="noindex">' if apercu else ''}</head>
-<body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}{SCRIPT_COMPTE if 'data-fin=' in corps else ''}</body></html>"""
+<body class="{classes}">{fond_img}<div class="fond"></div>{decor}<main class="page">{corps}{"" if apercu else pied_legal(pseudo)}</main>{SCRIPT_APERCU if apercu else SCRIPT_PUBLIC}{SCRIPT_COMPTE if 'data-fin=' in corps else ''}</body></html>"""
+
+
+def pied_legal(pseudo: str) -> str:
+    """Bas de page public : hébergeur, confidentialité et signalement (une page de vente sans ces repères ressemble à une arnaque pour les robots)."""
+    sujet = quote(f"Signalement de la boutique @{pseudo}")
+    return (f'<p class="pied-legal">Boutique hébergée par Virallink · <a href="/confidentialite">Confidentialité</a> · '
+            f'<a href="/mentions-legales">Mentions légales</a> · <a href="mailto:{CONTACT}?subject={sujet}">Signaler cette page</a></p>')
 
 
 POSITIONS_DECOR = [(6, 8, 1, 0), (88, 5, .7, 1.2), (72, 22, 1.3, 2.4), (14, 34, .8, .7), (93, 41, 1, 3.1), (4, 58, 1.2, 1.8),
@@ -1761,10 +1780,10 @@ def rendu_produit(page: dict, pseudo: str, p: dict, message: str = "", vente_pos
     barre = f'<s>{E(prix_txt(p["prix_barre"], p.get("devise", "eur")))}</s>' if p.get("prix_barre") and p["prix_barre"] > p.get("prix", 0) else ""
     gratuit = not p.get("prix")
     if p.get("externe") and p.get("lien"):
-        action = (f'<a class="bouton" style="display:block;text-align:center;text-decoration:none;width:100%;margin-top:10px" href="/@{pseudo}/p/{p["id"]}/ouvrir" '
+        action = (f'<a class="bouton" style="display:block;text-align:center;text-decoration:none;width:100%;margin-top:10px" href="{E(url_sure(p["lien"]))}" data-clic="/@{pseudo}/p/{p["id"]}/ouvrir" '
                   f'rel="noopener sponsored">{E(p.get("bouton") or "Je le veux")}</a><p class="note">Tu vas être redirigée vers la page de vente officielle.</p>')
     elif p.get("lien") and not p.get("fichier") and gratuit:
-        action = f'<a class="bouton" style="display:block;text-align:center;text-decoration:none" href="/@{pseudo}/p/{p["id"]}/ouvrir" target="_blank" rel="noopener">{E(p.get("bouton") or "J’y vais")}</a>'
+        action = f'<a class="bouton" style="display:block;text-align:center;text-decoration:none" href="{E(url_sure(p["lien"]))}" data-clic="/@{pseudo}/p/{p["id"]}/ouvrir" target="_blank" rel="noopener">{E(p.get("bouton") or "J’y vais")}</a>'
     elif gratuit:
         action = (f'<form method="post" action="/@{pseudo}/p/{p["id"]}/obtenir" data-capture><div class="champ" style="flex-direction:column">'
                   f'<input type="text" name="prenom" placeholder="Ton prénom" aria-label="Ton prénom" style="color:var(--t);border-color:color-mix(in srgb,var(--t) 30%,transparent)">'
