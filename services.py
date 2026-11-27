@@ -58,6 +58,9 @@ def _apify():
 
 def _claude():
     nom, role, lien = "Claude (Anthropic)", "Virall.ai : adaptations, Studio, plans, boutique", "https://console.anthropic.com/settings/billing"
+    import pause
+    if pause.actif():
+        return _r("claude", nom, role, "ok", "En pause : aucun appel tant que SERVICES_PAYANTS n'est pas à 1 dans Railway.", "", lien)
     if not os.getenv("ANTHROPIC_API_KEY"):
         return _r("claude", nom, role, "absent", "Clé ANTHROPIC_API_KEY absente.", "Ajoute-la dans Railway.", lien)
     try:

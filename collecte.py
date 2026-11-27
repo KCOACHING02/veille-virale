@@ -43,6 +43,8 @@ def apify_run(actor: str, payload: dict, token: str, timeout_min: float = 30, pa
     """Lance un actor Apify, attend la fin, renvoie les éléments du dataset.
     `pause` (secondes entre deux vérifications) et `essais` (lancements retentés si Apify est saturé) se réduisent
     pour une lecture courte que la cliente attend devant son écran."""
+    import pause
+    pause.verifie()  # services payants en pause : aucune collecte Apify
     for essai in range(essais):
         r = requests.post(f"{APIFY_BASE}/acts/{actor}/runs", params={"token": token}, json=payload, timeout=60)
         texte = r.text[:400].lower()

@@ -158,6 +158,15 @@ def _exige_confirmation(u: dict):
         raise AdresseNonConfirmee()
 
 
+import pause  # noqa: E402  services payants en pause (SERVICES_PAYANTS absent ou ≠ 1)
+pause.installe()
+
+
+@app.errorhandler(pause.EnPause)
+def services_en_pause(e):
+    return jsonify({"erreur": str(e)}), 503
+
+
 @app.errorhandler(AdresseNonConfirmee)
 def adresse_non_confirmee(_e):
     return jsonify({"erreur": "Confirme d'abord ton adresse e-mail : on t'a envoyé un lien à l'inscription.", "verification": True}), 403
@@ -4033,7 +4042,7 @@ def _actualise_bibliotheque(now):
         # collecte du jour faite mais préparation interrompue (redémarrage) : on la reprend, sans nouvelle collecte
         lance(0, "Bibliothèque : préparation", bibliotheque.prepare_restants, demo=en_demo())
         return
-    if now.hour < 3 or not bibliotheque.a_faire() or tent >= 2:
+    if now.hour < 3 or not bibliotheque.a_faire() or tent >= 2 or pause.actif():
         return
     if not (os.getenv("APIFY_TOKEN") or en_demo()) or any(j["uid"] == 0 and j["statut"] in ("en attente", "en cours") for j in JOBS.values()):
         return
@@ -4046,13 +4055,13 @@ def planificateur():
         try:
             now = datetime.now()
             lundi = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
-            for u in ab.tous():  # relevés des Reels publiés (J+2, J+7)
+            for u in ([] if pause.actif() else ab.tous()):  # relevés des Reels publiés (J+2, J+7) ; rien pendant la pause des services payants
                 try:
                     if droits(u)["actif"] and droits(u)["options"]["suivi_publications"] and pubs.a_relever_esp(espace_client(u["id"])):
                         _lance_releve(u["id"])
                 except Exception:  # noqa: BLE001
                     traceback.print_exc()
-            if now.hour >= 6:
+            if now.hour >= 6 and not pause.actif():
                 for u in ab.tous():
                     d = droits(u)
                     if (not (u["onboarding"] and d["veille_auto"] and d["actif"]) or (u.get("derniere_veille_auto") or "") >= lundi

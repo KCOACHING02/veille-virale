@@ -129,7 +129,8 @@ class Transcripteur:
         # Choix du serveur (pas du client) : « base » est ~3× plus rapide que « small » sur un petit serveur sans GPU
         self.modele_local = os.getenv("WHISPER_MODEL", "base")
         self._local = None
-        if self.moteur == "openai" and not os.getenv("OPENAI_API_KEY"):
+        import pause
+        if self.moteur == "openai" and (not os.getenv("OPENAI_API_KEY") or pause.actif()):
             log("  ⚠️  OPENAI_API_KEY absente : transcription locale à la place")
             self.moteur = "local"
 

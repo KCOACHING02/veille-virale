@@ -47,6 +47,9 @@ def _cle_openai() -> str:
 
 
 def fournisseur() -> str:
+    import pause
+    if pause.actif():  # services payants en pause : voix off masquée
+        return ""
     return "elevenlabs" if _cle_eleven() else "openai" if _cle_openai() else ""
 
 
